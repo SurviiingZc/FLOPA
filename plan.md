@@ -5,7 +5,7 @@
 ### 0.1 已确认约束
 
 1. 目标 FPGA 平台：AMD/Xilinx VCK190，器件为 Versal AI Core VC1902。
-2. 综合流程：前期使用 Xilinx/Vivado/Vitis 支持上板，后期稳定后迁移到 DC。
+2. 综合流程：前期使用 VCS + DC 完成前端验证与可综合性收敛，稳定后迁移到 Vivado/Vitis 上板。
 3. 控制接口：AXI4-Lite slave，32-bit 数据宽度。
 4. 数据接口：AXI4/AXI4-Stream 数据宽度为 128-bit。
 5. 数据格式：以真实 Re10K INT8 量化模型为准，允许自定义定点格式。
@@ -56,7 +56,7 @@ INT8 GEMM + BF16/FP-like softmax 的混合精度路线：
 | softmax | 32 lane 并行 exp 近似，大于 16 |
 | KV cache | 流式 K/V tile cache，至少 128 KB |
 | 数据流 | FlashAttention-like 分块在线 softmax |
-| 验证 | SV testbench + Python bit-accurate reference |
+| Verification | SV testbench + SystemVerilog bit-accurate reference |
 | 真实网络 | 跑 Re10K attention 子层，给误差和延迟 |
 
 ### 0.4 分阶段目标
@@ -228,14 +228,14 @@ AXI4 Slave
 +---------------- attention_accel_top ----------------+
 | control_fsm / scheduler                             |
 |                                                     |
-| +-----------+    +-------------+    +-------------+ |
-| | q_buffer  |    | k_cache     |    | v_cache     | |
-| | ping-pong |    | banked SRAM |    | banked SRAM | |
-| +-----------+    +-------------+    +-------------+ |
+| +-------------+  +-------------+    +-------------+ |
+| | q_cache     |  | k_cache     |    | v_cache     | |
+| | banked SRAM |  | banked SRAM |    | banked SRAM | |
+| +-------------+  +-------------+    +-------------+ |
 |       |                |                  |          |
 |       v                v                  v          |
 | +------------- os_fsa_systolic_array ------------+ |
-| | 32x32 OS PE + row reduce + PWL exp + LSE       | |
+| | 32x32 OS PE + row reduce + shared exp + LSE    | |
 | | QK, mask, rowmax, exp, rowsum, PV              | |
 | +-------------------------------------------------+ |
 |       |                                            |
@@ -266,17 +266,28 @@ AXI4 Slave
 
 ### 3.3 FSA-Inspired OS 脉动阵列设计
 
-推荐采用借鉴 SystolicAttention/FSA 的 32x32 output-stationary 阵列。该设计
-不照搬论文中的 weight-stationary 基线，而是保留本项目 OS 数据流，同时吸收
-FSA 的三个思想：
+推荐采用借鉴 SystolicAttention/FSA 的 32x32 output-stationary 阵列。这个版本
+的主线数据流明确为：
+
+```text
+PE 保存 S[i][j]
+row reduce 做 max/sum
+共享 32-lane exp pipeline
+beta stream 进入同一阵列的 PV 模式
+最终 normalizer 单独做 O_acc / l
+```
+
+它不把完整 softmax 分散到每个 PE，也不把 score/prob 落到外部 SRAM，而是
+保留本项目 OS 数据流，同时吸收 FSA 的三个思想：
 
 1. 在阵列内完成 rowmax/rowsum，减少 score/prob 往返 SRAM。
-2. PE 增加减法、比较选择和 PWL exp 所需的轻量 datapath。
-3. 通过行/列方向的 restream 通路把 row state 广播回 PE。
+2. PE 只承担 MAC、减法、比较选择和 scale 等轻量 datapath。
+3. exp 使用共享 32-lane pipeline，而不是复制到每个 PE。
+4. 通过行/列方向的 restream 通路把 row state 广播回 PE。
 
 这样做是合理的：本项目的 QK tile 正好是 `32x32` score tile，OS PE 可以在
 QK 结束后短暂保存每个 `S[i][j]`，随后在同一阵列附近完成 mask、rowmax、
-`S - m`、exp、rowsum，再把 probability stream 送入 PV 模式。相比“普通
+`S - m`、共享 exp、rowsum，再把 `beta` stream 直接送入 PV 模式。相比“普通
 MAC 阵列 + 外部 softmax_engine”，该方案更贴近 FlashAttention 的 in-place
 数据复用，也更容易在答辩中体现硬件创新。
 
@@ -298,7 +309,8 @@ PV 模式：
 
 #### 3.3.2 OS-FSA PE 功能
 
-每个 PE 保留原有 MAC 能力，并增加轻量模式选择：
+每个 PE 保留原有 MAC 能力，并增加轻量模式选择。共享 32-lane exp pipeline
+作为阵列侧独立单元，不复制到每个 PE：
 
 | 模式 | 功能 | 用途 |
 | --- | --- | --- |
@@ -306,7 +318,6 @@ PV 模式：
 | SUB | `x - row_value` | 计算 `S - m_new` |
 | MAX_PASS | 比较/旁路 | 支持行归约 rowmax |
 | ADD_PASS | 加法/旁路 | 支持 rowsum 和 LSE 更新 |
-| PWL_EXP | 分段线性 exp2 近似 | 计算 probability |
 | SCALE | 定点乘移位 | score scale 和输出 requant |
 
 PE 内部寄存器建议：
@@ -314,15 +325,15 @@ PE 内部寄存器建议：
 - `a_reg`、`b_reg`：输入数据寄存。
 - `acc_reg`：OS 累加寄存器。
 - `score_reg`：QK 后的 score 暂存，可与 `acc_reg` 复用。
-- `prob_reg`：exp 后的 probability 暂存或流式输出寄存。
+- `prob_reg`：共享 exp pipeline 返回的 probability 暂存或流式输出寄存。
 - `mode_reg`、`valid_reg`：模式和有效位流水。
 
-PWL exp 不建议首版做完整浮点单元。推荐将 `x <= 0` 的输入转为定点或
-BF16-like 表示，用 8 到 16 段 PWL，系数由小 ROM 或常量寄存器提供。论文中
-FSA 使用 PWL exp2 并利用输入非正的性质；本项目可采用相同思想，但位宽按
-BF16/FP-like softmax 精度重新定点化。
+共享 exp pipeline 不建议首版做完整浮点单元。推荐将 `x <= 0` 的输入转为
+定点或 BF16-like 表示，用 8 到 16 段 PWL，系数由小 ROM 或常量寄存器提供。
+论文中 FSA 使用 PWL exp2 并利用输入非正的性质；本项目可采用相同思想，但位宽
+按 BF16/FP-like softmax 精度重新定点化。
 
-#### 3.3.3 行归约与 restream 通路
+#### 3.3.3 行归约、共享 exp pipeline 与 restream 通路
 
 由于 OS 映射下 `S[i][j]` 的同一行对应同一个 query token，rowmax/rowsum
 推荐按“行归约”实现：
@@ -330,7 +341,7 @@ BF16/FP-like softmax 精度重新定点化。
 - 每一 PE 行配置一个 `row_reduce_unit`。
 - QK 完成后，32 个 `score_reg` 横向进入 rowmax 归约树。
 - `m_new` 写入 `row_state[i]`，并沿行广播回 32 个 PE。
-- PE 执行 `score_reg - m_new`，再进入 PWL exp。
+- PE 执行 `score_reg - m_new`，结果送入共享 32-lane exp pipeline。
 - exp 后的 32 个 probability 横向进入 rowsum 归约树。
 - `l_new` 更新到 `row_state[i]`，probability 同时进入 PV 数据通路。
 
@@ -352,26 +363,37 @@ vector/scalar softmax 单元。
 4. ROW_RESCALE:
        m_new = max(m_old, block_max)
        PE[i][j] computes S[i][j] - m_new
-5. PWL_EXP:
-       PE computes exp(S[i][j] - m_new)
+5. SHARED_EXP_32LANE:
+       shared exp pipeline computes beta[i][j] = exp(S[i][j] - m_new)
 6. ROW_SUM:
        row_reduce_unit computes block_sum[i]
        row_state updates l_new
-7. OS_PV_MAC:
-       probability stream and V tile compute O_acc
+7. BETA_STREAM_TO_PV:
+       beta stream and V tile compute O_acc
 8. FINAL_NORM:
-       after all K/V tiles, O_acc *= reciprocal(l_final)
+       after all K/V tiles, normalizer computes O = O_acc / l_final
 ```
 
 首版实现可以让 QK、softmax、PV 以 tile 内阶段化方式执行；后续再参考
 SystolicAttention 做更细粒度 overlap。这样风险较低，同时保留可扩展优化空间。
 
-#### 3.3.5 与原方案的取舍
+#### 3.3.5 OS 主线与 WS 仅作对照
+
+本项目主架构仍以 OS 为主。WS 可以作为局部 GEMM 思想参考，但不建议作为
+attention 全链路主线，原因是：
+
+- QK 结束后，score 还要立刻进入 row-softmax，而不是继续保持 weight-stationary。
+- `beta` 需要直接进入 PV；如果先按 WS 思路做中间落地，再切换模式，容易引入
+  额外 staging 和控制泡。
+- 对本项目这种 `32x32` square tile，QK 的 ideal compute cycles 在 WS/OS 下
+  基本相同，真正拉开差距的是 `S/P` 是否落地。
+
+#### 3.3.6 与原方案的取舍
 
 | 项目 | 原普通阵列方案 | OS-FSA 阵列方案 |
 | --- | --- | --- |
 | QK/PV | 32x32 MAC 阵列 | 32x32 OS 多模式 PE 阵列 |
-| softmax | 外部 32 lane engine | 行归约 + PE PWL exp |
+| softmax | 外部 32 lane engine | 行归约 + 共享 32-lane exp |
 | S/P 存储 | score/prob stream FIFO | PE 内暂存 + stream |
 | 创新性 | 中等 | 更强，贴近 SystolicAttention |
 | 实现风险 | 低 | 中等 |
@@ -394,7 +416,7 @@ SystolicAttention 做更细粒度 overlap。这样风险较低，同时保留可
 - PV 模式：输入 A=P，B=V，输出 O_acc。
 - GEMM 通用接口保留，便于展示可扩展性。
 
-## 4. 多级缓存与 KV Cache
+## 4. 多级缓存与 Q/K/V Tile Cache
 
 ### 4.1 缓存层次
 
@@ -402,35 +424,38 @@ SystolicAttention 做更细粒度 overlap。这样风险较低，同时保留可
 | --- | --- | --- | --- | --- |
 | L0 PE regs | 阵列内部 | 寄存器 | 当前 a/b/psum | MAC 流水 |
 | L0 row_state | 32 行状态 | 寄存器 | m、l、scale | 在线 softmax |
-| L1 q_buffer | 2 x 32x64x8b | BRAM 或寄存器 | Q tile | ping-pong |
+| L1 q_tile_cache | >= 64 KB | banked SRAM | Q tile 流水缓存 | 当前/下一 tile |
 | L1 score_fifo | 32 lane 流水 | 寄存器/FIFO | score 流 | softmax 输入 |
 | L1 p_fifo | 32 lane 流水 | 寄存器/FIFO | 概率流 | PV 输入 |
 | L1 o_buffer | 32x64x32b | BRAM | O_acc/O | 输出累加 |
-| L2 k_tile_cache | >= 64 KB | URAM 优先 | K tile 流水缓存 | 当前/下一 tile |
-| L2 v_tile_cache | >= 64 KB | URAM 优先 | V tile 流水缓存 | 当前/下一 tile |
+| L1 k_tile_cache | >= 64 KB | banked SRAM | K tile 流水缓存 | 当前/下一 tile |
+| L1 v_tile_cache | >= 64 KB | banked SRAM | V tile 流水缓存 | 当前/下一 tile |
 
-推荐第一版至少实现 128 KB streaming KV tile cache。它不是为了缓存完整
-K/V 序列，而是作为当前/下一 K/V tile 的片上多 bank、ping-pong 缓冲。这样既
-远高于赛题 4 KB 硬指标，又不会让 `seq_len` 上限受片上 cache 容量限制。
+推荐第一版把 Q/K/V 三个 tile cache 做成同规格 banked SRAM。每个 cache 首版
+按 64 KB 规划，Q/K/V staging 合计 192 KB；其中 K/V 两个 cache 合计 128 KB，
+仍满足 streaming KV tile cache 的指标。它们不是为了缓存完整序列，而是作为
+当前/下一 tile 的片上多 bank、ping-pong 缓冲。这样既远高于赛题 4 KB 硬指标，
+又不会让 `seq_len` 上限受片上 cache 容量限制。
 
-128 KB streaming KV tile cache 例子：
+同规格 Q/K/V banked SRAM 例子：
 
 ```text
+Q tile cache = 64 KB
 K tile cache = 64 KB
 V tile cache = 64 KB
-INT8 数据下可容纳多个 32x64 K/V tile，并支持 ping-pong 和 bank 并行。
-长序列从外部内存按 tile 流式读取，不要求完整 K/V 常驻片上。
+INT8 数据下每个 cache 可容纳多个 32x64 tile，并支持 ping-pong 和 bank 并行。
+长序列从外部内存按 tile 流式读取，不要求完整 Q/K/V 常驻片上。
 ```
 
 对 MHA 第一版，推荐按 head 粒度或小 head group 调度：每次处理一个或一组
-heads，对应 K/V cache 只保存当前流式 tile。对 GQA 扩展，K/V tile cache 的
-head 维度改为 `num_kv_heads`，多个 Q heads 复用同一组 K/V tile。
+heads，对应 Q/K/V cache 只保存当前流式 tile。对 GQA 扩展，K/V tile cache
+的 head 维度改为 `num_kv_heads`，多个 Q heads 复用同一组 K/V tile。
 
 ### 4.2 Bank 设计
 
-推荐 streaming K/V tile cache 使用多 bank URAM，外面包一层 `banked_sram`
-模块。这样首版在 Xilinx 工具中推断 URAM，后续迁移 DC 时可替换为 SRAM
-macro wrapper。
+推荐 Q/K/V tile cache 都使用同一个多 bank `banked_sram` wrapper。这样首版在
+Xilinx 工具中可按容量映射到 URAM/BRAM，后续迁移 DC 时可替换为 SRAM macro
+wrapper。
 
 - bank 数：8 或 16，优先 16 bank 匹配 128-bit AXI。
 - 每 bank 位宽：64 bit 或 128 bit。
@@ -439,8 +464,8 @@ macro wrapper。
 
 器件选择原则：
 
-- URAM：streaming K/V tile cache、多 bank ping-pong 缓冲。
-- BRAM：Q tile、O tile、较小的 ping-pong buffer。
+- URAM/BRAM：Q/K/V tile cache、多 bank ping-pong 缓冲，具体由容量和器件映射决定。
+- BRAM：O tile、较小的 ping-pong buffer。
 - 寄存器：PE 内部、softmax 行状态、归约树流水、短 FIFO。
 - 不落地 RAM：完整 S/P 矩阵不写 BRAM/URAM，只在 score/prob 流水中经过。
 
@@ -593,7 +618,7 @@ exp(x) = 2^n * 2^f
 
 - OS-FSA 阵列提供 32 个并行 score lane。
 - 每行 32 个 score 同时进入 rowmax/rowsum 归约。
-- PWL_EXP 为多周期流水，延迟由 PWL 段数和定点/BF16-like 格式决定。
+- shared exp pipeline 为多周期流水，延迟由 PWL 段数和定点/BF16-like 格式决定。
 - 设计指标统计吞吐和流水延迟，而不是声称 exp 单拍完成。
 
 ## 6. AXI4 接口与寄存器设计
@@ -695,10 +720,10 @@ IDLE
 
 复用路径：
 
-- Q tile 在遍历所有 K/V tile 时保持在 q_buffer。
+- Q tile 在遍历所有 K/V tile 时保持在 q_tile_cache。
 - K tile 同时用于多个 Q row 的 QK 计算。
 - V tile 在 PV 阶段复用同一个 K tile 对应的概率。
-- streaming K/V tile cache 通过 ping-pong 复用当前/下一 tile。
+- Q/K/V tile cache 通过 banked SRAM + ping-pong 复用当前/下一 tile。
 
 文档中建议给出片外访问量对比：
 
@@ -746,7 +771,7 @@ rtl/
         banked_sram.sv
         uram_bank.sv
         bram_buffer.sv
-        kv_cache.sv
+        qkv_tile_cache.sv
         stream_fifo.sv
         output_buffer.sv
     common/
@@ -754,25 +779,44 @@ rtl/
         attention_pkg.sv
 ```
 
-验证目录：
+Verification directory:
 
 ```text
-sim/
-    tb/
-        tb_attention_accel_top.sv
-        axi_master_bfm.sv
-        axi_slave_bfm.sv
-        scoreboard.sv
-        coverage.sv
-    vectors/
-        generate_vectors.py
-        reference_model.py
-    tests/
-        test_smoke.sv
-        test_softmax_accuracy.sv
-        test_tile_boundary.sv
-        test_axi_backpressure.sv
-        test_random_attention.sv
+tb/
+    module_tb/
+        common/
+        softmax/
+        compute/
+        memory/
+        axi/
+    uvm/
+        env/
+        agents/
+        sequences/
+        tests/
+        scoreboard/
+        coverage/
+        ref_model/
+            attention_ref_pkg.sv
+            softmax_ref_model.sv
+            qk_ref_model.sv
+            pv_ref_model.sv
+    sim/
+        filelists/
+            rtl.f
+            module_tb.f
+            uvm.f
+        scripts/
+        vectors/
+        logs/
+fpga/
+    vivado/
+    constraints/
+    ip/
+asic/
+    dc/
+    constraints/
+    scripts/
 docs/
     design.md
     verification.md
@@ -781,30 +825,39 @@ ppt/
     defense_outline.md
 ```
 
+Directory policy:
+
+- `tb/module_tb` contains simple SystemVerilog module tests; no separate `directed` directory is used.
+- `tb/uvm` is the main verification environment; the scoreboard calls the SV reference model under `tb/uvm/ref_model`.
+- `tb/sim` contains only simulation entry points, filelists, scripts, vectors, and logs, and is not a top-level directory.
+- Python is kept as an offline helper for vector generation, Re10K sample extraction, and error plotting.
+
 ## 9. 开发流程
 
 ### 9.0 工具链与机器分工
 
-推荐从当前有 Vivado/Vitis 的机器开始建工程、写 RTL 和做 Xilinx 综合。原因是
-目标平台为 VCK190，早期必须尽快确认 RTL 可被 Xilinx 工具接受、BRAM/URAM/
-DSP 推断方式正确、AXI 接口能进入 block design 或 Vitis kernel 流程。
+推荐从当前有 VCS 和 DC 的机器开始建工程，把它作为前端收敛主线：先完成 RTL
+骨架、接口、UVM 回归和 DC 可综合性检查，再把稳定 RTL 同步到 Vivado/Vitis
+机器做 VCK190 上板。这样可以更早暴露不可综合写法、时序边界、RAM 推断和 AXI
+协议问题。
 
-另一台有 VCS 和 DC 的机器作为主验证与后端可迁移性机器：
+另一台有 Vivado/Vitis 的机器作为板级实现与联调机器：
 
 | 任务 | 推荐机器 | 工具 | 目的 |
 | --- | --- | --- | --- |
-| RTL 编写和目录搭建 | Vivado 机器 | 编辑器 + lint | 快速迭代 |
-| 早期 smoke 仿真 | Vivado 机器 | xsim | 检查语法和简单波形 |
+| RTL 编写和目录搭建 | VCS/DC 机器 | 编辑器 + lint + DC analyze | 快速收敛可综合边界 |
+| 早期 smoke 仿真 | VCS 机器 | VCS | 检查语法和简单波形 |
 | 主验证环境 | VCS/DC 机器 | VCS + UVM | 随机验证、覆盖率、回归 |
-| FPGA 综合实现 | Vivado 机器 | Vivado/Vitis | 资源、频率、上板 |
-| ASIC 迁移检查 | VCS/DC 机器 | DC | 综合可迁移性和时序参考 |
+| 前端综合检查 | DC 机器 | DC | 约束、时序、可综合性收敛 |
+| FPGA 综合实现和上板 | Vivado/Vitis 机器 | Vivado/Vitis | 资源、频率、板级联调 |
 
 因此推荐流程是：
 
-1. 在 Vivado 机器开始工作，先完成 RTL 骨架、package、接口和基本 smoke。
-2. 同步代码到 VCS/DC 机器，建立 UVM 环境并把它作为功能 sign-off 标准。
-3. 每个稳定里程碑同时跑 VCS 回归和 Vivado 综合，避免后期才发现不可综合。
-4. DC 不作为第一版功能调试工具，只在 RTL 稳定后做 ASIC 风格综合检查。
+1. 在 VCS/DC 机器开始工作，先完成 RTL 骨架、package、接口和 UVM 基础回归。
+2. 尽早在 DC 中跑 compile 和简单时序检查，修掉不可综合写法和宏推断问题。
+3. 稳定后同步到 Vivado/Vitis 机器，做 Xilinx 综合、IP/AXI 封装和板级集成。
+4. 每个稳定里程碑同时跑 VCS 回归、DC compile 和 Vivado 综合，避免后期才发现不可综合。
+5. Vivado/Vitis 主要负责上板和器件相关实现，不作为第一版功能调试的主阵地。
 
 如果两台机器不能共享文件系统，建议从第一天就使用 git 作为唯一同步方式，
 不要手工拷贝散文件。测试向量和小规模 golden 数据可以入库，大规模 Re10K
@@ -814,7 +867,7 @@ dump 只记录路径和生成脚本。
 
 | 阶段 | 目标 | 产出 |
 | --- | --- | --- |
-| M1 | 定点模型 | Python reference、误差评估 |
+| M1 | Fixed-point model | SV reference, offline vector scripts, error evaluation |
 | M2 | 单模块 RTL | PE、array、softmax、cache 单测 |
 | M3 | Attention tile | QK + softmax + PV 单 tile 仿真 |
 | M4 | 顶层集成 | AXI slave 配置、master 写回 |
@@ -825,7 +878,7 @@ dump 只记录路径和生成脚本。
 
 ### 9.2 推荐实现顺序
 
-1. Python bit-accurate 模型和测试向量生成。
+1. Build the SystemVerilog bit-accurate reference model and offline vector-generation scripts.
 2. softmax_engine 单元 RTL 与对拍。
 3. systolic_array 单元 RTL 与 GEMM 对拍。
 4. kv_cache、pingpong_buffer、banked_sram。
@@ -856,13 +909,13 @@ UVM 环境建议包含：
 - `axi_lite_agent`：寄存器配置和状态读取。
 - `axi_stream_agent` 或 `axi_mem_agent`：输入数据和输出写回事务。
 - `attention_sequencer`：生成维度、head、tile 和数据事务。
-- `attention_scoreboard`：调用 Python/C DPI 或预生成 golden 对拍。
+- `attention_scoreboard`: calls the SV reference model directly and can also compare against pregenerated golden vectors.
 - `attention_coverage`：收集寄存器、维度、AXI backpressure 和状态覆盖。
-- `attention_reference_model`：bit-accurate 定点参考模型。
+- `attention_reference_model`: SystemVerilog bit-accurate fixed-point reference model.
 
 验证分层建议：
 
-1. 模块级 directed test：softmax、PE、array、KV cache。
+1. `tb/module_tb` module-level simple tests: softmax, PE, array, and KV cache.
 2. 子系统 UVM test：单 head tile、AXI backpressure、非法配置。
 3. 顶层 UVM regression：MHA、Re10K 维度、随机 seed、覆盖率。
 4. Vivado xsim smoke：只保留少量测试，服务 FPGA 工程集成。
@@ -891,7 +944,7 @@ Scoreboard 输入：
 - 寄存器配置。
 - Q/K/V 输入向量。
 - RTL 输出 O。
-- Python 参考输出 O_ref。
+- SV reference model output O_ref.
 
 比较指标：
 
@@ -917,7 +970,8 @@ Scoreboard 输入：
 - AXI backpressure：无、中等、高。
 - KV mode：prefill、decode。
 - softmax 输入范围：正常、全负、单峰、全相等、极值。
-- OS-FSA PE mode：MAC、SUB、MAX_PASS、ADD_PASS、PWL_EXP、SCALE。
+- OS-FSA PE mode：MAC、SUB、MAX_PASS、ADD_PASS、SCALE。
+- shared exp pipeline：PWL 段选择、输入范围、流水延迟。
 - row_reduce：rowmax、rowsum、causal mask 后归约。
 
 代码覆盖：
@@ -1014,11 +1068,11 @@ overall_util = (65536 + 65536) / (1024 * (126 + 188))
 | QK+PV | 单 tile 粗略平均 | 约 40.8% |
 
 该利用率是保守的 MAC-only 单 tile 估算，未计入 OS-FSA 中 PE 执行 SUB、
-PWL_EXP、rowsum 等 softmax 模式时的有效工作周期。改成 OS-FSA 后，报告中
+shared exp pipeline、rowsum 等 softmax 模式时的有效工作周期。改成 OS-FSA 后，报告中
 建议同时给出两类指标：
 
 - `mac_utilization`：只统计 QK/PV MAC 的有效利用率。
-- `array_active_utilization`：统计 MAC、SUB、PWL_EXP、row reduction 等
+- `array_active_utilization`：统计 MAC、SUB、shared exp pipeline、row reduction 等
   所有阵列内有效工作周期。
 
 连续 tile 流水可进一步摊薄 fill/drain。后续可通过以下方式提升有效利用率：
@@ -1062,6 +1116,121 @@ Softmax ops ~= seq_q * seq_kv * (exp + reduce + div)
 1. 无 ping-pong vs 有 ping-pong。
 2. 无 ping-pong K/V tile vs streaming ping-pong K/V tile。
 3. 存 S/P 到外部内存 vs 片上在线 softmax。
+
+### 11.5 WS 与 OS 的定性定量比较
+
+本节按本项目基线参数做对照：
+
+- `Bq = 32`
+- `Bk = 32`
+- `head_dim = 64`
+- `Q/K/V` 为 INT8
+- `S/beta` 为 16-bit 定点或 BF16-like
+- AXI 数据宽度为 128-bit，即理想传输速率为 `16 B/cycle`
+
+先给出最关键的 tile 尺寸：
+
+```text
+S_tile = 32 * 32 * 16b = 2048 B = 2 KiB
+Q_tile = 32 * 64 * 8b  = 2048 B = 2 KiB
+K_tile = 32 * 64 * 8b  = 2048 B = 2 KiB
+V_tile = 32 * 64 * 8b  = 2048 B = 2 KiB
+```
+
+虽然单个计算 tile 都是 2 KiB，但片上 staging cache 按同规格 banked SRAM 设计：
+
+```text
+Q_cache = K_cache = V_cache = 64 KiB
+Q/K/V cache total = 192 KiB
+```
+
+#### 11.5.1 QK 阶段
+
+对 `32x64 * 64x32` 这个 QK tile，OS 与 WS 的**纯 MAC 周期**基本相同：
+
+```text
+C_qk = 64 + 32 + 32 - 2 = 126 cycles
+```
+
+差别不在乘法本身，而在 score 的去向：
+
+| 项目 | OS | WS |
+| --- | --- | --- |
+| QK 纯 MAC 周期 | 126 | 126 |
+| score 位置 | `S[i][j]` 留在 PE | 倾向于作为权重/部分输出驻留，后续常需 staging |
+| 中间结果落地 | 不落地 `S` | 视实现而定，通常需要额外缓冲 |
+| QK 后直接接 row-softmax | 方便 | 不如 OS 直接 |
+
+如果 WS 需要把 `S` 从阵列送到外部/片外缓冲再读回 softmax，则一次
+`S_tile` round-trip 的额外代价为：
+
+```text
+C_spill(S) = 2 * 2048B / 16B_per_cycle = 256 cycles
+```
+
+这意味着在相同 128-bit AXI 假设下，WS 的 QK 阶段若发生 score spill，
+仅中间搬运就会多出约 `256 cycles`。OS 则不需要这一步。
+
+#### 11.5.2 QK + softmax + PV 全链路
+
+先看不含 softmax 细节泡的 MAC 基线。QK 需要 126 cycles，PV 因为
+`head_dim=64` 需要分两轮，每轮 94 cycles：
+
+```text
+C_pv = 2 * (32 + 32 + 32 - 2) = 188 cycles
+C_mac_total = C_qk + C_pv = 314 cycles
+```
+
+| 项目 | OS | WS |
+| --- | --- | --- |
+| MAC 基线 | 314 | 314 |
+| `S`/`P` 是否需要落地 | 不需要 | 常需要 staging |
+| 额外中间搬运 | 0 | 最少 `S` round-trip，`+4 KiB`/tile |
+| 理想额外周期 | 0 | `+256 cycles`/tile |
+
+这里的 `+4 KiB` 来自 `S` 的写回与读回：
+
+```text
+write S: 2048B
+read  S: 2048B
+total   : 4096B = 4 KiB
+```
+
+因此，在“score 必须先落地再喂给 softmax”的 WS 实现里，全链路的
+理想 MAC baseline 可写成：
+
+```text
+T_WS ≈ 314 + 256 + L_softmax + L_norm + L_switch
+     ≈ 570 + L_softmax + L_norm + L_switch
+```
+
+而 OS 为：
+
+```text
+T_OS ≈ 314 + L_softmax + L_norm
+```
+
+对应的片外流量可写成：
+
+```text
+B_OS = B_Q + B_K + B_V + B_O
+B_WS = B_OS + B_spill
+B_spill >= 4 KiB/tile
+```
+
+其中 `L_softmax` 表示 row reduce + shared exp pipeline 的固有流水深度，
+`L_norm` 表示最终 `O_acc / l` 的归一化流水，`L_switch` 表示 WS 在 QK
+和 softmax/PV 之间的模式切换泡。
+
+#### 11.5.3 定性结论
+
+- 对纯 GEMM 小核，WS 和 OS 的理论乘加周期差距不大。
+- 对本项目这种 attention 全链路，OS 更优，因为它把 `S` 留在 PE，
+  把 `beta` 直接送进 PV，不需要额外的 score staging。
+- WS 只有在“权重可长期常驻、后续还有大量同权重复用”的场景更占便宜；
+  这更像卷积/常规 GEMM，不像 FlashAttention 的 QK -> softmax -> PV 链路。
+- 如果 WS 还要把 `P` 也物化一次，那么额外流量会继续上升到 `8 KiB/tile`
+  量级，latency 也会进一步恶化。
 
 ## 12. 功耗优化与实测
 
@@ -1134,7 +1303,6 @@ INT8 权重、量化参数和 attention dump：
 - 单层 Attention 延迟。
 - 与 CPU/PyTorch baseline 的延迟对比。
 - 输出误差：max_abs_error、mean_abs_error、cosine_similarity。
-- Re10K 子层误差：与已导出 dump 或 Python reference 比较。
 
 ## 14. 设计文档结构
 
@@ -1210,7 +1378,7 @@ INT8 权重、量化参数和 attention dump：
 
 1. 实现 32x32 阵列。
 2. 实现 32 lane softmax。
-3. 实现大于 4 KB 的 streaming KV tile cache，第一版目标为 128 KB。
+3. 实现 Q/K/V 同规格 banked SRAM tile cache，其中 K/V 合计 128 KB，Q/K/V 合计 192 KB。
 4. 实现 AXI slave 配置/输入和 AXI master 输出。
 5. 跑通一个 32x32x64 的 Attention。
 6. 扩展到可配置 `seq_len`，覆盖 32/64/144/576。
@@ -1220,6 +1388,6 @@ INT8 权重、量化参数和 attention dump：
 
 1. 在线 softmax + 不落地 S/P。
 2. ping-pong 缓冲减少 stall。
-3. streaming KV tile cache bank 并行和数据复用。
+3. Q/K/V banked SRAM tile cache 的 bank 并行和数据复用。
 4. clock enable 与 bank enable 降低功耗。
 5. GQA、多 batch、decode 模式扩展。

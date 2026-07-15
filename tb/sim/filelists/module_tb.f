@@ -1,0 +1,10 @@
++incdir+../../rtl/common
++incdir+../../tb/module_tb/common
++incdir+../../tb/module_tb/control
++incdir+../../tb/module_tb/axi
+../../tb/module_tb/common/tb_fixed_defs_smoke.sv
+../../tb/module_tb/control/tb_accel_regfile.sv
+../../tb/module_tb/control/tb_accel_scheduler.sv
+../../tb/module_tb/control/tb_perf_counter.sv
+../../tb/module_tb/axi/tb_axi4_slave_if.sv
+../../tb/module_tb/axi/tb_axi4_master_write.sv

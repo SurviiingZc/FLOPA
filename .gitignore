@@ -1,0 +1,77 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*~
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+env/
+
+# Simulation / waveform / regression
+simv
+simv.daidir/
+csrc/
+verdiLog/
+DVEfiles/
+simv.vdb/
+urgReport/
+coverage/
+cov/
+novas*
+*.vcd
+*.fst
+*.fsdb
+*.wlf
+*.key
+*.dump
+*.log
+*.out
+
+# Synopsys DC
+*.svf
+*.ddc
+*.sdf
+*.pvl
+analyze.log
+elab.log
+compile.log
+dc_shell.log
+work/
+syn/
+dc_out/
+reports/
+results/
+*.saif
+
+# Vivado / Vitis
+.Xil/
+*.jou
+*.str
+*.backup/
+*.cache/
+*.gen/
+*.hw/
+*.ip_user_files/
+*.runs/
+*.sim/
+*.bit
+*.bin
+*.ltx
+*.rpt
+
+# Generic build output
+build/
+out/
+tmp/
+dist/
