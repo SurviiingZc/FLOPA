@@ -43,6 +43,9 @@ novas*
 *.ddc
 *.sdf
 *.pvl
+*.syn
+*.mr
+cksum_dir/
 analyze.log
 elab.log
 compile.log
@@ -53,6 +56,12 @@ dc_out/
 reports/
 results/
 *.saif
+
+# Keep DC output below asic/dc instead of the repository root
+asic/dc/work/*
+!asic/dc/work/.gitkeep
+asic/dc/logs/*
+!asic/dc/logs/.gitkeep
 
 # Vivado / Vitis
 .Xil/

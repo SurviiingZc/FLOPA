@@ -1,6 +1,8 @@
 `timescale 1ns/1ps
 
-module perf_counter (
+module perf_counter #(
+  parameter MACS_PER_ACTIVE_CYCLE = 1024
+)(
   input         clk,
   input         rst_n,
   input         clear_i,
@@ -28,7 +30,7 @@ module perf_counter (
     end else begin
       if (cycle_en_i) cycle_count_o <= cycle_count_o + 64'd1;
       if (cycle_en_i && stall_i) stall_count_o <= stall_count_o + 64'd1;
-      if (mac_valid_i) mac_count_o <= mac_count_o + 64'd1;
+      if (mac_valid_i) mac_count_o <= mac_count_o + MACS_PER_ACTIVE_CYCLE;
       if (tile_done_i) tile_count_o <= tile_count_o + 32'd1;
     end
   end

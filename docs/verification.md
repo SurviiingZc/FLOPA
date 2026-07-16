@@ -118,6 +118,8 @@ For `banked_sram.v`:
 - Test read-after-write.
 - Test read/write conflict policy.
 - Test ping-pong bank switch at tile boundary.
+- In ASIC mode, compile against the `/data/public` SRAM Verilog model and cover every 256-word depth boundary.
+- Check that active-low macro `CEB` is inactive while the logical buffer is idle.
 
 ## 6. UVM System-Level Architecture
 
@@ -233,9 +235,23 @@ Requirements:
 | `smoke_fixed` | Fixed-point constants and helper behavior. |
 | `smoke_regfile` | Register read/write/start/status/error. |
 | `smoke_banked_sram` | Bank select, read/write, conflict policy. |
+| `asic_sram_backend` | 256x8 macro width/depth composition and idle chip-enable gating. |
 | `smoke_softmax` | Rowmax, exp, rowsum, normalization. |
 | `smoke_pe` | PE MAC and mode switching. |
 | `smoke_axi_write` | AXI write burst and backpressure. |
+
+### 9.3 Command-Level Checks
+
+| Command | Goal |
+| --- | --- |
+| `make run` | Run all directed module and end-to-end tests. |
+| `make asic-sram` | Run the structural ASIC SRAM test with the foundry functional model. |
+| `make lint-rtl` | Parse and lint the DUT as plain Verilog-2001. |
+| `asic/scripts/run_rtl_check.sh` | Analyze, elaborate, link, and check the ASIC build with 28nm libraries. |
+
+Generated simulator files belong under `tb/sim/build/<test>/`. DC work files and reports belong under
+`asic/dc/work/`, and DC logs belong under `asic/dc/logs/`. Tool invocations must not leave `csrc`,
+`flex*.log`, `.pvl`, `.syn`, `.mr`, `command.log`, or `default.svf` in the repository root.
 
 ### 9.2 UVM Tests
 

@@ -178,11 +178,11 @@ module tb_accel_regfile;
     @(posedge clk);
 
     axil_read(`ATTN_REG_VERSION, rd_data);
-    if (rd_data != 32'h0001_0000) $fatal(1, "version mismatch: %h", rd_data);
+    if (rd_data != 32'h0002_0000) $fatal(1, "version mismatch: %h", rd_data);
 
-    axil_write(`ATTN_REG_Q_BASE_LO, 32'h1111_2222);
+    axil_write(`ATTN_REG_Q_BASE_LO, 32'h1111_2220);
     axil_write(`ATTN_REG_Q_BASE_HI, 32'h3333_4444);
-    axil_write(`ATTN_REG_K_BASE_LO, 32'h5555_6666);
+    axil_write(`ATTN_REG_K_BASE_LO, 32'h5555_6660);
     axil_write(`ATTN_REG_K_BASE_HI, 32'h7777_8888);
     axil_write(`ATTN_REG_SEQ_Q, 32'd576);
     axil_write(`ATTN_REG_SEQ_KV, 32'd576);
@@ -197,12 +197,12 @@ module tb_accel_regfile;
     axil_write(`ATTN_REG_MASK_CFG, 32'h0000_0001);
     axil_write(`ATTN_REG_MODE, 32'h0000_000b);
 
-    axil_read(`ATTN_REG_Q_BASE_LO, rd_data); if (rd_data != 32'h1111_2222) $fatal(1, "Q_BASE_LO mismatch");
+    axil_read(`ATTN_REG_Q_BASE_LO, rd_data); if (rd_data != 32'h1111_2220) $fatal(1, "Q_BASE_LO mismatch");
     axil_read(`ATTN_REG_Q_BASE_HI, rd_data); if (rd_data != 32'h3333_4444) $fatal(1, "Q_BASE_HI mismatch");
     axil_read(`ATTN_REG_SEQ_Q, rd_data); if (rd_data != 32'd576) $fatal(1, "SEQ_Q mismatch");
     axil_read(`ATTN_REG_MODE, rd_data); if (rd_data[3:0] != 4'b1011) $fatal(1, "MODE mismatch: %h", rd_data);
 
-    axil_write(`ATTN_REG_CONTROL, 32'h0000_000f);
+    axil_write(`ATTN_REG_CONTROL, 32'h0000_004f);
     @(posedge clk);
     #1;
     if (!start_seen_q) $fatal(1, "start pulse missing");

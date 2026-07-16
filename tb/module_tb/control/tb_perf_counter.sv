@@ -53,7 +53,7 @@ module tb_perf_counter;
 
     if (cycle_count_o != 64'd5) $fatal(1, "cycle_count mismatch: %0d", cycle_count_o);
     if (stall_count_o != 64'd2) $fatal(1, "stall_count mismatch: %0d", stall_count_o);
-    if (mac_count_o != 64'd4) $fatal(1, "mac_count mismatch: %0d", mac_count_o);
+    if (mac_count_o != 64'd4096) $fatal(1, "mac_count mismatch: %0d", mac_count_o);
     if (tile_count_o != 32'd2) $fatal(1, "tile_count mismatch: %0d", tile_count_o);
 
     @(negedge clk);

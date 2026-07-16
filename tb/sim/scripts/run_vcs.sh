@@ -11,10 +11,18 @@ OUTDIR="$2"
 shift 2
 
 VCS_BIN="${VCS:-vcs}"
-mkdir -p "$OUTDIR"
-cd "$(dirname "$0")/.."
+SIM_ROOT=$(cd "$(dirname "$0")/.." && pwd)
+mkdir -p "$OUTDIR" "$OUTDIR/csrc"
+cd "$SIM_ROOT"
 
-cmd=("$VCS_BIN" -full64 -sverilog -timescale=1ns/1ps -debug_access+all -kdb -top "$TOP" -l "$OUTDIR/compile.log" -o "$OUTDIR/simv")
+cleanup_transients() {
+  rm -f "$SIM_ROOT"/flex*.log "$SIM_ROOT/ucli.key"
+  rm -rf "$SIM_ROOT/csrc"
+}
+trap cleanup_transients EXIT
+
+cmd=("$VCS_BIN" -full64 -sverilog -timescale=1ns/1ps -debug_access+all -kdb \
+  -Mdir="$OUTDIR/csrc" -top "$TOP" -l "$OUTDIR/compile.log" -o "$OUTDIR/simv")
 for f in "$@"; do
   cmd+=(-f "$f")
 done

@@ -12,14 +12,18 @@ TOP_SCHEDULER := tb_accel_scheduler
 TOP_PERF := tb_perf_counter
 TOP_AXI_IF := tb_axi4_slave_if
 TOP_AXI_WR := tb_axi4_master_write
+TOP_PE := tb_os_fsa_pe
+TOP_REDUCE := tb_row_reduce_unit
+TOP_ACCEL := tb_attention_accel_top
 
-.PHONY: help syntax run common control axi \
+.PHONY: help syntax run common control axi compute softmax top asic-sram lint-rtl \
         syntax-common run-common \
         syntax-regfile run-regfile \
         syntax-scheduler run-scheduler \
         syntax-perf run-perf \
         syntax-axi-if run-axi-if \
         syntax-axi-wr run-axi-wr \
+        syntax-pe run-pe syntax-reduce run-reduce syntax-top run-top \
         clean
 
 help:
@@ -29,14 +33,28 @@ help:
 	@echo "  make common      - run common smoke TB"
 	@echo "  make control     - run control TBs"
 	@echo "  make axi         - run AXI TBs"
+	@echo "  make compute     - run PE tests"
+	@echo "  make softmax     - run softmax reduction tests"
+	@echo "  make top         - run one-tile end-to-end test"
+	@echo "  make asic-sram   - run ASIC SRAM macro composition test"
+	@echo "  make lint-rtl    - lint RTL as Verilog-2001"
 	@echo "  make clean       - remove build output"
 
-syntax: syntax-common syntax-regfile syntax-scheduler syntax-perf syntax-axi-if syntax-axi-wr
-run: run-common run-regfile run-scheduler run-perf run-axi-if run-axi-wr
+syntax: syntax-common syntax-regfile syntax-scheduler syntax-perf syntax-axi-if syntax-axi-wr syntax-pe syntax-reduce syntax-top
+run: run-common run-regfile run-scheduler run-perf run-axi-if run-axi-wr run-pe run-reduce run-top
 
 common: run-common
 control: run-regfile run-scheduler run-perf
 axi: run-axi-if run-axi-wr
+compute: run-pe
+softmax: run-reduce
+top: run-top
+
+asic-sram:
+	$(SCRIPTS_DIR)/run_asic_sram_vcs.sh
+
+lint-rtl:
+	$(SCRIPTS_DIR)/lint_rtl_vcs.sh
 
 syntax-common:
 	$(SCRIPTS_DIR)/syntax_vcs.sh $(TOP_COMMON) $(BUILD_DIR)/common $(FILELISTS)
@@ -74,5 +92,24 @@ syntax-axi-wr:
 run-axi-wr:
 	$(SCRIPTS_DIR)/run_vcs.sh $(TOP_AXI_WR) $(BUILD_DIR)/axi_wr $(FILELISTS)
 
+syntax-pe:
+	$(SCRIPTS_DIR)/syntax_vcs.sh $(TOP_PE) $(BUILD_DIR)/pe $(FILELISTS)
+
+run-pe:
+	$(SCRIPTS_DIR)/run_vcs.sh $(TOP_PE) $(BUILD_DIR)/pe $(FILELISTS)
+
+syntax-reduce:
+	$(SCRIPTS_DIR)/syntax_vcs.sh $(TOP_REDUCE) $(BUILD_DIR)/reduce $(FILELISTS)
+
+run-reduce:
+	$(SCRIPTS_DIR)/run_vcs.sh $(TOP_REDUCE) $(BUILD_DIR)/reduce $(FILELISTS)
+
+syntax-top:
+	$(SCRIPTS_DIR)/syntax_vcs.sh $(TOP_ACCEL) $(BUILD_DIR)/top $(FILELISTS)
+
+run-top:
+	$(SCRIPTS_DIR)/run_vcs.sh $(TOP_ACCEL) $(BUILD_DIR)/top $(FILELISTS)
+
 clean:
-	rm -rf $(BUILD_DIR)
+	rm -rf $(BUILD_DIR) $(SIM_ROOT)/csrc
+	rm -f $(SIM_ROOT)/flex*.log $(SIM_ROOT)/ucli.key

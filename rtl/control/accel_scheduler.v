@@ -9,18 +9,19 @@ module accel_scheduler (
   input        clear_done_i,
   input        clear_error_i,
   input        fatal_error_i,
-  input        mode_sel_i,
-  input        causal_en_i,
   input        prefill_en_i,
   input        decode_en_i,
+  input [15:0] seq_q_i,
+  input [15:0] seq_kv_i,
+  input [7:0]  num_q_heads_i,
+  input [7:0]  tile_q_i,
+  input [7:0]  tile_k_i,
   input        load_q_done_i,
   input        load_kv_done_i,
   input        qk_done_i,
   input        softmax_done_i,
   input        pv_done_i,
   input        wb_done_i,
-  input        tile_last_i,
-  input        run_last_i,
   output reg [3:0] state_o,
   output reg   busy_o,
   output reg   done_o,
@@ -35,63 +36,62 @@ module accel_scheduler (
   output reg   qk_en_o,
   output reg   softmax_en_o,
   output reg   pv_en_o,
-  output reg   wb_en_o
+  output reg   wb_en_o,
+  output reg [7:0] head_index_o,
+  output reg [10:0] q_tile_index_o,
+  output reg [10:0] kv_tile_index_o,
+  output [15:0] q_tile_base_o,
+  output [15:0] kv_tile_base_o,
+  output       tile_last_o,
+  output       run_last_o
 );
 
-  reg [3:0] next_state;
-  wire illegal_start_busy;
-  wire illegal_mode;
+  reg [3:0] next_state_w;
+  reg [11:0] q_tile_count_q;
+  reg [11:0] kv_tile_count_q;
+  wire illegal_start_busy_w;
+  wire illegal_mode_w;
+  wire illegal_dimensions_w;
+  wire [16:0] q_tile_count_calc_w;
+  wire [16:0] kv_tile_count_calc_w;
 
-  assign illegal_start_busy = start_i && busy_o;
-  assign illegal_mode = start_i && prefill_en_i && decode_en_i;
+  assign illegal_start_busy_w = start_i && busy_o;
+  assign illegal_mode_w = start_i && (!prefill_en_i || decode_en_i);
+  assign illegal_dimensions_w = start_i &&
+      (seq_q_i == 0 || seq_kv_i == 0 || num_q_heads_i == 0 ||
+       tile_q_i != `ATTN_TILE_Q || tile_k_i != `ATTN_TILE_K);
+  assign q_tile_count_calc_w = ({1'b0, seq_q_i} + 17'd31) >> 5;
+  assign kv_tile_count_calc_w = ({1'b0, seq_kv_i} + 17'd31) >> 5;
+  assign q_tile_base_o = {q_tile_index_o, 5'b0};
+  assign kv_tile_base_o = {kv_tile_index_o, 5'b0};
+  assign tile_last_o = ({1'b0, kv_tile_index_o} == kv_tile_count_q - 1'b1);
+  assign run_last_o = (head_index_o == num_q_heads_i - 1'b1) &&
+                      ({1'b0, q_tile_index_o} == q_tile_count_q - 1'b1);
 
   always @(*) begin
-    next_state = state_o;
+    next_state_w = state_o;
     case (state_o)
-      `ATTN_STATE_IDLE: begin
-        if (start_i && !illegal_mode) next_state = `ATTN_STATE_LOAD_Q;
-      end
-      `ATTN_STATE_LOAD_Q: begin
-        if (load_q_done_i) next_state = `ATTN_STATE_LOAD_KV;
-      end
-      `ATTN_STATE_LOAD_KV: begin
-        if (load_kv_done_i) next_state = `ATTN_STATE_QK;
-      end
-      `ATTN_STATE_QK: begin
-        if (qk_done_i) next_state = `ATTN_STATE_SOFTMAX;
-      end
-      `ATTN_STATE_SOFTMAX: begin
-        if (softmax_done_i) next_state = `ATTN_STATE_PV;
-      end
+      `ATTN_STATE_IDLE: if (start_i && !illegal_mode_w && !illegal_dimensions_w) next_state_w = `ATTN_STATE_LOAD_Q;
+      `ATTN_STATE_LOAD_Q: if (load_q_done_i) next_state_w = `ATTN_STATE_LOAD_KV;
+      `ATTN_STATE_LOAD_KV: if (load_kv_done_i) next_state_w = `ATTN_STATE_QK;
+      `ATTN_STATE_QK: if (qk_done_i) next_state_w = `ATTN_STATE_SOFTMAX;
+      `ATTN_STATE_SOFTMAX: if (softmax_done_i) next_state_w = `ATTN_STATE_PV;
       `ATTN_STATE_PV: begin
-        if (pv_done_i) begin
-          if (tile_last_i) next_state = `ATTN_STATE_WRITEBACK;
-          else next_state = `ATTN_STATE_LOAD_KV;
-        end
+        if (pv_done_i) next_state_w = tile_last_o ? `ATTN_STATE_WRITEBACK : `ATTN_STATE_LOAD_KV;
       end
       `ATTN_STATE_WRITEBACK: begin
-        if (wb_done_i) begin
-          if (run_last_i) next_state = `ATTN_STATE_DONE;
-          else next_state = `ATTN_STATE_LOAD_Q;
-        end
+        if (wb_done_i) next_state_w = run_last_o ? `ATTN_STATE_DONE : `ATTN_STATE_LOAD_Q;
       end
       `ATTN_STATE_DONE: begin
-        if (clear_done_i) next_state = `ATTN_STATE_IDLE;
-        else if (start_i && !illegal_mode) next_state = `ATTN_STATE_LOAD_Q;
+        if (clear_done_i) next_state_w = `ATTN_STATE_IDLE;
+        else if (start_i && !illegal_mode_w && !illegal_dimensions_w) next_state_w = `ATTN_STATE_LOAD_Q;
       end
-      `ATTN_STATE_ERROR: begin
-        if (clear_error_i) next_state = `ATTN_STATE_IDLE;
-      end
-      default: next_state = `ATTN_STATE_ERROR;
+      `ATTN_STATE_ERROR: if (clear_error_i) next_state_w = `ATTN_STATE_IDLE;
+      default: next_state_w = `ATTN_STATE_ERROR;
     endcase
-
-    if (fatal_error_i || illegal_start_busy || illegal_mode) begin
-      next_state = `ATTN_STATE_ERROR;
-    end
-
-    if (soft_reset_i) begin
-      next_state = `ATTN_STATE_IDLE;
-    end
+    if (fatal_error_i || illegal_start_busy_w || illegal_mode_w || illegal_dimensions_w)
+      next_state_w = `ATTN_STATE_ERROR;
+    if (soft_reset_i) next_state_w = `ATTN_STATE_IDLE;
   end
 
   always @(posedge clk or negedge rst_n) begin
@@ -100,25 +100,52 @@ module accel_scheduler (
       done_o <= 1'b0;
       error_o <= 1'b0;
       error_code_o <= `ATTN_ERR_NONE;
+      head_index_o <= 8'd0;
+      q_tile_index_o <= 11'd0;
+      kv_tile_index_o <= 11'd0;
+      q_tile_count_q <= 12'd0;
+      kv_tile_count_q <= 12'd0;
     end else begin
-      state_o <= next_state;
-
+      state_o <= next_state_w;
       if (soft_reset_i) begin
         done_o <= 1'b0;
         error_o <= 1'b0;
         error_code_o <= `ATTN_ERR_NONE;
+        head_index_o <= 8'd0;
+        q_tile_index_o <= 11'd0;
+        kv_tile_index_o <= 11'd0;
+        q_tile_count_q <= 12'd0;
+        kv_tile_count_q <= 12'd0;
       end else begin
-        if (state_o == `ATTN_STATE_WRITEBACK && wb_done_i && run_last_i) begin
-          done_o <= 1'b1;
-        end
-        if (clear_done_i || (start_i && state_o == `ATTN_STATE_DONE)) begin
+        if (start_i && (state_o == `ATTN_STATE_IDLE || state_o == `ATTN_STATE_DONE) &&
+            !illegal_mode_w && !illegal_dimensions_w) begin
+          head_index_o <= 8'd0;
+          q_tile_index_o <= 11'd0;
+          kv_tile_index_o <= 11'd0;
+          q_tile_count_q <= q_tile_count_calc_w[11:0];
+          kv_tile_count_q <= kv_tile_count_calc_w[11:0];
           done_o <= 1'b0;
         end
+        if (state_o == `ATTN_STATE_PV && pv_done_i) begin
+          if (!tile_last_o) kv_tile_index_o <= kv_tile_index_o + 1'b1;
+        end
+        if (state_o == `ATTN_STATE_WRITEBACK && wb_done_i) begin
+          kv_tile_index_o <= 11'd0;
+          if (run_last_o) begin
+            done_o <= 1'b1;
+          end else if ({1'b0, q_tile_index_o} == q_tile_count_q - 1'b1) begin
+            q_tile_index_o <= 11'd0;
+            head_index_o <= head_index_o + 1'b1;
+          end else begin
+            q_tile_index_o <= q_tile_index_o + 1'b1;
+          end
+        end
+        if (clear_done_i) done_o <= 1'b0;
 
         if (fatal_error_i) begin
           error_o <= 1'b1;
           error_code_o <= `ATTN_ERR_FATAL;
-        end else if (illegal_start_busy || illegal_mode) begin
+        end else if (illegal_start_busy_w || illegal_mode_w || illegal_dimensions_w) begin
           error_o <= 1'b1;
           error_code_o <= `ATTN_ERR_BAD_CFG;
         end else if (clear_error_i) begin

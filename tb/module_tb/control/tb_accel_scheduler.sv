@@ -19,8 +19,11 @@ module tb_accel_scheduler;
   reg softmax_done_i;
   reg pv_done_i;
   reg wb_done_i;
-  reg tile_last_i;
-  reg run_last_i;
+  reg [15:0] seq_q_i;
+  reg [15:0] seq_kv_i;
+  reg [7:0] num_q_heads_i;
+  reg [7:0] tile_q_i;
+  reg [7:0] tile_k_i;
   wire [3:0] state_o;
   wire busy_o;
   wire done_o;
@@ -40,14 +43,16 @@ module tb_accel_scheduler;
   accel_scheduler dut (
     .clk(clk), .rst_n(rst_n), .start_i(start_i), .soft_reset_i(soft_reset_i),
     .clear_done_i(clear_done_i), .clear_error_i(clear_error_i), .fatal_error_i(fatal_error_i),
-    .mode_sel_i(mode_sel_i), .causal_en_i(causal_en_i), .prefill_en_i(prefill_en_i), .decode_en_i(decode_en_i),
+    .prefill_en_i(prefill_en_i), .decode_en_i(decode_en_i),
     .load_q_done_i(load_q_done_i), .load_kv_done_i(load_kv_done_i), .qk_done_i(qk_done_i),
     .softmax_done_i(softmax_done_i), .pv_done_i(pv_done_i), .wb_done_i(wb_done_i),
-    .tile_last_i(tile_last_i), .run_last_i(run_last_i),
+    .seq_q_i(seq_q_i), .seq_kv_i(seq_kv_i), .num_q_heads_i(num_q_heads_i),
+    .tile_q_i(tile_q_i), .tile_k_i(tile_k_i),
     .state_o(state_o), .busy_o(busy_o), .done_o(done_o), .error_o(error_o), .error_code_o(error_code_o),
     .idle_o(idle_o), .load_active_o(load_active_o), .compute_active_o(compute_active_o), .writeback_active_o(writeback_active_o),
     .load_q_en_o(load_q_en_o), .load_kv_en_o(load_kv_en_o), .qk_en_o(qk_en_o), .softmax_en_o(softmax_en_o),
-    .pv_en_o(pv_en_o), .wb_en_o(wb_en_o)
+    .pv_en_o(pv_en_o), .wb_en_o(wb_en_o), .head_index_o(), .q_tile_index_o(),
+    .kv_tile_index_o(), .q_tile_base_o(), .kv_tile_base_o(), .tile_last_o(), .run_last_o()
   );
 
   always #5 clk = ~clk;
@@ -78,8 +83,11 @@ module tb_accel_scheduler;
     softmax_done_i = 1'b0;
     pv_done_i = 1'b0;
     wb_done_i = 1'b0;
-    tile_last_i = 1'b1;
-    run_last_i = 1'b1;
+    seq_q_i = 16'd32;
+    seq_kv_i = 16'd32;
+    num_q_heads_i = 8'd1;
+    tile_q_i = 8'd32;
+    tile_k_i = 8'd32;
 
     repeat (4) @(posedge clk);
     rst_n = 1'b1;

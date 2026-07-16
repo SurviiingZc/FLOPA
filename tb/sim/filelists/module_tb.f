@@ -2,9 +2,16 @@
 +incdir+../../tb/module_tb/common
 +incdir+../../tb/module_tb/control
 +incdir+../../tb/module_tb/axi
++incdir+../../tb/module_tb/compute
++incdir+../../tb/module_tb/softmax
++incdir+../../tb/module_tb/memory
++incdir+../../tb/module_tb/top
 ../../tb/module_tb/common/tb_fixed_defs_smoke.sv
 ../../tb/module_tb/control/tb_accel_regfile.sv
 ../../tb/module_tb/control/tb_accel_scheduler.sv
 ../../tb/module_tb/control/tb_perf_counter.sv
 ../../tb/module_tb/axi/tb_axi4_slave_if.sv
 ../../tb/module_tb/axi/tb_axi4_master_write.sv
+../../tb/module_tb/compute/tb_os_fsa_pe.sv
+../../tb/module_tb/softmax/tb_row_reduce_unit.sv
+../../tb/module_tb/top/tb_attention_accel_top.sv

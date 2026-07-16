@@ -6,6 +6,8 @@ This document defines the implementation strategy for all on-chip storage and ti
 
 - `rtl/memory/pingpong_buffer.v`
 - `rtl/memory/banked_sram.v`
+- `rtl/memory/asic_sram_1024x16.v`
+- `rtl/memory/asic_sram_256xwide.v`
 - `rtl/memory/uram_bank.v`
 - `rtl/memory/bram_buffer.v`
 - `rtl/memory/qkv_tile_cache.v`
@@ -80,6 +82,27 @@ This makes burst unpacking and reassembly predictable.
 ### 4.5 Timing Rule
 
 The bank decoder and bank enable logic must be registered if the raw address fanout becomes large.
+
+### 4.6 Technology Backends
+
+The logical memory interface is common, but the physical implementation is selected at compile time:
+
+- ASIC (`ATTN_ASIC`): use `/data/public/SRAM/uhdsp_256x8m4s`, a 256 x 8 single-port macro.
+- FPGA: infer Xilinx UltraRAM for Q/K/V tile banks with `ram_style = "ultra"`.
+- FPGA output storage: infer block RAM with `ram_style = "block"`.
+
+Each 1024 x 16 Q/K/V bank is composed from four depth slices and two byte lanes, for eight SRAM macros per bank. Sixteen logical banks form one 256-bit ping-pong side. The output accumulator uses a 64 x 1024 organization and the normalized output uses a 64 x 256 organization; both are width-composed from the same 256 x 8 macro in ASIC builds.
+
+All SRAM ports are single-port. A write has priority over a coincident read. The RTL must suppress read-valid for that collision rather than relying on an unspecified read-during-write value.
+
+### 4.7 SRAM Power Rules
+
+- Drive active-low `CEB` low only for a real read or write.
+- On Q/K/V writes, enable only the selected logical byte banks; keep all unused macros in standby.
+- Hold registered address and write-data signals while idle so macro inputs do not toggle unnecessarily.
+- Do not issue SRAM reads while downstream backpressure is holding a valid word.
+- Read the 256-bit normalized-output word once and serve its two 128-bit AXI beats from the held macro output.
+- Keep `SLP` and `SD` deasserted in the first version; system-level retention sequencing is outside the accelerator block.
 
 ## 5. Ping-Pong Buffer
 
@@ -167,6 +190,16 @@ The output buffer collects the finished O tile and prepares it for AXI master wr
 ### 8.3 Timing Rule
 
 The output buffer should be a staging block with registered input and output boundaries.
+
+### 8.4 Physical Organization
+
+The output buffer stores one 32-lane half-row per address. This avoids 32 independent narrow memories and matches the compute handoff directly:
+
+- accumulator: 64 addresses x 1024 bits;
+- normalized output: 64 addresses x 256 bits;
+- AXI stream: lower and upper 128-bit halves of the held 256-bit output word.
+
+The stream reader caches the current 256-bit SRAM word. Backpressure never causes another macro access, and moving from the lower to upper AXI beat does not toggle `CEB`.
 
 ## 9. Memory/Compute Interface
 

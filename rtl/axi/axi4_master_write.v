@@ -142,10 +142,7 @@ module axi4_master_write #(
         ST_DONE: begin
           busy_o <= 1'b0;
           done_o <= 1'b1;
-          if (start_i) begin
-            done_o <= 1'b0;
-            state_q <= ST_IDLE;
-          end
+          state_q <= ST_IDLE;
         end
 
         ST_ERROR: begin
