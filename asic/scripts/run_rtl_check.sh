@@ -15,16 +15,7 @@ export FA_DC_WORK="$RUN_DIR"
 export FA_DC_LIB="$LIB_DIR"
 
 if [ ! -s "$LIB_DIR/uhdsp_256x8m4s_tt0p9v25c.db" ]; then
-  set +e
-  LD_PRELOAD="/lib64/libcrypto.so.1.1 /lib64/libk5crypto.so.3" \
-    lc_shell -f "$ROOT_DIR/asic/scripts/compile_sram_lib.tcl" \
-    2>&1 | tee "$LOG_DIR/sram_lib_compile.log"
-  LC_STATUS=${PIPESTATUS[0]}
-  set -e
-  if [ "$LC_STATUS" -ne 0 ]; then
-    echo "lc_shell exited with status $LC_STATUS after library write; validating DB output" \
-      | tee -a "$LOG_DIR/sram_lib_compile.log"
-  fi
+  "$ROOT_DIR/asic/scripts/prepare_sram_lib.sh" tt
 fi
 
 test -s "$LIB_DIR/uhdsp_256x8m4s_tt0p9v25c.db"

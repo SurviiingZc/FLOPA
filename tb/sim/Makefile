@@ -16,7 +16,21 @@ TOP_PE := tb_os_fsa_pe
 TOP_REDUCE := tb_row_reduce_unit
 TOP_ACCEL := tb_attention_accel_top
 
-.PHONY: help syntax run common control axi compute softmax top asic-sram lint-rtl \
+COMMON_TOPS := tb_fixed_defs_smoke
+CONTROL_TOPS := tb_accel_regfile tb_accel_scheduler tb_perf_counter
+AXI_TOPS := tb_axi4_slave_if tb_axi4_master_write
+COMPUTE_TOPS := tb_os_fsa_pe tb_os_fsa_array tb_os_fsa_controller \
+	tb_scale_requant_unit tb_qk_engine tb_pv_engine
+MEMORY_TOPS := tb_banked_sram tb_bram_buffer tb_output_buffer \
+	tb_pingpong_buffer tb_qkv_tile_cache tb_stream_fifo tb_uram_bank
+SOFTMAX_TOPS := tb_block_lse_update tb_causal_mask tb_online_normalizer \
+	tb_pwl_exp_unit tb_reciprocal_lut tb_row_broadcast tb_row_reduce_unit \
+	tb_softmax_engine
+TOP_TOPS := tb_attention_accel_top
+MODULE_TOPS := $(COMMON_TOPS) $(CONTROL_TOPS) $(AXI_TOPS) $(COMPUTE_TOPS) \
+	$(MEMORY_TOPS) $(SOFTMAX_TOPS) $(TOP_TOPS)
+
+.PHONY: help syntax run common control axi compute memory softmax top asic-sram lint-rtl \
         syntax-common run-common \
         syntax-regfile run-regfile \
         syntax-scheduler run-scheduler \
@@ -33,22 +47,44 @@ help:
 	@echo "  make common      - run common smoke TB"
 	@echo "  make control     - run control TBs"
 	@echo "  make axi         - run AXI TBs"
-	@echo "  make compute     - run PE tests"
-	@echo "  make softmax     - run softmax reduction tests"
+	@echo "  make compute     - run all compute module TBs"
+	@echo "  make memory      - run all generic memory module TBs"
+	@echo "  make softmax     - run all softmax module TBs"
 	@echo "  make top         - run one-tile end-to-end test"
 	@echo "  make asic-sram   - run ASIC SRAM macro composition test"
 	@echo "  make lint-rtl    - lint RTL as Verilog-2001"
 	@echo "  make clean       - remove build output"
 
-syntax: syntax-common syntax-regfile syntax-scheduler syntax-perf syntax-axi-if syntax-axi-wr syntax-pe syntax-reduce syntax-top
-run: run-common run-regfile run-scheduler run-perf run-axi-if run-axi-wr run-pe run-reduce run-top
+syntax:
+	@set -e; for top in $(MODULE_TOPS); do \
+		$(SCRIPTS_DIR)/syntax_vcs.sh $$top $(BUILD_DIR)/$$top $(FILELISTS); \
+	done
 
-common: run-common
-control: run-regfile run-scheduler run-perf
-axi: run-axi-if run-axi-wr
-compute: run-pe
-softmax: run-reduce
-top: run-top
+run:
+	@set -e; for top in $(MODULE_TOPS); do \
+		$(SCRIPTS_DIR)/run_vcs.sh $$top $(BUILD_DIR)/$$top $(FILELISTS); \
+	done
+
+define run_tops
+	@set -e; for top in $(1); do \
+		$(SCRIPTS_DIR)/run_vcs.sh $$top $(BUILD_DIR)/$$top $(FILELISTS); \
+	done
+endef
+
+common:
+	$(call run_tops,$(COMMON_TOPS))
+control:
+	$(call run_tops,$(CONTROL_TOPS))
+axi:
+	$(call run_tops,$(AXI_TOPS))
+compute:
+	$(call run_tops,$(COMPUTE_TOPS))
+memory:
+	$(call run_tops,$(MEMORY_TOPS))
+softmax:
+	$(call run_tops,$(SOFTMAX_TOPS))
+top:
+	$(call run_tops,$(TOP_TOPS))
 
 asic-sram:
 	$(SCRIPTS_DIR)/run_asic_sram_vcs.sh

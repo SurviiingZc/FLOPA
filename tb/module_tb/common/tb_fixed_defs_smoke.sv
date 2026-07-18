@@ -1,8 +1,10 @@
 `timescale 1ns/1ps
+`include "tb_fsdb.svh"
 `include "attention_defines.vh"
 `include "fixed_defs.vh"
 
 module tb_fixed_defs_smoke;
+  `TB_FSDB_DUMP("tb_fixed_defs_smoke.fsdb", tb_fixed_defs_smoke)
   initial begin
     if (`ATTN_AXI_DATA_W != 128) $fatal(1, "ATTN_AXI_DATA_W mismatch");
     if (`ATTN_AXI_LITE_DATA_W != 32) $fatal(1, "ATTN_AXI_LITE_DATA_W mismatch");

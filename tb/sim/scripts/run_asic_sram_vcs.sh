@@ -14,7 +14,8 @@ cleanup_transients() {
 }
 trap cleanup_transients EXIT
 
-vcs -full64 -sverilog -timescale=1ns/1ps \
+vcs -full64 -sverilog -timescale=1ns/1ps -debug_access+all -kdb \
+  +incdir+../../tb/module_tb/common \
   +define+ATTN_ASIC +define+UNIT_DELAY +define+no_warning \
   +define+NO_INPUT_FLOATING_CHECK \
   -Mdir="$OUT_DIR/csrc" \
@@ -27,4 +28,16 @@ vcs -full64 -sverilog -timescale=1ns/1ps \
   ../../rtl/memory/banked_sram.v \
   ../../tb/module_tb/memory/tb_asic_sram_backend.sv
 
-"$OUT_DIR/simv" -l "$OUT_DIR/run.log"
+(
+  cd "$OUT_DIR"
+  ./simv +fsdb+autoflush -l run.log
+)
+
+if grep -Eq '\[FAIL\]|\[TIMEOUT\]' "$OUT_DIR/run.log"; then
+  echo "ASIC SRAM test failed (see $OUT_DIR/run.log)" >&2
+  exit 1
+fi
+if ! grep -Fq "[PASS] tb_asic_sram_backend" "$OUT_DIR/run.log"; then
+  echo "ASIC SRAM test did not report PASS (see $OUT_DIR/run.log)" >&2
+  exit 1
+fi

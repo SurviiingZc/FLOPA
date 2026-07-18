@@ -13,7 +13,7 @@ set work_dir [file normalize $env(FA_DC_WORK)]
 set report_dir [file join $work_dir reports]
 file mkdir $report_dir
 
-set std_db "/data/public/STD/tcbn28hpcplusbwp12t30p140_190a/tcbn28hpcplusbwp12t30p140_180a_ccs/TSMCHOME/digital/Front_End/timing_power_noise/CCS/tcbn28hpcplusbwp12t30p140_180a/tcbn28hpcplusbwp12t30p140tt0p9v0p9v25c_ccs.db"
+set std_db "/data/public/STD/tcbn28hpcplusbwp12t30p140_190a/tcbn28hpcplusbwp12t30p140_180a_ccs/TSMCHOME/digital/Front_End/timing_power_noise/CCS/tcbn28hpcplusbwp12t30p140_180a/tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs.db"
 set sram_db [file join [file normalize $env(FA_DC_LIB)] uhdsp_256x8m4s_tt0p9v25c.db]
 
 if {![file exists $std_db]} {

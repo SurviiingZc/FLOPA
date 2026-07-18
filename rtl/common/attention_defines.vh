@@ -14,6 +14,7 @@
 
 `define ATTN_ARRAY_ROWS          32
 `define ATTN_ARRAY_COLS          32
+`define ATTN_ARRAY_STRIPE_ROWS   8
 `define ATTN_SOFTMAX_LANES       32
 `define ATTN_HEAD_DIM            64
 `define ATTN_TILE_Q              32
@@ -23,6 +24,7 @@
 
 `define ATTN_AXI_ADDR_W          32
 `define ATTN_AXI_DATA_W         128
+`define ATTN_CACHE_WORD_W       256
 `define ATTN_AXI_LITE_DATA_W     32
 `define ATTN_AXI_LITE_STRB_W      4
 

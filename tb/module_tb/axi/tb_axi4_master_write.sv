@@ -1,6 +1,8 @@
 `timescale 1ns/1ps
+`include "tb_fsdb.svh"
 
 module tb_axi4_master_write;
+  `TB_FSDB_DUMP("tb_axi4_master_write.fsdb", tb_axi4_master_write)
   reg clk;
   reg rst_n;
   reg start_i;

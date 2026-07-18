@@ -22,7 +22,7 @@ module os_fsa_pe #(
   output reg signed [ACC_W-1:0] result_o,
   output reg signed [ACC_W-1:0] acc_o
 );
-
+  
   reg valid_q;
   reg last_q;
   reg [2:0] mode_q;
@@ -32,17 +32,25 @@ module os_fsa_pe #(
   reg [5:0] shift_q;
   reg signed [2*DATA_W-1:0] product_w;
   reg signed [ACC_W:0] arithmetic_w;
-  reg signed [31:0] scale_product_w;
+  reg signed [DATA_W+16-1:0] scale_product_w;
+  
+  //gating signals for the arithmetic operations
+  wire [DATA_W-1:0] a_mac = (mode_q == `ATTN_PE_MAC_INT8) ? a_q : {DATA_W{1'b0}};
+  wire [DATA_W-1:0] b_mac = (mode_q == `ATTN_PE_MAC_INT8) ? b_q : {DATA_W{1'b0}};
+    
+  wire [DATA_W-1:0] a_scale = (mode_q == `ATTN_PE_SCALE) ? a_q : {DATA_W{1'b0}};
+  wire [15:0]       s_scale = (mode_q == `ATTN_PE_SCALE) ? scale_q : 16'sd0;
 
-//combinational logic for arithmetic operations based on mode
   always @(*) begin
-    product_w = $signed({{DATA_W{a_q[DATA_W-1]}}, a_q}) *
-                $signed({{DATA_W{b_q[DATA_W-1]}}, b_q});
-    arithmetic_w = {acc_o[ACC_W-1], acc_o};
-    scale_product_w = $signed({{16{a_q[DATA_W-1]}}, a_q}) * $signed(scale_q);
+    product_w = {(2*DATA_W){1'b0}};
+    scale_product_w = {(DATA_W+16){1'b0}};
     case (mode_q)
-      `ATTN_PE_MAC_INT8: arithmetic_w = {acc_o[ACC_W-1], acc_o} +
-                                             {product_w[2*DATA_W-1], product_w};
+      `ATTN_PE_MAC_INT8: begin
+        product_w = $signed({{DATA_W{a_mac[DATA_W-1]}}, a_mac}) *
+                    $signed({{DATA_W{b_mac[DATA_W-1]}}, b_mac});
+        arithmetic_w = {acc_o[ACC_W-1], acc_o} +
+                       {product_w[2*DATA_W-1], product_w};
+      end
       `ATTN_PE_SUB: arithmetic_w = {{(ACC_W+1-DATA_W){a_q[DATA_W-1]}}, a_q} -
                                     {{(ACC_W+1-DATA_W){b_q[DATA_W-1]}}, b_q};
       `ATTN_PE_MAX_PASS: arithmetic_w = ($signed(a_q) >= $signed(b_q)) ?
@@ -50,7 +58,11 @@ module os_fsa_pe #(
                                          {{(ACC_W+1-DATA_W){b_q[DATA_W-1]}}, b_q};
       `ATTN_PE_ADD_PASS: arithmetic_w = {{(ACC_W+1-DATA_W){a_q[DATA_W-1]}}, a_q} +
                                          {{(ACC_W+1-DATA_W){b_q[DATA_W-1]}}, b_q};
-      `ATTN_PE_SCALE: arithmetic_w = {scale_product_w[31], scale_product_w} >>> shift_q;
+      `ATTN_PE_SCALE: begin
+        scale_product_w = $signed({{16{a_scale[DATA_W-1]}}, a_scale}) *
+                          $signed(s_scale); 
+        arithmetic_w = $signed({scale_product_w[DATA_W+15], scale_product_w}) >>> shift_q;
+      end
       default: arithmetic_w = {acc_o[ACC_W-1], acc_o};
     endcase
   end

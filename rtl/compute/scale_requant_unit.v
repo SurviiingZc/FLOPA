@@ -42,14 +42,18 @@ module scale_requant_unit #(
   reg valid_s2_q;
   reg signed [PROD_W:0] rounded_w;
   reg signed [PROD_W:0] biased_w;
+  reg signed [PROD_W:0] round_bias_w;
 
   always @(*) begin
     rounded_w = {product_s1_q[PROD_W-1], product_s1_q};
+    round_bias_w = {{PROD_W{1'b0}}, 1'b1};
     if (round_s1_q == `ATTN_ROUND_NEAREST && shift_s1_q != 0) begin
       if (product_s1_q >= 0)
-        rounded_w = product_s1_q + ({{PROD_W{1'b0}}, 1'b1} <<< (shift_s1_q - 1'b1));
+        rounded_w = {product_s1_q[PROD_W-1], product_s1_q} +
+                    (round_bias_w <<< (shift_s1_q - 1'b1));
       else
-        rounded_w = product_s1_q - ({{PROD_W{1'b0}}, 1'b1} <<< (shift_s1_q - 1'b1));
+        rounded_w = {product_s1_q[PROD_W-1], product_s1_q} -
+                    (round_bias_w <<< (shift_s1_q - 1'b1));
     end
     biased_w = (rounded_w >>> shift_s1_q) + zp_s1_q;
   end

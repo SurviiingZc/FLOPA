@@ -1,7 +1,9 @@
 `timescale 1ns/1ps
+`include "tb_fsdb.svh"
 `include "attention_defines.vh"
 
 module tb_axi4_slave_if;
+  `TB_FSDB_DUMP("tb_axi4_slave_if.fsdb", tb_axi4_slave_if)
   reg clk;
   reg rst_n;
   reg wr_block_i;

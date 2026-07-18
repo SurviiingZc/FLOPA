@@ -13,6 +13,7 @@ shift 2
 VCS_BIN="${VCS:-vcs}"
 SIM_ROOT=$(cd "$(dirname "$0")/.." && pwd)
 mkdir -p "$OUTDIR" "$OUTDIR/csrc"
+OUTDIR=$(cd "$OUTDIR" && pwd)
 cd "$SIM_ROOT"
 
 cleanup_transients() {
@@ -28,4 +29,16 @@ for f in "$@"; do
 done
 
 "${cmd[@]}"
-"$OUTDIR/simv" -l "$OUTDIR/run.log"
+(
+  cd "$OUTDIR"
+  ./simv +fsdb+autoflush -l run.log
+)
+
+if grep -Eq '\[FAIL\]|\[TIMEOUT\]' "$OUTDIR/run.log"; then
+  echo "test failed: $TOP (see $OUTDIR/run.log)" >&2
+  exit 1
+fi
+if ! grep -Fq "[PASS] $TOP" "$OUTDIR/run.log"; then
+  echo "test did not report PASS: $TOP (see $OUTDIR/run.log)" >&2
+  exit 1
+fi

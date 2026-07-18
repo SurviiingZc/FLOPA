@@ -89,6 +89,12 @@ If the arithmetic width or DSP mapping requires it, split the arithmetic stage f
 - Reset local state cleanly.
 - Gate useless toggling when valid is low.
 - Keep output stable when no new input is accepted.
+- Implement MAC as signed INT8 x INT8 into the signed 32-bit accumulator; the
+  wider PE operand bus is retained for SUB, MAX, ADD, and SCALE modes.
+- Keep the MAC and SCALE multiplications inside their respective mode branches,
+  and drive their intermediate products to zero in all inactive modes.
+- Keep the INT8 multiply and 32-bit accumulation in one registered cycle unless
+  mapped slow-corner timing no longer meets the target clock after placement.
 
 ## 5. Array Microarchitecture
 

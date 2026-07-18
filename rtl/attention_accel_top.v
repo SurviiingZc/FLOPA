@@ -1,7 +1,18 @@
 `timescale 1ns/1ps
 `include "attention_defines.vh"
 
-module attention_accel_top (
+module attention_accel_top #(
+  parameter integer ARRAY_ROWS = `ATTN_ARRAY_ROWS,
+  parameter integer ARRAY_COLS = `ATTN_ARRAY_COLS,
+  parameter integer ARRAY_DATA_W = `ATTN_ARRAY_DATA_W,
+  parameter integer ACC_W = `ATTN_ACC_W,
+  parameter integer BETA_W = `ATTN_BETA_W,
+  parameter integer LSE_W = `ATTN_LSE_W,
+  parameter integer OUT_W = `ATTN_OUT_W,
+  parameter integer CACHE_WORD_W = `ATTN_CACHE_WORD_W,
+  parameter integer CACHE_ADDR_W = `ATTN_CACHE_ADDR_W,
+  parameter integer STRIPE_ROWS = `ATTN_ARRAY_STRIPE_ROWS
+)(
   input                   clk,
   input                   rst_n,
 
@@ -25,7 +36,7 @@ module attention_accel_top (
 
   input  [1:0]            tile_load_kind_i,
   input                   tile_load_bank_i,
-  input  [9:0]            tile_load_addr_i,
+  input  [CACHE_ADDR_W-1:0] tile_load_addr_i,
   input                   tile_load_half_i,
   input  [127:0]          tile_load_data_i,
   input                   tile_load_valid_i,
@@ -52,6 +63,16 @@ module attention_accel_top (
   output                  irq_o,
   output [3:0]            debug_state_o
 );
+
+  localparam integer ARRAY_ROW_W = ARRAY_ROWS * ARRAY_DATA_W;
+  localparam integer ARRAY_COL_W = ARRAY_COLS * ARRAY_DATA_W;
+  localparam integer MATRIX_W = ARRAY_ROWS * ARRAY_COLS * ACC_W;
+  localparam integer BETA_TILE_W = ARRAY_ROWS * ARRAY_COLS * BETA_W;
+  localparam integer ALPHA_ROWS_W = ARRAY_ROWS * BETA_W;
+  localparam integer L_ROWS_W = ARRAY_ROWS * LSE_W;
+  localparam integer ACC_ROW_W = ARRAY_COLS * ACC_W;
+  localparam integer OUT_ROW_W = ARRAY_COLS * OUT_W;
+  localparam [((ARRAY_ROWS < 2) ? 1 : $clog2(ARRAY_ROWS))-1:0] ARRAY_ROW_LAST = ARRAY_ROWS - 1;
 
   wire cfg_start_w;
   wire cfg_soft_reset_w;
@@ -117,16 +138,16 @@ module attention_accel_top (
   wire kv_active_bank_w;
   wire cache_protocol_error_w;
   wire q_cache_rd_en_w;
-  wire [9:0] q_cache_rd_addr_w;
-  wire [255:0] q_cache_rd_data_w;
+  wire [CACHE_ADDR_W-1:0] q_cache_rd_addr_w;
+  wire [CACHE_WORD_W-1:0] q_cache_rd_data_w;
   wire q_cache_rd_valid_w;
   wire k_cache_rd_en_w;
-  wire [9:0] k_cache_rd_addr_w;
-  wire [255:0] k_cache_rd_data_w;
+  wire [CACHE_ADDR_W-1:0] k_cache_rd_addr_w;
+  wire [CACHE_WORD_W-1:0] k_cache_rd_data_w;
   wire k_cache_rd_valid_w;
   wire v_cache_rd_en_w;
-  wire [9:0] v_cache_rd_addr_w;
-  wire [255:0] v_cache_rd_data_w;
+  wire [CACHE_ADDR_W-1:0] v_cache_rd_addr_w;
+  wire [CACHE_WORD_W-1:0] v_cache_rd_data_w;
   wire v_cache_rd_valid_w;
   wire q_consume_w;
   wire q_switch_w;
@@ -142,50 +163,50 @@ module attention_accel_top (
   wire qk_array_clear_w;
   wire qk_array_valid_w;
   wire qk_array_last_w;
-  wire [511:0] qk_array_rows_w;
-  wire [511:0] qk_array_cols_w;
+  wire [ARRAY_ROW_W-1:0] qk_array_rows_w;
+  wire [ARRAY_COL_W-1:0] qk_array_cols_w;
   wire qk_done_w;
   wire qk_error_w;
-  wire [32*32*32-1:0] score_tile_w;
+  wire [MATRIX_W-1:0] score_tile_w;
   wire pv_array_load_w;
-  wire [32*32*32-1:0] pv_array_load_matrix_w;
+  wire [MATRIX_W-1:0] pv_array_load_matrix_w;
   wire pv_array_valid_w;
   wire pv_array_last_w;
-  wire [511:0] pv_array_rows_w;
-  wire [511:0] pv_array_cols_w;
+  wire [ARRAY_ROW_W-1:0] pv_array_rows_w;
+  wire [ARRAY_COL_W-1:0] pv_array_cols_w;
   wire pv_engine_done_w;
   wire pv_engine_error_w;
   wire array_valid_w;
   wire array_last_w;
-  wire [32*32*32-1:0] array_matrix_w;
+  wire [MATRIX_W-1:0] array_matrix_w;
 
   wire softmax_start_w;
   wire softmax_clear_rows_w;
-  wire [32*32*16-1:0] beta_tile_w;
-  wire [511:0] alpha_rows_w;
-  wire [511:0] m_rows_w;
-  wire [1023:0] l_rows_w;
+  wire [BETA_TILE_W-1:0] beta_tile_w;
+  wire [ALPHA_ROWS_W-1:0] alpha_rows_w;
+  wire [ALPHA_ROWS_W-1:0] m_rows_w;
+  wire [L_ROWS_W-1:0] l_rows_w;
   wire softmax_done_w;
   wire softmax_error_w;
 
   wire pv_old_rd_en_w;
-  wire [4:0] pv_old_rd_row_w;
+  wire [((ARRAY_ROWS < 2) ? 1 : $clog2(ARRAY_ROWS))-1:0] pv_old_rd_row_w;
   wire pv_old_rd_half_w;
-  wire [1023:0] acc_rd_data_w;
+  wire [ACC_ROW_W-1:0] acc_rd_data_w;
   wire acc_rd_valid_w;
   wire pv_row_valid_w;
-  wire [4:0] pv_row_index_w;
+  wire [((ARRAY_ROWS < 2) ? 1 : $clog2(ARRAY_ROWS))-1:0] pv_row_index_w;
   wire pv_row_half_w;
-  wire [1023:0] pv_row_data_w;
+  wire [ACC_ROW_W-1:0] pv_row_data_w;
 
   reg [3:0] pv_flow_state_q;
   reg pv_half_q;
   reg pv_complete_q;
-  reg [4:0] norm_row_q;
+  reg [((ARRAY_ROWS < 2) ? 1 : $clog2(ARRAY_ROWS))-1:0] norm_row_q;
   reg norm_half_q;
   wire norm_acc_rd_en_w;
   wire norm_valid_w;
-  wire [255:0] norm_row_data_w;
+  wire [OUT_ROW_W-1:0] norm_row_data_w;
   wire [31:0] norm_l_w;
 
   wire output_stream_start_w;
@@ -275,7 +296,7 @@ module attention_accel_top (
   assign kv_consume_w = pv_complete_q;
   assign kv_switch_w = load_kv_en_w && !kv_active_valid_w && kv_next_valid_w;
 
-  qkv_tile_cache u_tile_cache (
+  qkv_tile_cache #(.ADDR_W(CACHE_ADDR_W)) u_tile_cache (
     .clk(clk), .rst_n(rst_n), .clear_i(cfg_soft_reset_w),
     .load_kind_i(tile_load_kind_i), .load_bank_i(tile_load_bank_i), .load_addr_i(tile_load_addr_i),
     .load_half_i(tile_load_half_i), .load_data_i(tile_load_data_i), .load_valid_i(tile_load_valid_i),
@@ -301,7 +322,11 @@ module attention_accel_top (
     .qk_go_o(qk_go_w), .pv_go_o(pv_go_w), .busy_o(), .error_o(array_controller_error_w)
   );
 
-  qk_engine u_qk_engine (
+  qk_engine #(
+    .CACHE_ADDR_W(CACHE_ADDR_W), .CACHE_WORD_W(CACHE_WORD_W),
+    .ARRAY_ROWS(ARRAY_ROWS), .ARRAY_COLS(ARRAY_COLS),
+    .ARRAY_DATA_W(ARRAY_DATA_W), .ACC_W(ACC_W)
+  ) u_qk_engine (
     .clk(clk), .rst_n(rst_n), .clear_i(cfg_soft_reset_w), .start_i(qk_go_w), .head_dim_i(cfg_head_dim_w),
     .q_rd_en_o(q_cache_rd_en_w), .q_rd_addr_o(q_cache_rd_addr_w), .q_rd_data_i(q_cache_rd_data_w), .q_rd_valid_i(q_cache_rd_valid_w),
     .k_rd_en_o(k_cache_rd_en_w), .k_rd_addr_o(k_cache_rd_addr_w), .k_rd_data_i(k_cache_rd_data_w), .k_rd_valid_i(k_cache_rd_valid_w),
@@ -311,7 +336,11 @@ module attention_accel_top (
     .score_tile_o(score_tile_w), .done_o(qk_done_w), .busy_o(), .error_o(qk_error_w)
   );
 
-  pv_engine u_pv_engine (
+  pv_engine #(
+    .CACHE_ADDR_W(CACHE_ADDR_W), .CACHE_WORD_W(CACHE_WORD_W),
+    .ARRAY_ROWS(ARRAY_ROWS), .ARRAY_COLS(ARRAY_COLS),
+    .ARRAY_DATA_W(ARRAY_DATA_W), .ACC_W(ACC_W), .BETA_W(BETA_W)
+  ) u_pv_engine (
     .clk(clk), .rst_n(rst_n), .clear_i(cfg_soft_reset_w), .start_i(pv_go_w),
     .feature_half_i(pv_half_q), .first_kv_tile_i(kv_tile_index_w == 0),
     .beta_tile_i(beta_tile_w), .alpha_rows_i(alpha_rows_w),
@@ -327,7 +356,10 @@ module attention_accel_top (
     .done_o(pv_engine_done_w), .busy_o(), .error_o(pv_engine_error_w)
   );
 
-  os_fsa_array u_array (
+  os_fsa_array #(
+    .ROWS(ARRAY_ROWS), .COLS(ARRAY_COLS), .DATA_W(ARRAY_DATA_W),
+    .ACC_W(ACC_W), .STRIPE_ROWS(STRIPE_ROWS)
+  ) u_array (
     .clk(clk), .rst_n(rst_n),
     .valid_i(array_phase_w == `ATTN_ARRAY_PHASE_QK ? qk_array_valid_w : pv_array_valid_w),
     .last_i(array_phase_w == `ATTN_ARRAY_PHASE_QK ? qk_array_last_w : pv_array_last_w),
@@ -471,7 +503,7 @@ module attention_accel_top (
           if (norm_valid_w) begin
             if (norm_half_q) begin
               norm_half_q <= 1'b0;
-              if (norm_row_q == 31) pv_flow_state_q <= PV_FLOW_COMPLETE;
+              if (norm_row_q == ARRAY_ROW_LAST) pv_flow_state_q <= PV_FLOW_COMPLETE;
               else begin norm_row_q <= norm_row_q + 1'b1; pv_flow_state_q <= PV_FLOW_NORM_READ; end
             end else begin
               norm_half_q <= 1'b1;

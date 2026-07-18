@@ -1,6 +1,8 @@
 `timescale 1ns/1ps
+`include "tb_fsdb.svh"
 
 module tb_asic_sram_backend;
+  `TB_FSDB_DUMP("tb_asic_sram_backend.fsdb", tb_asic_sram_backend)
   reg clk;
   reg rst_n;
   reg wr_en;

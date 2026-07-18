@@ -1,7 +1,9 @@
 `timescale 1ns/1ps
+`include "tb_fsdb.svh"
 `include "attention_defines.vh"
 
 module tb_os_fsa_pe;
+  `TB_FSDB_DUMP("tb_os_fsa_pe.fsdb", tb_os_fsa_pe)
   reg clk;
   reg rst_n;
   reg valid_i;
@@ -46,6 +48,28 @@ module tb_os_fsa_pe;
     end
   endtask
 
+  task send_continuous_mac;
+    @(negedge clk);
+    clear_acc_i = 1; 
+    @(negedge clk); 
+    clear_acc_i = 0;
+    mode_i = `ATTN_PE_MAC_INT8;
+    valid_i = 1;
+    last_i = 0;
+    operand_a_i = 16'sd1; operand_b_i = 16'sd2; 
+    @(negedge clk);
+    operand_a_i = 16'sd3; operand_b_i = 16'sd4; 
+    @(negedge clk);
+    operand_a_i = 16'sd5; operand_b_i = 16'sd6; 
+    @(negedge clk);
+    operand_a_i = 16'sd7; operand_b_i = 16'sd8; last_i = 1;
+    @(negedge clk);
+    valid_i = 0;
+    last_i = 0;
+    wait (last_o);  
+    #1;
+  endtask
+
   initial begin
     clk = 0; rst_n = 0; valid_i = 0; last_i = 0; mode_i = `ATTN_PE_HOLD;
     clear_acc_i = 0; load_acc_i = 0; load_data_i = 0; operand_a_i = 0; operand_b_i = 0;
@@ -54,10 +78,18 @@ module tb_os_fsa_pe;
     send_op(`ATTN_PE_MAC_INT8, 16'sd3, -16'sd2, 1'b0);
     send_op(`ATTN_PE_MAC_INT8, -16'sd4, 16'sd5, 1'b1);
     if (acc_o !== -32'sd26 || !last_o) $fatal(1, "MAC accumulation mismatch: %0d", acc_o);
+    if (dut.scale_product_w !== 0) $fatal(1, "SCALE product must be zero in MAC mode");
+    @(negedge clk); clear_acc_i = 1; @(negedge clk); clear_acc_i = 0;
+    send_op(`ATTN_PE_MAC_INT8, 16'sd127, -16'sd128, 1'b0);
+    if (acc_o !== -32'sd16256) $fatal(1, "INT8 boundary MAC mismatch: %0d", acc_o);
     send_op(`ATTN_PE_SUB, 16'sd9, 16'sd4, 1'b0);
     if (result_o !== 32'sd5) $fatal(1, "SUB mismatch: %0d", result_o);
+    if (dut.product_w !== 0) $fatal(1, "MAC product must be zero in SUB mode");
     send_op(`ATTN_PE_MAX_PASS, -16'sd3, -16'sd7, 1'b0);
     if (result_o !== -32'sd3) $fatal(1, "MAX mismatch: %0d", result_o);
+    
+    send_continuous_mac();
+    if (acc_o !== 32'sd100) $fatal(1, "Continuous MAC mismatch: expected 100, got %0d", acc_o);
     $display("[PASS] tb_os_fsa_pe");
     $finish;
   end

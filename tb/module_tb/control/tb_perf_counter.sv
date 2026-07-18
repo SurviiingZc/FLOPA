@@ -1,6 +1,8 @@
 `timescale 1ns/1ps
+`include "tb_fsdb.svh"
 
 module tb_perf_counter;
+  `TB_FSDB_DUMP("tb_perf_counter.fsdb", tb_perf_counter)
   reg clk;
   reg rst_n;
   reg clear_i;

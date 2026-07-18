@@ -65,7 +65,7 @@ INT8 GEMM + BF16/FP-like softmax 的混合精度路线：
 | --- | --- | --- |
 | P0 | 单头 32x32x64 attention tile | 打通 QK、softmax、PV |
 | P1 | MHA，heads=9，head_dim=64 | 跑通可配置 seq_len |
-| P2 | Re10K seq=576 实测 | 对齐 `up/down_blocks_2_*` |
+| P2 | Re10K seq=8192 实测 | 对齐 `up/down_blocks_2_*`；单 head Q/K/V 为 `8192x64` |
 | P3 | 流式 K/V tile + ping-pong | 给带宽优化实测 |
 | P4 | GQA 扩展验证 | 共享 K/V heads，作为创新点 |
 
@@ -121,8 +121,8 @@ scale = 1 / sqrt(head_dim)
 - batch：第一版 batch=1，后续参数化到 4。
 - num_q_heads：第一版固定 9，寄存器保留可配置字段。
 - num_kv_heads：MHA 下等于 9，GQA 扩展时小于 num_q_heads。
-- seq_q：16-bit 可配置，首测 576，验证到 1024。
-- seq_kv：16-bit 可配置，首测 576，验证到 1024。
+- seq_q：16-bit 可配置；Re10K 真实长度为 8192，短序列仅用于 tile/smoke 回归。
+- seq_kv：16-bit 可配置；Re10K 真实长度为 8192，短序列仅用于 tile/smoke 回归。
 - head_dim：第一版固定 64。
 
 `seq_len` 的边界分为三层：
@@ -130,8 +130,8 @@ scale = 1 / sqrt(head_dim)
 | 类型 | 数值 | 含义 |
 | --- | --- | --- |
 | 架构上限 | 65535 | 由 16-bit seq 寄存器和 tile counter 决定 |
-| 首版验证上限 | 1024 | UVM 回归和性能模型覆盖到该规模 |
-| Re10K 实测点 | 576 | 对齐 `hidden=576` 的 attention block |
+| 首版仿真验证上限 | 1024 | UVM 回归和性能模型覆盖到该规模 |
+| Re10K 板级实测点 | 8192 | `hidden=576`、`heads=9`、`head_dim=64`；单 head 激活为 `8192x64` |
 
 由于 K/V 采用 tile 流式读取，架构上限不受片上 KV cache 容量直接限制。更长
 序列只会增加 tile 循环次数、外部带宽需求和总运行时间。
@@ -1288,8 +1288,10 @@ INT8 权重、量化参数和 attention dump：
 首版建议分三档验证：
 
 1. Core tile：`Bq=32`、`Bk=32`、`head_dim=64`，用于 RTL 快速回归。
-2. 可配置序列：`seq_len=32/64/144/576`，验证尾块和调度。
-3. Re10K 首测：`seq=576`、`hidden=576`、`heads=9`、`head_dim=64`。
+2. 短序列回归：`seq_len=32/64/144/576`，仅验证尾块和调度，不代表 Re10K
+   的真实序列长度。
+3. Re10K 首测：`seq_len=8192`、`hidden=576`、`heads=9`、`head_dim=64`；
+   Q/K/V projection 均为 `576x576`，每个 head 的 Q/K/V 激活均为 `8192x64`。
 
 真实网络接入顺序：
 
@@ -1381,8 +1383,9 @@ INT8 权重、量化参数和 attention dump：
 3. 实现 Q/K/V 同规格 banked SRAM tile cache，其中 K/V 合计 128 KB，Q/K/V 合计 192 KB。
 4. 实现 AXI slave 配置/输入和 AXI master 输出。
 5. 跑通一个 32x32x64 的 Attention。
-6. 扩展到可配置 `seq_len`，覆盖 32/64/144/576。
-7. 跑 Re10K `seq=576, heads=9, head_dim=64`，得到真实网络数据。
+6. 扩展到可配置 `seq_len`，用 32/64/144/576 做短序列尾块回归，并覆盖 8192。
+7. 跑 Re10K `seq_len=8192, heads=9, head_dim=64`，得到真实网络数据；
+   单 head Q/K/V 激活形状为 `8192x64`。
 
 后续优化优先级：
 

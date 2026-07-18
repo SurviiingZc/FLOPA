@@ -5,7 +5,8 @@ module os_fsa_array #(
   parameter ROWS = `ATTN_ARRAY_ROWS,
   parameter COLS = `ATTN_ARRAY_COLS,
   parameter DATA_W = `ATTN_ARRAY_DATA_W,
-  parameter ACC_W = `ATTN_ACC_W
+  parameter ACC_W = `ATTN_ACC_W,
+  parameter STRIPE_ROWS = `ATTN_ARRAY_STRIPE_ROWS
 )(
   input                              clk,
   input                              rst_n,
@@ -33,16 +34,16 @@ module os_fsa_array #(
   genvar col;
 
   generate
-    for (stripe = 0; stripe < ROWS/8; stripe = stripe + 1) begin : g_stripe
-    //seperate the whole array into stripes of 8 rows each, and instantiate 8xCOLS PEs for each stripe
+    for (stripe = 0; stripe < ROWS/STRIPE_ROWS; stripe = stripe + 1) begin : g_stripe
+    // Partition the array into STRIPE_ROWS x COLS registered stripes.
       reg stripe_valid_q;
       reg stripe_last_q;
       reg [2:0] stripe_mode_q;
       reg stripe_clear_q;
       reg stripe_load_q;
-      reg [8*DATA_W-1:0] stripe_rows_q;
+      reg [STRIPE_ROWS*DATA_W-1:0] stripe_rows_q;
       reg [COLS*DATA_W-1:0] stripe_cols_q;
-      reg [8*COLS*ACC_W-1:0] stripe_load_matrix_q;
+      reg [STRIPE_ROWS*COLS*ACC_W-1:0] stripe_load_matrix_q;
       reg signed [15:0] stripe_scale_q;
       reg [5:0] stripe_shift_q;
 
@@ -53,9 +54,9 @@ module os_fsa_array #(
           stripe_mode_q <= `ATTN_PE_HOLD;
           stripe_clear_q <= 1'b0;
           stripe_load_q <= 1'b0;
-          stripe_rows_q <= {(8*DATA_W){1'b0}};
+          stripe_rows_q <= {(STRIPE_ROWS*DATA_W){1'b0}};
           stripe_cols_q <= {(COLS*DATA_W){1'b0}};
-          stripe_load_matrix_q <= {(8*COLS*ACC_W){1'b0}};
+          stripe_load_matrix_q <= {(STRIPE_ROWS*COLS*ACC_W){1'b0}};
           stripe_scale_q <= 16'sd0;
           stripe_shift_q <= 6'd0;
         end else begin
@@ -64,17 +65,17 @@ module os_fsa_array #(
           stripe_mode_q <= mode_i;
           stripe_clear_q <= clear_acc_i;
           stripe_load_q <= load_acc_i;
-          stripe_rows_q <= row_data_i[stripe*8*DATA_W +: 8*DATA_W];
+          stripe_rows_q <= row_data_i[stripe*STRIPE_ROWS*DATA_W +: STRIPE_ROWS*DATA_W];
           stripe_cols_q <= col_data_i;
-          stripe_load_matrix_q <= load_matrix_i[stripe*8*COLS*ACC_W +: 8*COLS*ACC_W];
+          stripe_load_matrix_q <= load_matrix_i[stripe*STRIPE_ROWS*COLS*ACC_W +: STRIPE_ROWS*COLS*ACC_W];
           stripe_scale_q <= scale_mant_i;
           stripe_shift_q <= scale_shift_i;
         end
       end
 
-      for (local_row = 0; local_row < 8; local_row = local_row + 1) begin : g_row
+      for (local_row = 0; local_row < STRIPE_ROWS; local_row = local_row + 1) begin : g_row
         for (col = 0; col < COLS; col = col + 1) begin : g_col
-          localparam integer ROW_INDEX = stripe*8 + local_row;
+          localparam integer ROW_INDEX = stripe*STRIPE_ROWS + local_row;
           wire pe_valid_w;
           wire pe_last_w;
           wire signed [ACC_W-1:0] pe_result_w;

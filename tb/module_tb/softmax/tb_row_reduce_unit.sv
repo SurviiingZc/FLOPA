@@ -1,7 +1,9 @@
 `timescale 1ns/1ps
+`include "tb_fsdb.svh"
 `include "attention_defines.vh"
 
 module tb_row_reduce_unit;
+  `TB_FSDB_DUMP("tb_row_reduce_unit.fsdb", tb_row_reduce_unit)
   reg clk;
   reg rst_n;
   reg valid_i;

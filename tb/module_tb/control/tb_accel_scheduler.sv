@@ -1,7 +1,9 @@
 `timescale 1ns/1ps
+`include "tb_fsdb.svh"
 `include "attention_defines.vh"
 
 module tb_accel_scheduler;
+  `TB_FSDB_DUMP("tb_accel_scheduler.fsdb", tb_accel_scheduler)
   reg clk;
   reg rst_n;
   reg start_i;

@@ -1,7 +1,9 @@
 `timescale 1ns/1ps
+`include "tb_fsdb.svh"
 `include "attention_defines.vh"
 
 module tb_attention_accel_top;
+  `TB_FSDB_DUMP("tb_attention_accel_top.fsdb", tb_attention_accel_top)
   reg clk;
   reg rst_n;
   reg [31:0] awaddr;
