@@ -175,25 +175,21 @@ The first version should keep one primary clock domain for RTL simplicity.
 
 | File | Purpose | Design Notes |
 | --- | --- | --- |
-| `rtl/compute/os_fsa_pe.v` | Single PE | INT8 MAC, subtract, compare/pass, scale/pass modes. Keep PE local logic small and pipelined. |
-| `rtl/compute/os_fsa_array.v` | 32x32 PE array | Organize row/column data movement, registered broadcast, and output-stationary accumulation. |
+| `rtl/compute/os_fsa_fused_pe.v` | Active fused PE | Holds score, probability, and O accumulator state; implements local max/subtract/sum and restream links. |
+| `rtl/compute/os_fsa_fused_array.v` | Active 32x32 FSA-style OS array | Registered input skew, PE-local online softmax, shared 32-lane exp, probability restream, and PV. |
+| `rtl/compute/os_fsa_delay_line.v` | Systolic skew stage | Registers row/column boundary data and valid/last tokens. |
 | `rtl/compute/os_fsa_controller.v` | Array mode controller | Controls QK/PV phases, PE modes, score hold, and beta stream timing. |
 | `rtl/compute/scale_requant_unit.v` | Fixed-point rescale/requantization | Signed multiply, shift, round, saturate, and optional zero-point add. |
-| `rtl/compute/qk_engine.v` | QK wrapper | Reads Q/K tiles, drives array, emits score tile stream. |
-| `rtl/compute/pv_engine.v` | PV wrapper | Drives beta and V tile into the array, emits O accumulation. |
+| `rtl/compute/fsa_qk_engine.v` | Active QK wrapper | Reads Q/K tiles and drives the fused array without score/matrix output ports. |
+| `rtl/compute/fsa_pv_engine.v` | Active PV wrapper | Restores one O-accumulator row at a time and streams V; probability remains inside the PE array. |
 
 ### 6.6 Softmax
 
 | File | Purpose | Design Notes |
 | --- | --- | --- |
-| `rtl/softmax/softmax_engine.v` | Softmax path top | Connect mask, row reduce, exp, LSE update, and normalizer. Keep each stage separately testable. |
-| `rtl/softmax/row_reduce_unit.v` | Row max and row sum | Use balanced reduction trees and pipeline registers. |
-| `rtl/softmax/row_broadcast.v` | Row-state broadcast | Replicate/register row state to avoid high fanout. |
-| `rtl/softmax/causal_mask.v` | Masking | Convert invalid score positions to negative infinity or minimum representable value. |
 | `rtl/softmax/pwl_exp_unit.v` | PWL exp approximation | Pipelined piecewise-linear exp approximation for non-positive inputs. |
-| `rtl/softmax/block_lse_update.v` | Online LSE update | Implements stable `m` and `l` update across K/V tiles. |
 | `rtl/softmax/reciprocal_lut.v` | Reciprocal seed/LUT | Provides reciprocal approximation for final normalization. |
-| `rtl/softmax/online_normalizer.v` | Final normalization | Computes final `O_acc / l_final` with pipelined multiply/shift or reciprocal refinement. |
+| `rtl/softmax/online_normalizer.v` | Final normalization | Pipelined reciprocal alignment, normalization multiply, scale multiply, shift, and saturation. |
 
 ### 6.7 Memory
 

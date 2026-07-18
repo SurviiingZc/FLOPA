@@ -94,7 +94,7 @@ module scale_requant_unit #(
       end
       if (valid_s0_q) begin
         product_s1_q <= $signed({{SCALE_W{data_s0_q[IN_W-1]}}, data_s0_q}) *
-                        $signed({{IN_W{scale_s0_q[SCALE_W-1]}}, scale_s0_q});
+                        $signed(scale_s0_q);
         shift_s1_q <= shift_s0_q;
         zp_s1_q <= zp_s0_q;
         round_s1_q <= round_s0_q;

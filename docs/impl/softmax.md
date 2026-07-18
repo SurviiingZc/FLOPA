@@ -4,14 +4,16 @@
 
 This document defines the implementation strategy for the softmax path:
 
-- `rtl/softmax/softmax_engine.v`
-- `rtl/softmax/row_reduce_unit.v`
-- `rtl/softmax/row_broadcast.v`
-- `rtl/softmax/causal_mask.v`
 - `rtl/softmax/pwl_exp_unit.v`
-- `rtl/softmax/block_lse_update.v`
 - `rtl/softmax/reciprocal_lut.v`
 - `rtl/softmax/online_normalizer.v`
+- `rtl/compute/os_fsa_fused_pe.v`
+- `rtl/compute/os_fsa_fused_array.v`
+
+The online-softmax control, row maximum, score subtraction, probability
+writeback, row sum, and `(m,l)` update are integrated into
+`os_fsa_fused_array`. Only the 32-lane PWL exp pipeline is shared outside the
+PEs; final reciprocal normalization remains a separate pipelined output stage.
 
 ## 2. Design Basis
 
@@ -29,11 +31,13 @@ Implications:
 2. Keep row state in registers.
 3. Use block-wise recurrence.
 4. Make the exp domain explicit and limited.
-5. Keep the softmax path fully pipelined and separated from the array datapath.
+5. Keep reductions and score/probability storage inside the array, with only the
+   shared exp and final normalizer as separate registered pipelines.
 
 ## 3. High-Level Organization
 
-The softmax path should be a separate pipeline, not a random collection of combinational helpers.
+The softmax schedule is controlled as a registered array phase. Data remains in
+the PE fabric except while a row is passing through the shared exp pipeline.
 
 Recommended macro stages:
 
@@ -88,13 +92,15 @@ Row reduction computes row maximum and row sum.
 
 ### 6.2 Preferred Structure
 
-Use a balanced tree, not a long serial chain.
+Use the registered PE-to-PE row path. It is a systolic reduction, not a
+single-cycle combinational chain.
 
-Recommended implementation:
+Implemented structure:
 
-- Local lane reduction inside a stripe.
-- Registered local reduction output.
-- Final merge stage across stripes if needed.
+- column `c` receives the registered partial max/sum from column `c-1`;
+- each column completes one cycle later than its left neighbor;
+- the path is cut by a register at every PE;
+- all rows reduce in parallel.
 
 This style matches the common systolic-array pattern and keeps timing manageable.
 
@@ -165,17 +171,21 @@ The recurrence should be registered. Do not make block LSE a single long datapat
 
 ## 9. Beta Streaming
 
-Beta is the softmax probability stream feeding PV.
+Probability is stored in the PE that owns the corresponding score and is then
+restreamed directly into PV.
 
 ### 9.1 Rules
 
-- Beta should be emitted as a stream or narrow buffered tile.
-- Beta should be aligned to the same row ordering as the array output.
-- Beta should not require a full matrix buffer.
+- Do not expose a full beta matrix port.
+- Load shared-exp results back into PE-local probability registers.
+- Shift probability registers toward the left boundary only when the matching
+  V word is valid.
+- Keep beta/probability off external SRAM and BRAM.
 
 ### 9.2 Timing Rule
 
-Beta must be registered before entering PV.
+Every probability hop is registered inside a PE. A V bubble must also stop the
+probability shift so the two streams remain aligned.
 
 ## 10. Reciprocal and Final Normalization
 
@@ -199,17 +209,19 @@ The final normalization stage should compute `O_acc / l_final` with one of the f
 
 ## 11. Softmax Engine Top-Level
 
-The softmax engine should orchestrate the submodules but not absorb all logic into one monolithic always block.
+`os_fsa_fused_array` orchestrates the phase and row-state control. Arithmetic
+and data storage remain in the PE or dedicated lane pipelines.
 
 Recommended structure:
 
-- input register / lane aligner,
-- mask,
-- reduction stage,
-- exp stage,
-- update stage,
-- normalize stage,
-- output register.
+- PE-local score and mask state;
+- registered rowmax pass;
+- reverse `m_new` restream and local subtraction;
+- shared scale/exp lane pipeline;
+- PE-local probability writeback and rowsum pass;
+- row-state update;
+- PE-local probability restream into PV;
+- separately pipelined final normalizer.
 
 ## 12. First-Version Strategy
 

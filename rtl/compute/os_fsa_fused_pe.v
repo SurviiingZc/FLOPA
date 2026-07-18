@@ -1,0 +1,187 @@
+`timescale 1ns/1ps
+`include "attention_defines.vh"
+
+module os_fsa_fused_pe #(
+  parameter integer DATA_W = `ATTN_ARRAY_DATA_W,
+  parameter integer SCORE_W = `ATTN_ACC_W,
+  parameter integer PROB_W = `ATTN_BETA_W,
+  parameter integer ACC_W = `ATTN_ACC_W,
+  parameter integer SUM_W = `ATTN_LSE_W
+)(
+  input                         clk,
+  input                         rst_n,
+  input                         clear_i,
+  input                         clear_score_i,
+  input                         clear_acc_i,
+  input                         load_acc_i,
+  input      [ACC_W-1:0]        load_acc_data_i,
+  input                         mac_is_pv_i,
+
+  input                         q_valid_i,
+  input                         q_last_i,
+  input      [DATA_W-1:0]       q_data_i,
+  output reg                    q_valid_o,
+  output reg                    q_last_o,
+  output reg [DATA_W-1:0]       q_data_o,
+
+  input                         k_valid_i,
+  input                         k_last_i,
+  input      [DATA_W-1:0]       k_data_i,
+  output reg                    k_valid_o,
+  output reg                    k_last_o,
+  output reg [DATA_W-1:0]       k_data_o,
+
+  input                         score_lane_valid_i,
+  output     [SCORE_W-1:0]      score_o,
+
+  input                         max_valid_i,
+  input      [SCORE_W-1:0]      max_data_i,
+  output reg                    max_valid_o,
+  output reg [SCORE_W-1:0]      max_data_o,
+
+  input                         m_valid_i,
+  input      [SCORE_W-1:0]      m_data_i,
+  output reg                    m_valid_o,
+  output reg [SCORE_W-1:0]      m_data_o,
+  output     [SCORE_W-1:0]      delta_o,
+
+  input                         prob_load_i,
+  input      [PROB_W-1:0]       prob_data_i,
+  output     [PROB_W-1:0]       prob_o,
+  input                         prob_shift_load_i,
+  input                         prob_shift_en_i,
+  input      [PROB_W-1:0]       prob_shift_i,
+  output     [PROB_W-1:0]       prob_shift_o,
+
+  input                         sum_valid_i,
+  input      [SUM_W-1:0]        sum_data_i,
+  output reg                    sum_valid_o,
+  output reg [SUM_W-1:0]        sum_data_o,
+
+  output reg                    mac_valid_o,
+  output reg                    mac_last_o,
+  output     [ACC_W-1:0]        acc_o
+);
+
+  localparam signed [SCORE_W-1:0] SCORE_MIN = {1'b1, {(SCORE_W-1){1'b0}}};
+
+  reg signed [SCORE_W-1:0] score_q;
+  reg signed [SCORE_W-1:0] delta_q;
+  reg [PROB_W-1:0] prob_q;
+  reg [PROB_W-1:0] prob_shift_q;
+  reg signed [ACC_W-1:0] acc_q;
+  reg signed [2*DATA_W-1:0] product_w;
+  reg signed [ACC_W:0] acc_next_w;
+  reg signed [SCORE_W-1:0] max_score_w;
+
+  assign score_o = score_q;
+  assign delta_o = delta_q;
+  assign prob_o = prob_q;
+  assign prob_shift_o = prob_shift_q;
+  assign acc_o = acc_q;
+
+  always @(*) begin
+    product_w = $signed({{DATA_W{q_data_i[DATA_W-1]}}, q_data_i}) *
+                $signed({{DATA_W{k_data_i[DATA_W-1]}}, k_data_i});
+    if (mac_is_pv_i)
+      acc_next_w = {acc_q[ACC_W-1], acc_q} +
+                   {{(ACC_W+1-2*DATA_W){product_w[2*DATA_W-1]}}, product_w};
+    else
+      acc_next_w = {score_q[SCORE_W-1], score_q} +
+                   {{(SCORE_W+1-2*DATA_W){product_w[2*DATA_W-1]}}, product_w};
+    max_score_w = score_lane_valid_i ? score_q : SCORE_MIN;
+  end
+
+  always @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      q_valid_o <= 1'b0;
+      q_last_o <= 1'b0;
+      q_data_o <= {DATA_W{1'b0}};
+      k_valid_o <= 1'b0;
+      k_last_o <= 1'b0;
+      k_data_o <= {DATA_W{1'b0}};
+      max_valid_o <= 1'b0;
+      max_data_o <= SCORE_MIN;
+      m_valid_o <= 1'b0;
+      m_data_o <= {SCORE_W{1'b0}};
+      sum_valid_o <= 1'b0;
+      sum_data_o <= {SUM_W{1'b0}};
+      mac_valid_o <= 1'b0;
+      mac_last_o <= 1'b0;
+      score_q <= {SCORE_W{1'b0}};
+      delta_q <= SCORE_MIN;
+      prob_q <= {PROB_W{1'b0}};
+      prob_shift_q <= {PROB_W{1'b0}};
+      acc_q <= {ACC_W{1'b0}};
+    end else if (clear_i) begin
+      q_valid_o <= 1'b0;
+      q_last_o <= 1'b0;
+      k_valid_o <= 1'b0;
+      k_last_o <= 1'b0;
+      max_valid_o <= 1'b0;
+      m_valid_o <= 1'b0;
+      sum_valid_o <= 1'b0;
+      mac_valid_o <= 1'b0;
+      mac_last_o <= 1'b0;
+      score_q <= {SCORE_W{1'b0}};
+      delta_q <= SCORE_MIN;
+      prob_q <= {PROB_W{1'b0}};
+      prob_shift_q <= {PROB_W{1'b0}};
+      acc_q <= {ACC_W{1'b0}};
+    end else begin
+      q_valid_o <= q_valid_i;
+      q_last_o <= q_valid_i && q_last_i;
+      k_valid_o <= k_valid_i;
+      k_last_o <= k_valid_i && k_last_i;
+      max_valid_o <= max_valid_i;
+      m_valid_o <= m_valid_i;
+      sum_valid_o <= sum_valid_i;
+      mac_valid_o <= q_valid_i && k_valid_i;
+      mac_last_o <= q_valid_i && k_valid_i && q_last_i && k_last_i;
+
+      if (q_valid_i) q_data_o <= q_data_i;
+      if (k_valid_i) k_data_o <= k_data_i;
+
+      if (clear_score_i) begin
+        score_q <= {SCORE_W{1'b0}};
+      end else if (q_valid_i && k_valid_i && !mac_is_pv_i) begin
+        score_q <= acc_next_w[SCORE_W-1:0];
+      end
+
+      if (clear_acc_i) begin
+        acc_q <= {ACC_W{1'b0}};
+      end else if (load_acc_i) begin
+        acc_q <= load_acc_data_i;
+      end else if (q_valid_i && k_valid_i && mac_is_pv_i) begin
+        acc_q <= acc_next_w[ACC_W-1:0];
+      end
+
+      if (max_valid_i) begin
+        if ($signed(max_score_w) >= $signed(max_data_i))
+          max_data_o <= max_score_w;
+        else
+          max_data_o <= max_data_i;
+      end
+
+      if (m_valid_i) begin
+        m_data_o <= m_data_i;
+        if (score_lane_valid_i)
+          delta_q <= $signed(score_q) - $signed(m_data_i);
+        else
+          delta_q <= SCORE_MIN;
+      end
+
+      if (prob_load_i) prob_q <= prob_data_i;
+
+      if (prob_shift_load_i) begin
+        prob_shift_q <= prob_q;
+      end else if (prob_shift_en_i) begin
+        prob_shift_q <= prob_shift_i;
+      end
+
+      if (sum_valid_i)
+        sum_data_o <= sum_data_i + {{(SUM_W-PROB_W){1'b0}}, prob_q};
+    end
+  end
+
+endmodule

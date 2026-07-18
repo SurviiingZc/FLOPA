@@ -23,9 +23,9 @@ set_app_var synthetic_library [list dw_foundation.sldb]
 set_app_var link_library [list "*" $std_db dw_foundation.sldb]
 
 define_design_lib WORK -path [file join $work_dir work]
-analyze -format verilog [file join $root_dir rtl compute os_fsa_pe.v]
-elaborate os_fsa_pe
-current_design os_fsa_pe
+analyze -format verilog [file join $root_dir rtl compute os_fsa_fused_pe.v]
+elaborate os_fsa_fused_pe
+current_design os_fsa_fused_pe
 link
 
 create_clock -name core_clk -period 3.200 [get_ports clk]
@@ -40,9 +40,9 @@ set_max_fanout 16 [current_design]
 
 compile_ultra
 
-set mac_start [add_to_collection [get_pins -hierarchical "a_q_reg*/Q"] \
-                                  [get_pins -hierarchical "b_q_reg*/Q"]]
-set mac_end [get_pins -hierarchical "acc_o_reg*/D"]
+set mac_start [add_to_collection [get_ports q_data_i] [get_ports k_data_i]]
+set mac_end [add_to_collection [get_pins -hierarchical "score_q_reg*/D"] \
+                                [get_pins -hierarchical "acc_q_reg*/D"]]
 
 redirect -file [file join $report_dir timing_all.rpt] {
   report_timing -delay_type max -path_type full_clock_expanded \
@@ -55,5 +55,5 @@ redirect -file [file join $report_dir timing_mac.rpt] {
 redirect -file [file join $report_dir qor.rpt] {report_qor}
 redirect -file [file join $report_dir area.rpt] {report_area -hierarchy}
 redirect -file [file join $report_dir power.rpt] {report_power}
-write -format ddc -hierarchy -output [file join $work_dir os_fsa_pe_mapped.ddc]
+write -format ddc -hierarchy -output [file join $work_dir os_fsa_fused_pe_mapped.ddc]
 exit

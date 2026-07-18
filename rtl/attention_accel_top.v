@@ -66,8 +66,6 @@ module attention_accel_top #(
 
   localparam integer ARRAY_ROW_W = ARRAY_ROWS * ARRAY_DATA_W;
   localparam integer ARRAY_COL_W = ARRAY_COLS * ARRAY_DATA_W;
-  localparam integer MATRIX_W = ARRAY_ROWS * ARRAY_COLS * ACC_W;
-  localparam integer BETA_TILE_W = ARRAY_ROWS * ARRAY_COLS * BETA_W;
   localparam integer ALPHA_ROWS_W = ARRAY_ROWS * BETA_W;
   localparam integer L_ROWS_W = ARRAY_ROWS * LSE_W;
   localparam integer ACC_ROW_W = ARRAY_COLS * ACC_W;
@@ -167,24 +165,24 @@ module attention_accel_top #(
   wire [ARRAY_COL_W-1:0] qk_array_cols_w;
   wire qk_done_w;
   wire qk_error_w;
-  wire [MATRIX_W-1:0] score_tile_w;
-  wire pv_array_load_w;
-  wire [MATRIX_W-1:0] pv_array_load_matrix_w;
+  wire fused_qk_last_w;
+  wire pv_array_start_w;
+  wire pv_array_ready_w;
+  wire pv_array_clear_acc_w;
+  wire pv_array_load_row_valid_w;
+  wire [((ARRAY_ROWS < 2) ? 1 : $clog2(ARRAY_ROWS))-1:0] pv_array_load_row_index_w;
+  wire [ACC_ROW_W-1:0] pv_array_load_row_data_w;
   wire pv_array_valid_w;
   wire pv_array_last_w;
-  wire [ARRAY_ROW_W-1:0] pv_array_rows_w;
   wire [ARRAY_COL_W-1:0] pv_array_cols_w;
   wire pv_engine_done_w;
   wire pv_engine_error_w;
-  wire array_valid_w;
-  wire array_last_w;
-  wire [MATRIX_W-1:0] array_matrix_w;
+  wire fused_array_pv_done_w;
+  wire fused_array_error_w;
 
   wire softmax_start_w;
   wire softmax_clear_rows_w;
-  wire [BETA_TILE_W-1:0] beta_tile_w;
   wire [ALPHA_ROWS_W-1:0] alpha_rows_w;
-  wire [ALPHA_ROWS_W-1:0] m_rows_w;
   wire [L_ROWS_W-1:0] l_rows_w;
   wire softmax_done_w;
   wire softmax_error_w;
@@ -322,66 +320,72 @@ module attention_accel_top #(
     .qk_go_o(qk_go_w), .pv_go_o(pv_go_w), .busy_o(), .error_o(array_controller_error_w)
   );
 
-  qk_engine #(
+  fsa_qk_engine #(
     .CACHE_ADDR_W(CACHE_ADDR_W), .CACHE_WORD_W(CACHE_WORD_W),
     .ARRAY_ROWS(ARRAY_ROWS), .ARRAY_COLS(ARRAY_COLS),
-    .ARRAY_DATA_W(ARRAY_DATA_W), .ACC_W(ACC_W)
+    .ARRAY_DATA_W(ARRAY_DATA_W)
   ) u_qk_engine (
     .clk(clk), .rst_n(rst_n), .clear_i(cfg_soft_reset_w), .start_i(qk_go_w), .head_dim_i(cfg_head_dim_w),
     .q_rd_en_o(q_cache_rd_en_w), .q_rd_addr_o(q_cache_rd_addr_w), .q_rd_data_i(q_cache_rd_data_w), .q_rd_valid_i(q_cache_rd_valid_w),
     .k_rd_en_o(k_cache_rd_en_w), .k_rd_addr_o(k_cache_rd_addr_w), .k_rd_data_i(k_cache_rd_data_w), .k_rd_valid_i(k_cache_rd_valid_w),
     .array_clear_o(qk_array_clear_w), .array_valid_o(qk_array_valid_w), .array_last_o(qk_array_last_w),
     .array_rows_o(qk_array_rows_w), .array_cols_o(qk_array_cols_w),
-    .array_last_i(array_last_w), .array_matrix_i(array_matrix_w),
-    .score_tile_o(score_tile_w), .done_o(qk_done_w), .busy_o(), .error_o(qk_error_w)
+    .array_last_i(fused_qk_last_w),
+    .done_o(qk_done_w), .busy_o(), .error_o(qk_error_w)
   );
 
-  pv_engine #(
+  fsa_pv_engine #(
     .CACHE_ADDR_W(CACHE_ADDR_W), .CACHE_WORD_W(CACHE_WORD_W),
     .ARRAY_ROWS(ARRAY_ROWS), .ARRAY_COLS(ARRAY_COLS),
     .ARRAY_DATA_W(ARRAY_DATA_W), .ACC_W(ACC_W), .BETA_W(BETA_W)
   ) u_pv_engine (
     .clk(clk), .rst_n(rst_n), .clear_i(cfg_soft_reset_w), .start_i(pv_go_w),
     .feature_half_i(pv_half_q), .first_kv_tile_i(kv_tile_index_w == 0),
-    .beta_tile_i(beta_tile_w), .alpha_rows_i(alpha_rows_w),
+    .alpha_rows_i(alpha_rows_w),
     .old_acc_rd_en_o(pv_old_rd_en_w), .old_acc_rd_row_o(pv_old_rd_row_w), .old_acc_rd_half_o(pv_old_rd_half_w),
     .old_acc_rd_data_i(acc_rd_data_w), .old_acc_rd_valid_i(acc_rd_valid_w),
     .v_rd_en_o(v_cache_rd_en_w), .v_rd_addr_o(v_cache_rd_addr_w), .v_rd_data_i(v_cache_rd_data_w), .v_rd_valid_i(v_cache_rd_valid_w),
-    .array_load_o(pv_array_load_w), .array_load_matrix_o(pv_array_load_matrix_w),
+    .array_start_o(pv_array_start_w), .array_ready_i(pv_array_ready_w),
+    .array_clear_acc_o(pv_array_clear_acc_w),
+    .array_load_row_valid_o(pv_array_load_row_valid_w),
+    .array_load_row_index_o(pv_array_load_row_index_w),
+    .array_load_row_data_o(pv_array_load_row_data_w),
     .array_valid_o(pv_array_valid_w), .array_last_o(pv_array_last_w),
-    .array_rows_o(pv_array_rows_w), .array_cols_o(pv_array_cols_w),
-    .array_last_i(array_last_w), .array_matrix_i(array_matrix_w),
-    .row_valid_o(pv_row_valid_w), .row_ready_i(1'b1), .row_index_o(pv_row_index_w),
-    .row_half_o(pv_row_half_w), .row_data_o(pv_row_data_w),
+    .array_cols_o(pv_array_cols_w), .array_done_i(fused_array_pv_done_w),
     .done_o(pv_engine_done_w), .busy_o(), .error_o(pv_engine_error_w)
-  );
-
-  os_fsa_array #(
-    .ROWS(ARRAY_ROWS), .COLS(ARRAY_COLS), .DATA_W(ARRAY_DATA_W),
-    .ACC_W(ACC_W), .STRIPE_ROWS(STRIPE_ROWS)
-  ) u_array (
-    .clk(clk), .rst_n(rst_n),
-    .valid_i(array_phase_w == `ATTN_ARRAY_PHASE_QK ? qk_array_valid_w : pv_array_valid_w),
-    .last_i(array_phase_w == `ATTN_ARRAY_PHASE_QK ? qk_array_last_w : pv_array_last_w),
-    .mode_i(`ATTN_PE_MAC_INT8),
-    .clear_acc_i(array_phase_w == `ATTN_ARRAY_PHASE_QK && qk_array_clear_w),
-    .load_acc_i(array_phase_w == `ATTN_ARRAY_PHASE_PV && pv_array_load_w),
-    .load_matrix_i(pv_array_load_matrix_w),
-    .row_data_i(array_phase_w == `ATTN_ARRAY_PHASE_QK ? qk_array_rows_w : pv_array_rows_w),
-    .col_data_i(array_phase_w == `ATTN_ARRAY_PHASE_QK ? qk_array_cols_w : pv_array_cols_w),
-    .scale_mant_i(16'sd0), .scale_shift_i(6'd0),
-    .valid_o(array_valid_w), .last_o(array_last_w), .matrix_o(array_matrix_w)
   );
 
   assign softmax_start_w = softmax_en_w && !softmax_en_d_q;
   assign softmax_clear_rows_w = load_q_en_w && !load_q_en_d_q;
-  softmax_engine u_softmax (
-    .clk(clk), .rst_n(rst_n), .clear_i(cfg_soft_reset_w), .clear_rows_i(softmax_clear_rows_w),
-    .start_i(softmax_start_w), .score_tile_i(score_tile_w), .score_scale_i(cfg_score_scale_w),
-    .q_base_i(q_tile_base_w), .k_base_i(kv_tile_base_w), .seq_q_i(cfg_seq_q_w), .seq_kv_i(cfg_seq_kv_w),
-    .causal_en_i(cfg_causal_en_w), .beta_tile_o(beta_tile_w), .alpha_rows_o(alpha_rows_w),
-    .m_rows_o(m_rows_w), .l_rows_o(l_rows_w), .done_o(softmax_done_w), .busy_o(), .error_o(softmax_error_w)
+  os_fsa_fused_array #(
+    .ROWS(ARRAY_ROWS), .COLS(ARRAY_COLS), .DATA_W(ARRAY_DATA_W),
+    .SCORE_W(ACC_W), .PROB_W(BETA_W), .ACC_W(ACC_W), .LSE_W(LSE_W)
+  ) u_fused_array (
+    .clk(clk), .rst_n(rst_n), .clear_i(cfg_soft_reset_w),
+    .clear_rows_i(softmax_clear_rows_w),
+    .qk_clear_i(qk_array_clear_w), .qk_valid_i(qk_array_valid_w),
+    .qk_last_i(qk_array_last_w), .qk_rows_i(qk_array_rows_w),
+    .qk_cols_i(qk_array_cols_w), .qk_last_o(fused_qk_last_w),
+    .softmax_start_i(softmax_start_w), .score_scale_i(cfg_score_scale_w),
+    .q_base_i(q_tile_base_w), .k_base_i(kv_tile_base_w),
+    .seq_q_i(cfg_seq_q_w), .seq_kv_i(cfg_seq_kv_w),
+    .causal_en_i(cfg_causal_en_w), .alpha_rows_o(alpha_rows_w),
+    .l_rows_o(l_rows_w), .softmax_done_o(softmax_done_w),
+    .softmax_busy_o(),
+    .pv_start_i(pv_array_start_w), .pv_ready_o(pv_array_ready_w),
+    .pv_clear_acc_i(pv_array_clear_acc_w),
+    .pv_load_row_valid_i(pv_array_load_row_valid_w),
+    .pv_load_row_index_i(pv_array_load_row_index_w),
+    .pv_load_row_data_i(pv_array_load_row_data_w),
+    .pv_valid_i(pv_array_valid_w), .pv_last_i(pv_array_last_w),
+    .pv_cols_i(pv_array_cols_w), .pv_done_o(fused_array_pv_done_w),
+    .row_valid_o(pv_row_valid_w), .row_ready_i(1'b1),
+    .row_index_o(pv_row_index_w), .row_data_o(pv_row_data_w),
+    .error_o(fused_array_error_w)
   );
+
+  assign pv_row_half_w = pv_half_q;
+  assign softmax_error_w = fused_array_error_w;
 
   assign norm_acc_rd_en_w = (pv_flow_state_q == PV_FLOW_NORM_READ);
   assign norm_l_w = l_rows_w[norm_row_q*32 +: 32];
@@ -437,7 +441,7 @@ module attention_accel_top #(
     .cycle_en_i(scheduler_busy_w),
     .stall_i((load_active_w && !(q_active_valid_w && kv_active_valid_w)) ||
              (writeback_active_w && (!m_axi_awready || !m_axi_wready))),
-    .mac_valid_i(array_valid_w && (array_phase_w == `ATTN_ARRAY_PHASE_QK || array_phase_w == `ATTN_ARRAY_PHASE_PV)),
+    .mac_valid_i(qk_array_valid_w || pv_array_valid_w),
     .tile_done_i(pv_complete_q), .cycle_count_o(perf_cycles_w), .stall_count_o(perf_stall_w),
     .mac_count_o(perf_mac_w), .tile_count_o(perf_tiles_w)
   );

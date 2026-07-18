@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Render the FlashAttention accelerator architecture at IEEE two-column width."""
+"""Render the fused FlashAttention accelerator architecture at IEEE two-column width."""
 
 from pathlib import Path
 import xml.etree.ElementTree as ET
@@ -12,390 +12,364 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import FancyArrowPatch, FancyBboxPatch, Rectangle
 
 
-FIG_WIDTH_MM = 181.864
+FIG_WIDTH_MM = 183.0
+FIG_HEIGHT_MM = 116.0
 FIG_W = FIG_WIDTH_MM / 25.4
-FIG_H = 4.15
+FIG_H = FIG_HEIGHT_MM / 25.4
 
-NAVY = "#17324D"
-INK = "#243746"
-MUTED = "#5E6B75"
-GRID = "#9BAAB5"
-DATA = "#136F73"
-STATE = "#B23A6F"
-CONTROL = "#B87918"
-MEM_FILL = "#DDEFE9"
-COMPUTE_FILL = "#DCE9F5"
-SOFTMAX_FILL = "#F4E2E6"
-OUTPUT_FILL = "#F4EBCF"
-CONTROL_FILL = "#F2F0EA"
-PAPER = "#FFFFFF"
-CHIP_FILL = "#FAFBFC"
+INK = "#202124"
+MID = "#5F6368"
+GRID = "#A8ADB3"
+PALE = "#F7F8FA"
+WHITE = "#FFFFFF"
+CONTROL = "#D62828"
+CONTROL_FILL = "#FCE8E6"
+COMPUTE = "#2455D6"
+COMPUTE_FILL = "#E8EEFF"
+EXP = "#15803D"
+EXP_FILL = "#E7F5EA"
+STATE = "#7B3FB3"
+STATE_FILL = "#F1E8F8"
+MEMORY = "#4F6367"
+MEMORY_FILL = "#EEF1F2"
 
 
-def rounded_box(ax, x, y, w, h, title, lines=(), fill=PAPER, edge=NAVY,
-                title_size=7.2, body_size=5.8, lw=1.0, radius=0.012,
-                title_color=NAVY, zorder=5):
+def box(ax, x, y, w, h, title="", subtitle="", fill=WHITE, edge=INK,
+        lw=0.85, title_color=INK, title_size=6.2, subtitle_size=5.3,
+        radius=0.004, zorder=4):
     patch = FancyBboxPatch(
         (x, y), w, h,
-        boxstyle="round,pad=0.004,rounding_size={}".format(radius),
-        linewidth=lw, edgecolor=edge, facecolor=fill, zorder=zorder,
+        boxstyle=f"round,pad=0.003,rounding_size={radius}",
+        facecolor=fill, edgecolor=edge, linewidth=lw, zorder=zorder,
     )
     ax.add_patch(patch)
-    ax.text(x + w / 2, y + h - 0.024, title, ha="center", va="top",
-            fontsize=title_size, fontweight="bold", color=title_color,
-            zorder=zorder + 1)
-    if lines:
-        line_h = 0.038
-        start_y = y + h - 0.061
-        for idx, line in enumerate(lines):
-            ax.text(x + w / 2, start_y - idx * line_h, line,
-                    ha="center", va="top", fontsize=body_size, color=INK,
-                    zorder=zorder + 1)
+    if title:
+        ax.text(x + w / 2, y + h - 0.018, title, ha="center", va="top",
+                fontsize=title_size, fontweight="bold", color=title_color,
+                zorder=zorder + 1)
+    if subtitle:
+        ax.text(x + w / 2, y + 0.018, subtitle, ha="center", va="bottom",
+                fontsize=subtitle_size, color=MID, linespacing=1.12,
+                zorder=zorder + 1)
     return patch
 
 
-def arrow(ax, start, end, color=DATA, lw=1.25, style="-", rad=0.0,
-          mutation=8, zorder=4):
+def arrow(ax, x0, y0, x1, y1, color=INK, lw=1.05, mutation=7,
+          linestyle="-", zorder=8, connection="arc3,rad=0"):
     patch = FancyArrowPatch(
-        start, end, arrowstyle="-|>", mutation_scale=mutation,
-        linewidth=lw, linestyle=style, color=color,
-        connectionstyle="arc3,rad={}".format(rad),
-        shrinkA=0, shrinkB=0, zorder=zorder,
+        (x0, y0), (x1, y1), arrowstyle="-|>", mutation_scale=mutation,
+        linewidth=lw, color=color, linestyle=linestyle,
+        connectionstyle=connection, shrinkA=0, shrinkB=0, zorder=zorder,
     )
     ax.add_patch(patch)
     return patch
 
 
-def poly_arrow(ax, points, color=DATA, lw=1.25, style="-", mutation=8,
-               zorder=4):
-    for start, end in zip(points[:-2], points[1:-1]):
-        ax.plot([start[0], end[0]], [start[1], end[1]], color=color,
-                linewidth=lw, linestyle=style, solid_capstyle="round",
-                zorder=zorder)
-    return arrow(ax, points[-2], points[-1], color=color, lw=lw,
-                 style=style, mutation=mutation, zorder=zorder)
+def line_arrow(ax, points, color=INK, lw=1.05, mutation=7,
+               linestyle="-", zorder=8):
+    for p0, p1 in zip(points[:-2], points[1:-1]):
+        ax.plot([p0[0], p1[0]], [p0[1], p1[1]], color=color,
+                linewidth=lw, linestyle=linestyle, zorder=zorder)
+    return arrow(ax, *points[-2], *points[-1], color=color, lw=lw,
+                 mutation=mutation, linestyle=linestyle, zorder=zorder)
 
 
-def label(ax, x, y, text, color=MUTED, size=5.4, ha="center", va="center",
-          weight="normal", zorder=8, background=True):
-    bbox = None
-    if background:
-        bbox = dict(boxstyle="round,pad=0.12", facecolor=PAPER,
-                    edgecolor="none", alpha=0.94)
-    ax.text(x, y, text, ha=ha, va=va, fontsize=size, color=color,
-            fontweight=weight, bbox=bbox, zorder=zorder)
+def tag(ax, x, y, text, color=INK, size=5.3, weight="normal",
+        ha="center", va="center", rotation=0, zorder=12):
+    ax.text(x, y, text, ha=ha, va=va, rotation=rotation, fontsize=size,
+            fontweight=weight, color=color,
+            bbox=dict(facecolor=WHITE, edgecolor="none", pad=0.7, alpha=0.94),
+            zorder=zorder)
 
 
-def draw_cache(ax):
-    x, y, w, h = 0.177, 0.245, 0.155, 0.515
-    rounded_box(ax, x, y, w, h, "Q/K/V tile cache", (), MEM_FILL)
-    ax.text(x + w / 2, y + h - 0.052, "ping-pong banks", ha="center",
-            va="top", fontsize=5.7, color=MUTED, zorder=7)
-    names = ["Q", "K", "V"]
-    base_y = y + h - 0.118
-    cell_h = 0.096
-    for idx, name in enumerate(names):
-        cy = base_y - idx * 0.122
-        ax.add_patch(FancyBboxPatch(
-            (x + 0.017, cy - cell_h), w - 0.034, cell_h,
-            boxstyle="round,pad=0.003,rounding_size=0.008",
-            linewidth=0.7, edgecolor=DATA, facecolor=PAPER, zorder=6,
-        ))
-        ax.text(x + 0.032, cy - cell_h / 2, name, ha="center", va="center",
-                fontsize=7.1, fontweight="bold", color=NAVY, zorder=7)
-        for bank in range(2):
-            bx = x + 0.050 + bank * 0.042
-            ax.add_patch(Rectangle(
-                (bx, cy - 0.071), 0.033, 0.050,
-                linewidth=0.55, edgecolor=GRID,
-                facecolor="#F7FCFA", zorder=7,
-            ))
-            ax.text(bx + 0.0165, cy - 0.046, "P{}".format(bank),
-                    ha="center", va="center", fontsize=5.0, color=MUTED,
-                    zorder=8)
-    ax.text(x + w / 2, y + 0.039, "256-bit word = 32 x INT8",
-            ha="center", va="center", fontsize=5.6, color=INK, zorder=7)
+def phase_badge(ax, x, y, number, text, color):
+    ax.text(x, y, number, ha="center", va="center", fontsize=5.4,
+            fontweight="bold", color=WHITE,
+            bbox=dict(boxstyle="circle,pad=0.20", facecolor=color,
+                      edgecolor=color, linewidth=0.5), zorder=14)
+    ax.text(x + 0.014, y, text, ha="left", va="center", fontsize=5.3,
+            fontweight="bold", color=color, zorder=14)
+
+
+def draw_top_band(ax):
+    # ISSCC-like global blocks.
+    box(ax, 0.018, 0.805, 0.148, 0.166, "Host / PS", "AXI4-Lite control\n128-bit AXI data",
+        fill=CONTROL_FILL, edge=CONTROL, title_color=CONTROL, title_size=6.8)
+    box(ax, 0.181, 0.805, 0.263, 0.166, "Q/K/V Ping-Pong Cache", "",
+        fill=MEMORY_FILL, edge=MEMORY, title_color=MEMORY, title_size=6.8)
+    # Draw six visible banks inside the cache.
+    for group, label_text in enumerate(("Q", "K", "V")):
+        gx = 0.194 + group * 0.080
+        ax.text(gx + 0.031, 0.893, label_text, ha="center", va="center",
+                fontsize=5.8, fontweight="bold", color=INK, zorder=8)
+        for bank_idx in range(2):
+            bx = gx + bank_idx * 0.033
+            ax.add_patch(Rectangle((bx, 0.834), 0.028, 0.043,
+                                   facecolor=WHITE, edgecolor=MEMORY,
+                                   linewidth=0.55, zorder=7))
+            ax.text(bx + 0.014, 0.855, f"P{bank_idx}", ha="center", va="center",
+                    fontsize=5.0, color=MID, zorder=8)
+    ax.text(0.3125, 0.915, "3 x dual-bank local SRAM | 256-bit word = 32 x INT8",
+            ha="center", va="center", fontsize=5.0, color=MID, zorder=8)
+
+    box(ax, 0.459, 0.805, 0.257, 0.166, "Top Controller", "Register file | tile scheduler | counters",
+        fill=CONTROL_FILL, edge=CONTROL, title_color=CONTROL, title_size=6.8)
+    # Compact state strip.
+    states = ["LOAD", "QK", "FSA", "PV", "WB"]
+    for idx, state in enumerate(states):
+        sx = 0.474 + idx * 0.045
+        ax.add_patch(Rectangle((sx, 0.842), 0.039, 0.038,
+                               facecolor=WHITE, edgecolor=CONTROL,
+                               linewidth=0.55, zorder=7))
+        ax.text(sx + 0.0195, 0.861, state, ha="center", va="center",
+                fontsize=5.0, color=INK, zorder=8)
+        if idx < len(states) - 1:
+            arrow(ax, sx + 0.039, 0.861, sx + 0.045, 0.861,
+                  color=CONTROL, lw=0.65, mutation=4.5, zorder=9)
+
+    box(ax, 0.731, 0.805, 0.251, 0.166, "Output Path", "INT32 row buffer | final normalize\n128-bit AXI4 writeback",
+        fill=STATE_FILL, edge=STATE, title_color=STATE, title_size=6.8)
+    # Data and control connections.
+    arrow(ax, 0.166, 0.887, 0.181, 0.887, color=MEMORY, lw=1.1)
+    tag(ax, 0.174, 0.905, "128b", color=MEMORY, size=5.0)
+    arrow(ax, 0.092, 0.805, 0.092, 0.790, color=CONTROL, lw=0.85,
+          linestyle="--", mutation=6)
+
+    # Physical local interconnect band.
+    ax.add_patch(Rectangle((0.018, 0.762), 0.964, 0.028,
+                           facecolor=WHITE, edgecolor=INK,
+                           linewidth=0.75, zorder=5))
+    ax.text(0.500, 0.776, "REGISTERED LOCAL INTERCONNECT / PHASE CONTROL",
+            ha="center", va="center", fontsize=5.6, fontweight="bold",
+            color=INK, zorder=7)
+    arrow(ax, 0.311, 0.805, 0.311, 0.790, color=MEMORY, lw=1.1, mutation=6)
+    arrow(ax, 0.587, 0.805, 0.587, 0.790, color=CONTROL, lw=0.9,
+          linestyle="--", mutation=6)
+    arrow(ax, 0.856, 0.790, 0.856, 0.805, color=STATE, lw=1.1, mutation=6)
 
 
 def draw_array(ax):
-    x, y, w, h = 0.465, 0.285, 0.176, 0.445
-    rounded_box(ax, x, y, w, h, "Shared OS-FSA", (), COMPUTE_FILL,
-                title_size=7.6, lw=1.2)
-    ax.text(x + w / 2, y + h - 0.056, "32 x 32 PE array",
-            ha="center", va="top", fontsize=6.2, color=INK,
-            fontweight="bold", zorder=7)
-    gx = x + 0.026
-    gy = y + 0.105
-    gw = w - 0.052
-    gh = h - 0.198
-    cols = 8
-    rows = 8
-    cw = gw / cols
-    ch = gh / rows
-    stripe_colors = ["#C6DDF0", "#D7E7F4", "#C6DDF0", "#D7E7F4"]
-    for stripe in range(4):
-        sy = gy + stripe * gh / 4
-        ax.add_patch(Rectangle(
-            (gx, sy), gw, gh / 4, linewidth=0,
-            facecolor=stripe_colors[stripe], zorder=6,
-        ))
-    for row in range(rows + 1):
-        yy = gy + row * ch
-        ax.plot([gx, gx + gw], [yy, yy], color=GRID, linewidth=0.38,
-                zorder=7)
-    for col in range(cols + 1):
-        xx = gx + col * cw
-        ax.plot([xx, xx], [gy, gy + gh], color=GRID, linewidth=0.38,
-                zorder=7)
-    ax.add_patch(Rectangle((gx, gy), gw, gh, linewidth=0.8,
-                           edgecolor=NAVY, facecolor="none", zorder=8))
-    # Highlight one representative PE; the full PE datapath is expanded below.
-    pe_col, pe_row = 6, 5
-    ax.add_patch(Rectangle(
-        (gx + pe_col * cw, gy + pe_row * ch), cw, ch,
-        linewidth=0.9, edgecolor=STATE, facecolor="#A9D1DE", zorder=9,
-    ))
-    ax.text(gx + (pe_col + 0.5) * cw, gy + (pe_row + 0.5) * ch,
-            "PE", ha="center", va="center", fontsize=5.0,
-            fontweight="bold", color=NAVY, zorder=10)
-    ax.text(x + w / 2, y + 0.073, "4 x 8-row physical stripes",
-            ha="center", va="center", fontsize=5.4, color=MUTED, zorder=8)
-    ax.text(x + w / 2, y + 0.039, "INT8 x INT8  ->  INT32 acc.",
-            ha="center", va="center", fontsize=5.7, color=INK,
-            fontweight="bold", zorder=8)
+    x, y, w, h = 0.252, 0.346, 0.425, 0.381
+    box(ax, x, y, w, h, "Fused OS-FSA Core (32 x 32 PEs)", "4 physical stripes x 8 rows",
+        fill=COMPUTE_FILL, edge=COMPUTE, title_color=COMPUTE,
+        title_size=7.2, subtitle_size=5.3, lw=1.15)
+
+    gx, gy = x + 0.055, y + 0.068
+    gw, gh = w - 0.095, h - 0.131
+    rows, cols = 8, 8
+    cw, ch = gw / cols, gh / rows
+    for rr in range(rows):
+        stripe = (rr // 2) % 2
+        fill = "#DCE6FF" if stripe == 0 else "#EEF2FF"
+        for cc in range(cols):
+            ax.add_patch(Rectangle((gx + cc * cw, gy + rr * ch), cw, ch,
+                                   facecolor=fill, edgecolor="#7892D8",
+                                   linewidth=0.42, zorder=6))
+    # Highlight the representative PE expanded below.
+    hi_r, hi_c = 5, 5
+    ax.add_patch(Rectangle((gx + hi_c * cw, gy + hi_r * ch), cw, ch,
+                           facecolor="#CBD6FF", edgecolor=COMPUTE,
+                           linewidth=1.1, zorder=7))
+    ax.text(gx + (hi_c + 0.5) * cw, gy + (hi_r + 0.5) * ch, "PE",
+            ha="center", va="center", fontsize=5.0, fontweight="bold",
+            color=COMPUTE, zorder=8)
+
+    # Q and K/V systolic streams.
+    arrow(ax, x + 0.010, gy + gh * 0.62, gx - 0.006, gy + gh * 0.62,
+          color=COMPUTE, lw=1.35, mutation=7)
+    arrow(ax, x + 0.010, gy + gh * 0.38, gx - 0.006, gy + gh * 0.38,
+          color=STATE, lw=1.35, mutation=7)
+    arrow(ax, gx + gw * 0.30, y + h - 0.057, gx + gw * 0.30, gy + gh + 0.004,
+          color=COMPUTE, lw=1.35, mutation=7)
+    arrow(ax, gx + gw * 0.70, y + h - 0.057, gx + gw * 0.70, gy + gh + 0.004,
+          color=STATE, lw=1.35, mutation=7)
+    tag(ax, x + 0.028, gy + gh * 0.62 + 0.020, "Q rows", color=COMPUTE,
+        size=5.1, ha="left")
+    tag(ax, x + 0.027, gy + gh * 0.38 - 0.020, "P rows", color=STATE,
+        size=5.1, ha="left")
+    tag(ax, gx + gw * 0.30, gy + gh + 0.012, "K cols", color=COMPUTE, size=5.1)
+    tag(ax, gx + gw * 0.70, gy + gh + 0.012, "V cols", color=STATE, size=5.1)
+
+    # In-row nearest-neighbor flows; arrows sit inside the PE fabric.
+    yy_max = gy + gh * 0.79
+    yy_m = gy + gh * 0.59
+    yy_sum = gy + gh * 0.20
+    arrow(ax, gx + 0.012, yy_max, gx + gw - 0.010, yy_max,
+          color=CONTROL, lw=1.15, mutation=7)
+    arrow(ax, gx + gw - 0.010, yy_m, gx + 0.012, yy_m,
+          color=STATE, lw=1.15, mutation=7)
+    arrow(ax, gx + 0.012, yy_sum, gx + gw - 0.010, yy_sum,
+          color=EXP, lw=1.15, mutation=7)
+    tag(ax, gx + gw * 0.52, yy_max + 0.017, "staggered rowmax  ->",
+        color=CONTROL, size=5.0)
+    tag(ax, gx + gw * 0.50, yy_m - 0.017, "<-  m_new + local SUB",
+        color=STATE, size=5.0)
+    tag(ax, gx + gw * 0.50, yy_sum + 0.017, "prob rowsum  ->",
+        color=EXP, size=5.0)
+
+    # Connector from highlighted PE to inset.
+    hx = gx + (hi_c + 0.5) * cw
+    hy = gy + (hi_r + 0.5) * ch
+    line_arrow(ax, [(hx, hy - ch / 2), (hx, y - 0.012), (0.650, y - 0.012),
+                    (0.650, 0.286)], color=COMPUTE, lw=0.75,
+               linestyle="--", mutation=5, zorder=5)
+
+
+def draw_side_units(ax):
+    # Input skew / wrappers.
+    box(ax, 0.018, 0.346, 0.205, 0.381, "Stream Front End", "No matrix-wide output ports",
+        fill=MEMORY_FILL, edge=MEMORY, title_color=MEMORY, title_size=6.7)
+    box(ax, 0.039, 0.618, 0.163, 0.072, "FSA QK Engine", "Q/K read + valid/last",
+        fill=WHITE, edge=COMPUTE, title_color=COMPUTE, title_size=5.9, subtitle_size=5.0)
+    box(ax, 0.039, 0.515, 0.163, 0.072, "Registered Skew", "row/column delay lines",
+        fill=WHITE, edge=MEMORY, title_color=MEMORY, title_size=5.9, subtitle_size=5.0)
+    box(ax, 0.039, 0.412, 0.163, 0.072, "FSA PV Engine", "restore O row + V stream",
+        fill=WHITE, edge=STATE, title_color=STATE, title_size=5.9, subtitle_size=5.0)
+    arrow(ax, 0.202, 0.654, 0.252, 0.654, color=COMPUTE, lw=1.25)
+    arrow(ax, 0.202, 0.448, 0.252, 0.448, color=STATE, lw=1.25)
+    line_arrow(ax, [(0.311, 0.762), (0.311, 0.742), (0.120, 0.742),
+                    (0.120, 0.690)], color=MEMORY, lw=1.0, mutation=6)
+
+    # Only exp is a shared score/probability arithmetic unit outside PEs.
+    box(ax, 0.705, 0.346, 0.277, 0.381, "Array-Side Units", "No score/probability tile buffer",
+        fill=PALE, edge=INK, title_size=6.7)
+    box(ax, 0.728, 0.615, 0.231, 0.075, "32-Lane Scale + PWL Exp", "shared pipelined nonlinear unit",
+        fill=EXP_FILL, edge=EXP, title_color=EXP, title_size=6.1, subtitle_size=5.0)
+    box(ax, 0.728, 0.509, 0.231, 0.075, "Row State (m, l, alpha)", "32 rows | local update registers",
+        fill=STATE_FILL, edge=STATE, title_color=STATE, title_size=6.1, subtitle_size=5.0)
+    box(ax, 0.728, 0.403, 0.231, 0.075, "Final Normalizer", "reciprocal LUT | requantize",
+        fill=STATE_FILL, edge=STATE, title_color=STATE, title_size=6.1, subtitle_size=5.0)
+
+    # Narrow, registered array-side interfaces.
+    arrow(ax, 0.677, 0.647, 0.728, 0.647, color=EXP, lw=1.2)
+    arrow(ax, 0.728, 0.629, 0.677, 0.629, color=EXP, lw=1.2)
+    tag(ax, 0.702, 0.669, "32 lanes", color=EXP, size=5.0)
+    line_arrow(ax, [(0.677, 0.548), (0.703, 0.548), (0.703, 0.546),
+                    (0.728, 0.546)], color=STATE, lw=1.1, mutation=6)
+    line_arrow(ax, [(0.959, 0.440), (0.971, 0.440), (0.971, 0.776),
+                    (0.856, 0.776)], color=STATE, lw=1.1, mutation=6)
+    # Phase badges occupy the narrow strip below the local interconnect.
+    phase_badge(ax, 0.267, 0.744, "1", "QK + MAX", COMPUTE)
+    phase_badge(ax, 0.466, 0.744, "2", "reverse m / SUB", STATE)
+    phase_badge(ax, 0.682, 0.744, "3", "EXP WB + SUM", EXP)
+    phase_badge(ax, 0.855, 0.744, "4", "P x V MAC", STATE)
 
 
 def draw_pe_inset(ax):
-    """Show the mode-select arithmetic datapath inside one array PE."""
-    x, y, w, h = 0.342, 0.100, 0.318, 0.160
-    rounded_box(ax, x, y, w, h, "", (), "#EEF3F5",
-                title_size=6.2, lw=0.9, radius=0.009)
-    ax.text(x + w / 2, y + h - 0.018, "PE micro-architecture",
-            ha="center", va="top", fontsize=6.2, fontweight="bold",
-            color=NAVY, zorder=8)
-    ax.text(x + w / 2, y + h - 0.041,
-            "registered inputs / mode-select / registered result",
-            ha="center", va="center", fontsize=5.0, color=MUTED, zorder=8)
+    x, y, w, h = 0.018, 0.028, 0.964, 0.271
+    box(ax, x, y, w, h, "Representative Fused PE", "registered nearest-neighbor links; no global row MUX",
+        fill=WHITE, edge=INK, title_size=6.8, subtitle_size=5.1, lw=0.9)
 
-    def mini_box(mx, my, mw, mh, title, lines, fill=PAPER, edge=NAVY):
-        ax.add_patch(FancyBboxPatch(
-            (mx, my), mw, mh,
-            boxstyle="round,pad=0.002,rounding_size=0.005",
-            linewidth=0.65, edgecolor=edge, facecolor=fill, zorder=7,
-        ))
-        ax.text(mx + mw / 2, my + mh - 0.017, title,
-                ha="center", va="top", fontsize=5.0, fontweight="bold",
-                color=NAVY, zorder=8)
-        for idx, line in enumerate(lines):
-            ax.text(mx + mw / 2, my + mh - 0.034 - idx * 0.017, line,
-                    ha="center", va="top", fontsize=5.0, color=INK,
-                    zorder=8)
+    # I/O register group.
+    box(ax, 0.040, 0.093, 0.120, 0.132, "Systolic I/O", "Q -> | K/V down\nvalid + last",
+        fill=MEMORY_FILL, edge=MEMORY, title_color=MEMORY, title_size=5.9, subtitle_size=5.0)
 
-    mini_box(x + 0.010, y + 0.045, 0.073, 0.070, "PE regs",
-             ("a,b: 16b", "s: 16b / sh: 6b"), fill="#F7FBFC")
-    mini_box(x + 0.096, y + 0.038, 0.134, 0.080, "mode-select arithmetic",
-             ("MAC/HOLD: acc+a*b", "SUB / MAX / ADD", "SCALE: a*s >> sh"),
-             fill="#E2EEF5", edge=DATA)
-    mini_box(x + 0.243, y + 0.045, 0.065, 0.070, "PE out",
-             ("result: 32b", "acc: 32b"), fill="#F7FBFC")
-    arrow(ax, (x + 0.083, y + 0.080), (x + 0.096, y + 0.080),
-          color=DATA, lw=0.9, mutation=6, zorder=9)
-    arrow(ax, (x + 0.230, y + 0.080), (x + 0.243, y + 0.080),
-          color=DATA, lw=0.9, mutation=6, zorder=9)
+    # Arithmetic core with explicit functions beyond MAC.
+    box(ax, 0.194, 0.076, 0.263, 0.166, "Mode-Selected Arithmetic", "",
+        fill=COMPUTE_FILL, edge=COMPUTE, title_color=COMPUTE, title_size=6.2, subtitle_size=5.0)
+    ops = [
+        ("MAC", "acc += x*y", COMPUTE, "#F6F8FF"),
+        ("MAX", "max(x, pass)", CONTROL, "#FFF5F4"),
+        ("SUB", "score - m", STATE, "#FAF5FE"),
+        ("ADD", "sum + prob", EXP, "#F3FBF5"),
+    ]
+    for idx, (name, desc, color, fill) in enumerate(ops):
+        ox = 0.208 + (idx % 2) * 0.119
+        oy = 0.153 - (idx // 2) * 0.058
+        ax.add_patch(Rectangle((ox, oy), 0.108, 0.044,
+                               facecolor=fill, edgecolor=color,
+                               linewidth=0.65, zorder=7))
+        ax.text(ox + 0.022, oy + 0.022, name, ha="center", va="center",
+                fontsize=5.2, fontweight="bold", color=color, zorder=8)
+        ax.text(ox + 0.074, oy + 0.022, desc, ha="center", va="center",
+                fontsize=5.0, color=INK, zorder=8)
+
+    # PE-local state bank.
+    box(ax, 0.492, 0.076, 0.222, 0.166, "PE-Local State", "stationary across each tile",
+        fill=STATE_FILL, edge=STATE, title_color=STATE, title_size=6.2, subtitle_size=5.0)
+    state_regs = [("score_reg", "INT32"), ("prob_reg", "INT16"), ("O_acc", "INT32")]
+    for idx, (name, width) in enumerate(state_regs):
+        sy = 0.172 - idx * 0.047
+        ax.add_patch(Rectangle((0.510, sy), 0.184, 0.035,
+                               facecolor=WHITE, edgecolor=STATE,
+                               linewidth=0.55, zorder=7))
+        ax.text(0.525, sy + 0.0175, name, ha="left", va="center",
+                fontsize=5.1, fontweight="bold", color=STATE, zorder=8)
+        ax.text(0.680, sy + 0.0175, width, ha="right", va="center",
+                fontsize=5.0, color=MID, zorder=8)
+
+    # Nearest-neighbor links.
+    box(ax, 0.749, 0.076, 0.211, 0.166, "Row Restream Links", "fixed-width, one-hop registers",
+        fill=EXP_FILL, edge=EXP, title_color=EXP, title_size=6.2, subtitle_size=5.0)
+    paths = [
+        (0.187, "max pass", CONTROL, "->"),
+        (0.151, "m_new / SUB", STATE, "<-"),
+        (0.115, "rowsum pass", EXP, "->"),
+    ]
+    for yy, name, color, direction in paths:
+        ax.text(0.772, yy, direction, ha="left", va="center", fontsize=7.0,
+                fontweight="bold", color=color, zorder=8)
+        ax.text(0.805, yy, name, ha="left", va="center", fontsize=5.2,
+                fontweight="bold", color=color, zorder=8)
+    arrow(ax, 0.160, 0.158, 0.194, 0.158, color=COMPUTE, lw=1.0, mutation=6)
+    arrow(ax, 0.457, 0.158, 0.492, 0.158, color=COMPUTE, lw=1.0, mutation=6)
+    arrow(ax, 0.714, 0.158, 0.749, 0.158, color=STATE, lw=1.0, mutation=6)
 
 
-def draw_control_plane(ax):
-    rounded_box(ax, 0.177, 0.838, 0.784, 0.132, "", (), CONTROL_FILL,
-                edge=GRID, lw=0.8, radius=0.010)
-    ax.text(0.190, 0.954, "CONTROL PLANE", ha="left", va="top",
-            fontsize=5.5, fontweight="bold", color=MUTED, zorder=7)
-    rounded_box(ax, 0.206, 0.865, 0.125, 0.070, "Register file", (), PAPER,
-                edge=CONTROL, title_size=6.1, lw=0.8, radius=0.008)
-    rounded_box(ax, 0.357, 0.865, 0.290, 0.070, "Tile scheduler FSM", (), PAPER,
-                edge=CONTROL, title_size=6.1, lw=0.8, radius=0.008)
-    rounded_box(ax, 0.673, 0.865, 0.146, 0.070, "Perf. / error", (), PAPER,
-                edge=CONTROL, title_size=6.1, lw=0.8, radius=0.008)
-    arrow(ax, (0.331, 0.900), (0.357, 0.900), color=CONTROL, lw=1.0,
-          mutation=7, zorder=7)
-    arrow(ax, (0.647, 0.900), (0.673, 0.900), color=CONTROL, lw=1.0,
-          mutation=7, zorder=7)
-    ax.text(0.502, 0.876, "LOAD_Q -> LOAD_KV -> QK -> SOFTMAX -> PV -> WRITEBACK",
-            ha="center", va="center", fontsize=5.0, color=MUTED, zorder=8)
+def validate_outputs(output_dir):
+    png_path = output_dir / "flash_attention_accelerator_architecture.png"
+    tiff_path = output_dir / "flash_attention_accelerator_architecture.tiff"
+    svg_path = output_dir / "flash_attention_accelerator_architecture.svg"
+    svg_text = svg_path.read_text(encoding="utf-8")
+    svg_path.write_text("\n".join(line.rstrip() for line in svg_text.splitlines()) + "\n",
+                        encoding="utf-8")
+    # Matplotlib/Pillow use truncation for the raster canvas dimensions.
+    expected_px = (int(FIG_W * 600), int(FIG_H * 600))
+    with Image.open(png_path) as image:
+        if image.size != expected_px:
+            raise RuntimeError(f"PNG size {image.size} != expected {expected_px}")
+        if image.getbbox() is None:
+            raise RuntimeError("PNG render is blank")
+    with Image.open(tiff_path) as image:
+        if image.size != expected_px:
+            raise RuntimeError(f"TIFF size {image.size} != expected {expected_px}")
+    root = ET.parse(svg_path).getroot()
+    if not any(element.tag.endswith("text") for element in root.iter()):
+        raise RuntimeError("SVG text is not editable")
 
 
 def render(output_dir):
     mpl.rcParams.update({
         "font.family": "sans-serif",
         "font.sans-serif": ["Arial", "Helvetica", "Liberation Sans", "DejaVu Sans"],
-        "font.size": 6.0,
-        "axes.linewidth": 0.0,
+        "font.size": 6.3,
+        "axes.linewidth": 0.8,
         "svg.fonttype": "none",
         "pdf.fonttype": 42,
         "pdf.use14corefonts": False,
-        "savefig.facecolor": PAPER,
+        "savefig.facecolor": WHITE,
     })
 
-    fig = plt.figure(figsize=(FIG_W, FIG_H), facecolor=PAPER)
+    fig = plt.figure(figsize=(FIG_W, FIG_H), facecolor=WHITE)
     ax = fig.add_axes([0, 0, 1, 1])
     ax.set_xlim(0, 1)
     ax.set_ylim(0, 1)
     ax.axis("off")
 
-    # Accelerator boundary and external interfaces.
-    ax.add_patch(FancyBboxPatch(
-        (0.151, 0.090), 0.810, 0.730,
-        boxstyle="round,pad=0.006,rounding_size=0.014",
-        linewidth=0.8, edgecolor=GRID, facecolor=CHIP_FILL, zorder=1,
-    ))
-    ax.text(0.165, 0.806, "FLASHATTENTION ACCELERATOR DATA PLANE",
-            ha="left", va="top", fontsize=5.7, fontweight="bold",
-            color=MUTED, zorder=7)
-
-    rounded_box(ax, 0.018, 0.838, 0.112, 0.132, "Host CPU", ("AXI4-Lite", "32-bit"),
-                CONTROL_FILL, title_size=6.8)
-    draw_control_plane(ax)
-    arrow(ax, (0.130, 0.900), (0.206, 0.900), color=CONTROL, lw=1.05,
-          mutation=7, zorder=7)
-
-    rounded_box(ax, 0.018, 0.365, 0.112, 0.225, "DMA / tile loader",
-                ("128-bit input", "Q, K, V tiles", "2 beats / word"),
-                MEM_FILL, title_size=6.7)
-    rounded_box(ax, 0.018, 0.180, 0.112, 0.105, "Off-chip DRAM", (),
-                CONTROL_FILL, title_size=6.7)
-    arrow(ax, (0.074, 0.285), (0.074, 0.365), color=DATA, lw=1.2,
-          mutation=8)
-    draw_cache(ax)
-    arrow(ax, (0.130, 0.478), (0.177, 0.478), color=DATA, lw=1.45,
-          mutation=8)
-    label(ax, 0.153, 0.501, "128 bit")
-    label(ax, 0.153, 0.455, "assemble 2:1", size=5.0)
-
-    # Phase-specific stream formation feeding a physically shared array.
-    rounded_box(ax, 0.365, 0.594, 0.075, 0.115, "QK phase",
-                ("Q x K^T", "tile stream"), COMPUTE_FILL,
-                title_size=6.2, body_size=5.1)
-    rounded_box(ax, 0.365, 0.322, 0.075, 0.115, "PV phase",
-                ("beta x V", "2 feature halves"), COMPUTE_FILL,
-                title_size=6.2, body_size=5.1)
-    arrow(ax, (0.332, 0.620), (0.365, 0.650), color=DATA, lw=1.35,
-          mutation=8)
-    label(ax, 0.345, 0.649, "Q, K", size=5.0)
-    poly_arrow(ax, [(0.332, 0.348), (0.347, 0.348), (0.347, 0.380),
-                    (0.365, 0.380)], color=DATA, lw=1.35, mutation=8)
-    label(ax, 0.344, 0.327, "V", size=5.0)
-    arrow(ax, (0.440, 0.650), (0.465, 0.650), color=DATA, lw=1.35,
-          mutation=8)
-    arrow(ax, (0.440, 0.380), (0.465, 0.380), color=DATA, lw=1.35,
-          mutation=8)
-
+    draw_top_band(ax)
+    draw_side_units(ax)
     draw_array(ax)
-
-    rounded_box(ax, 0.676, 0.468, 0.151, 0.300, "Online softmax",
-                ("scale + causal mask", "row max + PWL exp", "row sum / LSE update",
-                 "state: m, l", "emit: alpha, beta"), SOFTMAX_FILL,
-                title_size=7.3, body_size=5.5)
-    arrow(ax, (0.641, 0.650), (0.676, 0.650), color=DATA, lw=1.45,
-          mutation=8)
-    label(ax, 0.658, 0.674, "score tile", size=5.0)
-
-    rounded_box(ax, 0.676, 0.205, 0.151, 0.170, "Output accumulator",
-                ("row buffer", "INT32 O_acc", "alpha rescale"), OUTPUT_FILL,
-                title_size=6.9, body_size=5.4)
-    poly_arrow(ax, [(0.641, 0.335), (0.658, 0.335), (0.658, 0.290),
-                    (0.676, 0.290)], color=DATA, lw=1.45, mutation=8)
-    label(ax, 0.655, 0.311, "PV", size=5.0)
-
-    # Online-state feedback remains inside the tile loop.
-    poly_arrow(ax, [(0.706, 0.468), (0.706, 0.424), (0.615, 0.424),
-                    (0.615, 0.447), (0.440, 0.397)],
-               color=STATE, lw=1.35, mutation=8)
-    label(ax, 0.594, 0.444, "beta tile (32 x 32, INT16)",
-          color=STATE, size=5.0)
-    poly_arrow(ax, [(0.750, 0.468), (0.750, 0.411), (0.808, 0.411),
-                    (0.808, 0.375)], color=STATE, lw=1.35, mutation=8)
-    label(ax, 0.783, 0.430, "alpha", color=STATE, size=5.0)
-    poly_arrow(ax, [(0.676, 0.238), (0.665, 0.238), (0.665, 0.292),
-                    (0.602, 0.292), (0.580, 0.285)],
-               color=STATE, lw=1.25, mutation=8)
-    arrow(ax, (0.805, 0.730), (0.805, 0.754), color=STATE, lw=1.2,
-          mutation=7, rad=1.2)
-    label(ax, 0.831, 0.747, "m, l", color=STATE, size=5.0)
-
-    rounded_box(ax, 0.852, 0.454, 0.090, 0.205, "Finalize",
-                ("reciprocal LUT", "O_acc / l", "requantize", "INT8 output"),
-                OUTPUT_FILL, title_size=6.7, body_size=5.2)
-    arrow(ax, (0.827, 0.596), (0.852, 0.596), color=STATE, lw=1.2,
-          mutation=8)
-    label(ax, 0.840, 0.616, "l", color=STATE, size=5.0)
-    poly_arrow(ax, [(0.827, 0.290), (0.842, 0.290), (0.842, 0.519),
-                    (0.852, 0.519)], color=DATA, lw=1.35, mutation=8)
-
-    rounded_box(ax, 0.852, 0.205, 0.090, 0.135, "AXI4 write",
-                ("128-bit", "2 beats / row"), MEM_FILL,
-                title_size=6.5, body_size=5.3)
-    arrow(ax, (0.897, 0.454), (0.897, 0.340), color=DATA, lw=1.35,
-          mutation=8)
-    poly_arrow(ax, [(0.852, 0.080), (0.132, 0.080), (0.132, 0.232),
-                    (0.130, 0.232)], color=DATA, lw=1.15, mutation=8)
-    label(ax, 0.497, 0.096, "normalized output", size=5.0)
-
-    # Scheduler fan-out; dashed arrows carry control only.
-    for target_x, target_y in [(0.255, 0.760), (0.403, 0.709),
-                               (0.552, 0.730), (0.751, 0.768),
-                               (0.897, 0.659)]:
-        poly_arrow(ax, [(0.500, 0.865), (0.500, 0.828),
-                        (target_x, 0.828), (target_x, target_y)],
-                   color=CONTROL, lw=0.85, style="--", mutation=6, zorder=3)
-
     draw_pe_inset(ax)
-
-    # Bottom publication key and implementation note.
-    ax.add_patch(FancyBboxPatch(
-        (0.151, 0.012), 0.810, 0.058,
-        boxstyle="round,pad=0.004,rounding_size=0.010",
-        linewidth=0.6, edgecolor=GRID, facecolor="#F8F9FA", zorder=2,
-    ))
-    ax.text(0.168, 0.052, "ON-CHIP TILE LOOP", ha="left", va="center",
-            fontsize=5.4, fontweight="bold", color=NAVY, zorder=7)
-    ax.text(0.168, 0.029, "No off-chip score / probability materialization",
-            ha="left", va="center", fontsize=5.2, color=INK, zorder=7)
-    ax.text(0.450, 0.052, "MEMORY MAPPING", ha="left", va="center",
-            fontsize=5.4, fontweight="bold", color=NAVY, zorder=7)
-    ax.text(0.450, 0.029, "ASIC: banked SRAM macros   |   FPGA: URAM / BRAM",
-            ha="left", va="center", fontsize=5.2, color=INK, zorder=7)
-    ax.plot([0.775, 0.807], [0.052, 0.052], color=DATA, linewidth=1.5,
-            zorder=7)
-    ax.text(0.814, 0.052, "data", ha="left", va="center", fontsize=5.0,
-            color=MUTED, zorder=7)
-    ax.plot([0.775, 0.807], [0.029, 0.029], color=STATE, linewidth=1.5,
-            zorder=7)
-    ax.text(0.814, 0.029, "online state", ha="left", va="center",
-            fontsize=5.0, color=MUTED, zorder=7)
-    ax.plot([0.884, 0.916], [0.052, 0.052], color=CONTROL, linewidth=1.1,
-            linestyle="--", zorder=7)
-    ax.text(0.923, 0.052, "control", ha="left", va="center", fontsize=5.0,
-            color=MUTED, zorder=7)
 
     output_dir.mkdir(parents=True, exist_ok=True)
     stem = output_dir / "flash_attention_accelerator_architecture"
-    fig.savefig(str(stem) + ".svg", format="svg")
-    fig.savefig(str(stem) + ".pdf", format="pdf")
-    fig.savefig(str(stem) + ".png", format="png", dpi=600)
-    fig.savefig(str(stem) + ".tiff", format="tiff", dpi=600,
+    fig.savefig(stem.with_suffix(".svg"))
+    fig.savefig(stem.with_suffix(".pdf"))
+    fig.savefig(stem.with_suffix(".png"), dpi=600)
+    fig.savefig(stem.with_suffix(".tiff"), dpi=600,
                 pil_kwargs={"compression": "tiff_lzw"})
     plt.close(fig)
-
-    expected_pixels = (round(FIG_W * 600), round(FIG_H * 600))
-    png_size = Image.open(str(stem) + ".png").size
-    tiff_size = Image.open(str(stem) + ".tiff").size
-    svg_root = ET.parse(str(stem) + ".svg").getroot()
-    svg_text_nodes = sum(1 for node in svg_root.iter()
-                         if node.tag.endswith("text"))
-    assert png_size == expected_pixels, (png_size, expected_pixels)
-    assert tiff_size == expected_pixels, (tiff_size, expected_pixels)
-    assert svg_text_nodes > 0, "SVG export contains no editable text nodes"
-    print("Visual QA: PNG/TIFF={} px; SVG text nodes={}".format(
-        expected_pixels, svg_text_nodes))
+    validate_outputs(output_dir)
 
 
 if __name__ == "__main__":

@@ -12,12 +12,9 @@
 ../../tb/module_tb/control/tb_perf_counter.sv
 ../../tb/module_tb/axi/tb_axi4_slave_if.sv
 ../../tb/module_tb/axi/tb_axi4_master_write.sv
-../../tb/module_tb/compute/tb_os_fsa_pe.sv
-../../tb/module_tb/compute/tb_os_fsa_array.sv
+../../tb/module_tb/compute/tb_os_fsa_fused_array.sv
 ../../tb/module_tb/compute/tb_os_fsa_controller.sv
 ../../tb/module_tb/compute/tb_scale_requant_unit.sv
-../../tb/module_tb/compute/tb_qk_engine.sv
-../../tb/module_tb/compute/tb_pv_engine.sv
 ../../tb/module_tb/memory/tb_banked_sram.sv
 ../../tb/module_tb/memory/tb_bram_buffer.sv
 ../../tb/module_tb/memory/tb_output_buffer.sv
@@ -25,12 +22,7 @@
 ../../tb/module_tb/memory/tb_qkv_tile_cache.sv
 ../../tb/module_tb/memory/tb_stream_fifo.sv
 ../../tb/module_tb/memory/tb_uram_bank.sv
-../../tb/module_tb/softmax/tb_block_lse_update.sv
-../../tb/module_tb/softmax/tb_causal_mask.sv
 ../../tb/module_tb/softmax/tb_online_normalizer.sv
 ../../tb/module_tb/softmax/tb_pwl_exp_unit.sv
 ../../tb/module_tb/softmax/tb_reciprocal_lut.sv
-../../tb/module_tb/softmax/tb_row_broadcast.sv
-../../tb/module_tb/softmax/tb_row_reduce_unit.sv
-../../tb/module_tb/softmax/tb_softmax_engine.sv
 ../../tb/module_tb/top/tb_attention_accel_top.sv

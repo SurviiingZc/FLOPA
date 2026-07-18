@@ -260,7 +260,7 @@ AXI4 Slave
 
 1. Q tile 读入 32x64。
 2. K tile 读入 32x64，计算 Q * K^T，得到 32x32 score tile。
-3. softmax_engine 对每个 query 行更新 m、l、O_acc。
+3. 融合阵列沿 PE 行完成 rowmax、`S-m`、exp 回写、rowsum，并更新 m、l。
 4. V tile 读入 32x64，计算概率权重乘 V。
 5. 遍历所有 K/V tile 后，对 O_acc 做除法归一化并写回。
 
@@ -270,10 +270,11 @@ AXI4 Slave
 的主线数据流明确为：
 
 ```text
-PE 保存 S[i][j]
-row reduce 做 max/sum
+PE 保存 S[i][j]，QK 尾拍直接发起逐列 rowmax
+m_new 反向回流，PE 内完成 S[i][j]-m_new
 共享 32-lane exp pipeline
-beta stream 进入同一阵列的 PV 模式
+probability 回写 PE，rowsum 逐 PE 横向累加
+probability 随 V 有效拍移入同一阵列的 PV 模式
 最终 normalizer 单独做 O_acc / l
 ```
 
@@ -283,12 +284,12 @@ beta stream 进入同一阵列的 PV 模式
 1. 在阵列内完成 rowmax/rowsum，减少 score/prob 往返 SRAM。
 2. PE 只承担 MAC、减法、比较选择和 scale 等轻量 datapath。
 3. exp 使用共享 32-lane pipeline，而不是复制到每个 PE。
-4. 通过行/列方向的 restream 通路把 row state 广播回 PE。
+4. 通过最近邻 restream 通路传递 row state，避免宽总线和动态大 MUX。
 
 这样做是合理的：本项目的 QK tile 正好是 `32x32` score tile，OS PE 可以在
 QK 结束后短暂保存每个 `S[i][j]`，随后在同一阵列附近完成 mask、rowmax、
 `S - m`、共享 exp、rowsum，再把 `beta` stream 直接送入 PV 模式。相比“普通
-MAC 阵列 + 外部 softmax_engine”，该方案更贴近 FlashAttention 的 in-place
+MAC 阵列 + 外部 softmax 单元”，该方案更贴近 FlashAttention 的 in-place
 数据复用，也更容易在答辩中体现硬件创新。
 
 #### 3.3.1 OS 数据映射
@@ -315,10 +316,11 @@ PV 模式：
 | 模式 | 功能 | 用途 |
 | --- | --- | --- |
 | MAC_INT8 | `acc += a_int8 * b_int8` | QK 和 PV 主计算 |
-| SUB | `x - row_value` | 计算 `S - m_new` |
-| MAX_PASS | 比较/旁路 | 支持行归约 rowmax |
-| ADD_PASS | 加法/旁路 | 支持 rowsum 和 LSE 更新 |
-| SCALE | 定点乘移位 | score scale 和输出 requant |
+| QK_MAC | `score_reg += q*k` | QK 主计算 |
+| PV_MAC | `O_acc += probability*V` | PV 主计算 |
+| MAX_PASS | 比较/最近邻传递 | 逐列完成 rowmax |
+| SUB | `score_reg - m_new` | 反向回流时本地计算 |
+| ADD_PASS | probability 加到行部分和 | rowsum 最近邻归约 |
 
 PE 内部寄存器建议：
 
@@ -338,11 +340,11 @@ PE 内部寄存器建议：
 由于 OS 映射下 `S[i][j]` 的同一行对应同一个 query token，rowmax/rowsum
 推荐按“行归约”实现：
 
-- 每一 PE 行配置一个 `row_reduce_unit`。
-- QK 完成后，32 个 `score_reg` 横向进入 rowmax 归约树。
-- `m_new` 写入 `row_state[i]`，并沿行广播回 32 个 PE。
+- 每一 PE 行使用寄存化最近邻 max-pass 链，不产生整行动态选择器。
+- 列 `c` 比列 `c+1` 早一拍完成，QK 尾拍直接携带局部 score 发起 rowmax。
+- 最右端得到 `block_max` 并更新 `row_state[i]`，`m_new` 再沿行反向逐 PE 回流。
 - PE 执行 `score_reg - m_new`，结果送入共享 32-lane exp pipeline。
-- exp 后的 32 个 probability 横向进入 rowsum 归约树。
+- exp 后的 32 个 probability 写回 PE，再沿最近邻 sum-pass 链更新 rowsum。
 - `l_new` 更新到 `row_state[i]`，probability 同时进入 PV 数据通路。
 
 该设计与论文的 upward data path/comparator array 作用类似，但方向按 OS
@@ -351,26 +353,36 @@ vector/scalar softmax 单元。
 
 #### 3.3.4 调度顺序
 
+Implementation note: the active RTL uses registered input skew and nearest-
+neighbor PE links. Q rows enter from the left, K/V columns enter from the top,
+and column `c` completes one cycle before column `c+1`. Rowmax flows left to
+right directly from the per-PE QK-last tokens, overlapping the QK tail instead
+of starting a second row scan. `m_new` restreams right to left, and rowsum flows
+left to right. The
+shared 32-lane exp pipeline is the only score/probability arithmetic block
+outside the PE fabric. Probability remains in PE-local registers and shifts to
+the PV boundary only when the matching V word is valid.
+
 单个 `Q tile x K/V tile` 内部调度：
 
 ```text
 1. OS_QK_MAC:
        PE[i][j] accumulates S[i][j]
-2. CAUSAL_MASK:
-       invalid S[i][j] = -inf
-3. ROW_MAX:
-       row_reduce_unit computes block_max[i]
-4. ROW_RESCALE:
+2. ROW_MAX_OVERLAP:
+       column-staggered max-pass computes block_max[i] during the QK tail
+       invalid causal lanes inject -inf at the PE boundary
+3. ROW_RESCALE:
        m_new = max(m_old, block_max)
-       PE[i][j] computes S[i][j] - m_new
-5. SHARED_EXP_32LANE:
+       m_new moves right-to-left; PE[i][j] computes S[i][j] - m_new
+4. SHARED_EXP_32LANE:
        shared exp pipeline computes beta[i][j] = exp(S[i][j] - m_new)
-6. ROW_SUM:
-       row_reduce_unit computes block_sum[i]
+       beta[i][j] writes back to PE-local prob_reg
+5. ROW_SUM:
+       registered PE add-pass computes block_sum[i]
        row_state updates l_new
-7. BETA_STREAM_TO_PV:
-       beta stream and V tile compute O_acc
-8. FINAL_NORM:
+6. PROB_STREAM_TO_PV:
+       probability shifts only with matching V valid; PE MAC updates O_acc
+7. FINAL_NORM:
        after all K/V tiles, normalizer computes O = O_acc / l_final
 ```
 
@@ -401,9 +413,9 @@ attention 全链路主线，原因是：
 
 风险控制：
 
-- 保留 `softmax_engine` 模块边界，但内部实现映射到 OS-FSA array side units。
-- 首版先实现阶段化 QK -> rowmax/exp/rowsum -> PV。
-- overlap 调度作为 P3/P4 优化，不影响 P0/P1 功能闭环。
+- 只保留融合 OS-FSA 主线，删除外置 score/prob tile 接口和兼容数据通路。
+- 所有跨 PE 通路采用定宽最近邻寄存链；阵列扩大时不引入 `ROWS*COLS*W` 顶层总线。
+- QK 尾拍与 rowmax 重叠，exp 保持共享流水，PV 只在 V 有效拍移动 probability。
 
 ### 3.4 可重构计算备选
 
@@ -535,18 +547,19 @@ cache 复用关系。
 
 ## 5. Softmax 近似与并行实现
 
-在 OS-FSA 主线中，`softmax_engine` 不是外置向量单元，而是 OS-FSA 阵列侧的
-控制封装：causal mask、rowmax、PWL exp、rowsum 和 LSE 更新由 PE 多模式、
-`row_reduce_unit`、`row_broadcast` 和 `row_state` 协同完成。这样可以减少
+在 OS-FSA 主线中不再存在外置 `softmax_engine`。causal mask、rowmax、
+`S-m_new`、probability 回写、rowsum 和 LSE 更新由 PE 最近邻通路与
+`row_state` 协同完成；只有 32-lane PWL exp 位于 PE 阵列侧共享。这样避免
 score/prob 在阵列和外部 SRAM 之间往返。
 
 ### 5.1 单流水线 softmax/LSE/归一化
 
-softmax_engine 推荐做成一条 32 lane 流水线，覆盖：
+在线 softmax 数据通路为：
 
 ```text
-score -> causal mask -> row max -> exp -> block-wise LSE
-      -> row_sum update -> reciprocal -> online O_acc update
+PE-local score -> causal mask/max-pass -> reverse m_new/sub -> shared exp
+               -> PE-local probability/sum-pass -> row-state update
+               -> probability-V MAC -> final reciprocal normalization
 ```
 
 每个 query 行只维护少量行状态，放在寄存器中：
@@ -742,7 +755,7 @@ FlashAttention-like:
 
 ```text
 rtl/
-    attention_accel_top.sv
+    attention_accel_top.v
     control/
         accel_regfile.sv
         accel_scheduler.sv
@@ -751,21 +764,17 @@ rtl/
         axi4_slave_if.sv
         axi4_master_write.sv
     compute/
-        os_fsa_array.sv
-        os_fsa_pe.sv
-        os_fsa_controller.sv
-        scale_requant_unit.sv
-        qk_engine.sv
-        pv_engine.sv
+        os_fsa_fused_array.v
+        os_fsa_fused_pe.v
+        os_fsa_delay_line.v
+        os_fsa_controller.v
+        scale_requant_unit.v
+        fsa_qk_engine.v
+        fsa_pv_engine.v
     softmax/
-        softmax_engine.sv
-        row_reduce_unit.sv
-        row_broadcast.sv
-        causal_mask.sv
-        pwl_exp_unit.sv
-        block_lse_update.sv
-        reciprocal_lut.sv
-        online_normalizer.sv
+        pwl_exp_unit.v
+        reciprocal_lut.v
+        online_normalizer.v
     memory/
         pingpong_buffer.sv
         banked_sram.sv
@@ -879,10 +888,10 @@ dump 只记录路径和生成脚本。
 ### 9.2 推荐实现顺序
 
 1. Build the SystemVerilog bit-accurate reference model and offline vector-generation scripts.
-2. softmax_engine 单元 RTL 与对拍。
-3. systolic_array 单元 RTL 与 GEMM 对拍。
+2. `os_fsa_fused_pe` 的局部状态、MAC/max/sub/add 与最近邻传递对拍。
+3. `os_fsa_fused_array` 的 QK-softmax-PV 融合数据流对拍。
 4. kv_cache、pingpong_buffer、banked_sram。
-5. tile_scheduler 串接 QK、softmax、PV。
+5. tile_scheduler 串接融合 QK-softmax-PV 阶段。
 6. AXI slave 寄存器与输入窗口。
 7. AXI master writeback。
 8. perf_counter 与功耗/带宽采样辅助。
@@ -925,8 +934,8 @@ UVM 环境建议包含：
 | smoke | seq_q=32，seq_kv=32，D=64 | 完整跑通 |
 | small_debug | 4x4x8，禁用近似或高精 LUT | 易人工检查 |
 | softmax_accuracy | 随机 score、极值 score | 误差达标，无溢出 |
-| os_fsa_pe_modes | MAC/SUB/MAX/ADD/PWL/SCALE | PE 多模式切换正确 |
-| row_reduce | rowmax、rowsum、broadcast | 行归约和广播对拍 |
+| os_fsa_fused_array | QK/MAX/SUB/EXP/ADD/PV | 融合流水与 PE 状态正确 |
+| row_restream | rowmax、m_new 反向回流、rowsum | 最近邻行通路对拍 |
 | qk_gemm | 只测 QK | 与 numpy GEMM 对拍 |
 | pv_gemm | 只测 PV | 与 numpy GEMM 对拍 |
 | tile_boundary | seq 非 32 整数倍 | mask 正确 |

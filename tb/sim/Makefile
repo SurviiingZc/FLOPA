@@ -12,20 +12,16 @@ TOP_SCHEDULER := tb_accel_scheduler
 TOP_PERF := tb_perf_counter
 TOP_AXI_IF := tb_axi4_slave_if
 TOP_AXI_WR := tb_axi4_master_write
-TOP_PE := tb_os_fsa_pe
-TOP_REDUCE := tb_row_reduce_unit
+TOP_PE := tb_os_fsa_fused_array
 TOP_ACCEL := tb_attention_accel_top
 
 COMMON_TOPS := tb_fixed_defs_smoke
 CONTROL_TOPS := tb_accel_regfile tb_accel_scheduler tb_perf_counter
 AXI_TOPS := tb_axi4_slave_if tb_axi4_master_write
-COMPUTE_TOPS := tb_os_fsa_pe tb_os_fsa_array tb_os_fsa_controller \
-	tb_scale_requant_unit tb_qk_engine tb_pv_engine
+COMPUTE_TOPS := tb_os_fsa_fused_array tb_os_fsa_controller tb_scale_requant_unit
 MEMORY_TOPS := tb_banked_sram tb_bram_buffer tb_output_buffer \
 	tb_pingpong_buffer tb_qkv_tile_cache tb_stream_fifo tb_uram_bank
-SOFTMAX_TOPS := tb_block_lse_update tb_causal_mask tb_online_normalizer \
-	tb_pwl_exp_unit tb_reciprocal_lut tb_row_broadcast tb_row_reduce_unit \
-	tb_softmax_engine
+SOFTMAX_TOPS := tb_online_normalizer tb_pwl_exp_unit tb_reciprocal_lut
 TOP_TOPS := tb_attention_accel_top
 MODULE_TOPS := $(COMMON_TOPS) $(CONTROL_TOPS) $(AXI_TOPS) $(COMPUTE_TOPS) \
 	$(MEMORY_TOPS) $(SOFTMAX_TOPS) $(TOP_TOPS)
@@ -37,7 +33,7 @@ MODULE_TOPS := $(COMMON_TOPS) $(CONTROL_TOPS) $(AXI_TOPS) $(COMPUTE_TOPS) \
         syntax-perf run-perf \
         syntax-axi-if run-axi-if \
         syntax-axi-wr run-axi-wr \
-        syntax-pe run-pe syntax-reduce run-reduce syntax-top run-top \
+        syntax-pe run-pe syntax-top run-top \
         clean
 
 help:
@@ -133,12 +129,6 @@ syntax-pe:
 
 run-pe:
 	$(SCRIPTS_DIR)/run_vcs.sh $(TOP_PE) $(BUILD_DIR)/pe $(FILELISTS)
-
-syntax-reduce:
-	$(SCRIPTS_DIR)/syntax_vcs.sh $(TOP_REDUCE) $(BUILD_DIR)/reduce $(FILELISTS)
-
-run-reduce:
-	$(SCRIPTS_DIR)/run_vcs.sh $(TOP_REDUCE) $(BUILD_DIR)/reduce $(FILELISTS)
 
 syntax-top:
 	$(SCRIPTS_DIR)/syntax_vcs.sh $(TOP_ACCEL) $(BUILD_DIR)/top $(FILELISTS)

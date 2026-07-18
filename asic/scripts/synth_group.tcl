@@ -39,19 +39,15 @@ set rtl_files [list \
   rtl/memory/stream_fifo.v \
   rtl/memory/uram_bank.v \
   rtl/compute/scale_requant_unit.v \
-  rtl/compute/os_fsa_pe.v \
-  rtl/compute/os_fsa_array.v \
+  rtl/compute/os_fsa_delay_line.v \
+  rtl/compute/os_fsa_fused_pe.v \
+  rtl/compute/os_fsa_fused_array.v \
   rtl/compute/os_fsa_controller.v \
-  rtl/compute/qk_engine.v \
-  rtl/compute/pv_engine.v \
-  rtl/softmax/causal_mask.v \
-  rtl/softmax/row_broadcast.v \
-  rtl/softmax/row_reduce_unit.v \
+  rtl/compute/fsa_qk_engine.v \
+  rtl/compute/fsa_pv_engine.v \
   rtl/softmax/pwl_exp_unit.v \
-  rtl/softmax/block_lse_update.v \
   rtl/softmax/reciprocal_lut.v \
   rtl/softmax/online_normalizer.v \
-  rtl/softmax/softmax_engine.v \
   rtl/attention_accel_top.v]
 
 set absolute_rtl_files {}

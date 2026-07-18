@@ -4,12 +4,17 @@
 
 This document defines the implementation strategy for the compute datapath:
 
-- `rtl/compute/os_fsa_pe.v`
-- `rtl/compute/os_fsa_array.v`
+- `rtl/compute/os_fsa_fused_pe.v`
+- `rtl/compute/os_fsa_fused_array.v`
+- `rtl/compute/os_fsa_delay_line.v`
 - `rtl/compute/os_fsa_controller.v`
 - `rtl/compute/scale_requant_unit.v`
-- `rtl/compute/qk_engine.v`
-- `rtl/compute/pv_engine.v`
+- `rtl/compute/fsa_qk_engine.v`
+- `rtl/compute/fsa_pv_engine.v`
+
+`os_fsa_fused_array`, `fsa_qk_engine`, and `fsa_pv_engine` form the only
+top-level compute datapath. The superseded external score/probability path and
+its compatibility wrappers have been removed.
 
 ## 2. Design Basis
 
@@ -79,7 +84,10 @@ If the arithmetic width or DSP mapping requires it, split the arithmetic stage f
 ### 4.4 PE Design Rules
 
 - Keep one PE responsible for one lane pair only.
-- Do not embed row reduction or exp logic inside the PE.
+- Keep rowmax compare/pass, max restream subtraction, rowsum add/pass, score,
+  probability, and output accumulation local to the fused PE.
+- Keep exp outside the PE and share one registered 32-lane exp pipeline across
+  the array.
 - Do not let the PE talk directly to AXI or cache logic.
 - Keep all control inputs registered.
 - Keep the PE behavior identical for QK and PV except for mode bits and operand routing.
@@ -125,14 +133,35 @@ This reduces global congestion and helps timing closure on a large FPGA fabric.
 
 ### 5.4 Array Output Handling
 
-For QK, the array outputs score values.
-For PV, the array outputs partial output accumulation values.
+For QK, score values remain in PE-local score registers. They are not exported
+from the array. For PV, only one completed accumulator row is exported at a
+time.
 
-The output path should use a staged gather strategy:
+The active output path uses this staged strategy:
 
-- local PE outputs -> stripe local register -> array output register -> downstream block.
+- QK score -> PE-local max/subtract/probability path.
+- probability -> PE-local shift/restream path -> PV MAC.
+- completed PV accumulator -> one registered row -> output buffer.
 
-Do not forward a full wide score/beta bus combinationally into softmax or memory.
+Do not create `ROWS*COLS*SCORE_W`, `ROWS*COLS*PROB_W`, or
+`ROWS*COLS*ACC_W` ports between top-level compute blocks.
+
+### 5.5 Implemented Systolic Schedule
+
+- Q rows enter from the left and are delayed by row index.
+- K/V columns enter from the top and are delayed by column index.
+- Each PE boundary is registered, so column `c` completes one cycle before
+  column `c+1` in the same row.
+- The QK-last token of column `c` launches its local max compare. The registered
+  partial max reaches column `c+1` when that column's final score is ready, so
+  rowmax overlaps the QK tail instead of rescanning the row later.
+- Rowmax propagates left to right through PE compare/pass registers.
+- `m_new` propagates right to left; each PE stores `score-m_new` locally.
+- The shared exp pipeline processes one 32-element row per cycle after fill and
+  writes probabilities back to the same PE row.
+- Rowsum propagates left to right through PE add/pass registers.
+- Before PV, probability registers shift toward the left boundary. No beta
+  matrix bus or beta SRAM is used.
 
 ## 6. Array Controller
 
@@ -166,35 +195,43 @@ The controller should not create combinational feedback from the output stage ba
 
 ### 7.1 Function
 
-The QK wrapper stages Q and K tile data, drives the array, and emits scores.
+The active QK wrapper stages Q and K tile data and drives the fused array. It
+does not emit scores.
 
 ### 7.2 Design Strategy
 
 - Keep tile input buffering separate from array control.
 - Use explicit tile start and tile done events.
 - Allow the wrapper to absorb small bubbles while the scheduler loads the next tile.
-- Emit scores as a stream or staged register block, not as a direct combinational bus from the array to softmax.
+- Wait for the registered systolic tail token from the fused array.
+- Do not expose score or matrix ports on the active wrapper.
 
 ### 7.3 Timing Rule
 
-The QK wrapper should be the point where tile-level data is aligned and registered before entering softmax.
+The QK wrapper is the cache-to-array boundary. Softmax starts only after the
+registered QK tail event.
 
 ## 8. PV Wrapper
 
 ### 8.1 Function
 
-The PV wrapper consumes beta and V tiles and produces output accumulation.
+The active PV wrapper restores/rescales one accumulator row at a time and
+streams V into the fused array. Probability is consumed directly from PE-local
+registers.
 
 ### 8.2 Design Strategy
 
-- Feed beta through a narrow, registered path.
+- Do not expose a beta input port.
+- Reload old output accumulation one row at a time rather than loading a full
+  matrix.
 - Feed V through the same tile cache family used by Q and K.
 - Keep output accumulation local until the tile is complete.
 - Send only tile-complete data to the output buffer or writeback stage.
 
 ### 8.3 Timing Rule
 
-Do not connect the softmax output directly to the array without a register slice.
+Start PV only after PE probability registers and the row-state update are
+complete. Probability restream advances only when a valid V word is accepted.
 
 ## 9. Fixed-Point Scaling and Requantization
 
@@ -224,13 +261,15 @@ The requant unit must be pipelined if it sits on a critical path. Do not allow a
 Recommended order:
 
 1. `scale_requant_unit.v`
-2. `os_fsa_pe.v`
-3. `os_fsa_array.v`
-4. `os_fsa_controller.v`
-5. `qk_engine.v`
-6. `pv_engine.v`
+2. `os_fsa_fused_pe.v`
+3. `os_fsa_delay_line.v`
+4. `os_fsa_fused_array.v`
+5. `os_fsa_controller.v`
+6. `fsa_qk_engine.v`
+7. `fsa_pv_engine.v`
 
-This order lets you close a tiny PE first, then the array, then the wrappers.
+This order closes the PE-local state and arithmetic first, then the registered
+array links, phase controller, and stream wrappers.
 
 ## 11. Verification Hooks
 

@@ -1,14 +1,13 @@
 `timescale 1ns/1ps
 `include "attention_defines.vh"
 
-module qk_engine #(
+module fsa_qk_engine #(
   parameter integer CACHE_ADDR_W = `ATTN_CACHE_ADDR_W,
   parameter integer CACHE_WORD_W = `ATTN_CACHE_WORD_W,
   parameter integer CACHE_ELEM_W = `ATTN_DATA_W,
   parameter integer ARRAY_ROWS = `ATTN_ARRAY_ROWS,
   parameter integer ARRAY_COLS = `ATTN_ARRAY_COLS,
   parameter integer ARRAY_DATA_W = `ATTN_ARRAY_DATA_W,
-  parameter integer ACC_W = `ATTN_ACC_W,
   parameter integer HEAD_DIM = `ATTN_HEAD_DIM,
   parameter integer HEAD_DIM_W = 8
 )(
@@ -31,8 +30,6 @@ module qk_engine #(
   output reg [ARRAY_ROWS*ARRAY_DATA_W-1:0] array_rows_o,
   output reg [ARRAY_COLS*ARRAY_DATA_W-1:0] array_cols_o,
   input                              array_last_i,
-  input      [ARRAY_ROWS*ARRAY_COLS*ACC_W-1:0] array_matrix_i,
-  output reg [ARRAY_ROWS*ARRAY_COLS*ACC_W-1:0] score_tile_o,
   output reg                         done_o,
   output reg                         busy_o,
   output reg                         error_o
@@ -45,6 +42,7 @@ module qk_engine #(
   localparam ST_DONE = 3'd4;
   localparam integer EXT_W = ARRAY_DATA_W - CACHE_ELEM_W;
   localparam [HEAD_DIM_W-1:0] HEAD_DIM_LIMIT = HEAD_DIM;
+
   reg [2:0] state_q;
   reg [HEAD_DIM_W-1:0] issue_count_q;
   reg [HEAD_DIM_W-1:0] receive_count_q;
@@ -58,13 +56,16 @@ module qk_engine #(
     array_clear_o = (state_q == ST_CLEAR);
     array_valid_o = 1'b0;
     array_last_o = 1'b0;
-    array_rows_o = {(ARRAY_ROWS*ARRAY_DATA_W){1'b0}};
-    array_cols_o = {(ARRAY_COLS*ARRAY_DATA_W){1'b0}};
+    array_rows_o = {ARRAY_ROWS*ARRAY_DATA_W{1'b0}};
+    array_cols_o = {ARRAY_COLS*ARRAY_DATA_W{1'b0}};
+
     if (state_q == ST_ISSUE && issue_count_q < head_dim_i) begin
       q_rd_en_o = 1'b1;
       k_rd_en_o = 1'b1;
     end
-    if ((state_q == ST_ISSUE || state_q == ST_DRAIN) && q_rd_valid_i && k_rd_valid_i) begin
+
+    if ((state_q == ST_ISSUE || state_q == ST_DRAIN) &&
+        q_rd_valid_i && k_rd_valid_i) begin
       array_valid_o = 1'b1;
       array_last_o = (receive_count_q == head_dim_i - 1'b1);
       for (lane = 0; lane < ARRAY_ROWS; lane = lane + 1) begin
@@ -83,16 +84,15 @@ module qk_engine #(
   always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
       state_q <= ST_IDLE;
-      issue_count_q <= 8'd0;
-      receive_count_q <= 8'd0;
-      score_tile_o <= {(ARRAY_ROWS*ARRAY_COLS*ACC_W){1'b0}};
+      issue_count_q <= {HEAD_DIM_W{1'b0}};
+      receive_count_q <= {HEAD_DIM_W{1'b0}};
       done_o <= 1'b0;
       busy_o <= 1'b0;
       error_o <= 1'b0;
     end else if (clear_i) begin
       state_q <= ST_IDLE;
-      issue_count_q <= 8'd0;
-      receive_count_q <= 8'd0;
+      issue_count_q <= {HEAD_DIM_W{1'b0}};
+      receive_count_q <= {HEAD_DIM_W{1'b0}};
       done_o <= 1'b0;
       busy_o <= 1'b0;
       error_o <= 1'b0;
@@ -105,8 +105,8 @@ module qk_engine #(
             if (head_dim_i == 0 || head_dim_i > HEAD_DIM_LIMIT) begin
               error_o <= 1'b1;
             end else begin
-              issue_count_q <= 8'd0;
-              receive_count_q <= 8'd0;
+              issue_count_q <= {HEAD_DIM_W{1'b0}};
+              receive_count_q <= {HEAD_DIM_W{1'b0}};
               busy_o <= 1'b1;
               state_q <= ST_CLEAR;
             end
@@ -117,18 +117,15 @@ module qk_engine #(
           if (issue_count_q < head_dim_i) issue_count_q <= issue_count_q + 1'b1;
           if (q_rd_valid_i ^ k_rd_valid_i) begin
             error_o <= 1'b1;
-            state_q <= ST_IDLE;
             busy_o <= 1'b0;
+            state_q <= ST_IDLE;
           end else if (q_rd_valid_i && k_rd_valid_i) begin
             receive_count_q <= receive_count_q + 1'b1;
             if (receive_count_q == head_dim_i - 1'b1) state_q <= ST_DRAIN;
           end
         end
         ST_DRAIN: begin
-          if (array_last_i) begin
-            score_tile_o <= array_matrix_i;
-            state_q <= ST_DONE;
-          end
+          if (array_last_i) state_q <= ST_DONE;
         end
         ST_DONE: begin
           done_o <= 1'b1;
@@ -137,8 +134,8 @@ module qk_engine #(
         end
         default: begin
           error_o <= 1'b1;
-          state_q <= ST_IDLE;
           busy_o <= 1'b0;
+          state_q <= ST_IDLE;
         end
       endcase
     end

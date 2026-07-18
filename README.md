@@ -64,5 +64,11 @@ The primary golden model should be written in SystemVerilog under `tb/uvm/ref_mo
 
 - 32x32 shared output-stationary array、32-lane online softmax、Q/K/V ping-pong cache、
   final normalization 和 AXI writeback 已接通。
+- Active datapath uses registered systolic input skew, PE-local score/probability
+  state, PE-to-PE rowmax/rowsum, reverse row-state restream, and a shared
+  32-lane exp pipeline. Full score and beta tile ports are not present in the
+  active top-level hierarchy.
+- Superseded array, QK/PV, and external-softmax compatibility blocks have been
+  removed; simulation and synthesis filelists contain only the fused datapath.
 - 第一版支持 MHA/prefill；GQA/decode 配置保留但启动时明确拒绝。
 - 模块级与两块 K/V tile 的端到端定向回归已通过。
