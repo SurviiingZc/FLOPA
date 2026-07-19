@@ -3,17 +3,17 @@
 `include "attention_defines.vh"
 `include "tb_common.svh"
 
-module tb_os_fsa_controller;
-  `TB_FSDB_DUMP("tb_os_fsa_controller.fsdb", tb_os_fsa_controller)
+module tb_fsa_controller;
+  `TB_FSDB_DUMP("tb_fsa_controller.fsdb", tb_fsa_controller)
   reg clk = 0, rst_n = 0, clear_i = 0;
   reg qk_start_i = 0, pv_start_i = 0, qk_done_i = 0, pv_done_i = 0;
   reg qk_error_i = 0, pv_error_i = 0;
   wire [1:0] phase_o;
   wire qk_go_o, pv_go_o, busy_o, error_o;
   integer errors = 0;
-  os_fsa_controller dut (.*);
+  fsa_controller dut (.*);
   always #5 clk = ~clk;
-  `TB_TIMEOUT(100, "tb_os_fsa_controller")
+  `TB_TIMEOUT(100, "tb_fsa_controller")
 
   initial begin
     repeat (3) @(posedge clk); rst_n = 1;
@@ -35,6 +35,6 @@ module tb_os_fsa_controller;
     @(negedge clk); qk_start_i = 1; pv_start_i = 1;
     @(posedge clk); #1;
     `TB_CHECK(error_o && !busy_o, "simultaneous starts rejected")
-    `TB_FINISH("tb_os_fsa_controller")
+    `TB_FINISH("tb_fsa_controller")
   end
 endmodule

@@ -2,7 +2,7 @@
 
 Every retained RTL module is covered either by a self-checking directed
 testbench or by the nearest parent integration test. Fused PE/delay-line logic
-is covered through `tb_os_fsa_fused_array`; the FSA stream wrappers are covered
+is covered through `tb_fsa_fused_array`; the FSA stream wrappers are covered
 through `tb_attention_accel_top`.
 The two ASIC SRAM composition wrappers are covered together by
 `memory/tb_asic_sram_backend.sv`, because both require the foundry functional
@@ -12,7 +12,7 @@ macro model and the `ATTN_ASIC` build define.
 | --- | --- |
 | AXI | `tb_axi4_slave_if`, `tb_axi4_master_write` |
 | Control | `tb_accel_regfile`, `tb_accel_scheduler`, `tb_perf_counter` |
-| Compute | `tb_os_fsa_fused_array`, `tb_os_fsa_controller`, `tb_scale_requant_unit` |
+| Compute | `tb_fsa_fused_array`, `tb_fsa_stripe`, `tb_fsa_controller`, `tb_scale_requant_unit` |
 | Memory | `tb_banked_sram`, `tb_bram_buffer`, `tb_output_buffer`, `tb_pingpong_buffer`, `tb_qkv_tile_cache`, `tb_stream_fifo`, `tb_uram_bank`, `tb_asic_sram_backend` |
 | Softmax | `tb_online_normalizer`, `tb_pwl_exp_unit`, `tb_reciprocal_lut` |
 | Integration | `tb_attention_accel_top` |

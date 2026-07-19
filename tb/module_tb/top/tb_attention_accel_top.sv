@@ -54,6 +54,7 @@ module tb_attention_accel_top;
   integer byte_idx;
   integer addr_idx;
   integer timeout_count;
+  reg saw_l_pv_overlap;
 
   attention_accel_top dut (
     .clk(clk), .rst_n(rst_n),
@@ -130,6 +131,8 @@ module tb_attention_accel_top;
   end
 
   always @(posedge clk) begin
+    if (rst_n && dut.pv_array_valid_w && !dut.l_update_done_q)
+      saw_l_pv_overlap = 1'b1;
     if (rst_n && m_axi_awvalid && m_axi_awready) begin
       if (m_axi_awaddr !== write_burst_count*256 || m_axi_awlen !== 8'd15 || m_axi_awsize !== 3'd4 || m_axi_awburst !== 2'b01)
         $fatal(1, "unexpected AW transaction addr=%h len=%0d", m_axi_awaddr, m_axi_awlen);
@@ -154,6 +157,7 @@ module tb_attention_accel_top;
     tile_commit_kind_i = 0; tile_commit_bank_i = 0; tile_commit_valid_i = 0;
     m_axi_awready = 1; m_axi_wready = 1; m_axi_bresp = 0; m_axi_bvalid = 0;
     write_beat_count = 0; write_burst_count = 0;
+    saw_l_pv_overlap = 1'b0;
     repeat (5) @(posedge clk); rst_n = 1;
 
     for (addr_idx = 0; addr_idx < 64; addr_idx = addr_idx + 1) begin
@@ -193,6 +197,7 @@ module tb_attention_accel_top;
     if (debug_state_o == `ATTN_STATE_ERROR) $fatal(1, "top-level entered ERROR");
     if (write_beat_count != 128) $fatal(1, "write beat count mismatch: %0d", write_beat_count);
     if (write_burst_count != 8) $fatal(1, "write burst count mismatch: %0d", write_burst_count);
+    if (!saw_l_pv_overlap) $fatal(1, "WS-PV did not overlap serialized l update");
     $display("[PASS] tb_attention_accel_top cycles=%0d", timeout_count);
     $finish;
   end

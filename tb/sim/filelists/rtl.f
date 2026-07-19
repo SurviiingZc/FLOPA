@@ -14,11 +14,11 @@
 ../../rtl/memory/stream_fifo.v
 ../../rtl/memory/uram_bank.v
 ../../rtl/compute/scale_requant_unit.v
-../../rtl/compute/os_fsa_delay_line.v
-../../rtl/compute/os_fsa_fused_pe.v
-../../rtl/compute/os_fsa_stripe.v
-../../rtl/compute/os_fsa_fused_array.v
-../../rtl/compute/os_fsa_controller.v
+../../rtl/compute/fsa_delay_line.v
+../../rtl/compute/fsa_fused_pe.v
+../../rtl/compute/fsa_stripe.v
+../../rtl/compute/fsa_fused_array.v
+../../rtl/compute/fsa_controller.v
 ../../rtl/compute/fsa_qk_engine.v
 ../../rtl/compute/fsa_pv_engine.v
 ../../rtl/softmax/pwl_exp_unit.v

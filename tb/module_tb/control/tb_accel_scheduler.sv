@@ -18,7 +18,7 @@ module tb_accel_scheduler;
   reg load_q_done_i;
   reg load_kv_done_i;
   reg qk_done_i;
-  reg softmax_done_i;
+  reg softmax_pv_ready_i;
   reg pv_done_i;
   reg wb_done_i;
   reg [15:0] seq_q_i;
@@ -47,7 +47,8 @@ module tb_accel_scheduler;
     .clear_done_i(clear_done_i), .clear_error_i(clear_error_i), .fatal_error_i(fatal_error_i),
     .prefill_en_i(prefill_en_i), .decode_en_i(decode_en_i),
     .load_q_done_i(load_q_done_i), .load_kv_done_i(load_kv_done_i), .qk_done_i(qk_done_i),
-    .softmax_done_i(softmax_done_i), .pv_done_i(pv_done_i), .wb_done_i(wb_done_i),
+    .softmax_pv_ready_i(softmax_pv_ready_i),
+    .pv_done_i(pv_done_i), .wb_done_i(wb_done_i),
     .seq_q_i(seq_q_i), .seq_kv_i(seq_kv_i), .num_q_heads_i(num_q_heads_i),
     .tile_q_i(tile_q_i), .tile_k_i(tile_k_i),
     .state_o(state_o), .busy_o(busy_o), .done_o(done_o), .error_o(error_o), .error_code_o(error_code_o),
@@ -82,7 +83,7 @@ module tb_accel_scheduler;
     load_q_done_i = 1'b0;
     load_kv_done_i = 1'b0;
     qk_done_i = 1'b0;
-    softmax_done_i = 1'b0;
+    softmax_pv_ready_i = 1'b0;
     pv_done_i = 1'b0;
     wb_done_i = 1'b0;
     seq_q_i = 16'd32;
@@ -106,7 +107,7 @@ module tb_accel_scheduler;
     load_q_done_i = 1'b1; @(posedge clk); #1; load_q_done_i = 1'b0; expect_state(`ATTN_STATE_LOAD_KV);
     load_kv_done_i = 1'b1; @(posedge clk); #1; load_kv_done_i = 1'b0; expect_state(`ATTN_STATE_QK);
     qk_done_i = 1'b1; @(posedge clk); #1; qk_done_i = 1'b0; expect_state(`ATTN_STATE_SOFTMAX);
-    softmax_done_i = 1'b1; @(posedge clk); #1; softmax_done_i = 1'b0; expect_state(`ATTN_STATE_PV);
+    softmax_pv_ready_i = 1'b1; @(posedge clk); #1; softmax_pv_ready_i = 1'b0; expect_state(`ATTN_STATE_PV);
     pv_done_i = 1'b1; @(posedge clk); #1; pv_done_i = 1'b0; expect_state(`ATTN_STATE_WRITEBACK);
     wb_done_i = 1'b1; @(posedge clk); #1; wb_done_i = 1'b0; expect_state(`ATTN_STATE_DONE);
     if (!done_o || busy_o) $fatal(1, "DONE outputs wrong");
