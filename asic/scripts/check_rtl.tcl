@@ -51,6 +51,7 @@ set rtl_files [list \
   rtl/compute/scale_requant_unit.v \
   rtl/compute/os_fsa_delay_line.v \
   rtl/compute/os_fsa_fused_pe.v \
+  rtl/compute/os_fsa_stripe.v \
   rtl/compute/os_fsa_fused_array.v \
   rtl/compute/os_fsa_controller.v \
   rtl/compute/fsa_qk_engine.v \

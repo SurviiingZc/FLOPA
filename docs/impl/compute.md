@@ -5,6 +5,7 @@
 This document defines the implementation strategy for the compute datapath:
 
 - `rtl/compute/os_fsa_fused_pe.v`
+- `rtl/compute/os_fsa_stripe.v`
 - `rtl/compute/os_fsa_fused_array.v`
 - `rtl/compute/os_fsa_delay_line.v`
 - `rtl/compute/os_fsa_controller.v`
@@ -33,13 +34,13 @@ Implications for this project:
 
 ## 3. High-Level Physical Strategy
 
-The logical target is a 32x32 output-stationary array.
+The implemented physical target is a 32x32 output-stationary array.
 
-For timing closure, implement the array as a hierarchical structure instead of a flat 1024-PE blob:
+The array is implemented as a hierarchy instead of a flat 1024-PE blob:
 
 - Partition the 32 rows into 4 row stripes of 8 rows each.
 - Keep each stripe locally regular and locally routed.
-- Register every stripe boundary.
+- Register selected state at every stripe boundary.
 - Keep row-state broadcast local to a stripe when possible.
 - Use narrow, registered control signals to cross stripe boundaries.
 
@@ -104,6 +105,18 @@ If the arithmetic width or DSP mapping requires it, split the arithmetic stage f
 - Keep the INT8 multiply and 32-bit accumulation in one registered cycle unless
   mapped slow-corner timing no longer meets the target clock after placement.
 
+### 4.6 Implemented Phase-Exclusive State
+
+The fused PE uses one signed `accum_q` for QK Score and the current
+output-stationary PV accumulator. During the reverse `m_new` pass, Score is
+overwritten with `Score-m_new`, so no separate `delta_q` is required. The
+default build requires `SCORE_W == ACC_W == 32`.
+
+`prob_q` and `prob_shift_q` remain distinct in the current OS-PV schedule. The
+32-column array processes head-dimension 64 in two halves, so the original
+probability must seed the shift network twice. They can only be merged after a
+complete probability-stationary WS-PV conversion.
+
 ## 5. Array Microarchitecture
 
 ### 5.1 Logical Mapping
@@ -112,14 +125,16 @@ If the arithmetic width or DSP mapping requires it, split the arithmetic stage f
 - Columns map to key lanes for QK, and output feature lanes for PV.
 - The same logical array supports both phases.
 
-### 5.2 Recommended Internal Partitioning
+### 5.2 Implemented Internal Partitioning
 
-For the first version, the 32x32 logical array should be implemented with stripe-local data movement:
+The 32x32 array is instantiated as four real 8x32 `os_fsa_stripe` blocks:
 
-- Each 8-row stripe has a local row broadcast path.
-- Each 8-row stripe has a local control slice.
-- Each stripe can feed a local reduction stage.
-- Row-state values are distributed to stripes through registered fanout buffers.
+- Q, K, rowmax, reverse-m, rowsum, delta, probability, and accumulator links
+  are unpacked constant-neighbor arrays inside a stripe.
+- Probability and accumulator row load are decoded locally to at most 8 rows.
+- Delta and accumulator row reads are selected locally and registered before
+  leaving a stripe.
+- K data and valid tags cross explicit stripe boundaries.
 
 This reduces global congestion and helps timing closure on a large FPGA fabric.
 
@@ -141,10 +156,14 @@ The active output path uses this staged strategy:
 
 - QK score -> PE-local max/subtract/probability path.
 - probability -> PE-local shift/restream path -> PV MAC.
-- completed PV accumulator -> one registered row -> output buffer.
+- completed PV accumulator -> stripe-local registered row response -> output
+  buffer.
 
 Do not create `ROWS*COLS*SCORE_W`, `ROWS*COLS*PROB_W`, or
 `ROWS*COLS*ACC_W` ports between top-level compute blocks.
+
+There is no central variable-index read of a complete PE matrix. A row request
+is tagged to one stripe, resolved by an 8:1 local selector, and registered.
 
 ### 5.5 Implemented Systolic Schedule
 
@@ -227,11 +246,31 @@ registers.
 - Feed V through the same tile cache family used by Q and K.
 - Keep output accumulation local until the tile is complete.
 - Send only tile-complete data to the output buffer or writeback stage.
+- Read alpha through the fused array's narrow synchronous row-state
+  request/response port; do not export an alpha vector.
+- Hold rescale multiplier operands at zero unless a row load is accepted.
 
 ### 8.3 Timing Rule
 
 Start PV only after PE probability registers and the row-state update are
 complete. Probability restream advances only when a valid V word is accepted.
+
+### 8.4 Evaluated Probability-Stationary WS Successor
+
+The preferred future PV mapping keeps `P[i,k]` in `prob_q` and reuses the PE
+rowsum register/link as a horizontal partial-sum pipeline:
+
+```text
+sum_out = sum_in + P[i,k] * V[k,d]
+sum_in at row edge = alpha[i] * O_old[i,d]
+```
+
+This removes `prob_shift_q`, but it is not enabled in the active RTL because it
+requires a coherent memory-format change: V must be transposed from key-major
+to feature-major, O_old must be readable feature-major across all query rows,
+and right-edge results need stripe-local feature-major banks plus a final
+row-major reorder stage. A PE-only implementation would fail after the first
+KV tile. The detailed contract and latency analysis are in `docs/debug.md`.
 
 ## 9. Fixed-Point Scaling and Requantization
 
@@ -263,10 +302,11 @@ Recommended order:
 1. `scale_requant_unit.v`
 2. `os_fsa_fused_pe.v`
 3. `os_fsa_delay_line.v`
-4. `os_fsa_fused_array.v`
-5. `os_fsa_controller.v`
-6. `fsa_qk_engine.v`
-7. `fsa_pv_engine.v`
+4. `os_fsa_stripe.v`
+5. `os_fsa_fused_array.v`
+6. `os_fsa_controller.v`
+7. `fsa_qk_engine.v`
+8. `fsa_pv_engine.v`
 
 This order closes the PE-local state and arithmetic first, then the registered
 array links, phase controller, and stream wrappers.

@@ -3,26 +3,29 @@
 
 module output_buffer #(
   parameter ROWS = 32,
+  parameter LANES = 32,
   parameter HEAD_DIM = 64,
   parameter ACC_W = 32,
-  parameter OUT_W = 8
+  parameter OUT_W = 8,
+  parameter ROW_IDX_W = (ROWS < 2) ? 1 : $clog2(ROWS),
+  parameter ADDR_W = ROW_IDX_W + 1
 )(
   input                         clk,
   input                         rst_n,
   input                         clear_tile_i,
   input                         acc_wr_valid_i,
-  input      [4:0]              acc_wr_row_i,
+  input      [ROW_IDX_W-1:0]    acc_wr_row_i,
   input                         acc_wr_half_i,
-  input      [32*ACC_W-1:0]     acc_wr_data_i,
+  input      [LANES*ACC_W-1:0]  acc_wr_data_i,
   input                         acc_rd_en_i,
-  input      [4:0]              acc_rd_row_i,
+  input      [ROW_IDX_W-1:0]    acc_rd_row_i,
   input                         acc_rd_half_i,
-  output     [32*ACC_W-1:0]     acc_rd_data_o,
+  output     [LANES*ACC_W-1:0]  acc_rd_data_o,
   output reg                    acc_rd_valid_o,
   input                         out_wr_valid_i,
-  input      [4:0]              out_wr_row_i,
+  input      [ROW_IDX_W-1:0]    out_wr_row_i,
   input                         out_wr_half_i,
-  input      [32*OUT_W-1:0]     out_wr_data_i,
+  input      [LANES*OUT_W-1:0]  out_wr_data_i,
   input                         stream_start_i,
   input      [15:0]             stream_bytes_i,
   output     [127:0]            stream_data_o,
@@ -34,14 +37,15 @@ module output_buffer #(
   output reg                    stream_done_o
 );
 
-  localparam ACC_WORD_W = 32 * ACC_W;
-  localparam OUT_WORD_W = 32 * OUT_W;
+  localparam ACC_WORD_W = LANES * ACC_W;
+  localparam OUT_WORD_W = LANES * OUT_W;
+  localparam DEPTH = 2 * ROWS;
 
-  wire [5:0] acc_wr_addr_w;
-  wire [5:0] acc_rd_addr_w;
-  wire [5:0] acc_mem_addr_w;
-  wire [5:0] out_wr_addr_w;
-  wire [5:0] stream_word_addr_w;
+  wire [ADDR_W-1:0] acc_wr_addr_w;
+  wire [ADDR_W-1:0] acc_rd_addr_w;
+  wire [ADDR_W-1:0] acc_mem_addr_w;
+  wire [ADDR_W-1:0] out_wr_addr_w;
+  wire [ADDR_W-1:0] stream_word_addr_w;
   wire acc_mem_en_w;
   wire out_mem_rd_en_w;
   wire out_mem_en_w;
@@ -49,15 +53,22 @@ module output_buffer #(
   wire [OUT_WORD_W-1:0] out_mem_q_w;
   reg [15:0] stream_ptr_q;
   reg [15:0] bytes_left_q;
-  reg [5:0] loaded_word_addr_q;
+  reg [ADDR_W-1:0] loaded_word_addr_q;
   reg loaded_word_valid_q;
+
+`ifndef SYNTHESIS
+  initial begin
+    if (OUT_WORD_W != 256) $fatal(1, "output_buffer requires a 256-bit output word");
+    if (ADDR_W > 8) $fatal(1, "output_buffer exceeds the 256-word SRAM depth");
+  end
+`endif
 
   assign acc_wr_addr_w = {acc_wr_row_i, acc_wr_half_i};
   assign acc_rd_addr_w = {acc_rd_row_i, acc_rd_half_i};
   assign acc_mem_addr_w = acc_wr_valid_i ? acc_wr_addr_w : acc_rd_addr_w;
   assign acc_mem_en_w = acc_wr_valid_i | acc_rd_en_i;
   assign out_wr_addr_w = {out_wr_row_i, out_wr_half_i};
-  assign stream_word_addr_w = stream_ptr_q[10:5];
+  assign stream_word_addr_w = stream_ptr_q[ADDR_W+4:5];
   assign out_mem_rd_en_w = stream_busy_o && !stream_valid_o &&
                             !(loaded_word_valid_q && loaded_word_addr_q == stream_word_addr_w);
   assign out_mem_en_w = out_wr_valid_i | out_mem_rd_en_w;
@@ -75,7 +86,7 @@ module output_buffer #(
     .clk(clk),
     .en_i(acc_mem_en_w),
     .wr_en_i(acc_wr_valid_i),
-    .addr_i({2'b00, acc_mem_addr_w}),
+    .addr_i({{(8-ADDR_W){1'b0}}, acc_mem_addr_w}),
     .wr_data_i(acc_wr_data_i),
     .rd_data_o(acc_mem_q_w)
   );
@@ -84,13 +95,14 @@ module output_buffer #(
     .clk(clk),
     .en_i(out_mem_en_w),
     .wr_en_i(out_wr_valid_i),
-    .addr_i({2'b00, out_wr_valid_i ? out_wr_addr_w : stream_word_addr_w}),
+    .addr_i({{(8-ADDR_W){1'b0}},
+             out_wr_valid_i ? out_wr_addr_w : stream_word_addr_w}),
     .wr_data_i(out_wr_data_i),
     .rd_data_o(out_mem_q_w)
   );
 `else
-  (* ram_style = "block" *) reg [ACC_WORD_W-1:0] acc_mem [0:63];
-  (* ram_style = "block" *) reg [OUT_WORD_W-1:0] out_mem [0:63];
+  (* ram_style = "block" *) reg [ACC_WORD_W-1:0] acc_mem [0:DEPTH-1];
+  (* ram_style = "block" *) reg [OUT_WORD_W-1:0] out_mem [0:DEPTH-1];
   reg [ACC_WORD_W-1:0] acc_mem_q;
   reg [OUT_WORD_W-1:0] out_mem_q;
 
@@ -120,7 +132,7 @@ module output_buffer #(
       stream_done_o <= 1'b0;
       stream_ptr_q <= 16'd0;
       bytes_left_q <= 16'd0;
-      loaded_word_addr_q <= 6'd0;
+      loaded_word_addr_q <= {ADDR_W{1'b0}};
       loaded_word_valid_q <= 1'b0;
     end else begin
       acc_rd_valid_o <= acc_rd_en_i && !acc_wr_valid_i;

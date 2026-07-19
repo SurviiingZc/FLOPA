@@ -141,6 +141,8 @@ The tile cache stages the current and next Q/K/V tiles, not the full sequence.
 - Use explicit valid bits for current and next tile.
 - Align cache movement to the scheduler phase.
 - Do not let the array directly consume AXI beats.
+- Define `CACHE_LANES=CACHE_WORD_W/CACHE_ELEM_W` and reject physical array
+  configurations that index beyond the cache word.
 
 ### 6.4 Why This Works
 
@@ -193,13 +195,37 @@ The output buffer should be a staging block with registered input and output bou
 
 ### 8.4 Physical Organization
 
-The output buffer stores one 32-lane half-row per address. This avoids 32 independent narrow memories and matches the compute handoff directly:
+The output buffer parameters derive lane count, row index, address width, and
+depth from the fixed physical core. The active OS-PV format stores one 32-lane
+half-row per address and matches the compute handoff directly:
 
 - accumulator: 64 addresses x 1024 bits;
 - normalized output: 64 addresses x 256 bits;
 - AXI stream: lower and upper 128-bit halves of the held 256-bit output word.
 
 The stream reader caches the current 256-bit SRAM word. Backpressure never causes another macro access, and moving from the lower to upper AXI beat does not toggle `CEB`.
+
+The current 1024-bit accumulator access is bounded to the 32-column core. It is
+not a scalable interface for a 128-column monolith. A follow-up banking change
+should use 128/256-bit groups.
+
+### 8.5 Memory Contract for Probability-Stationary WS-PV
+
+Probability-stationary WS-PV requires a different organization from the active
+row-major OS-PV buffer:
+
+- transpose each 32x32 V feature half so one issue word is `V[0:31,d]`;
+- store O as four feature-major stripe banks, each 8 rows x 32 bits = 256 bits
+  per feature;
+- read one word from every stripe bank to form
+  `alpha[i]*O_old[i,d]` seeds;
+- write right-edge WS results back to the same feature address;
+- transpose/reorder the final 32x32 output half before row-major normalization
+  and AXI writeback.
+
+The transpose storage must be bounded to one 32x32 half tile. It must not turn
+into a sequence-sized P, S, V, or O buffer. Multi-KV-tile verification is
+mandatory because the first tile does not exercise the O_old seed path.
 
 ## 9. Memory/Compute Interface
 

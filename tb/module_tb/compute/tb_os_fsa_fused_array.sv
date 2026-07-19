@@ -30,8 +30,11 @@ module tb_os_fsa_fused_array;
   reg [15:0] seq_q_i = ROWS;
   reg [15:0] seq_kv_i = COLS;
   reg causal_en_i = 1'b0;
-  wire [ROWS*PROB_W-1:0] alpha_rows_o;
-  wire [ROWS*LSE_W-1:0] l_rows_o;
+  reg row_state_rd_en_i = 1'b0;
+  reg [1:0] row_state_rd_row_i = 0;
+  wire row_state_rd_valid_o;
+  wire [PROB_W-1:0] row_state_alpha_o;
+  wire [LSE_W-1:0] row_state_l_o;
   wire softmax_done_o;
   wire softmax_busy_o;
   reg pv_start_i = 1'b0;
@@ -65,6 +68,27 @@ module tb_os_fsa_fused_array;
   ) dut (.*);
 
   always #5 clk = ~clk;
+
+  task check_row_state;
+    input [1:0] check_row;
+    input [PROB_W-1:0] expected_alpha;
+    input [LSE_W-1:0] expected_l;
+    begin
+      @(negedge clk);
+      row_state_rd_en_i = 1'b1;
+      row_state_rd_row_i = check_row;
+      @(negedge clk);
+      row_state_rd_en_i = 1'b0;
+      #1;
+      if (!row_state_rd_valid_o || row_state_alpha_o !== expected_alpha ||
+          row_state_l_o !== expected_l) begin
+        $error("[FAIL] row_state row=%0d valid=%b alpha=%0d/%0d l=%0d/%0d",
+               check_row, row_state_rd_valid_o, row_state_alpha_o,
+               expected_alpha, row_state_l_o, expected_l);
+        errors = errors + 1;
+      end
+    end
+  endtask
 
   initial begin
     expected_prob[0] = 16'd1632;
@@ -104,18 +128,8 @@ module tb_os_fsa_fused_array;
     softmax_start_i = 1'b0;
     wait (softmax_done_o);
     #1;
-    for (row = 0; row < ROWS; row = row + 1) begin
-      if (l_rows_o[row*LSE_W +: LSE_W] !== 32'd50889) begin
-        $error("[FAIL] rowsum row=%0d got=%0d expected=50889",
-               row, l_rows_o[row*LSE_W +: LSE_W]);
-        errors = errors + 1;
-      end
-      if (alpha_rows_o[row*PROB_W +: PROB_W] !== 16'd0) begin
-        $error("[FAIL] first-tile alpha row=%0d got=%0d", row,
-               alpha_rows_o[row*PROB_W +: PROB_W]);
-        errors = errors + 1;
-      end
-    end
+    for (row = 0; row < ROWS; row = row + 1)
+      check_row_state(row[1:0], 16'd0, 32'd50889);
 
     @(negedge clk);
     pv_clear_acc_i = 1'b1;
@@ -178,13 +192,8 @@ module tb_os_fsa_fused_array;
     softmax_start_i = 1'b0;
     wait (softmax_done_o);
     #1;
-    for (row = 0; row < ROWS; row = row + 1) begin
-      if (l_rows_o[row*LSE_W +: LSE_W] !== expected_causal_l[row]) begin
-        $error("[FAIL] causal rowsum row=%0d got=%0d expected=%0d", row,
-               l_rows_o[row*LSE_W +: LSE_W], expected_causal_l[row]);
-        errors = errors + 1;
-      end
-    end
+    for (row = 0; row < ROWS; row = row + 1)
+      check_row_state(row[1:0], 16'd0, expected_causal_l[row]);
 
     if (softmax_busy_o || error_o) begin
       $error("[FAIL] unexpected status busy=%b error=%b", softmax_busy_o, error_o);

@@ -64,8 +64,12 @@ Each query row needs a small persistent state structure, typically including:
 
 - Keep row state in registers, one entry per active row lane.
 - Update row state only at documented boundaries.
-- Broadcast the current row state using registered fanout.
+- Read current row state through the registered narrow request/response port.
 - Do not let row state be recomputed combinationally from a distant stage.
+
+The implemented interface returns one row's `alpha` and `l` one cycle after a
+tagged request. PV and final normalization arbitrate the port at the top level;
+the full row-state vectors do not leave the fused array.
 
 ## 5. Mask Stage
 
@@ -141,6 +145,10 @@ Suggested pipeline:
 
 Exp should be a dedicated multi-cycle or multi-stage pipe. It should never sit directly after a wide reduction with no register cut.
 
+The implemented exp source is a registered delta-row response from one stripe.
+The exp result is returned only to that stripe, where an 8-row local decode
+writes `prob_q`. It is not broadcast to all physical rows.
+
 ## 8. Block LSE Update
 
 ### 8.1 Purpose
@@ -169,6 +177,11 @@ Implementation rule:
 
 The recurrence should be registered. Do not make block LSE a single long datapath with exp, multiply, add, and compare chained in one combinational block.
 
+The active `old_l*alpha + block_sum` update is serialized over rows. One
+multiplier updates one row per cycle instead of instantiating 32 parallel
+multipliers. This adds bounded control latency but removes a large non-array
+arithmetic replication.
+
 ## 9. Beta Streaming
 
 Probability is stored in the PE that owns the corresponding score and is then
@@ -186,6 +199,11 @@ restreamed directly into PV.
 
 Every probability hop is registered inside a PE. A V bubble must also stop the
 probability shift so the two streams remain aligned.
+
+The separate `prob_shift_q` copy is required because head dimension 64 uses two
+32-feature PV halves. A future probability-stationary WS-PV schedule can remove
+the copy and reuse the rowsum links as partial-sum links, but only with the
+feature-major V/O memory contract documented in `docs/debug.md`.
 
 ## 10. Reciprocal and Final Normalization
 
@@ -220,7 +238,7 @@ Recommended structure:
 - shared scale/exp lane pipeline;
 - PE-local probability writeback and rowsum pass;
 - row-state update;
-- PE-local probability restream into PV;
+- PE-local probability restream into the current OS-PV path;
 - separately pipelined final normalizer.
 
 ## 12. First-Version Strategy

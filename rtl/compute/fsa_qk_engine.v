@@ -41,12 +41,20 @@ module fsa_qk_engine #(
   localparam ST_DRAIN = 3'd3;
   localparam ST_DONE = 3'd4;
   localparam integer EXT_W = ARRAY_DATA_W - CACHE_ELEM_W;
+  localparam integer CACHE_LANES = CACHE_WORD_W / CACHE_ELEM_W;
   localparam [HEAD_DIM_W-1:0] HEAD_DIM_LIMIT = HEAD_DIM;
 
   reg [2:0] state_q;
   reg [HEAD_DIM_W-1:0] issue_count_q;
   reg [HEAD_DIM_W-1:0] receive_count_q;
   integer lane;
+
+`ifndef SYNTHESIS
+  initial begin
+    if (ARRAY_ROWS != CACHE_LANES || ARRAY_COLS != CACHE_LANES)
+      $fatal(1, "fsa_qk_engine physical rows/cols must equal CACHE_LANES");
+  end
+`endif
 
   always @(*) begin
     q_rd_en_o = 1'b0;

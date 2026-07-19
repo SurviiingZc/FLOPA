@@ -1,318 +1,438 @@
 # RTL Scalability and Physical-Design Audit
 
-## 1. Scope and Conclusion
+## 1. Scope and Current Conclusion
 
-This document audits the active fused OS-FSA RTL for register duplication,
-wide datapaths, variable-index multiplexers, high-fanout control, arithmetic
-replication, and parameter scalability.
+This audit covers the active fused OS-FSA implementation after the stripe and
+PE-state refactor. The physical compute core remains intentionally bounded to
+32x32 PEs, implemented as four 8x32 stripes. A logical 128x128 operation must
+be scheduled as physical 32x32 subtiles; changing only `ROWS` and `COLS` to 128
+is not a supported implementation method.
 
-The current 32x32 implementation is suitable for functional verification, but
-it must not be scaled to a monolithic 128x128 array by changing parameters
-alone. Several interfaces are still fixed to 32 lanes, and two variable-index
-reads reconstruct full-row multiplexers from PE-local state. The recommended
-scaling method is a physically bounded 32x32 core, or several hierarchical
-8x32 stripes, with larger logical tiles executed as subtiles.
+The following high-risk structures were removed in this round:
 
-## 2. PE Register Reuse
+- the complete `ROWS*COLS*SCORE_W` delta matrix and its central variable row
+  selector;
+- the complete `ROWS*COLS*ACC_W` accumulator matrix and its central variable
+  row selector;
+- array-wide exp-result row decode;
+- full-vector alpha/l row-state ports;
+- parallel per-row LSE-update multipliers;
+- duplicated PE score, delta, and PV accumulator registers.
 
-### 2.1 Merging `score_q` and `acc_q`
+The remaining wide ports are bounded physical-row transfers, not complete
+array-state exports. They still require physical banking before a larger core
+is attempted.
 
-This change is valid and recommended.
+## 2. PE State-Lifetime Refactor
 
-In the active schedule, the values have disjoint lifetimes:
+### 2.1 Implemented `accum_q` reuse
 
-1. QK writes the score accumulator.
-2. Rowmax and reverse `m_new` consume the score.
-3. Exp writes `prob_q`, and rowsum completes before PV starts.
-4. The first PV tile clears the output accumulator; later PV tiles load the
-   previous O accumulator from `output_buffer` before PV MAC starts.
+`score_q` and `acc_q` were merged into one signed `accum_q`. Their lifetimes
+are disjoint in the active schedule:
 
-Therefore, one PE-local `accum_q` can hold Score during QK and O_acc during PV.
-For the current default configuration, `SCORE_W == ACC_W == 32`, so the merge
-saves 32 flip-flops per PE with only a small phase/enable mux.
+1. QK MAC stores Score in `accum_q`.
+2. Rowmax consumes Score.
+3. The reverse `m_new` pass overwrites `accum_q` with `Score - m_new`.
+4. Exp and rowsum consume the delta and write `prob_q`.
+5. The current output-stationary PV phase clears or loads `accum_q`, then uses
+   it as the output accumulator.
 
-| Array | Saving from `score_q` + `acc_q` merge |
+The implementation enforces `SCORE_W == ACC_W` in simulation. Supporting
+different widths requires explicit `ACCUM_W=max(SCORE_W,ACC_W)` policies at
+every compare, subtract, load, and output boundary, so it is deliberately not
+advertised as a supported configuration.
+
+The merge saves 32 bits per PE at the default width. Overwriting Score with
+delta saves another 32 bits per PE by removing `delta_q`.
+
+| Physical array | State removed |
 | --- | ---: |
-| 32x32 | 32,768 bits |
-| 128x128 | 524,288 bits |
+| 32x32 | 65,536 bits |
+| 128x128 monolith, unsupported | 1,048,576 bits |
 
-Implementation requirements:
+The PE multiplier operands are isolated unless both Q and K/V valids are
+asserted. Clear has highest priority, followed by accumulator load, reverse-m
+overwrite, and active MAC.
 
-- Prefer an explicit single `accum_clear_i` command instead of retaining two
-  ambiguous clear ports inside the PE. If the two ports remain temporarily,
-  use `clear_score_i || clear_acc_i` as the highest-priority update condition.
-- `load_acc_i` must have priority over PV MAC and may only occur after softmax
-  has finished using the score/delta state.
-- QK MAC and PV MAC must be mutually exclusive. Add assertions in the module TB
-  for clear/load/MAC conflicts and illegal phase overlap.
-- For the first implementation, enforce `SCORE_W == ACC_W`. Supporting unequal
-  widths with `ACCUM_W = max(SCORE_W, ACC_W)` is possible, but every load,
-  compare, subtract, output, and truncation point must then use explicit signed
-  extension and width checks.
-- `score_o`, `acc_o`, `max_score_w`, and score subtraction must all read the
-  correct `accum_q` slice. The active array does not currently use `score_o`, so
-  that port should be removed unless a verification-only consumer is retained.
+### 2.2 Why `prob_shift_q` is retained in the current OS-PV path
 
-### 2.2 Additional Phase-Exclusive Register Reuse
+`prob_q` cannot replace `prob_shift_q` in the current implementation. A
+32-column physical array computes the 64-dimensional V tile in two feature
+halves. The same PE-local probability must be reloaded at the beginning of
+both halves. Destructively shifting `prob_q` in the first half would lose the
+source probability needed by the second half.
 
-Two related opportunities should be evaluated after the basic merge:
+`prob_shift_q` may be removed only if one of these contracts is implemented:
 
-1. Overwrite `accum_q` with `score - m_new` during the reverse `m_new` pass.
-   Rowmax has already consumed the original score, so `delta_q` does not need a
-   separate 32-bit register. This can save another 32 bits per PE.
-2. Shift `prob_q` itself during PV. Rowsum has completed before PV starts, so
-   the original probability and `prob_shift_q` are not simultaneously needed.
-   This can save another `PROB_W` bits per PE.
+- all 64 feature lanes are computed in one probability shift; or
+- the probability is re-created/reloaded before each half; or
+- PV changes to the probability-stationary WS schedule evaluated in Section 3.
 
-With default widths, all three changes together can remove up to 80 state bits
-per PE: 81,920 bits for 32x32 and 1,310,720 bits for 128x128. These two extra
-changes require separate directed tests because they alter the lifetime of
-debug-visible intermediate state.
+## 3. Confirmed Probability-Stationary WS-PV Dataflow
 
-Forward max and rowsum pass registers are also phase-exclusive, but merging
-them is lower priority. It can add direction/mode muxing to a timing-sensitive
-nearest-neighbor path, so it should only be done after physical timing data is
-available.
+### 3.1 Exact interpretation
 
-## 3. Packed Versus Unpacked Arrays
+The clarified mapping is correct and has no matrix-dimension mismatch.
 
-Using internal unpacked or two-dimensional arrays is recommended for PE and
-neighbor-link code, with an important limitation: syntax does not determine
-physical routing.
+The PE coordinate is `(query row i, key column k)`. After softmax, PE `(i,k)`
+keeps `P[i,k]` stationary in `prob_q`. The V tile is `V[0:31][0:63]`:
 
-An internal representation such as:
+- the 32 V rows are the 32 key lanes and map one-to-one to the 32 PE columns;
+- cycle `d` presents the vector `V[:,d]`, one INT8 value for every PE column;
+- `V[k,d]` enters the top of PE column `k`;
+- column `k` is delayed by `k` cycles, exactly like the current K input;
+- V advances downward through registered PE links, not through a combinational
+  32-row broadcast net;
+- a signed partial sum advances from left to right across each PE row;
+- PE `(i,k)` performs `psum += P[i,k] * V[k,d]`;
+- the right edge emits 64 results for every query row, one feature per cycle
+  after pipeline fill.
 
-```verilog
-wire [DATA_W-1:0] q_link [0:ROWS-1][0:COLS];
-wire [SCORE_W-1:0] delta [0:ROWS-1][0:COLS-1];
-```
-
-improves constant-index neighbor connections, removes manual flattened-index
-arithmetic, and makes row/stripe ownership easier to verify. It does not remove
-a mux if the code still performs a variable read such as:
-
-```verilog
-delta[prob_issue_row_q][lane]
-```
-
-That expression still synthesizes to a `ROWS:1` mux for every lane. Similarly,
-changing `acc_matrix_w[(row_index_o*COLS+col)*ACC_W +: ACC_W]` to
-`acc[row_index_o][col]` changes readability but not the netlist.
-
-Rules for using unpacked arrays in this project:
-
-- Use them internally for constant `genvar` neighbor connections.
-- Do not expose whole unpacked arrays across Verilog-2001 module ports. Use
-  narrow scalar/vector stream ports at row or stripe boundaries.
-- Prohibit variable reads from PE-state arrays in the central controller.
-- Introduce real `os_fsa_stripe` and `os_fsa_row` hierarchy; array syntax alone
-  does not provide placement locality.
-- Preserve row/stripe hierarchy through synthesis and apply FPGA pblocks or
-  ASIC placement groups so logical neighbors remain physical neighbors.
-- Compile representative configurations with VCS and DC because unpacked-net
-  support and memory inference can differ between tool versions.
-
-## 4. Consolidated P0 Findings
-
-### P0.1 Dynamic delta-row selection
-
-`rtl/compute/os_fsa_fused_array.v:365-368` selects one complete delta row from
-`delta_matrix_w` using `prob_issue_row_q`.
-
-- 32x32: 32 parallel 32-bit, 32:1 muxes.
-- 128x128: 128 parallel 32-bit, 128:1 muxes.
-- `delta_matrix_w` grows from 32,768 to 524,288 declared bits.
-
-Fix: each row or stripe must emit a sequential `{row_id, delta_chunk}` packet.
-Use a registered stripe-local arbiter or reduce `EXP_LANES` to 8/16 and stream
-column chunks. Do not centrally index the complete PE matrix.
-
-### P0.2 Dynamic accumulator-row selection
-
-`rtl/compute/os_fsa_fused_array.v:388-392` selects one O-accumulator row from
-`acc_matrix_w` using `row_index_o`.
-
-Fix: use the natural staggered row completion order. Each row writes a local
-result FIFO or sends registered column chunks directly to `output_buffer`.
-Remove the random-access matrix read and the full `acc_matrix_w` consumer.
-
-### P0.3 Exp-result broadcast to every row
-
-`rtl/compute/os_fsa_fused_array.v:302-308` connects each exp lane to every PE in
-the same column and decodes `prob_receive_row_q` across the full array.
-
-Fix: return exp results as a row-tagged stream to the owning stripe, register
-the result at the stripe edge, and move it through fixed neighbor links. Never
-broadcast a probability lane down all physical rows.
-
-### P0.4 Wide O-accumulator load broadcast
-
-`pv_load_row_data_i` is 1,024 bits at 32 columns and 4,096 bits at 128 columns.
-At every PE, `pv_load_row_index_i == pe_row` selects the destination row, while
-each column slice fans out to all rows.
-
-Fix: replace it with a chunked interface such as:
+The computation is therefore:
 
 ```text
-acc_load_valid, row_id, col_group, acc_data[LOAD_LANES*ACC_W-1:0]
+O_new[i,d] = alpha[i] * O_old[i,d]
+           + sum(k=0..31) P[i,k] * V[k,d]
 ```
 
-Use 8 or 16 load lanes and a row-local shift/load path.
+For the first KV tile, `O_old=0` and the left-edge seed is zero. For subsequent
+KV tiles, the left-edge seed is `alpha[i]*O_old[i,d]`. This seed is essential;
+omitting it produces a correct first tile and incorrect online accumulation.
 
-### P0.5 Row-state export and variable selection
+### 3.2 Systolic alignment
 
-`alpha_rows_o` and `l_rows_o` export every row from the fused array. The PV
-engine selects alpha with `row_count_q`, and the top selects `l` with
-`norm_row_q`.
+Both inputs use registered skew so they meet at the same PE in the same cycle:
 
-Fix: keep `(m,l,alpha)` in a row-state bank at the stripe edge and expose a
-request/response or sequential stream interface:
+- top V input for column `k`: boundary delay `k+1`, then one vertical PE hop
+  per query row;
+- left partial-sum seed for row `i`: boundary delay `i+1`, then one horizontal
+  PE hop per key column.
+
+At PE `(i,k)`, both operands therefore arrive after `i+k+1` boundary/hop
+stages. A bubble must propagate in both the V-valid and partial-sum-valid paths;
+the PE updates only when both valid tokens are present.
+
+The raw right-edge outputs are row-skewed: row 0 completes before row 31. Add a
+registered right-edge de-skew delay of `ROWS-1-i` stages for row `i`. Then all
+32 rows for the same feature `d` become aligned at the stripe-bank write edge.
+
+With `ROWS=COLS=32` and the current one-register boundary convention:
 
 ```text
-row_state_req, row_id -> row_state_valid, alpha, l
+aligned latency = ROWS + COLS = 64 registered stages
+feature d output = cycle 64 + d
+last feature d=63 = approximately cycle 127
 ```
 
-### P0.6 False large-array parameterization
+The raw row-0 value is observable earlier, but it is not yet a complete
+32-query feature vector. The architecturally useful output stream begins after
+the 64-cycle aligned latency. The controller must use propagated feature-valid
+and feature-ID tags rather than a hard-coded delay counter; the exact reported
+cycle number can differ by one depending on whether the accepting edge is
+called cycle 0 or cycle 1.
 
-The Q/K/V cache word is fixed at 256 bits, or 32 INT8 elements. However,
-`fsa_qk_engine` and `fsa_pv_engine` iterate to `ARRAY_ROWS/ARRAY_COLS`; values
-above 32 index beyond the cache word. `output_buffer` also fixes row indices to
-5 bits, row width to 32 lanes, storage to 32 rows x two halves, and output
-addressing to 32-lane words. The top contains fixed constants for 32 rows and
-64-byte output rows.
+### 3.3 PE implementation
 
-Fix:
+The existing softmax rowsum register and horizontal link are phase-exclusive
+with PV and can be reused as the WS partial-sum path. No additional PE-local PV
+accumulator is required.
 
-- Define `CACHE_LANES = CACHE_WORD_W / CACHE_ELEM_W` and reject unsupported
-  configurations at elaboration/TB time.
-- Separate logical tile dimensions from physical `PE_ROWS`, `PE_COLS`, and
-  `LANES_PER_CYCLE`.
-- Execute a logical 128x128 tile as 4x4 physical 32x32 subtiles.
-- Parameterize output row index, lane count, feature groups, word count, and
-  byte/beat calculation from those physical parameters.
-
-## 5. Consolidated P1 Findings
-
-### P1.1 Arithmetic replication outside the PE array
-
-- `fsa_pv_engine.v:87-94` infers `ARRAY_COLS` parallel O-accumulator rescale
-  multipliers.
-- `os_fsa_fused_array.v:529-539` infers `ROWS` parallel `old_l * alpha`
-  multipliers in one update cycle.
-- `online_normalizer.v:51-107` instantiates two multiply stages per lane.
-- The number of scale/PWL-exp lanes is tied directly to `COLS`.
-
-Fix: introduce independent `EXP_LANES`, `RESCALE_LANES`, `LSE_LANES`, and
-`NORM_LANES` parameters. Process rows/columns in registered groups and clock- or
-operand-gate inactive groups. Scaling the PE array must not automatically
-replicate every nonlinear and normalization lane.
-
-### P1.2 Full-grid mask comparators
-
-`os_fsa_fused_array.v:230-239` creates query/key bounds and causal comparison
-logic for every PE. At 128x128 this becomes 16,384 comparison sites driven by
-the same configuration signals.
-
-Fix: generate row-valid and column-valid vectors at stripe boundaries. Generate
-causal validity as a diagonal/shifted one-bit token propagated through local
-links instead of recomputing global indices in every PE.
-
-### P1.3 High-fanout phase and clear control
-
-`clear_i`, `clear_score_i`, `clear_acc_i`, `mac_is_pv_i`, row-load index, and
-probability-write index reach most or all PEs. Synthesis buffering limits fanout
-per cell but does not remove the global network or routing demand.
-
-Fix: register phase/control once per stripe and distribute it locally. Prefer
-valid/epoch state over clearing wide data registers when stale data is already
-protected by valid bits.
-
-### P1.4 Physical stripes are not implemented
-
-`STRIPE_ROWS` exists at the top level but is not used to build hierarchy. The
-active RTL is one nested `ROWS x COLS` generate block, so the documented four
-8-row stripes do not constrain synthesis or placement.
-
-Fix: instantiate four real `os_fsa_stripe` modules for 32 rows. Each stripe must
-own its skew boundary, row state, local result queue, and local control register.
-
-### P1.5 Wide output memories and unnecessary switching
-
-The output accumulator memory reads or writes a complete 1,024-bit row. Its
-ASIC wrapper composes a very wide macro bank, and the FPGA model requests a
-wide BRAM/URAM word. This activates all lanes even when later stages are
-serialized.
-
-Fix: bank output storage by 128 or 256-bit column groups, enable only the active
-group, and align `NORM_LANES` with the bank width.
-
-## 6. Consolidated P2 Findings
-
-### P2.1 Quadratic skew-register growth
-
-The input boundary instantiates delay lines of depth 1 through `ROWS/COLS`.
-Delay storage therefore grows quadratically with array dimension.
-
-Fix: keep skew local to a bounded stripe. On FPGA, explicitly infer SRLs or
-small distributed RAM where appropriate; on ASIC, use placed boundary shift
-register chains with clock enables.
-
-### P2.2 Multiplier operand isolation
-
-The fused PE forms its product combinationally without an explicit MAC enable.
-Upstream registers hold data on invalid cycles, which reduces some switching,
-but this is not a robust power contract.
-
-Fix: isolate multiplier operands with `q_valid_i && k_valid_i` and the active
-MAC phase. Apply the same rule to PV rescale and other shared multipliers so
-unused arithmetic inputs remain constant.
-
-### P2.3 Wide-vector declarations obscure locality
-
-`max_node_data_w`, `m_node_data_w`, `sum_node_data_w`, and most neighbor links
-use constant generate slices, so their wide declarations do not automatically
-create giant muxes. They are still difficult to audit and do not force physical
-locality after hierarchy flattening.
-
-Fix: convert constant-index internal links to unpacked arrays inside real row
-and stripe modules. Do not treat this conversion as a replacement for removing
-variable indexing or for physical floorplanning.
-
-## 7. Recommended Target Organization
+During softmax rowsum:
 
 ```text
-attention_accel_top
-  qkv_cache: fixed 256-bit words
-  fsa_core
-    stripe[0..3]: 8x32 PEs
-      row-local accum/prob state
-      nearest-neighbor max/m/sum links
-      local row-state bank
-      registered delta/result packet queue
-    shared exp lanes: independently parameterized
-    registered stripe arbiter
-  chunked O-accumulator banks
-  independently parameterized normalizer lanes
+sum_data_o <= sum_data_i + zero_extend(prob_q)
 ```
 
-For a logical 128x128 operation, schedule 16 physical 32x32 subtiles. If more
-throughput is required, replicate bounded 32x32 cores with independent local
-SRAM ports instead of constructing one monolithic 128x128 routing domain.
+During WS-PV:
 
-## 8. Implementation Order
+```text
+pv_product = unsigned(prob_q) * signed(V_pipe)
+sum_data_o <= signed(sum_data_i) + sign_extend(pv_product)
+```
 
-1. Merge `score_q` and `acc_q`; add phase-conflict tests.
-2. Evaluate overwriting `accum_q` with delta and reusing `prob_q` for PV shift.
-3. Add legal-configuration guards and remove remaining hard-coded 32-lane
-   output assumptions.
-4. Build real 8x32 stripe hierarchy and convert local links to unpacked arrays.
-5. Replace delta-row and accumulator-row dynamic selectors with registered row
-   or chunk streams.
-6. Replace full alpha/l and acc-load buses with indexed/chunked interfaces.
-7. Decouple exp, LSE, rescale, and normalizer lane counts from array dimensions.
-8. Add stripe-level control distribution, mask propagation, clock enables, and
-   physical placement constraints.
+Implementation rules:
 
-Each structural step must retain the fused dataflow: QK score accumulation,
-column-staggered rowmax, reverse `m_new` subtraction, shared exp, PE-local
-probability/rowsum, and probability-V accumulation.
+- treat `prob_q` as non-negative fixed point, not as a signed negative value
+  when bit `PROB_W-1` is set;
+- treat V as signed INT8 and explicitly sign-extend it before multiplication;
+- retain the 32-bit signed partial-sum width and the existing final fixed-point
+  normalization convention;
+- register the multiply-add at every PE column, matching the current MAC timing
+  shape;
+- make softmax rowsum and WS-PV mutually exclusive PE modes;
+- gate multiplier operands unless both V-valid and partial-sum-valid are set;
+- keep `prob_q` unchanged for all 64 feature cycles and both feature halves.
+
+`accum_q` is still required for QK Score/delta storage, so WS-PV does not remove
+that register. It does remove `prob_shift_q` and the complete right-to-left
+probability shift network. Probability no longer travels left and then back
+through the Q path.
+
+### 3.4 V input format and cache path
+
+The existing 256-bit cache word is exactly the required WS issue width:
+`32 keys * INT8 = 256 bits`. Its logical layout must change.
+
+```text
+WS V-cache address d -> {V[31,d], ..., V[1,d], V[0,d]}
+d = 0..63
+```
+
+The current V cache is key-major, where one word contains 32 features from one
+key. The physical capacity is already sufficient: both layouts store 2048
+bytes per 32x64 V tile. Only the ordering changes.
+
+Two supported load strategies are:
+
+1. FPGA bring-up: the VCK190 PS transposes each 32x64 V tile before writing the
+   accelerator cache. This requires no extra PL transpose hardware and is the
+   fastest validation path.
+2. Standalone/ASIC path: insert a bounded 32x32 transpose buffer for each
+   feature half between the row-major load stream and V cache. It accepts 32
+   key-major words and emits 32 feature-major words.
+
+After feature-major issue, `fsa_pv_engine` sends one 256-bit `V[:,d]` vector per
+cycle into the existing column-skew delay lines. The K vertical PE links are
+reused without a new V broadcast network.
+
+### 3.5 Online O storage and seed path
+
+The natural WS result is feature-major: after right-edge de-skew, one cycle
+contains the 32 query-row results for one feature. Do not merge these into one
+global 1024-bit cross-array routing domain. Store them in four stripe-local
+banks:
+
+| Bank | Rows | Width | Depth | Payload at address `d` |
+| --- | --- | ---: | ---: | --- |
+| stripe 0 | 0-7 | 256 bits | 64 | `O[0:7,d]` |
+| stripe 1 | 8-15 | 256 bits | 64 | `O[8:15,d]` |
+| stripe 2 | 16-23 | 256 bits | 64 | `O[16:23,d]` |
+| stripe 3 | 24-31 | 256 bits | 64 | `O[24:31,d]` |
+
+The total accumulator capacity remains 64x1024 bits = 8 KB; it is physically
+partitioned to match the stripes.
+
+For a later KV tile, each stripe reads its 8 old O values at feature address
+`d`, multiplies them by the 8 row-local alpha values, and injects the resulting
+8 seeds into the corresponding PE rows. This needs eight rescale lanes per
+stripe to sustain one feature per cycle. A lower-area option can share fewer
+lanes, but it must pre-rescale O in a separate pass and will increase PV
+latency.
+
+After the final KV tile, normalization/AXI require row-major order. Use a
+bounded 32x32 reorder for each feature half, or an equivalent banked reader;
+never expose the complete 32x64 accumulator as a flat combinational matrix.
+
+### 3.6 Concrete RTL implementation path
+
+Implement WS-PV as one coherent replacement, in this order:
+
+1. Add a feature-major V-cache contract and a module TB that proves the mapping
+   `address d -> V[0:31,d]`. Keep PS-side transpose for the first FPGA test.
+2. Add four 256-bit x 64 stripe-local O accumulator banks with independent
+   enables and no inactive-bank switching.
+3. Extend `os_fsa_fused_pe` with a WS-PV mode that multiplies stationary
+   `prob_q` by the vertical V operand and writes the horizontal `sum_data_o`
+   register. Preserve the existing softmax rowsum behavior in its own mode.
+4. Extend `os_fsa_stripe` with a 32-bit partial-sum left boundary, a registered
+   right boundary, local V/psum valid tokens, and stripe-local right-edge
+   de-skew. Keep all PE links as constant-index unpacked arrays.
+5. In `os_fsa_fused_array`, disable the Q/probability-restream source during PV,
+   reuse the K column skew for V, and route only four 256-bit aligned result
+   streams to the O banks.
+6. Replace `fsa_pv_engine` row loading and probability shifting with a 64-cycle
+   feature issue loop. For the first KV tile inject zero seeds; otherwise read
+   O/alpha and inject `alpha*O_old` seeds.
+7. Add feature-valid, feature-ID, first/last-feature, and tile-last tags through
+   the complete pipeline. Completion is driven by the final propagated tag,
+   not a fixed 64/127 counter.
+8. Add final feature-major to row-major reorder and connect it to the existing
+   normalizer/output AXI stream.
+9. Only after two-KV-tile regression passes, remove `prob_shift_q`,
+   `prob_shift_*`, the old OS-PV accumulator-row load/read ports, and the
+   superseded row-major accumulator path.
+
+### 3.7 Cost and expected benefit
+
+Benefits relative to the current OS-PV path:
+
+- P never moves after exp writeback;
+- removes 16,384 `prob_shift_q` bits in a 32x32 array;
+- removes the right-to-left probability shift followed by left-to-right Q-path
+  traversal, reducing switching and control fanout;
+- reuses the registered K vertical path and rowsum horizontal path;
+- produces one 32-row feature vector per cycle after fill;
+- result storage is naturally localized to four stripe banks.
+
+Costs:
+
+- 32-bit row-seed skew and right-edge de-skew storage are required. A direct
+  register implementation is approximately 32 Kbits total; FPGA should map
+  these delays to SRLs/BRAM where practical;
+- sustaining one feature per cycle on later KV tiles needs 32 alpha-rescale
+  multipliers, physically grouped as 8 per stripe;
+- V load ordering and final output ordering require bounded transpose/reorder
+  stages;
+- the PE rowsum path becomes a multiply-add path during PV, so its timing must
+  be checked against the same target as the existing registered MAC path.
+
+The expected primary gain is lower PE-state movement and better physical
+locality, not a large flip-flop-area reduction. The additional boundary skew
+storage partly offsets the removed probability-shift registers.
+
+### 3.8 Required verification before removing OS-PV
+
+- PE directed tests for unsigned probability times negative/positive INT8 V;
+- 4x4 and 32x32 wavefront tests proving `(i,k,d)` alignment;
+- feature IDs 0, 31, 32, and 63 across both cache halves;
+- right-edge de-skew checks at stripe boundary rows 7/8, 15/16, and 23/24;
+- first KV tile with zero seed;
+- at least two KV tiles checking `alpha*O_old + P*V` against the fixed-point
+  software model;
+- random input bubbles with V and partial-sum valid alignment;
+- causal and tail tiles, ensuring masked `prob_q` contributes zero;
+- final feature-major to row-major reorder and AXI byte order;
+- assertions that softmax rowsum and WS-PV never drive `sum_data_o` together.
+
+## 4. Packed Versus Unpacked Arrays
+
+Internal PE and neighbor links now use unpacked two-dimensional arrays inside
+`os_fsa_stripe`. This makes constant neighbor ownership explicit and prevents
+manual flattened-index arithmetic from hiding long connections.
+
+Unpacked syntax alone does not remove hardware. A variable access such as
+`state[row_id][lane]` still synthesizes a mux. The implemented rule is:
+
+- constant `genvar` access for PE-to-PE links;
+- variable row selection only inside an 8-row stripe;
+- register the selected stripe row before it leaves the stripe;
+- never export all PE state through a module port;
+- preserve stripe hierarchy during synthesis and floorplan each stripe as a
+  placement region.
+
+## 5. P0 Findings and Status
+
+### P0.1 Dynamic delta-row selection: fixed
+
+The full delta matrix and central `ROWS:1` selector were removed. A tagged
+request selects one of at most eight local rows inside the owning stripe. The
+selected row is registered at the stripe boundary before driving the shared
+exp lanes.
+
+### P0.2 Dynamic accumulator-row selection: fixed for the current OS-PV path
+
+The full accumulator matrix and central selector were removed. Row completion
+is read through the owning stripe's registered row response. The external row
+transfer remains 1024 bits for the bounded 32-column core.
+
+### P0.3 Exp-result broadcast: fixed
+
+Exp results are sent only to the selected stripe. That stripe performs an
+8-row local decode. The result no longer fans out to every PE row.
+
+### P0.4 Wide O-accumulator load: partially fixed
+
+Load-valid and row decode are stripe-local, reducing control fanout from 32 to
+8 PEs. The 1024-bit row data still reaches the selected stripe. A later design
+should bank it into four or eight 128/256-bit groups. The WS-PV organization in
+Section 3 removes this row-load pattern entirely.
+
+### P0.5 Full row-state export: fixed
+
+The fused array now exposes a synchronous narrow request/response interface:
+
+```text
+row_state_rd_en, row_id -> row_state_rd_valid, alpha, l
+```
+
+The PV engine and final normalizer arbitrate this interface at the top level.
+
+### P0.6 False large-array parameterization: guarded
+
+`CACHE_LANES=CACHE_WORD_W/CACHE_ELEM_W` is explicit. QK, PV, fused-array, top,
+and output-buffer modules reject configurations where the physical array does
+not match the 32-lane cache word. Index widths and output-buffer depth are now
+derived parameters. Logical dimensions larger than 32 remain scheduler-level
+subtiles, not physical array parameters.
+
+## 6. P1 Findings and Status
+
+### P1.1 Arithmetic replication outside the PE: partially fixed
+
+- LSE `old_l*alpha` update is serialized to one row per cycle and uses one
+  multiplier.
+- PV rescale multiplier operands are held at zero except during a valid row
+  load, but the current OS-PV path still contains 32 parallel rescale lanes.
+- Exp and final-normalizer lane counts are still coupled to the physical
+  32-lane word.
+
+Independent `EXP_LANES`, `RESCALE_LANES`, and `NORM_LANES` are still required
+before exploring a different physical core width.
+
+### P1.2 Full-grid mask logic: partially fixed
+
+Query index/range is computed once per row and key index/range once per column.
+Only the causal `key_index <= query_index` decision remains per PE lane. A
+diagonal valid-token implementation can remove those replicated comparators if
+mask timing becomes critical.
+
+### P1.3 High-fanout control: contained by hierarchy
+
+Phase, clear, probability-load, and accumulator-load commands enter four
+stripe instances. Row decode occurs locally with fanout bounded to eight rows.
+The stripe modules carry `keep_hierarchy`, and DC synthesis disables ungrouping
+at stripe boundaries. FPGA pblocks and ASIC placement groups are still needed
+in the implementation flow; RTL hierarchy alone is not a floorplan.
+
+### P1.4 Physical stripes: fixed
+
+`os_fsa_fused_array` instantiates real `os_fsa_stripe` modules. Each stripe owns
+8x32 PEs, local Q/K and reduction links, local probability/accumulator decode,
+and registered delta/accumulator row access. K and valid tokens cross stripe
+boundaries through explicit ports.
+
+### P1.5 Wide output memory: open
+
+`output_buffer` is parameterized but still operates on a 1024-bit accumulator
+row and 256-bit normalized word. It is acceptable for the fixed 32-column core,
+but it activates a broad bank. The next memory refactor should use 128/256-bit
+groups or the feature-major stripe banks required by WS-PV.
+
+## 7. P2 Findings and Status
+
+### P2.1 Quadratic skew storage: bounded
+
+Boundary skew remains quadratic in physical rows/columns. This is acceptable
+only because the core is fixed at 32x32. FPGA implementation should infer SRLs
+or shallow distributed memories where beneficial; ASIC implementation should
+place enabled shift-register chains at the array edges.
+
+### P2.2 Multiplier operand isolation: fixed where enabled
+
+PE multiply operands toggle only on valid Q/K or P/V work. PV rescale operands
+toggle only during an accepted row load. Clock gating can be added after real
+activity factors are available, but functional operand isolation is present.
+
+### P2.3 Wide declarations hiding locality: fixed for PE links
+
+Q, K, max, reverse-m, sum, delta, probability-shift, and accumulator links are
+unpacked arrays within each stripe. Wide packed vectors remain only at explicit
+registered or bounded module boundaries.
+
+## 8. Verification Requirements
+
+Every subsequent dataflow change must retain these tests:
+
+- signed INT8 QK and PV arithmetic, including negative operands;
+- causal, partial-row, and partial-column masks;
+- two feature halves using the same PE-local probabilities;
+- at least two KV tiles, checking `m_new`, `alpha`, `l_new`, and
+  `alpha*O_old + P*V`;
+- stripe-boundary rows 7/8, 15/16, and 23/24;
+- registered delta, accumulator, and row-state request/response timing;
+- randomized backpressure on row output;
+- no X propagation on inactive stripe responses.
+
+For a future WS-PV implementation, a one-KV-tile test is insufficient. The
+minimum acceptance test is two KV tiles and both 32-feature halves, compared
+against the fixed-point software model.

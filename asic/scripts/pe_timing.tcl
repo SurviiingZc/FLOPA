@@ -41,8 +41,7 @@ set_max_fanout 16 [current_design]
 compile_ultra
 
 set mac_start [add_to_collection [get_ports q_data_i] [get_ports k_data_i]]
-set mac_end [add_to_collection [get_pins -hierarchical "score_q_reg*/D"] \
-                                [get_pins -hierarchical "acc_q_reg*/D"]]
+set mac_end [get_pins -hierarchical "accum_q_reg*/D"]
 
 redirect -file [file join $report_dir timing_all.rpt] {
   report_timing -delay_type max -path_type full_clock_expanded \

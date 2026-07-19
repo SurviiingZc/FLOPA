@@ -17,7 +17,10 @@ module fsa_pv_engine #(
   input                              start_i,
   input                              feature_half_i,
   input                              first_kv_tile_i,
-  input      [ARRAY_ROWS*BETA_W-1:0] alpha_rows_i,
+  output reg                         row_state_rd_en_o,
+  output reg [((ARRAY_ROWS < 2) ? 1 : $clog2(ARRAY_ROWS))-1:0] row_state_rd_row_o,
+  input                              row_state_rd_valid_i,
+  input      [BETA_W-1:0]            row_state_alpha_i,
 
   output reg                         old_acc_rd_en_o,
   output reg [((ARRAY_ROWS < 2) ? 1 : $clog2(ARRAY_ROWS))-1:0] old_acc_rd_row_o,
@@ -57,6 +60,7 @@ module fsa_pv_engine #(
   localparam ST_DONE = 4'd8;
   localparam integer ROW_IDX_W = (ARRAY_ROWS < 2) ? 1 : $clog2(ARRAY_ROWS);
   localparam integer COL_IDX_W = (ARRAY_COLS < 2) ? 1 : $clog2(ARRAY_COLS);
+  localparam integer CACHE_LANES = CACHE_WORD_W / CACHE_ELEM_W;
   localparam integer EXT_W = ARRAY_DATA_W - CACHE_ELEM_W;
   localparam integer RESCALE_W = ACC_W + BETA_W;
   localparam integer RESCALE_SHIFT = `ATTN_BETA_FRAC;
@@ -71,26 +75,39 @@ module fsa_pv_engine #(
   reg signed [RESCALE_W-1:0] rescale_product_w;
   integer col;
 
+`ifndef SYNTHESIS
+  initial begin
+    if (ARRAY_COLS != CACHE_LANES)
+      $fatal(1, "fsa_pv_engine physical columns must equal CACHE_LANES");
+  end
+`endif
+
   always @(*) begin
     old_acc_rd_en_o = (state_q == ST_READ_OLD);
     old_acc_rd_row_o = row_count_q;
     old_acc_rd_half_o = feature_half_i;
+    row_state_rd_en_o = (state_q == ST_READ_OLD);
+    row_state_rd_row_o = row_count_q;
     v_rd_en_o = (state_q == ST_ISSUE && issue_count_q < COL_LIMIT);
     v_rd_addr_o = {{(CACHE_ADDR_W-COL_IDX_W-1){1'b0}},
                    issue_count_q[COL_IDX_W-1:0], feature_half_i};
 
     array_start_o = (state_q == ST_ARRAY_START);
     array_clear_acc_o = (state_q == ST_CLEAR_ACC);
-    array_load_row_valid_o = (state_q == ST_WAIT_OLD && old_acc_rd_valid_i);
+    array_load_row_valid_o = (state_q == ST_WAIT_OLD && old_acc_rd_valid_i &&
+                              row_state_rd_valid_i);
     array_load_row_index_o = row_count_q;
     array_load_row_data_o = {ARRAY_COLS*ACC_W{1'b0}};
-    for (col = 0; col < ARRAY_COLS; col = col + 1) begin
-      rescale_product_w =
-          $signed({{BETA_W{old_acc_rd_data_i[col*ACC_W+ACC_W-1]}},
-                   old_acc_rd_data_i[col*ACC_W +: ACC_W]}) *
-          $signed({1'b0, alpha_rows_i[row_count_q*BETA_W +: BETA_W]});
-      array_load_row_data_o[col*ACC_W +: ACC_W] =
-          rescale_product_w[RESCALE_SHIFT+ACC_W-1:RESCALE_SHIFT];
+    rescale_product_w = {RESCALE_W{1'b0}};
+    if (array_load_row_valid_o) begin
+      for (col = 0; col < ARRAY_COLS; col = col + 1) begin
+        rescale_product_w =
+            $signed({{BETA_W{old_acc_rd_data_i[col*ACC_W+ACC_W-1]}},
+                     old_acc_rd_data_i[col*ACC_W +: ACC_W]}) *
+            $signed({1'b0, row_state_alpha_i});
+        array_load_row_data_o[col*ACC_W +: ACC_W] =
+            rescale_product_w[RESCALE_SHIFT+ACC_W-1:RESCALE_SHIFT];
+      end
     end
 
     array_valid_o = 1'b0;
@@ -141,7 +158,7 @@ module fsa_pv_engine #(
         ST_CLEAR_ACC: state_q <= ST_ARRAY_START;
         ST_READ_OLD: state_q <= ST_WAIT_OLD;
         ST_WAIT_OLD: begin
-          if (old_acc_rd_valid_i) begin
+          if (old_acc_rd_valid_i && row_state_rd_valid_i) begin
             if (row_count_q == ROW_LAST)
               state_q <= ST_ARRAY_START;
             else begin

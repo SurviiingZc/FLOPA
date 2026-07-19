@@ -66,11 +66,21 @@ module attention_accel_top #(
 
   localparam integer ARRAY_ROW_W = ARRAY_ROWS * ARRAY_DATA_W;
   localparam integer ARRAY_COL_W = ARRAY_COLS * ARRAY_DATA_W;
-  localparam integer ALPHA_ROWS_W = ARRAY_ROWS * BETA_W;
-  localparam integer L_ROWS_W = ARRAY_ROWS * LSE_W;
   localparam integer ACC_ROW_W = ARRAY_COLS * ACC_W;
   localparam integer OUT_ROW_W = ARRAY_COLS * OUT_W;
+  localparam integer CACHE_LANES = CACHE_WORD_W / `ATTN_DATA_W;
   localparam [((ARRAY_ROWS < 2) ? 1 : $clog2(ARRAY_ROWS))-1:0] ARRAY_ROW_LAST = ARRAY_ROWS - 1;
+  localparam [16:0] ARRAY_ROWS_17 = ARRAY_ROWS;
+  localparam [15:0] ARRAY_ROWS_16 = ARRAY_ROWS;
+
+`ifndef SYNTHESIS
+  initial begin
+    if (ARRAY_ROWS != CACHE_LANES || ARRAY_COLS != CACHE_LANES)
+      $fatal(1, "physical array dimensions must equal CACHE_LANES");
+    if (ARRAY_ROWS % STRIPE_ROWS != 0)
+      $fatal(1, "ARRAY_ROWS must be divisible by STRIPE_ROWS");
+  end
+`endif
 
   wire cfg_start_w;
   wire cfg_soft_reset_w;
@@ -182,8 +192,6 @@ module attention_accel_top #(
 
   wire softmax_start_w;
   wire softmax_clear_rows_w;
-  wire [ALPHA_ROWS_W-1:0] alpha_rows_w;
-  wire [L_ROWS_W-1:0] l_rows_w;
   wire softmax_done_w;
   wire softmax_error_w;
 
@@ -192,6 +200,13 @@ module attention_accel_top #(
   wire pv_old_rd_half_w;
   wire [ACC_ROW_W-1:0] acc_rd_data_w;
   wire acc_rd_valid_w;
+  wire pv_state_rd_en_w;
+  wire [((ARRAY_ROWS < 2) ? 1 : $clog2(ARRAY_ROWS))-1:0] pv_state_rd_row_w;
+  wire row_state_rd_en_w;
+  wire [((ARRAY_ROWS < 2) ? 1 : $clog2(ARRAY_ROWS))-1:0] row_state_rd_row_w;
+  wire row_state_rd_valid_w;
+  wire [BETA_W-1:0] row_state_alpha_w;
+  wire [LSE_W-1:0] row_state_l_w;
   wire pv_row_valid_w;
   wire [((ARRAY_ROWS < 2) ? 1 : $clog2(ARRAY_ROWS))-1:0] pv_row_index_w;
   wire pv_row_half_w;
@@ -341,7 +356,8 @@ module attention_accel_top #(
   ) u_pv_engine (
     .clk(clk), .rst_n(rst_n), .clear_i(cfg_soft_reset_w), .start_i(pv_go_w),
     .feature_half_i(pv_half_q), .first_kv_tile_i(kv_tile_index_w == 0),
-    .alpha_rows_i(alpha_rows_w),
+    .row_state_rd_en_o(pv_state_rd_en_w), .row_state_rd_row_o(pv_state_rd_row_w),
+    .row_state_rd_valid_i(row_state_rd_valid_w), .row_state_alpha_i(row_state_alpha_w),
     .old_acc_rd_en_o(pv_old_rd_en_w), .old_acc_rd_row_o(pv_old_rd_row_w), .old_acc_rd_half_o(pv_old_rd_half_w),
     .old_acc_rd_data_i(acc_rd_data_w), .old_acc_rd_valid_i(acc_rd_valid_w),
     .v_rd_en_o(v_cache_rd_en_w), .v_rd_addr_o(v_cache_rd_addr_w), .v_rd_data_i(v_cache_rd_data_w), .v_rd_valid_i(v_cache_rd_valid_w),
@@ -358,7 +374,8 @@ module attention_accel_top #(
   assign softmax_start_w = softmax_en_w && !softmax_en_d_q;
   assign softmax_clear_rows_w = load_q_en_w && !load_q_en_d_q;
   os_fsa_fused_array #(
-    .ROWS(ARRAY_ROWS), .COLS(ARRAY_COLS), .DATA_W(ARRAY_DATA_W),
+    .ROWS(ARRAY_ROWS), .STRIPE_ROWS(STRIPE_ROWS),
+    .COLS(ARRAY_COLS), .DATA_W(ARRAY_DATA_W),
     .SCORE_W(ACC_W), .PROB_W(BETA_W), .ACC_W(ACC_W), .LSE_W(LSE_W)
   ) u_fused_array (
     .clk(clk), .rst_n(rst_n), .clear_i(cfg_soft_reset_w),
@@ -369,8 +386,11 @@ module attention_accel_top #(
     .softmax_start_i(softmax_start_w), .score_scale_i(cfg_score_scale_w),
     .q_base_i(q_tile_base_w), .k_base_i(kv_tile_base_w),
     .seq_q_i(cfg_seq_q_w), .seq_kv_i(cfg_seq_kv_w),
-    .causal_en_i(cfg_causal_en_w), .alpha_rows_o(alpha_rows_w),
-    .l_rows_o(l_rows_w), .softmax_done_o(softmax_done_w),
+    .causal_en_i(cfg_causal_en_w),
+    .row_state_rd_en_i(row_state_rd_en_w), .row_state_rd_row_i(row_state_rd_row_w),
+    .row_state_rd_valid_o(row_state_rd_valid_w),
+    .row_state_alpha_o(row_state_alpha_w), .row_state_l_o(row_state_l_w),
+    .softmax_done_o(softmax_done_w),
     .softmax_busy_o(),
     .pv_start_i(pv_array_start_w), .pv_ready_o(pv_array_ready_w),
     .pv_clear_acc_i(pv_array_clear_acc_w),
@@ -388,15 +408,22 @@ module attention_accel_top #(
   assign softmax_error_w = fused_array_error_w;
 
   assign norm_acc_rd_en_w = (pv_flow_state_q == PV_FLOW_NORM_READ);
-  assign norm_l_w = l_rows_w[norm_row_q*32 +: 32];
+  assign row_state_rd_en_w = pv_state_rd_en_w | norm_acc_rd_en_w;
+  assign row_state_rd_row_w = pv_state_rd_en_w ? pv_state_rd_row_w : norm_row_q;
+  assign norm_l_w = row_state_l_w;
 
   online_normalizer u_normalizer (
-    .clk(clk), .rst_n(rst_n), .valid_i(acc_rd_valid_w && pv_flow_state_q == PV_FLOW_NORM_WAIT),
+    .clk(clk), .rst_n(rst_n),
+    .valid_i(acc_rd_valid_w && row_state_rd_valid_w &&
+             pv_flow_state_q == PV_FLOW_NORM_WAIT),
     .acc_row_i(acc_rd_data_w), .l_i(norm_l_w), .out_scale_i(cfg_out_scale_w),
     .valid_o(norm_valid_w), .out_row_o(norm_row_data_w)
   );
 
-  output_buffer u_output_buffer (
+  output_buffer #(
+    .ROWS(ARRAY_ROWS), .LANES(ARRAY_COLS), .HEAD_DIM(`ATTN_HEAD_DIM),
+    .ACC_W(ACC_W), .OUT_W(OUT_W)
+  ) u_output_buffer (
     .clk(clk), .rst_n(rst_n), .clear_tile_i(softmax_clear_rows_w),
     .acc_wr_valid_i(pv_row_valid_w), .acc_wr_row_i(pv_row_index_w), .acc_wr_half_i(pv_row_half_w), .acc_wr_data_i(pv_row_data_w),
     .acc_rd_en_i(pv_old_rd_en_w | norm_acc_rd_en_w),
@@ -411,7 +438,8 @@ module attention_accel_top #(
   );
 
   always @(*) begin
-    if ({1'b0, cfg_seq_q_w} > {1'b0, q_tile_base_w} + 17'd32) valid_q_rows_w = 16'd32;
+    if ({1'b0, cfg_seq_q_w} > {1'b0, q_tile_base_w} + ARRAY_ROWS_17)
+      valid_q_rows_w = ARRAY_ROWS_16;
     else valid_q_rows_w = cfg_seq_q_w - q_tile_base_w;
     writeback_beats_w = valid_q_rows_w << 2;
     address_offset_w = (({56'd0, head_index_w} * {48'd0, cfg_seq_q_w}) +
@@ -456,7 +484,7 @@ module attention_accel_top #(
       pv_flow_state_q <= PV_FLOW_IDLE;
       pv_half_q <= 1'b0;
       pv_complete_q <= 1'b0;
-      norm_row_q <= 5'd0;
+      norm_row_q <= {((ARRAY_ROWS < 2) ? 1 : $clog2(ARRAY_ROWS)){1'b0}};
       norm_half_q <= 1'b0;
     end else if (cfg_soft_reset_w) begin
       qk_en_d_q <= 1'b0;
@@ -467,7 +495,7 @@ module attention_accel_top #(
       pv_flow_state_q <= PV_FLOW_IDLE;
       pv_half_q <= 1'b0;
       pv_complete_q <= 1'b0;
-      norm_row_q <= 5'd0;
+      norm_row_q <= {((ARRAY_ROWS < 2) ? 1 : $clog2(ARRAY_ROWS)){1'b0}};
       norm_half_q <= 1'b0;
     end else begin
       qk_en_d_q <= qk_en_w;
@@ -494,7 +522,7 @@ module attention_accel_top #(
         PV_FLOW_WAIT1: begin
           if (pv_engine_done_w) begin
             if (tile_last_w) begin
-              norm_row_q <= 5'd0;
+              norm_row_q <= {((ARRAY_ROWS < 2) ? 1 : $clog2(ARRAY_ROWS)){1'b0}};
               norm_half_q <= 1'b0;
               pv_flow_state_q <= PV_FLOW_NORM_READ;
             end else begin

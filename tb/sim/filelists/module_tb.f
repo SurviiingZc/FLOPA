@@ -13,6 +13,7 @@
 ../../tb/module_tb/axi/tb_axi4_slave_if.sv
 ../../tb/module_tb/axi/tb_axi4_master_write.sv
 ../../tb/module_tb/compute/tb_os_fsa_fused_array.sv
+../../tb/module_tb/compute/tb_os_fsa_stripe.sv
 ../../tb/module_tb/compute/tb_os_fsa_controller.sv
 ../../tb/module_tb/compute/tb_scale_requant_unit.sv
 ../../tb/module_tb/memory/tb_banked_sram.sv

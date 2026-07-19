@@ -18,7 +18,7 @@ TOP_ACCEL := tb_attention_accel_top
 COMMON_TOPS := tb_fixed_defs_smoke
 CONTROL_TOPS := tb_accel_regfile tb_accel_scheduler tb_perf_counter
 AXI_TOPS := tb_axi4_slave_if tb_axi4_master_write
-COMPUTE_TOPS := tb_os_fsa_fused_array tb_os_fsa_controller tb_scale_requant_unit
+COMPUTE_TOPS := tb_os_fsa_fused_array tb_os_fsa_stripe tb_os_fsa_controller tb_scale_requant_unit
 MEMORY_TOPS := tb_banked_sram tb_bram_buffer tb_output_buffer \
 	tb_pingpong_buffer tb_qkv_tile_cache tb_stream_fifo tb_uram_bank
 SOFTMAX_TOPS := tb_online_normalizer tb_pwl_exp_unit tb_reciprocal_lut

@@ -41,6 +41,7 @@ set rtl_files [list \
   rtl/compute/scale_requant_unit.v \
   rtl/compute/os_fsa_delay_line.v \
   rtl/compute/os_fsa_fused_pe.v \
+  rtl/compute/os_fsa_stripe.v \
   rtl/compute/os_fsa_fused_array.v \
   rtl/compute/os_fsa_controller.v \
   rtl/compute/fsa_qk_engine.v \
@@ -77,6 +78,13 @@ foreach top_name $top_list {
     error "failed to link $top_name"
   }
   uniquify
+
+  # Preserve the physical 8-row stripe boundaries for placement and CTS.
+  # PE logic inside a stripe remains available for normal optimization.
+  set stripe_cells [get_cells -quiet -hierarchical -filter "ref_name =~ os_fsa_stripe*"]
+  if {[sizeof_collection $stripe_cells] > 0} {
+    set_ungroup $stripe_cells false
+  }
 
   set macro_cells [get_cells -quiet -hierarchical -filter "ref_name == uhdsp_256x8m4s"]
   set macro_count [sizeof_collection $macro_cells]
