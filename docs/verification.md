@@ -74,7 +74,7 @@ Targets:
 - `accel_regfile.v`.
 - `banked_sram.v`, `pingpong_buffer.v`, `stream_fifo.v`.
 - `pwl_exp_unit.v`, `reciprocal_lut.v`, `online_normalizer.v`.
-- `os_fsa_fused_array.v`, `scale_requant_unit.v`, and `os_fsa_controller.v`.
+- `fsa_fused_array.v`, `scale_requant_unit.v`, and `fsa_controller.v`.
 - `axi4_master_write.v` and AXI handshake logic.
 
 ### 5.2 Required TB Structure
@@ -103,12 +103,22 @@ For each module, cover:
 
 ### 5.4 Example Module TB Policy
 
-For `os_fsa_fused_array.v`:
+For `fsa_fused_array.v`:
 
 - Test nonuniform score rows and the column-staggered rowmax pass.
 - Check reverse `m_new` propagation and PE-local score subtraction.
-- Compare shared-PWL exp writeback and PE-chain rowsum against the reference.
-- Check causal masking, probability restream, and identity-V PV output.
+- Check that delta and probability column tags appear in `COLS-1..0` order.
+- Compare shared-PWL exp writeback and reverse PE-chain rowsum against the
+  reference; assert rowsum starts after the first probability column and before
+  all columns have written `prob_q`.
+- Assert `softmax_pv_ready` occurs after all row sums are captured and before
+  the full `softmax_done` event from the serialized `l` updater.
+- Check causal masking, stationary probability, continuous 64-feature WS-PV,
+  both result-half tags, and identity-V output.
+
+For `attention_accel_top.v`, assert at least one valid WS-PV array issue occurs
+while `l_update_done_q` is still clear, and retain the two-KV-tile functional
+check. This distinguishes real datapath overlap from a control-state rename.
 
 For `banked_sram.v`:
 
@@ -236,7 +246,7 @@ Requirements:
 | `smoke_banked_sram` | Bank select, read/write, conflict policy. |
 | `asic_sram_backend` | 256x8 macro width/depth composition and idle chip-enable gating. |
 | `smoke_softmax` | PWL exp, reciprocal, and final normalization. |
-| `smoke_fused_array` | QK, rowmax/sub/exp/rowsum, probability restream, and PV. |
+| `smoke_fused_array` | QK, rowmax/sub/exp/rowsum, stationary probability, and WS-PV. |
 | `smoke_axi_write` | AXI write burst and backpressure. |
 
 ### 9.3 Command-Level Checks

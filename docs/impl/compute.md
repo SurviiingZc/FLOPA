@@ -4,16 +4,16 @@
 
 This document defines the implementation strategy for the compute datapath:
 
-- `rtl/compute/os_fsa_fused_pe.v`
-- `rtl/compute/os_fsa_stripe.v`
-- `rtl/compute/os_fsa_fused_array.v`
-- `rtl/compute/os_fsa_delay_line.v`
-- `rtl/compute/os_fsa_controller.v`
+- `rtl/compute/fsa_fused_pe.v`
+- `rtl/compute/fsa_stripe.v`
+- `rtl/compute/fsa_fused_array.v`
+- `rtl/compute/fsa_delay_line.v`
+- `rtl/compute/fsa_controller.v`
 - `rtl/compute/scale_requant_unit.v`
 - `rtl/compute/fsa_qk_engine.v`
 - `rtl/compute/fsa_pv_engine.v`
 
-`os_fsa_fused_array`, `fsa_qk_engine`, and `fsa_pv_engine` form the only
+`fsa_fused_array`, `fsa_qk_engine`, and `fsa_pv_engine` form the only
 top-level compute datapath. The superseded external score/probability path and
 its compatibility wrappers have been removed.
 
@@ -107,27 +107,27 @@ If the arithmetic width or DSP mapping requires it, split the arithmetic stage f
 
 ### 4.6 Implemented Phase-Exclusive State
 
-The fused PE uses one signed `accum_q` for QK Score and the current
-output-stationary PV accumulator. During the reverse `m_new` pass, Score is
-overwritten with `Score-m_new`, so no separate `delta_q` is required. The
-default build requires `SCORE_W == ACC_W == 32`.
+The fused PE uses signed `accum_q` only for QK Score. During the reverse
+`m_new` pass, Score is overwritten with `Score-m_new`, so no separate
+`delta_q` is required. PV reuses the registered rowsum path and does not use a
+PE-local output accumulator.
 
-`prob_q` and `prob_shift_q` remain distinct in the current OS-PV schedule. The
-32-column array processes head-dimension 64 in two halves, so the original
-probability must seed the shift network twice. They can only be merged after a
-complete probability-stationary WS-PV conversion.
+`prob_q` remains stationary for one continuous 64-feature PV issue stream. The
+two 32-feature halves remain only as row-buffer/output-SRAM address tags; the
+array no longer drains and restarts at feature 31. The obsolete `prob_shift_q`
+and its right-to-left link were removed.
 
 ## 5. Array Microarchitecture
 
 ### 5.1 Logical Mapping
 
 - Rows map to query lanes.
-- Columns map to key lanes for QK, and output feature lanes for PV.
+- Columns map to key lanes in both QK and WS-PV.
 - The same logical array supports both phases.
 
 ### 5.2 Implemented Internal Partitioning
 
-The 32x32 array is instantiated as four real 8x32 `os_fsa_stripe` blocks:
+The 32x32 array is instantiated as four real 8x32 `fsa_stripe` blocks:
 
 - Q, K, rowmax, reverse-m, rowsum, delta, probability, and accumulator links
   are unpacked constant-neighbor arrays inside a stripe.
@@ -155,15 +155,21 @@ time.
 The active output path uses this staged strategy:
 
 - QK score -> PE-local max/subtract/probability path.
-- probability -> PE-local shift/restream path -> PV MAC.
-- completed PV accumulator -> stripe-local registered row response -> output
-  buffer.
+- stationary probability + vertical V -> horizontal partial-sum PV path.
+- each stripe owns two 32-entry row buffers. Half 0 shifts seeds during
+  features 0--31 while half 1 shifts seeds during features 32--63; the emptied
+  half-0 buffer can collect results while half-1 seeds are still issuing.
+- completed row halves leave the stripes in natural staggered row order and
+  write the existing row-major output buffer.
 
 Do not create `ROWS*COLS*SCORE_W`, `ROWS*COLS*PROB_W`, or
 `ROWS*COLS*ACC_W` ports between top-level compute blocks.
 
-There is no central variable-index read of a complete PE matrix. A row request
-is tagged to one stripe, resolved by an 8:1 local selector, and registered.
+There is no central variable-index read of a complete PE matrix. During the
+reverse-m wave, each stripe registers only the active column for its eight
+rows. Four fixed stripe slices form the 32-row exp vector. The bounded 32:1
+column selector must be split into column groups before enlarging the physical
+core beyond 32 columns.
 
 ### 5.5 Implemented Systolic Schedule
 
@@ -176,11 +182,20 @@ is tagged to one stripe, resolved by an 8:1 local selector, and registered.
   rowmax overlaps the QK tail instead of rescanning the row later.
 - Rowmax propagates left to right through PE compare/pass registers.
 - `m_new` propagates right to left; each PE stores `score-m_new` locally.
-- The shared exp pipeline processes one 32-element row per cycle after fill and
-  writes probabilities back to the same PE row.
-- Rowsum propagates left to right through PE add/pass registers.
-- Before PV, probability registers shift toward the left boundary. No beta
-  matrix bus or beta SRAM is used.
+- The shared scale-plus-exp pipeline has seven cycles of latency (four scale
+  stages plus three PWL-exp stages), accepts one 32-row column vector per cycle,
+  and writes probabilities back to the tagged PE column.
+- One cycle after the rightmost probability column writes `prob_q`, all rows
+  start a right-to-left rowsum. The sum token follows the column writeback wave,
+  so reverse-m/SUB, exp, and rowsum overlap.
+- All row sums finish together and enter a 32x32-bit capture register. The
+  single `old_l*alpha` multiplier then updates one row per cycle.
+- Capturing the row sums pulses `softmax_pv_ready_o`; WS-PV starts while that
+  serialized row-state update continues. The later `softmax_done_o` pulse
+  denotes completion of all `l` writes, not probability readiness.
+- During PV, probability remains stationary. Feature-major `V[:,d]` reuses the
+  K column skew/vertical links, while `alpha*O_old[:,d]` enters from the left
+  and the partial sum advances one registered PE column per cycle.
 
 ## 6. Array Controller
 
@@ -205,6 +220,12 @@ The controller should expose a simple handshake model:
 - `tile_last`
 
 Keep these signals registered and stable for at least one cycle around phase boundaries.
+
+Softmax has two distinct registered completion events. `softmax_pv_ready`
+allows the scheduler to launch current-tile PV as soon as probability and all
+row sums are ready. `softmax_done` indicates that every serialized `l` update
+has committed. Tile advance and final normalization use the latter condition;
+they must not infer row-state completion from the earlier PV-ready event.
 
 ### 6.3 Timing Rule
 
@@ -234,9 +255,9 @@ registered QK tail event.
 
 ### 8.1 Function
 
-The active PV wrapper restores/rescales one accumulator row at a time and
-streams V into the fused array. Probability is consumed directly from PE-local
-registers.
+The active PV wrapper restores/rescales both old-O row halves into stripe-local
+buffers, then streams all 64 feature-major V vectors into the fused array in a
+single invocation. Probability remains stationary in each PE.
 
 ### 8.2 Design Strategy
 
@@ -253,9 +274,10 @@ registers.
 ### 8.3 Timing Rule
 
 Start PV only after PE probability registers and the row-state update are
-complete. Probability restream advances only when a valid V word is accepted.
+complete. A row seed advances only when a valid feature-major V word is
+accepted.
 
-### 8.4 Evaluated Probability-Stationary WS Successor
+### 8.4 Implemented Probability-Stationary WS-PV
 
 The preferred future PV mapping keeps `P[i,k]` in `prob_q` and reuses the PE
 rowsum register/link as a horizontal partial-sum pipeline:
@@ -265,12 +287,12 @@ sum_out = sum_in + P[i,k] * V[k,d]
 sum_in at row edge = alpha[i] * O_old[i,d]
 ```
 
-This removes `prob_shift_q`, but it is not enabled in the active RTL because it
-requires a coherent memory-format change: V must be transposed from key-major
-to feature-major, O_old must be readable feature-major across all query rows,
-and right-edge results need stripe-local feature-major banks plus a final
-row-major reorder stage. A PE-only implementation would fail after the first
-KV tile. The detailed contract and latency analysis are in `docs/debug.md`.
+This mode is active. V cache address `d=0..63` stores `V[0:31,d]`. O remains
+row-major in two 32-feature halves. Each stripe preloads both halves, issues 64
+features without a half-boundary restart, and collects each completed half into
+the corresponding emptied buffer. The issue time is 64 cycles; complete-tile
+latency also includes the registered column accumulation and row skew drain.
+This avoids an additional feature-major O SRAM and final transpose.
 
 ## 9. Fixed-Point Scaling and Requantization
 
@@ -300,11 +322,11 @@ The requant unit must be pipelined if it sits on a critical path. Do not allow a
 Recommended order:
 
 1. `scale_requant_unit.v`
-2. `os_fsa_fused_pe.v`
-3. `os_fsa_delay_line.v`
-4. `os_fsa_stripe.v`
-5. `os_fsa_fused_array.v`
-6. `os_fsa_controller.v`
+2. `fsa_fused_pe.v`
+3. `fsa_delay_line.v`
+4. `fsa_stripe.v`
+5. `fsa_fused_array.v`
+6. `fsa_controller.v`
 7. `fsa_qk_engine.v`
 8. `fsa_pv_engine.v`
 

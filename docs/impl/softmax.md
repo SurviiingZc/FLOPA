@@ -7,12 +7,12 @@ This document defines the implementation strategy for the softmax path:
 - `rtl/softmax/pwl_exp_unit.v`
 - `rtl/softmax/reciprocal_lut.v`
 - `rtl/softmax/online_normalizer.v`
-- `rtl/compute/os_fsa_fused_pe.v`
-- `rtl/compute/os_fsa_fused_array.v`
+- `rtl/compute/fsa_fused_pe.v`
+- `rtl/compute/fsa_fused_array.v`
 
 The online-softmax control, row maximum, score subtraction, probability
 writeback, row sum, and `(m,l)` update are integrated into
-`os_fsa_fused_array`. Only the 32-lane PWL exp pipeline is shared outside the
+`fsa_fused_array`. Only the 32-lane PWL exp pipeline is shared outside the
 PEs; final reciprocal normalization remains a separate pipelined output stage.
 
 ## 2. Design Basis
@@ -145,9 +145,15 @@ Suggested pipeline:
 
 Exp should be a dedicated multi-cycle or multi-stage pipe. It should never sit directly after a wide reduction with no register cut.
 
-The implemented exp source is a registered delta-row response from one stripe.
-The exp result is returned only to that stripe, where an 8-row local decode
-writes `prob_q`. It is not broadcast to all physical rows.
+The implemented exp source is a registered 32-row delta-column assembled from
+four fixed eight-row stripe slices. A seven-stage column tag travels with the
+scale/exp data. Each result slice returns to its owning stripe, where a local
+column decode writes `prob_q`; no complete score/probability tile is exported.
+
+The implemented scale-plus-exp latency is seven cycles: four registered stages
+in `scale_requant_unit` followed by three registered stages in `pwl_exp_unit`.
+This is pipeline latency, not initiation interval; the 32-lane path accepts one
+complete score column every cycle.
 
 ## 8. Block LSE Update
 
@@ -177,33 +183,42 @@ Implementation rule:
 
 The recurrence should be registered. Do not make block LSE a single long datapath with exp, multiply, add, and compare chained in one combinational block.
 
-The active `old_l*alpha + block_sum` update is serialized over rows. One
-multiplier updates one row per cycle instead of instantiating 32 parallel
-multipliers. This adds bounded control latency but removes a large non-array
-arithmetic replication.
+The rightmost probability column launches one right-to-left rowsum token per
+row. Probability columns write back in reverse order and remain one cycle ahead
+of that sum token, so local subtraction, exp, and rowsum overlap as one column
+wavefront. All 32 row sums finish together and are captured in 1 Kbit of bounded
+state. The active `old_l*alpha + block_sum` update then remains serialized over
+rows, avoiding 32 parallel LSE multipliers. Capturing all sums also raises the
+PV-ready event, so probability-stationary WS-PV overlaps these serialized
+row-state writes.
 
-## 9. Beta Streaming
+PV-ready and row-state-done are different contracts. The former requires
+complete `prob_q`, `alpha`, and captured block sums; the latter requires all new
+`l` values to be committed. The next tile's softmax and final normalization
+must wait for row-state-done even when the current WS-PV has already started or
+finished.
 
-Probability is stored in the PE that owns the corresponding score and is then
-restreamed directly into PV.
+## 9. Stationary Probability
+
+Probability is stored in the PE that owns the corresponding score and remains
+stationary throughout one continuous 64-feature WS-PV stream. Half tags are
+used only for seed/result buffering and output-SRAM addressing.
 
 ### 9.1 Rules
 
 - Do not expose a full beta matrix port.
 - Load shared-exp results back into PE-local probability registers.
-- Shift probability registers toward the left boundary only when the matching
-  V word is valid.
+- Send feature-major V down the existing K links and horizontal partial sums
+  through the rowsum links only when the matching V word is valid.
 - Keep beta/probability off external SRAM and BRAM.
 
 ### 9.2 Timing Rule
 
-Every probability hop is registered inside a PE. A V bubble must also stop the
-probability shift so the two streams remain aligned.
-
-The separate `prob_shift_q` copy is required because head dimension 64 uses two
-32-feature PV halves. A future probability-stationary WS-PV schedule can remove
-the copy and reuse the rowsum links as partial-sum links, but only with the
-feature-major V/O memory contract documented in `docs/debug.md`.
+Probability does not hop during PV. V-valid and partial-sum-valid tokens remain
+aligned through the column/row skew pipelines; a bubble advances neither the
+row seed nor the row buffer. WS-PV may run concurrently with the central
+one-row-per-cycle `l` updater because it reads stationary probability and
+`alpha`, but it does not consume the newly written `l`.
 
 ## 10. Reciprocal and Final Normalization
 
@@ -227,7 +242,7 @@ The final normalization stage should compute `O_acc / l_final` with one of the f
 
 ## 11. Softmax Engine Top-Level
 
-`os_fsa_fused_array` orchestrates the phase and row-state control. Arithmetic
+`fsa_fused_array` orchestrates the phase and row-state control. Arithmetic
 and data storage remain in the PE or dedicated lane pipelines.
 
 Recommended structure:
@@ -238,7 +253,7 @@ Recommended structure:
 - shared scale/exp lane pipeline;
 - PE-local probability writeback and rowsum pass;
 - row-state update;
-- PE-local probability restream into the current OS-PV path;
+- probability-stationary WS-PV using the rowsum links;
 - separately pipelined final normalizer.
 
 ## 12. First-Version Strategy

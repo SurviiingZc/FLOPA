@@ -153,6 +153,11 @@ This organization maps the FlashAttention tiling idea cleanly onto hardware:
 - Nothing requires a full N x N score buffer.
 - The cache is large enough to absorb timing and bandwidth variation but small enough to stay synthesizable.
 
+For WS-PV, V uses a feature-major contract. Contiguous address `d=0..63`
+returns the 32 key values `V[0:31,d]`; address bit 5 is still the physical
+32-feature-half selector. FPGA software may transpose the 32x64 tile before
+loading; an ASIC DMA path may use bounded 32x32 transpose stages.
+
 ### 6.5 Timing Rule
 
 Cache load, unpack, and issue should be separated by at least one register stage.
@@ -196,7 +201,7 @@ The output buffer should be a staging block with registered input and output bou
 ### 8.4 Physical Organization
 
 The output buffer parameters derive lane count, row index, address width, and
-depth from the fixed physical core. The active OS-PV format stores one 32-lane
+depth from the fixed physical core. The active WS-PV format stores one 32-lane
 half-row per address and matches the compute handoff directly:
 
 - accumulator: 64 addresses x 1024 bits;
@@ -209,23 +214,17 @@ The current 1024-bit accumulator access is bounded to the 32-column core. It is
 not a scalable interface for a 128-column monolith. A follow-up banking change
 should use 128/256-bit groups.
 
-### 8.5 Memory Contract for Probability-Stationary WS-PV
+### 8.5 WS-PV Row-Buffer Contract
 
-Probability-stationary WS-PV requires a different organization from the active
-row-major OS-PV buffer:
-
-- transpose each 32x32 V feature half so one issue word is `V[0:31,d]`;
-- store O as four feature-major stripe banks, each 8 rows x 32 bits = 256 bits
-  per feature;
-- read one word from every stripe bank to form
-  `alpha[i]*O_old[i,d]` seeds;
-- write right-edge WS results back to the same feature address;
-- transpose/reorder the final 32x32 output half before row-major normalization
-  and AXI writeback.
-
-The transpose storage must be bounded to one 32x32 half tile. It must not turn
-into a sequence-sized P, S, V, or O buffer. Multi-KV-tile verification is
-mandatory because the first tile does not exercise the O_old seed path.
+O remains row-major in the existing buffer. Before a non-first-tile PV run,
+both 32-feature row halves are read, multiplied by alpha, and loaded into two
+stripe-local 1024-bit buffers per active row. During features 0--31, buffer 0
+shifts seeds; during features 32--63, buffer 1 shifts seeds while buffer 0
+collects right-edge results. Buffer 1 collects after issue completes. This
+dual-buffer schedule permits continuous 64-feature issue and writes completed
+halves directly back to the unchanged row-major SRAM. The local storage cost is
+64 Kbits for a 32x32 core, but no feature-major O SRAM or final transpose is
+required.
 
 ## 9. Memory/Compute Interface
 

@@ -1,7 +1,7 @@
 `timescale 1ns/1ps
 `include "attention_defines.vh"
 
-module os_fsa_controller (
+module fsa_controller (
   input            clk,
   input            rst_n,
   input            clear_i,

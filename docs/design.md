@@ -175,10 +175,10 @@ The first version should keep one primary clock domain for RTL simplicity.
 
 | File | Purpose | Design Notes |
 | --- | --- | --- |
-| `rtl/compute/os_fsa_fused_pe.v` | Active fused PE | Holds score, probability, and O accumulator state; implements local max/subtract/sum and restream links. |
-| `rtl/compute/os_fsa_fused_array.v` | Active 32x32 FSA-style OS array | Registered input skew, PE-local online softmax, shared 32-lane exp, probability restream, and PV. |
-| `rtl/compute/os_fsa_delay_line.v` | Systolic skew stage | Registers row/column boundary data and valid/last tokens. |
-| `rtl/compute/os_fsa_controller.v` | Array mode controller | Controls QK/PV phases, PE modes, score hold, and beta stream timing. |
+| `rtl/compute/fsa_fused_pe.v` | Active fused PE | Holds score and stationary probability; implements local max/subtract/rowsum and WS-PV partial-sum links. |
+| `rtl/compute/fsa_fused_array.v` | Active 32x32 FSA array | Registered QK/V skew, PE-local online softmax, shared 32-lane exp, and probability-stationary WS-PV. |
+| `rtl/compute/fsa_delay_line.v` | Systolic skew stage | Registers row/column boundary data and valid/last tokens. |
+| `rtl/compute/fsa_controller.v` | Array mode controller | Controls QK/PV phases, PE modes, score hold, and WS-PV timing. |
 | `rtl/compute/scale_requant_unit.v` | Fixed-point rescale/requantization | Signed multiply, shift, round, saturate, and optional zero-point add. |
 | `rtl/compute/fsa_qk_engine.v` | Active QK wrapper | Reads Q/K tiles and drives the fused array without score/matrix output ports. |
 | `rtl/compute/fsa_pv_engine.v` | Active PV wrapper | Restores one O-accumulator row at a time and streams V; probability remains inside the PE array. |

@@ -2,7 +2,7 @@
 `include "attention_defines.vh"
 `include "fixed_defs.vh"
 
-module os_fsa_fused_array #(
+module fsa_fused_array #(
   parameter integer ROWS = `ATTN_ARRAY_ROWS,
   parameter integer STRIPE_ROWS = (ROWS < `ATTN_ARRAY_STRIPE_ROWS) ?
                                   ROWS : `ATTN_ARRAY_STRIPE_ROWS,
@@ -37,54 +37,57 @@ module os_fsa_fused_array #(
   output reg                         row_state_rd_valid_o,
   output reg [PROB_W-1:0]            row_state_alpha_o,
   output reg [LSE_W-1:0]             row_state_l_o,
+  output reg                         softmax_pv_ready_o,
   output reg                         softmax_done_o,
   output reg                         softmax_busy_o,
 
   input                              pv_start_i,
   output reg                         pv_ready_o,
-  input                              pv_clear_acc_i,
+  input                              pv_seed_zero_i,
   input                              pv_load_row_valid_i,
   input      [((ROWS < 2) ? 1 : $clog2(ROWS))-1:0] pv_load_row_index_i,
+  input                              pv_load_row_half_i,
   input      [COLS*ACC_W-1:0]        pv_load_row_data_i,
   input                              pv_valid_i,
-  input                              pv_last_i,
+  input                              pv_issue_half_i,
+  input                              pv_half_last_i,
   input      [COLS*DATA_W-1:0]       pv_cols_i,
   output reg                         pv_done_o,
 
   output reg                         row_valid_o,
   input                              row_ready_i,
   output reg [((ROWS < 2) ? 1 : $clog2(ROWS))-1:0] row_index_o,
+  output reg                         row_half_o,
   output reg [COLS*ACC_W-1:0]        row_data_o,
   output reg                         error_o
 );
 
   localparam integer ROW_IDX_W = (ROWS < 2) ? 1 : $clog2(ROWS);
+  localparam integer COL_IDX_W = (COLS < 2) ? 1 : $clog2(COLS);
   localparam integer LOCAL_ROW_IDX_W = (STRIPE_ROWS < 2) ? 1 : $clog2(STRIPE_ROWS);
   localparam integer NUM_STRIPES = ROWS / STRIPE_ROWS;
-  localparam integer EXP_LANES = COLS;
+  localparam integer EXP_LANES = ROWS;
+  localparam integer EXP_LATENCY = 7;
   localparam integer L_PRODUCT_W = LSE_W + PROB_W;
   localparam [ROW_IDX_W-1:0] ROW_LAST = ROWS - 1;
+  localparam [COL_IDX_W-1:0] COL_LAST = COLS - 1;
 
   localparam SM_IDLE = 4'd0;
   localparam SM_MAX_WAIT = 4'd1;
   localparam SM_ALPHA_LAUNCH = 4'd2;
   localparam SM_ALPHA_WAIT = 4'd3;
   localparam SM_M_START = 4'd4;
-  localparam SM_M_WAIT = 4'd5;
-  localparam SM_PROB_ISSUE = 4'd6;
-  localparam SM_PROB_DRAIN = 4'd7;
-  localparam SM_SUM_START = 4'd8;
-  localparam SM_SUM_WAIT = 4'd9;
-  localparam SM_L_UPDATE = 4'd10;
-  localparam SM_DONE = 4'd11;
+  localparam SM_M_STREAM = 4'd5;
+  localparam SM_SUM_WAIT = 4'd6;
+  localparam SM_L_UPDATE = 4'd7;
+  localparam SM_DONE = 4'd8;
 
   reg [3:0] softmax_state_q;
   reg mac_phase_pv_q;
-  reg [ROW_IDX_W-1:0] prob_issue_row_q;
-  reg [ROW_IDX_W-1:0] prob_receive_row_q;
   reg [ROW_IDX_W-1:0] lse_update_row_q;
-  reg stream_active_q;
-  reg stream_read_pending_q;
+  reg [ROWS-1:0] sum_launch_rows_q;
+  reg [COL_IDX_W-1:0] prob_col_tag_q [0:EXP_LATENCY-1];
+  reg [EXP_LATENCY-1:0] prob_col_tag_valid_q;
 
   reg [ROWS*SCORE_W-1:0] m_rows_q;
   reg [ROWS*SCORE_W-1:0] m_pending_q;
@@ -92,6 +95,7 @@ module os_fsa_fused_array #(
   reg [ROWS*SCORE_W-1:0] block_max_rows_q;
   reg [ROWS*LSE_W-1:0] l_rows_q;
   reg [ROWS*LSE_W-1:0] old_l_q;
+  reg [ROWS*LSE_W-1:0] sum_rows_q;
   reg [ROWS*PROB_W-1:0] alpha_rows_q;
   reg [ROWS-1:0] row_state_valid_q;
   reg [ROWS-1:0] old_row_state_valid_q;
@@ -111,10 +115,12 @@ module os_fsa_fused_array #(
   wire [COLS-1:0] key_in_range_w;
   wire [ROWS*SCORE_W-1:0] max_right_data_w;
   wire [ROWS-1:0] max_right_valid_w;
-  wire [ROWS-1:0] m_left_valid_w;
   wire [ROWS*LSE_W-1:0] sum_right_data_w;
   wire [ROWS-1:0] sum_right_valid_w;
-  wire [ROWS*PROB_W-1:0] prob_left_rows_w;
+  wire [ROWS*ACC_W-1:0] pv_seed_source_w;
+  wire [ROWS*ACC_W-1:0] pv_seed_boundary_data_w;
+  wire [ROWS-1:0] pv_seed_boundary_valid_w;
+  wire [ROWS-1:0] pv_seed_boundary_last_w;
 
   wire [COLS*DATA_W-1:0] stripe_k_data_w [0:NUM_STRIPES];
   wire [COLS-1:0] stripe_k_valid_w [0:NUM_STRIPES];
@@ -122,15 +128,18 @@ module os_fsa_fused_array #(
   wire [STRIPE_ROWS-1:0] stripe_q_tail_valid_w [0:NUM_STRIPES-1];
   wire [STRIPE_ROWS-1:0] stripe_q_tail_last_w [0:NUM_STRIPES-1];
   wire [NUM_STRIPES-1:0] stripe_tail_mac_last_w;
-  wire [NUM_STRIPES-1:0] stripe_delta_valid_w;
-  wire [COLS*SCORE_W-1:0] stripe_delta_data_w [0:NUM_STRIPES-1];
-  wire [NUM_STRIPES-1:0] stripe_acc_valid_w;
-  wire [COLS*ACC_W-1:0] stripe_acc_data_w [0:NUM_STRIPES-1];
+  wire [NUM_STRIPES-1:0] stripe_delta_col_valid_w;
+  wire [COL_IDX_W-1:0] stripe_delta_col_index_w [0:NUM_STRIPES-1];
+  wire [STRIPE_ROWS*SCORE_W-1:0] stripe_delta_col_data_w [0:NUM_STRIPES-1];
+  wire [NUM_STRIPES-1:0] stripe_pv_row_valid_w;
+  wire [LOCAL_ROW_IDX_W-1:0] stripe_pv_row_index_w [0:NUM_STRIPES-1];
+  wire [ROW_IDX_W-1:0] stripe_pv_global_row_w [0:NUM_STRIPES-1];
+  wire [NUM_STRIPES-1:0] stripe_pv_row_half_w;
+  wire [COLS*ACC_W-1:0] stripe_pv_row_data_w [0:NUM_STRIPES-1];
 
-  reg [COLS*SCORE_W-1:0] delta_response_data_w;
-  reg [COLS*ACC_W-1:0] acc_response_data_w;
-  wire delta_response_valid_w;
-  wire acc_response_valid_w;
+  wire [ROWS*SCORE_W-1:0] delta_col_data_w;
+  wire delta_col_valid_w;
+  wire [COL_IDX_W-1:0] delta_col_index_w;
 
   wire [EXP_LANES*SCORE_W-1:0] exp_source_data_w;
   wire exp_source_valid_w;
@@ -140,19 +149,19 @@ module os_fsa_fused_array #(
   wire [EXP_LANES-1:0] exp_valid_w;
   wire all_exp_valid_w;
   wire prob_write_valid_w;
+  wire [COL_IDX_W-1:0] prob_write_col_w;
 
   wire qk_tail_last_w;
-  wire pv_tail_last_w;
   wire pipeline_clear_w;
   wire source_is_pv_w;
   wire source_valid_w;
   wire source_last_w;
-  wire [ROWS*DATA_W-1:0] source_rows_w;
   wire [COLS*DATA_W-1:0] source_cols_w;
-  wire acc_read_request_w;
 
   integer row_idx;
-  integer stripe_idx;
+  integer result_stripe;
+  integer tag_stage;
+  integer consistency_stripe;
   reg signed [SCORE_W-1:0] old_m_w;
   reg signed [SCORE_W-1:0] block_max_w;
   reg signed [SCORE_W-1:0] next_m_w;
@@ -161,45 +170,59 @@ module os_fsa_fused_array #(
 
 `ifndef SYNTHESIS
   initial begin
-    if (ROWS != COLS) $fatal(1, "os_fsa_fused_array requires ROWS == COLS");
+    if (ROWS != COLS) $fatal(1, "fsa_fused_array requires ROWS == COLS");
     if (ROWS % STRIPE_ROWS != 0) $fatal(1, "ROWS must be divisible by STRIPE_ROWS");
     if ((1 << LOCAL_ROW_IDX_W) != STRIPE_ROWS)
       $fatal(1, "STRIPE_ROWS must be a power of two");
+  end
+
+  always @(posedge clk) begin
+    if (rst_n && (|stripe_delta_col_valid_w)) begin
+      if (!(&stripe_delta_col_valid_w))
+        $fatal(1, "fsa_fused_array stripe delta-column valid misalignment");
+      for (consistency_stripe = 1; consistency_stripe < NUM_STRIPES;
+           consistency_stripe = consistency_stripe + 1)
+        if (stripe_delta_col_index_w[consistency_stripe] !=
+            stripe_delta_col_index_w[0])
+          $fatal(1, "fsa_fused_array stripe delta-column tag mismatch");
+    end
   end
 `endif
 
   assign pipeline_clear_w = clear_i || qk_clear_i || pv_start_i;
   assign source_is_pv_w = mac_phase_pv_q;
   assign source_valid_w = qk_valid_i || pv_valid_i;
-  assign source_last_w = source_is_pv_w ? pv_last_i : qk_last_i;
+  assign source_last_w = source_is_pv_w ? pv_half_last_i : qk_last_i;
   assign source_cols_w = source_is_pv_w ? pv_cols_i : qk_cols_i;
-  assign delta_response_valid_w = |stripe_delta_valid_w;
-  assign acc_response_valid_w = |stripe_acc_valid_w;
-  assign acc_read_request_w = stream_active_q && !row_valid_o && !stream_read_pending_q;
+  assign delta_col_valid_w = &stripe_delta_col_valid_w;
+  assign delta_col_index_w = stripe_delta_col_index_w[0];
+  assign prob_write_col_w = prob_col_tag_q[EXP_LATENCY-1];
 
   generate
-    genvar source_row;
-    for (source_row = 0; source_row < ROWS; source_row = source_row + 1) begin : g_source_row
-      assign source_rows_w[source_row*DATA_W +: DATA_W] = source_is_pv_w ?
-          {{(DATA_W-PROB_W){1'b0}}, prob_left_rows_w[source_row*PROB_W +: PROB_W]} :
-          qk_rows_i[source_row*DATA_W +: DATA_W];
-    end
-
     genvar skew_row;
     for (skew_row = 0; skew_row < ROWS; skew_row = skew_row + 1) begin : g_q_skew
-      os_fsa_delay_line #(.WIDTH(DATA_W), .DEPTH(skew_row+1)) u_q_skew (
+      fsa_delay_line #(.WIDTH(DATA_W), .DEPTH(skew_row+1)) u_q_skew (
         .clk(clk), .rst_n(rst_n), .clear_i(pipeline_clear_w),
-        .valid_i(source_valid_w), .last_i(source_last_w),
-        .data_i(source_rows_w[skew_row*DATA_W +: DATA_W]),
+        .valid_i(qk_valid_i), .last_i(qk_last_i),
+        .data_i(qk_rows_i[skew_row*DATA_W +: DATA_W]),
         .valid_o(q_boundary_valid_w[skew_row]),
         .last_o(q_boundary_last_w[skew_row]),
         .data_o(q_boundary_data_w[skew_row*DATA_W +: DATA_W])
+      );
+
+      fsa_delay_line #(.WIDTH(ACC_W), .DEPTH(skew_row+1)) u_pv_seed_skew (
+        .clk(clk), .rst_n(rst_n), .clear_i(pipeline_clear_w),
+        .valid_i(pv_valid_i), .last_i(pv_half_last_i),
+        .data_i(pv_seed_source_w[skew_row*ACC_W +: ACC_W]),
+        .valid_o(pv_seed_boundary_valid_w[skew_row]),
+        .last_o(pv_seed_boundary_last_w[skew_row]),
+        .data_o(pv_seed_boundary_data_w[skew_row*ACC_W +: ACC_W])
       );
     end
 
     genvar skew_col;
     for (skew_col = 0; skew_col < COLS; skew_col = skew_col + 1) begin : g_k_skew
-      os_fsa_delay_line #(.WIDTH(DATA_W), .DEPTH(skew_col+1)) u_k_skew (
+      fsa_delay_line #(.WIDTH(DATA_W), .DEPTH(skew_col+1)) u_k_skew (
         .clk(clk), .rst_n(rst_n), .clear_i(pipeline_clear_w),
         .valid_i(source_valid_w), .last_i(source_last_w),
         .data_i(source_cols_w[skew_col*DATA_W +: DATA_W]),
@@ -236,23 +259,21 @@ module os_fsa_fused_array #(
     genvar stripe;
     for (stripe = 0; stripe < NUM_STRIPES; stripe = stripe + 1) begin : g_stripe
       localparam integer ROW_BASE = stripe * STRIPE_ROWS;
-      wire stripe_prob_load_w = prob_write_valid_w &&
-          ((prob_receive_row_q >> LOCAL_ROW_IDX_W) == stripe);
-      wire stripe_acc_load_w = pv_load_row_valid_i &&
+      localparam [ROW_IDX_W-1:0] ROW_BASE_ID = ROW_BASE;
+      wire stripe_row_load_w = pv_load_row_valid_i &&
           ((pv_load_row_index_i >> LOCAL_ROW_IDX_W) == stripe);
-      wire stripe_delta_req_w = (softmax_state_q == SM_PROB_ISSUE) &&
-          ((prob_issue_row_q >> LOCAL_ROW_IDX_W) == stripe);
-      wire stripe_acc_req_w = acc_read_request_w &&
-          ((row_index_o >> LOCAL_ROW_IDX_W) == stripe);
+      assign stripe_pv_global_row_w[stripe] = ROW_BASE_ID +
+          {{(ROW_IDX_W-LOCAL_ROW_IDX_W){1'b0}}, stripe_pv_row_index_w[stripe]};
+      assign delta_col_data_w[ROW_BASE*SCORE_W +: STRIPE_ROWS*SCORE_W] =
+          stripe_delta_col_data_w[stripe];
 
-      os_fsa_stripe #(
+      fsa_stripe #(
         .STRIPE_ROWS(STRIPE_ROWS), .COLS(COLS), .DATA_W(DATA_W),
-        .SCORE_W(SCORE_W), .PROB_W(PROB_W), .ACC_W(ACC_W), .SUM_W(LSE_W),
+        .SCORE_W(SCORE_W), .PROB_W(PROB_W), .SUM_W(ACC_W),
         .LOCAL_ROW_IDX_W(LOCAL_ROW_IDX_W)
       ) u_stripe (
         .clk(clk), .rst_n(rst_n), .clear_i(clear_i),
-        .clear_score_i(qk_clear_i), .clear_acc_i(pv_clear_acc_i),
-        .mac_is_pv_i(source_is_pv_w),
+        .clear_score_i(qk_clear_i), .ws_pv_i(source_is_pv_w),
         .q_rows_i(q_boundary_data_w[ROW_BASE*DATA_W +: STRIPE_ROWS*DATA_W]),
         .q_valid_i(q_boundary_valid_w[ROW_BASE +: STRIPE_ROWS]),
         .q_last_i(q_boundary_last_w[ROW_BASE +: STRIPE_ROWS]),
@@ -269,44 +290,37 @@ module os_fsa_fused_array #(
         .max_done_data_o(max_right_data_w[ROW_BASE*SCORE_W +: STRIPE_ROWS*SCORE_W]),
         .m_start_valid_i({STRIPE_ROWS{softmax_state_q == SM_M_START}}),
         .m_start_data_i(m_pending_q[ROW_BASE*SCORE_W +: STRIPE_ROWS*SCORE_W]),
-        .m_done_valid_o(m_left_valid_w[ROW_BASE +: STRIPE_ROWS]),
-        .sum_start_valid_i({STRIPE_ROWS{softmax_state_q == SM_SUM_START}}),
+        .m_done_valid_o(),
+        .sum_start_valid_i(sum_launch_rows_q[ROW_BASE +: STRIPE_ROWS]),
         .sum_done_valid_o(sum_right_valid_w[ROW_BASE +: STRIPE_ROWS]),
         .sum_done_data_o(sum_right_data_w[ROW_BASE*LSE_W +: STRIPE_ROWS*LSE_W]),
-        .prob_load_valid_i(stripe_prob_load_w),
-        .prob_load_row_i(prob_receive_row_q[LOCAL_ROW_IDX_W-1:0]),
-        .prob_load_data_i(exp_data_w),
-        .prob_shift_load_i(pv_start_i), .prob_shift_en_i(pv_valid_i),
-        .prob_left_rows_o(prob_left_rows_w[ROW_BASE*PROB_W +: STRIPE_ROWS*PROB_W]),
-        .acc_load_valid_i(stripe_acc_load_w),
-        .acc_load_row_i(pv_load_row_index_i[LOCAL_ROW_IDX_W-1:0]),
-        .acc_load_data_i(pv_load_row_data_i),
-        .delta_read_req_i(stripe_delta_req_w),
-        .delta_read_row_i(prob_issue_row_q[LOCAL_ROW_IDX_W-1:0]),
-        .delta_read_valid_o(stripe_delta_valid_w[stripe]),
-        .delta_read_data_o(stripe_delta_data_w[stripe]),
-        .acc_read_req_i(stripe_acc_req_w),
-        .acc_read_row_i(row_index_o[LOCAL_ROW_IDX_W-1:0]),
-        .acc_read_valid_o(stripe_acc_valid_w[stripe]),
-        .acc_read_data_o(stripe_acc_data_w[stripe]),
+        .prob_col_load_valid_i(prob_write_valid_w),
+        .prob_col_load_col_i(prob_write_col_w),
+        .prob_col_load_data_i(
+            exp_data_w[ROW_BASE*PROB_W +: STRIPE_ROWS*PROB_W]),
+        .pv_row_load_valid_i(stripe_row_load_w),
+        .pv_row_load_row_i(pv_load_row_index_i[LOCAL_ROW_IDX_W-1:0]),
+        .pv_row_load_half_i(pv_load_row_half_i),
+        .pv_row_load_data_i(pv_load_row_data_i),
+        .pv_issue_valid_i(pv_valid_i), .pv_issue_half_i(pv_issue_half_i),
+        .pv_seed_zero_i(pv_seed_zero_i),
+        .pv_seed_rows_o(pv_seed_source_w[ROW_BASE*ACC_W +: STRIPE_ROWS*ACC_W]),
+        .pv_sum_valid_i(pv_seed_boundary_valid_w[ROW_BASE +: STRIPE_ROWS]),
+        .pv_sum_last_i(pv_seed_boundary_last_w[ROW_BASE +: STRIPE_ROWS]),
+        .pv_sum_data_i(pv_seed_boundary_data_w[ROW_BASE*ACC_W +: STRIPE_ROWS*ACC_W]),
+        .pv_row_valid_o(stripe_pv_row_valid_w[stripe]),
+        .pv_row_index_o(stripe_pv_row_index_w[stripe]),
+        .pv_row_half_o(stripe_pv_row_half_w[stripe]),
+        .pv_row_data_o(stripe_pv_row_data_w[stripe]),
+        .delta_col_valid_o(stripe_delta_col_valid_w[stripe]),
+        .delta_col_index_o(stripe_delta_col_index_w[stripe]),
+        .delta_col_data_o(stripe_delta_col_data_w[stripe]),
         .tail_mac_last_o(stripe_tail_mac_last_w[stripe])
       );
     end
   endgenerate
 
   assign qk_tail_last_w = stripe_tail_mac_last_w[NUM_STRIPES-1] && !source_is_pv_w;
-  assign pv_tail_last_w = stripe_tail_mac_last_w[NUM_STRIPES-1] && source_is_pv_w;
-
-  always @(*) begin
-    delta_response_data_w = {COLS*SCORE_W{1'b0}};
-    acc_response_data_w = {COLS*ACC_W{1'b0}};
-    for (stripe_idx = 0; stripe_idx < NUM_STRIPES; stripe_idx = stripe_idx + 1) begin
-      if (stripe_delta_valid_w[stripe_idx])
-        delta_response_data_w = delta_response_data_w | stripe_delta_data_w[stripe_idx];
-      if (stripe_acc_valid_w[stripe_idx])
-        acc_response_data_w = acc_response_data_w | stripe_acc_data_w[stripe_idx];
-    end
-  end
 
   generate
     genvar exp_lane;
@@ -329,16 +343,15 @@ module os_fsa_fused_array #(
       assign exp_source_data_w[exp_lane*SCORE_W +: SCORE_W] =
           (softmax_state_q == SM_ALPHA_LAUNCH) ?
           alpha_delta_q[exp_lane*SCORE_W +: SCORE_W] :
-          delta_response_data_w[exp_lane*SCORE_W +: SCORE_W];
+          delta_col_data_w[exp_lane*SCORE_W +: SCORE_W];
     end
   endgenerate
 
   assign exp_source_valid_w = (softmax_state_q == SM_ALPHA_LAUNCH) ||
-                              delta_response_valid_w;
+                              delta_col_valid_w;
   assign all_exp_valid_w = &exp_valid_w;
   assign prob_write_valid_w = all_exp_valid_w &&
-                              (softmax_state_q == SM_PROB_ISSUE ||
-                               softmax_state_q == SM_PROB_DRAIN);
+                              prob_col_tag_valid_q[EXP_LATENCY-1];
 
   always @(*) begin
     for (row_idx = 0; row_idx < ROWS; row_idx = row_idx + 1) begin
@@ -360,26 +373,29 @@ module os_fsa_fused_array #(
     if (!rst_n) begin
       softmax_state_q <= SM_IDLE;
       mac_phase_pv_q <= 1'b0;
-      prob_issue_row_q <= {ROW_IDX_W{1'b0}};
-      prob_receive_row_q <= {ROW_IDX_W{1'b0}};
       lse_update_row_q <= {ROW_IDX_W{1'b0}};
-      stream_active_q <= 1'b0;
-      stream_read_pending_q <= 1'b0;
+      sum_launch_rows_q <= {ROWS{1'b0}};
+      prob_col_tag_valid_q <= {EXP_LATENCY{1'b0}};
+      for (tag_stage = 0; tag_stage < EXP_LATENCY; tag_stage = tag_stage + 1)
+        prob_col_tag_q[tag_stage] <= {COL_IDX_W{1'b0}};
       m_rows_q <= {ROWS*SCORE_W{1'b0}};
       block_max_rows_q <= {ROWS*SCORE_W{1'b0}};
       l_rows_q <= {ROWS*LSE_W{1'b0}};
       old_l_q <= {ROWS*LSE_W{1'b0}};
+      sum_rows_q <= {ROWS*LSE_W{1'b0}};
       alpha_rows_q <= {ROWS*PROB_W{1'b0}};
       row_state_valid_q <= {ROWS{1'b0}};
       old_row_state_valid_q <= {ROWS{1'b0}};
       max_ready_rows_q <= {ROWS{1'b0}};
       qk_last_o <= 1'b0;
+      softmax_pv_ready_o <= 1'b0;
       softmax_done_o <= 1'b0;
       softmax_busy_o <= 1'b0;
       pv_ready_o <= 1'b0;
       pv_done_o <= 1'b0;
       row_valid_o <= 1'b0;
       row_index_o <= {ROW_IDX_W{1'b0}};
+      row_half_o <= 1'b0;
       row_data_o <= {COLS*ACC_W{1'b0}};
       error_o <= 1'b0;
       row_state_rd_valid_o <= 1'b0;
@@ -388,23 +404,35 @@ module os_fsa_fused_array #(
     end else if (clear_i) begin
       softmax_state_q <= SM_IDLE;
       mac_phase_pv_q <= 1'b0;
-      stream_active_q <= 1'b0;
-      stream_read_pending_q <= 1'b0;
       row_state_valid_q <= {ROWS{1'b0}};
       max_ready_rows_q <= {ROWS{1'b0}};
       qk_last_o <= 1'b0;
+      softmax_pv_ready_o <= 1'b0;
       softmax_done_o <= 1'b0;
       softmax_busy_o <= 1'b0;
       pv_ready_o <= 1'b0;
       pv_done_o <= 1'b0;
       row_valid_o <= 1'b0;
+      sum_launch_rows_q <= {ROWS{1'b0}};
+      prob_col_tag_valid_q <= {EXP_LATENCY{1'b0}};
+      sum_rows_q <= {ROWS*LSE_W{1'b0}};
       error_o <= 1'b0;
       row_state_rd_valid_o <= 1'b0;
     end else begin
       qk_last_o <= qk_tail_last_w;
+      softmax_pv_ready_o <= 1'b0;
       softmax_done_o <= 1'b0;
       pv_ready_o <= pv_start_i;
       pv_done_o <= 1'b0;
+      row_valid_o <= 1'b0;
+      sum_launch_rows_q <= {ROWS{1'b0}};
+      prob_col_tag_valid_q[0] <= delta_col_valid_w;
+      if (delta_col_valid_w) prob_col_tag_q[0] <= delta_col_index_w;
+      for (tag_stage = 1; tag_stage < EXP_LATENCY; tag_stage = tag_stage + 1) begin
+        prob_col_tag_valid_q[tag_stage] <= prob_col_tag_valid_q[tag_stage-1];
+        if (prob_col_tag_valid_q[tag_stage-1])
+          prob_col_tag_q[tag_stage] <= prob_col_tag_q[tag_stage-1];
+      end
       row_state_rd_valid_o <= row_state_rd_en_i;
       if (row_state_rd_en_i) begin
         row_state_alpha_o <= alpha_rows_q[row_state_rd_row_i*PROB_W +: PROB_W];
@@ -416,6 +444,7 @@ module os_fsa_fused_array #(
 
       if (qk_clear_i) begin
         max_ready_rows_q <= {ROWS{1'b0}};
+        sum_launch_rows_q <= {ROWS{1'b0}};
       end else if (!mac_phase_pv_q) begin
         for (row_idx = 0; row_idx < ROWS; row_idx = row_idx + 1) begin
           if (max_right_valid_w[row_idx]) begin
@@ -436,6 +465,9 @@ module os_fsa_fused_array #(
 
       if (softmax_start_i && softmax_state_q != SM_IDLE)
         error_o <= 1'b1;
+
+      if (prob_write_valid_w && prob_write_col_w == COL_LAST)
+        sum_launch_rows_q <= {ROWS{1'b1}};
 
       case (softmax_state_q)
         SM_IDLE: begin
@@ -463,31 +495,16 @@ module os_fsa_fused_array #(
             softmax_state_q <= SM_M_START;
           end
         end
-        SM_M_START: softmax_state_q <= SM_M_WAIT;
-        SM_M_WAIT: begin
-          if (&m_left_valid_w) begin
-            prob_issue_row_q <= {ROW_IDX_W{1'b0}};
-            prob_receive_row_q <= {ROW_IDX_W{1'b0}};
-            softmax_state_q <= SM_PROB_ISSUE;
-          end
+        SM_M_START: softmax_state_q <= SM_M_STREAM;
+        SM_M_STREAM: begin
+          if (prob_write_valid_w && prob_write_col_w == {COL_IDX_W{1'b0}})
+            softmax_state_q <= SM_SUM_WAIT;
         end
-        SM_PROB_ISSUE: begin
-          if (prob_issue_row_q == ROW_LAST)
-            softmax_state_q <= SM_PROB_DRAIN;
-          else
-            prob_issue_row_q <= prob_issue_row_q + 1'b1;
-          if (prob_write_valid_w) prob_receive_row_q <= prob_receive_row_q + 1'b1;
-        end
-        SM_PROB_DRAIN: begin
-          if (prob_write_valid_w) begin
-            if (prob_receive_row_q == ROW_LAST) softmax_state_q <= SM_SUM_START;
-            else prob_receive_row_q <= prob_receive_row_q + 1'b1;
-          end
-        end
-        SM_SUM_START: softmax_state_q <= SM_SUM_WAIT;
         SM_SUM_WAIT: begin
           if (&sum_right_valid_w) begin
+            sum_rows_q <= sum_right_data_w;
             lse_update_row_q <= {ROW_IDX_W{1'b0}};
+            softmax_pv_ready_o <= 1'b1;
             softmax_state_q <= SM_L_UPDATE;
           end
         end
@@ -516,29 +533,18 @@ module os_fsa_fused_array #(
         end
       endcase
 
-      if (pv_tail_last_w) begin
-        stream_active_q <= 1'b1;
-        stream_read_pending_q <= 1'b0;
-        row_valid_o <= 1'b0;
-        row_index_o <= {ROW_IDX_W{1'b0}};
-      end else if (stream_active_q) begin
-        if (acc_read_request_w) stream_read_pending_q <= 1'b1;
-        if (acc_response_valid_w) begin
-          row_data_o <= acc_response_data_w;
+      for (result_stripe = 0; result_stripe < NUM_STRIPES;
+           result_stripe = result_stripe + 1) begin
+        if (stripe_pv_row_valid_w[result_stripe]) begin
           row_valid_o <= 1'b1;
-          stream_read_pending_q <= 1'b0;
-        end
-        if (row_valid_o && row_ready_i) begin
-          row_valid_o <= 1'b0;
-          if (row_index_o == ROW_LAST) begin
-            stream_active_q <= 1'b0;
+          row_index_o <= stripe_pv_global_row_w[result_stripe];
+          row_half_o <= stripe_pv_row_half_w[result_stripe];
+          row_data_o <= stripe_pv_row_data_w[result_stripe];
+          if (!row_ready_i) error_o <= 1'b1;
+          if (stripe_pv_global_row_w[result_stripe] == ROW_LAST &&
+              stripe_pv_row_half_w[result_stripe])
             pv_done_o <= 1'b1;
-          end else begin
-            row_index_o <= row_index_o + 1'b1;
-          end
         end
-      end else begin
-        row_valid_o <= 1'b0;
       end
     end
   end
@@ -549,7 +555,7 @@ module os_fsa_fused_array #(
         alpha_rows_q[lse_update_row_q*PROB_W +: PROB_W];
     l_total_w = {1'b0, (l_product_w >> `ATTN_BETA_FRAC)} +
                 {{(L_PRODUCT_W+1-LSE_W){1'b0}},
-                 sum_right_data_w[lse_update_row_q*LSE_W +: LSE_W]};
+                 sum_rows_q[lse_update_row_q*LSE_W +: LSE_W]};
   end
 
 endmodule

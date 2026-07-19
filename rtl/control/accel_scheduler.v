@@ -19,7 +19,7 @@ module accel_scheduler (
   input        load_q_done_i,
   input        load_kv_done_i,
   input        qk_done_i,
-  input        softmax_done_i,
+  input        softmax_pv_ready_i,
   input        pv_done_i,
   input        wb_done_i,
   output reg [3:0] state_o,
@@ -75,7 +75,7 @@ module accel_scheduler (
       `ATTN_STATE_LOAD_Q: if (load_q_done_i) next_state_w = `ATTN_STATE_LOAD_KV;
       `ATTN_STATE_LOAD_KV: if (load_kv_done_i) next_state_w = `ATTN_STATE_QK;
       `ATTN_STATE_QK: if (qk_done_i) next_state_w = `ATTN_STATE_SOFTMAX;
-      `ATTN_STATE_SOFTMAX: if (softmax_done_i) next_state_w = `ATTN_STATE_PV;
+      `ATTN_STATE_SOFTMAX: if (softmax_pv_ready_i) next_state_w = `ATTN_STATE_PV;
       `ATTN_STATE_PV: begin
         if (pv_done_i) next_state_w = tile_last_o ? `ATTN_STATE_WRITEBACK : `ATTN_STATE_LOAD_KV;
       end

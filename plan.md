@@ -234,7 +234,7 @@ AXI4 Slave
 | +-------------+  +-------------+    +-------------+ |
 |       |                |                  |          |
 |       v                v                  v          |
-| +------------- os_fsa_systolic_array ------------+ |
+| +-------------- fsa_systolic_array --------------+ |
 | | 32x32 OS PE + row reduce + shared exp + LSE    | |
 | | QK, mask, rowmax, exp, rowsum, PV              | |
 | +-------------------------------------------------+ |
@@ -380,11 +380,17 @@ the PV boundary only when the matching V word is valid.
 5. ROW_SUM:
        registered PE add-pass computes block_sum[i]
        row_state updates l_new
-6. PROB_STREAM_TO_PV:
-       probability shifts only with matching V valid; PE MAC updates O_acc
+6. PROB_STATIONARY_WS_PV:
+       P remains in the PE; V moves down and partial sums move right
 7. FINAL_NORM:
        after all K/V tiles, normalizer computes O = O_acc / l_final
 ```
+
+Implementation update (2026-07-19): the active PV phase is now
+probability-stationary WS-PV. `P[i,k]` remains in PE `(i,k)`, feature-major
+`V[:,d]` reuses the K column-skew/vertical path, and `alpha*O_old[:,d]`
+accumulates through the horizontal rowsum path. The older OS-PV comparison in
+the following historical subsection is superseded by the active implementation.
 
 首版实现可以让 QK、softmax、PV 以 tile 内阶段化方式执行；后续再参考
 SystolicAttention 做更细粒度 overlap。这样风险较低，同时保留可扩展优化空间。
@@ -764,10 +770,10 @@ rtl/
         axi4_slave_if.sv
         axi4_master_write.sv
     compute/
-        os_fsa_fused_array.v
-        os_fsa_fused_pe.v
-        os_fsa_delay_line.v
-        os_fsa_controller.v
+        fsa_fused_array.v
+        fsa_fused_pe.v
+        fsa_delay_line.v
+        fsa_controller.v
         scale_requant_unit.v
         fsa_qk_engine.v
         fsa_pv_engine.v
@@ -888,8 +894,8 @@ dump 只记录路径和生成脚本。
 ### 9.2 推荐实现顺序
 
 1. Build the SystemVerilog bit-accurate reference model and offline vector-generation scripts.
-2. `os_fsa_fused_pe` 的局部状态、MAC/max/sub/add 与最近邻传递对拍。
-3. `os_fsa_fused_array` 的 QK-softmax-PV 融合数据流对拍。
+2. `fsa_fused_pe` 的局部状态、MAC/max/sub/add 与最近邻传递对拍。
+3. `fsa_fused_array` 的 QK-softmax-PV 融合数据流对拍。
 4. kv_cache、pingpong_buffer、banked_sram。
 5. tile_scheduler 串接融合 QK-softmax-PV 阶段。
 6. AXI slave 寄存器与输入窗口。
@@ -934,7 +940,7 @@ UVM 环境建议包含：
 | smoke | seq_q=32，seq_kv=32，D=64 | 完整跑通 |
 | small_debug | 4x4x8，禁用近似或高精 LUT | 易人工检查 |
 | softmax_accuracy | 随机 score、极值 score | 误差达标，无溢出 |
-| os_fsa_fused_array | QK/MAX/SUB/EXP/ADD/PV | 融合流水与 PE 状态正确 |
+| fsa_fused_array | QK/MAX/SUB/EXP/ADD/PV | 融合流水与 PE 状态正确 |
 | row_restream | rowmax、m_new 反向回流、rowsum | 最近邻行通路对拍 |
 | qk_gemm | 只测 QK | 与 numpy GEMM 对拍 |
 | pv_gemm | 只测 PV | 与 numpy GEMM 对拍 |

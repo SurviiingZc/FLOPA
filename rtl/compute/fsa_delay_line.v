@@ -1,6 +1,6 @@
 `timescale 1ns/1ps
 
-module os_fsa_delay_line #(
+module fsa_delay_line #(
   parameter integer WIDTH = 16,
   parameter integer DEPTH = 1
 )(

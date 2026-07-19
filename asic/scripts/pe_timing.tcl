@@ -23,9 +23,9 @@ set_app_var synthetic_library [list dw_foundation.sldb]
 set_app_var link_library [list "*" $std_db dw_foundation.sldb]
 
 define_design_lib WORK -path [file join $work_dir work]
-analyze -format verilog [file join $root_dir rtl compute os_fsa_fused_pe.v]
-elaborate os_fsa_fused_pe
-current_design os_fsa_fused_pe
+analyze -format verilog [file join $root_dir rtl compute fsa_fused_pe.v]
+elaborate fsa_fused_pe
+current_design fsa_fused_pe
 link
 
 create_clock -name core_clk -period 3.200 [get_ports clk]
@@ -54,5 +54,5 @@ redirect -file [file join $report_dir timing_mac.rpt] {
 redirect -file [file join $report_dir qor.rpt] {report_qor}
 redirect -file [file join $report_dir area.rpt] {report_area -hierarchy}
 redirect -file [file join $report_dir power.rpt] {report_power}
-write -format ddc -hierarchy -output [file join $work_dir os_fsa_fused_pe_mapped.ddc]
+write -format ddc -hierarchy -output [file join $work_dir fsa_fused_pe_mapped.ddc]
 exit
