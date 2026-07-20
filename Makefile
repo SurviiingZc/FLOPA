@@ -1,82 +1,166 @@
 SHELL := /bin/bash
 
 CORNER ?= tt
-CLOCK_PERIOD ?= 3.2
+CLOCK_PERIOD ?= 2.5
+SETUP_UNCERTAINTY ?= 0.100
+HOLD_UNCERTAINTY ?= 0.020
+CLOCK_TRANSITION ?= 0.050
+INPUT_DELAY ?= 0.200
+OUTPUT_DELAY ?= 0.200
+INPUT_TRANSITION ?= 0.050
+OUTPUT_LOAD ?= 0.020
+MAX_TRANSITION ?= 0.300
+MAX_FANOUT ?= 16
+SRAM_INPUT_MIN_DELAY ?= 0.200
+DC_CORES ?= 4
+EXPECTED_TOP_SRAM_MACROS ?= 480
+FREQ_SWEEP_PERIODS ?= 3.2 2.8 2.5 2.3 2.1 1.9
 
 SYNTH_SCRIPT := asic/scripts/run_synth.sh
 
 AXI_TOPS := axi4_slave_if axi4_master_write
 CONTROL_TOPS := accel_regfile accel_scheduler perf_counter
-COMPUTE_TOPS := scale_requant_unit os_fsa_pe os_fsa_array \
-	os_fsa_controller qk_engine pv_engine
+COMPUTE_TOPS := scale_requant_unit fsa_delay_line fsa_fused_pe fsa_stripe \
+	fsa_fused_array fsa_controller fsa_qk_engine fsa_pv_engine
 MEMORY_TOPS := asic_sram_1024x16 asic_sram_256xwide banked_sram \
-	bram_buffer output_buffer pingpong_buffer qkv_tile_cache stream_fifo uram_bank
-SOFTMAX_TOPS := causal_mask row_broadcast row_reduce_unit pwl_exp_unit \
-	block_lse_update reciprocal_lut online_normalizer softmax_engine
+	o_accumulator_bank output_buffer pingpong_buffer qkv_tile_cache stream_fifo
+SOFTMAX_TOPS := pwl_exp_unit reciprocal_lut online_normalizer
+SYSTEM_TOP := attention_accel_top
 
-.PHONY: help sram-lib rtl-check pe-timing \
-	synth-module synth-axi synth-control synth-compute synth-memory synth-softmax \
-	synth-modules synth-top synth-all clean-synth
+SYNTH_ENV = CORNER=$(CORNER) CLOCK_PERIOD=$(CLOCK_PERIOD) \
+	FA_SETUP_UNCERTAINTY=$(SETUP_UNCERTAINTY) \
+	FA_HOLD_UNCERTAINTY=$(HOLD_UNCERTAINTY) \
+	FA_CLOCK_TRANSITION=$(CLOCK_TRANSITION) FA_INPUT_DELAY=$(INPUT_DELAY) \
+	FA_OUTPUT_DELAY=$(OUTPUT_DELAY) FA_INPUT_TRANSITION=$(INPUT_TRANSITION) \
+	FA_OUTPUT_LOAD=$(OUTPUT_LOAD) FA_MAX_TRANSITION=$(MAX_TRANSITION) \
+	FA_MAX_FANOUT=$(MAX_FANOUT) DC_CORES=$(DC_CORES) \
+	FA_SRAM_INPUT_MIN_DELAY=$(SRAM_INPUT_MIN_DELAY) \
+	EXPECTED_TOP_SRAM_MACROS=$(EXPECTED_TOP_SRAM_MACROS)
 
-.NOTPARALLEL: synth-modules synth-all
+.PHONY: help synth-config synth-list sram-lib rtl-check pe-timing \
+	synth-module synth-axi synth-control synth-compute synth-memory \
+	synth-softmax synth-modules synth-system synth-top synth-all \
+	synth-system-tt synth-system-ss synth-all-tt synth-all-ss \
+	synth-frequency-sweep synth-physical physical-config \
+	clean-synth clean-asic
+
+.NOTPARALLEL: synth-modules synth-all synth-all-tt synth-all-ss
 
 help:
-	@echo "Synthesis targets:"
-	@echo "  make synth-module TOP=os_fsa_pe [CORNER=tt|ss] [CLOCK_PERIOD=3.2]"
+	@echo "ASIC synthesis targets:"
+	@echo "  make synth-module TOP=fsa_fused_pe [CORNER=tt|ss] [CLOCK_PERIOD=2.5]"
 	@echo "  make synth-axi       - synthesize each AXI module independently"
 	@echo "  make synth-control   - synthesize each control module independently"
 	@echo "  make synth-compute   - synthesize each compute module independently"
-	@echo "  make synth-memory    - synthesize each memory module independently"
+	@echo "  make synth-memory    - synthesize ASIC-used memory modules independently"
 	@echo "  make synth-softmax   - synthesize each softmax module independently"
-	@echo "  make synth-modules   - synthesize every submodule"
-	@echo "  make synth-top       - synthesize attention_accel_top"
-	@echo "  make synth-all       - synthesize submodules, then the full top"
-	@echo "  make sram-lib        - prepare the SRAM DB for CORNER"
-	@echo "  make rtl-check       - elaborate/link the complete ASIC RTL"
-	@echo "  make pe-timing       - run the focused PE timing flow"
+	@echo "  make synth-modules   - synthesize every module group"
+	@echo "  make synth-system    - synthesize the complete attention_accel_top"
+	@echo "  make synth-all       - synthesize all module groups, then the system"
+	@echo "  make synth-system-tt - complete system at TT 0.9 V, 25 C"
+	@echo "  make synth-system-ss - complete system at SS 0.9 V, 125 C"
+	@echo "  make synth-frequency-sweep [CORNER=tt] - sweep periods and emit Fmax CSV"
+	@echo "  make synth-physical FA_MW_LIB=/path/to/mw - DC Graphical SPG synthesis"
+	@echo "  make physical-config - print public physical collateral paths"
+	@echo "  make sram-lib        - compile the SRAM Liberty file for CORNER"
+	@echo "  make rtl-check       - analyze/elaborate/link ASIC RTL without compile_ultra"
+	@echo "  make pe-timing       - focused shared PE MAC timing synthesis"
+	@echo "  make synth-config    - print active libraries/constraint variables"
+	@echo "  make synth-list      - print module groups"
+
+synth-config:
+	@echo "CORNER=$(CORNER)"
+	@echo "CLOCK_PERIOD=$(CLOCK_PERIOD) ns"
+	@echo "SETUP_UNCERTAINTY=$(SETUP_UNCERTAINTY) ns"
+	@echo "HOLD_UNCERTAINTY=$(HOLD_UNCERTAINTY) ns"
+	@echo "CLOCK_TRANSITION=$(CLOCK_TRANSITION) ns"
+	@echo "INPUT_DELAY=$(INPUT_DELAY) ns"
+	@echo "OUTPUT_DELAY=$(OUTPUT_DELAY) ns"
+	@echo "INPUT_TRANSITION=$(INPUT_TRANSITION) ns"
+	@echo "OUTPUT_LOAD=$(OUTPUT_LOAD)"
+	@echo "MAX_TRANSITION=$(MAX_TRANSITION) ns"
+	@echo "MAX_FANOUT=$(MAX_FANOUT)"
+	@echo "SRAM_INPUT_MIN_DELAY=$(SRAM_INPUT_MIN_DELAY) ns"
+	@echo "DC_CORES=$(DC_CORES)"
+	@echo "EXPECTED_TOP_SRAM_MACROS=$(EXPECTED_TOP_SRAM_MACROS)"
+
+synth-list:
+	@echo "AXI:     $(AXI_TOPS)"
+	@echo "CONTROL: $(CONTROL_TOPS)"
+	@echo "COMPUTE: $(COMPUTE_TOPS)"
+	@echo "MEMORY:  $(MEMORY_TOPS)"
+	@echo "SOFTMAX: $(SOFTMAX_TOPS)"
+	@echo "SYSTEM:  $(SYSTEM_TOP)"
 
 sram-lib:
 	asic/scripts/prepare_sram_lib.sh $(CORNER)
 
 rtl-check:
-	asic/scripts/run_rtl_check.sh
+	$(SYNTH_ENV) asic/scripts/run_rtl_check.sh $(CORNER)
 
 pe-timing:
-	asic/scripts/run_pe_timing.sh $(CORNER)
+	$(SYNTH_ENV) asic/scripts/run_pe_timing.sh $(CORNER)
 
 synth-module:
 	@test -n "$(TOP)" || { echo "TOP is required" >&2; exit 2; }
-	CORNER=$(CORNER) CLOCK_PERIOD=$(CLOCK_PERIOD) \
-		$(SYNTH_SCRIPT) module $(TOP)
+	$(SYNTH_ENV) $(SYNTH_SCRIPT) module_$(TOP) $(TOP)
 
 synth-axi:
-	CORNER=$(CORNER) CLOCK_PERIOD=$(CLOCK_PERIOD) \
-		$(SYNTH_SCRIPT) axi $(AXI_TOPS)
+	$(SYNTH_ENV) $(SYNTH_SCRIPT) axi $(AXI_TOPS)
 
 synth-control:
-	CORNER=$(CORNER) CLOCK_PERIOD=$(CLOCK_PERIOD) \
-		$(SYNTH_SCRIPT) control $(CONTROL_TOPS)
+	$(SYNTH_ENV) $(SYNTH_SCRIPT) control $(CONTROL_TOPS)
 
 synth-compute:
-	CORNER=$(CORNER) CLOCK_PERIOD=$(CLOCK_PERIOD) \
-		$(SYNTH_SCRIPT) compute $(COMPUTE_TOPS)
+	$(SYNTH_ENV) $(SYNTH_SCRIPT) compute $(COMPUTE_TOPS)
 
 synth-memory:
-	CORNER=$(CORNER) CLOCK_PERIOD=$(CLOCK_PERIOD) \
-		$(SYNTH_SCRIPT) memory $(MEMORY_TOPS)
+	$(SYNTH_ENV) $(SYNTH_SCRIPT) memory $(MEMORY_TOPS)
 
 synth-softmax:
-	CORNER=$(CORNER) CLOCK_PERIOD=$(CLOCK_PERIOD) \
-		$(SYNTH_SCRIPT) softmax $(SOFTMAX_TOPS)
+	$(SYNTH_ENV) $(SYNTH_SCRIPT) softmax $(SOFTMAX_TOPS)
 
 synth-modules: synth-axi synth-control synth-compute synth-memory synth-softmax
 
-synth-top:
-	CORNER=$(CORNER) CLOCK_PERIOD=$(CLOCK_PERIOD) \
-		$(SYNTH_SCRIPT) top attention_accel_top
+synth-system:
+	$(SYNTH_ENV) $(SYNTH_SCRIPT) system $(SYSTEM_TOP)
 
-synth-all: synth-modules synth-top
+synth-top: synth-system
+
+synth-all: synth-modules synth-system
+
+synth-system-tt:
+	$(MAKE) synth-system CORNER=tt
+
+synth-system-ss:
+	$(MAKE) synth-system CORNER=ss
+
+synth-all-tt:
+	$(MAKE) synth-all CORNER=tt
+
+synth-all-ss:
+	$(MAKE) synth-all CORNER=ss
+
+synth-frequency-sweep:
+	$(SYNTH_ENV) FREQ_SWEEP_PERIODS="$(FREQ_SWEEP_PERIODS)" \
+		asic/scripts/run_frequency_sweep.sh
+
+synth-physical:
+	$(SYNTH_ENV) asic/scripts/run_synth_physical.sh
+
+physical-config:
+	@source asic/scripts/physical_library_paths.sh; \
+	echo "STD_MW_REF=$$FA_STD_MW_REF_DEFAULT"; \
+	echo "STD_LEF=$$FA_STD_LEF_DEFAULT"; \
+	echo "SRAM_LEF=$$FA_SRAM_LEF_DEFAULT"; \
+	echo "SRAM_GDS=$$FA_SRAM_GDS_DEFAULT"; \
+	echo "RC_ROOT=$$FA_RC_ROOT_DEFAULT"
 
 clean-synth:
 	rm -rf asic/dc/work/synth
+	rm -rf asic/dc/work/frequency_sweep
 	rm -f asic/dc/logs/synth_*.log
+
+clean-asic: clean-synth
+	rm -rf asic/dc/work/rtl_check asic/dc/work/pe_timing
+	rm -f asic/dc/logs/rtl_check_*.log asic/dc/logs/pe_timing_*.log

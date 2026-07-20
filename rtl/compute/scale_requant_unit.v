@@ -22,10 +22,11 @@ module scale_requant_unit #(
 );
 
   localparam PROD_W = IN_W + SCALE_W;
-  localparam signed [PROD_W:0] INT8_MAX_EXT = 127;
-  localparam signed [PROD_W:0] INT8_MIN_EXT = -128;
-  localparam signed [PROD_W:0] INT16_MAX_EXT = 32767;
-  localparam signed [PROD_W:0] INT16_MIN_EXT = -32768;
+  localparam FORMAT_W = 18;
+  localparam signed [FORMAT_W-1:0] INT8_MAX_EXT = 127;
+  localparam signed [FORMAT_W-1:0] INT8_MIN_EXT = -128;
+  localparam signed [FORMAT_W-1:0] INT16_MAX_EXT = 32767;
+  localparam signed [FORMAT_W-1:0] INT16_MIN_EXT = -32768;
   reg valid_s0_q;
   reg valid_s1_q;
   reg signed [IN_W-1:0] data_s0_q;
@@ -39,26 +40,47 @@ module scale_requant_unit #(
   reg signed [15:0] zp_s1_q;
   reg [1:0] round_s1_q;
   reg [1:0] sat_s1_q;
-  reg signed [PROD_W:0] shifted_s2_q;
+  reg signed [FORMAT_W-1:0] shifted_s2_q;
   reg [1:0] sat_s2_q;
   reg valid_s2_q;
-  reg signed [PROD_W:0] rounded_w;
-  reg signed [PROD_W:0] biased_w;
-  reg signed [PROD_W:0] round_bias_w;
+  reg signed [63:0] product_extended_w;
+  reg signed [63:0] shifted_base_w;
+  reg signed [FORMAT_W-1:0] shifted_clamped_w;
+  reg signed [FORMAT_W-1:0] biased_w;
+  reg guard_w;
+  reg sticky_w;
+  reg round_increment_w;
+  integer discarded_bit;
 
-  // Apply symmetric round-to-nearest before the arithmetic right shift.
+  // Shift before rounding and clamp to the only range that a signed 16-bit zero
+  // point can bring back into INT16. The remaining add is 18 bits instead of a
+  // PROD_W-wide carry chain, which bounds this path for all configured widths.
   always @(*) begin
-    rounded_w = {product_s1_q[PROD_W-1], product_s1_q};
-    round_bias_w = {{PROD_W{1'b0}}, 1'b1};
-    if (round_s1_q == `ATTN_ROUND_NEAREST && shift_s1_q != 0) begin
-      if (product_s1_q >= 0)
-        rounded_w = {product_s1_q[PROD_W-1], product_s1_q} +
-                    (round_bias_w <<< (shift_s1_q - 1'b1));
-      else
-        rounded_w = {product_s1_q[PROD_W-1], product_s1_q} -
-                    (round_bias_w <<< (shift_s1_q - 1'b1));
+    product_extended_w =
+        {{(64-PROD_W){product_s1_q[PROD_W-1]}}, product_s1_q};
+    shifted_base_w = $signed(product_extended_w) >>> shift_s1_q;
+    guard_w = 1'b0;
+    sticky_w = 1'b0;
+    if (shift_s1_q != 0) begin
+      guard_w = product_extended_w[shift_s1_q-1'b1];
+      for (discarded_bit = 0; discarded_bit < 63;
+           discarded_bit = discarded_bit + 1)
+        if (discarded_bit < shift_s1_q-1'b1)
+          sticky_w = sticky_w | product_extended_w[discarded_bit];
     end
-    biased_w = (rounded_w >>> shift_s1_q) + zp_s1_q;
+    round_increment_w = round_s1_q == `ATTN_ROUND_NEAREST && guard_w &&
+        (!product_extended_w[63] || sticky_w);
+
+    if (shifted_base_w > 64'sd65535)
+      shifted_clamped_w = 18'sd65535;
+    else if (shifted_base_w < -64'sd65536)
+      shifted_clamped_w = -18'sd65536;
+    else
+      shifted_clamped_w = shifted_base_w[FORMAT_W-1:0];
+
+    biased_w = shifted_clamped_w +
+        {{(FORMAT_W-16){zp_s1_q[15]}}, zp_s1_q} +
+        {{(FORMAT_W-1){1'b0}}, round_increment_w};
   end
 
   // Valid and all formatting controls are pipelined with the corresponding data.
@@ -79,7 +101,7 @@ module scale_requant_unit #(
       zp_s1_q <= 16'sd0;
       round_s1_q <= 2'd0;
       sat_s1_q <= 2'd0;
-      shifted_s2_q <= {(PROD_W+1){1'b0}};
+      shifted_s2_q <= {FORMAT_W{1'b0}};
       sat_s2_q <= 2'd0;
       data_o <= {OUT_W{1'b0}};
     end else begin
@@ -97,8 +119,7 @@ module scale_requant_unit #(
         sat_s0_q <= sat_mode_i;
       end
       if (valid_s0_q) begin
-        product_s1_q <= $signed({{SCALE_W{data_s0_q[IN_W-1]}}, data_s0_q}) *
-                        $signed(scale_s0_q);
+        product_s1_q <= $signed(data_s0_q) * $signed(scale_s0_q);
         shift_s1_q <= shift_s0_q;
         zp_s1_q <= zp_s0_q;
         round_s1_q <= round_s0_q;

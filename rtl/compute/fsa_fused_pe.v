@@ -45,18 +45,14 @@ module fsa_fused_pe #(
 
   input                         prob_load_i,
   input      [PROB_W-1:0]       prob_data_i,
-  output     [PROB_W-1:0]       prob_o,
 
   input                         sum_valid_i,
-  input                         sum_last_i,
   input      [SUM_W-1:0]        sum_data_i,
   input      [TAG_W-1:0]        sum_tag_i,
   output reg                    sum_valid_o,
-  output reg                    sum_last_o,
   output reg [SUM_W-1:0]        sum_data_o,
   output reg [TAG_W-1:0]        sum_tag_o,
 
-  output reg                    mac_valid_o,
   output reg                    mac_last_o
 );
 
@@ -84,7 +80,6 @@ module fsa_fused_pe #(
 `endif
 
   assign delta_o = accum_q;
-  assign prob_o = prob_q;
 
   // One signed multiplier is shared by Q*K and P*V. Explicit sign/zero extension
   // prevents Verilog expression sizing from truncating signed INT8 products.
@@ -141,10 +136,8 @@ module fsa_fused_pe #(
       m_valid_o <= 1'b0;
       m_data_o <= {SCORE_W{1'b0}};
       sum_valid_o <= 1'b0;
-      sum_last_o <= 1'b0;
       sum_data_o <= {SUM_W{1'b0}};
       sum_tag_o <= {TAG_W{1'b0}};
-      mac_valid_o <= 1'b0;
       mac_last_o <= 1'b0;
       accum_q <= {SCORE_W{1'b0}};
       prob_q <= {PROB_W{1'b0}};
@@ -156,8 +149,6 @@ module fsa_fused_pe #(
       max_valid_o <= 1'b0;
       m_valid_o <= 1'b0;
       sum_valid_o <= 1'b0;
-      sum_last_o <= 1'b0;
-      mac_valid_o <= 1'b0;
       mac_last_o <= 1'b0;
       accum_q <= {SCORE_W{1'b0}};
       prob_q <= {PROB_W{1'b0}};
@@ -168,7 +159,6 @@ module fsa_fused_pe #(
       k_last_o <= k_valid_i && k_last_i;
       max_valid_o <= max_valid_i;
       m_valid_o <= m_valid_i;
-      mac_valid_o <= !ws_pv_i && q_valid_i && k_valid_i;
       mac_last_o <= !ws_pv_i && q_valid_i && k_valid_i && q_last_i && k_last_i;
 
       if (q_valid_i) q_data_o <= q_data_i;
@@ -198,13 +188,11 @@ module fsa_fused_pe #(
       // partial sum until the right edge writes O_new[row, feature].
       if (ws_pv_i) begin
         sum_valid_o <= sum_valid_i && k_valid_i;
-        sum_last_o <= sum_valid_i && k_valid_i && sum_last_i && k_last_i;
         if (sum_valid_i && k_valid_i)
           sum_data_o <= ws_sum_next_w[SUM_W-1:0];
         if (sum_valid_i && k_valid_i) sum_tag_o <= sum_tag_i;
       end else begin
         sum_valid_o <= sum_valid_i;
-        sum_last_o <= 1'b0;
         if (sum_valid_i)
           sum_data_o <= sum_data_i + {{(SUM_W-PROB_W){1'b0}}, prob_q};
         if (sum_valid_i) sum_tag_o <= sum_tag_i;

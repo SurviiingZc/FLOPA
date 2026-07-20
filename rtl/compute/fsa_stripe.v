@@ -22,8 +22,6 @@
   input      [STRIPE_ROWS*DATA_W-1:0]    q_rows_i,
   input      [STRIPE_ROWS-1:0]           q_valid_i,
   input      [STRIPE_ROWS-1:0]           q_last_i,
-  output     [STRIPE_ROWS-1:0]           q_tail_valid_o,
-  output     [STRIPE_ROWS-1:0]           q_tail_last_o,
 
   input      [COLS*DATA_W-1:0]           k_top_data_i,
   input      [COLS-1:0]                  k_top_valid_i,
@@ -37,7 +35,6 @@
   output     [STRIPE_ROWS*SCORE_W-1:0]   max_done_data_o,
   input      [STRIPE_ROWS-1:0]           m_start_valid_i,
   input      [STRIPE_ROWS*SCORE_W-1:0]   m_start_data_i,
-  output     [STRIPE_ROWS-1:0]           m_done_valid_o,
 
   input      [STRIPE_ROWS-1:0]           sum_start_valid_i,
   output     [STRIPE_ROWS-1:0]           sum_done_valid_o,
@@ -49,7 +46,6 @@
   input      [STRIPE_ROWS*PROB_W-1:0]    prob_col_load_data_i,
 
   input      [STRIPE_ROWS-1:0]           pv_sum_valid_i,
-  input      [STRIPE_ROWS-1:0]           pv_sum_last_i,
   input      [STRIPE_ROWS*SUM_W-1:0]     pv_sum_data_i,
   input      [STRIPE_ROWS*TAG_W-1:0]     pv_sum_tag_i,
 
@@ -81,15 +77,12 @@
   wire m_valid_w [0:STRIPE_ROWS-1][0:COLS];
   wire [SUM_W-1:0] sum_forward_data_w [0:STRIPE_ROWS-1][0:COLS];
   wire sum_forward_valid_w [0:STRIPE_ROWS-1][0:COLS];
-  wire sum_forward_last_w [0:STRIPE_ROWS-1][0:COLS];
   wire [TAG_W-1:0] sum_forward_tag_w [0:STRIPE_ROWS-1][0:COLS];
   wire [SUM_W-1:0] sum_reverse_data_w [0:STRIPE_ROWS-1][0:COLS];
   wire sum_reverse_valid_w [0:STRIPE_ROWS-1][0:COLS];
-  wire sum_reverse_last_w [0:STRIPE_ROWS-1][0:COLS];
   wire [TAG_W-1:0] sum_reverse_tag_w [0:STRIPE_ROWS-1][0:COLS];
   wire [SUM_W-1:0] pe_sum_data_w [0:STRIPE_ROWS-1][0:COLS-1];
   wire pe_sum_valid_w [0:STRIPE_ROWS-1][0:COLS-1];
-  wire pe_sum_last_w [0:STRIPE_ROWS-1][0:COLS-1];
   wire [TAG_W-1:0] pe_sum_tag_w [0:STRIPE_ROWS-1][0:COLS-1];
   wire [SCORE_W-1:0] delta_w [0:STRIPE_ROWS-1][0:COLS-1];
   wire pe_last_w [0:STRIPE_ROWS-1][0:COLS-1];
@@ -127,8 +120,6 @@
           q_rows_i[boundary_row*DATA_W +: DATA_W];
       assign q_valid_w[boundary_row][0] = q_valid_i[boundary_row];
       assign q_last_w[boundary_row][0] = q_last_i[boundary_row];
-      assign q_tail_valid_o[boundary_row] = q_valid_w[boundary_row][COLS];
-      assign q_tail_last_o[boundary_row] = q_last_w[boundary_row][COLS];
     end
 
     genvar boundary_col;
@@ -157,17 +148,13 @@
       assign m_valid_w[reduce_row][COLS] = m_start_valid_i[reduce_row];
       assign m_data_w[reduce_row][COLS] =
           m_start_data_i[reduce_row*SCORE_W +: SCORE_W];
-      assign m_done_valid_o[reduce_row] = m_valid_w[reduce_row][0];
-
       assign sum_forward_valid_w[reduce_row][0] = pv_sum_valid_i[reduce_row];
-      assign sum_forward_last_w[reduce_row][0] = pv_sum_last_i[reduce_row];
       assign sum_forward_data_w[reduce_row][0] =
           pv_sum_data_i[reduce_row*SUM_W +: SUM_W];
       assign sum_forward_tag_w[reduce_row][0] =
           pv_sum_tag_i[reduce_row*TAG_W +: TAG_W];
       assign sum_reverse_valid_w[reduce_row][COLS] =
           sum_start_valid_i[reduce_row];
-      assign sum_reverse_last_w[reduce_row][COLS] = 1'b0;
       assign sum_reverse_data_w[reduce_row][COLS] = {SUM_W{1'b0}};
       assign sum_reverse_tag_w[reduce_row][COLS] = {TAG_W{1'b0}};
       assign sum_done_valid_o[reduce_row] = ws_pv_q ?
@@ -223,33 +210,25 @@
           .delta_o(delta_w[pe_row][pe_col]),
           .prob_load_i(prob_col_select_w[pe_col]),
           .prob_data_i(prob_col_load_data_i[pe_row*PROB_W +: PROB_W]),
-          .prob_o(),
           .sum_valid_i(ws_pv_q ? sum_forward_valid_w[pe_row][pe_col] :
                                  sum_reverse_valid_w[pe_row][pe_col+1]),
-          .sum_last_i(ws_pv_q ? sum_forward_last_w[pe_row][pe_col] :
-                                sum_reverse_last_w[pe_row][pe_col+1]),
           .sum_data_i(ws_pv_q ? sum_forward_data_w[pe_row][pe_col] :
                                 sum_reverse_data_w[pe_row][pe_col+1]),
           .sum_tag_i(ws_pv_q ? sum_forward_tag_w[pe_row][pe_col] :
                                sum_reverse_tag_w[pe_row][pe_col+1]),
           .sum_valid_o(pe_sum_valid_w[pe_row][pe_col]),
-          .sum_last_o(pe_sum_last_w[pe_row][pe_col]),
           .sum_data_o(pe_sum_data_w[pe_row][pe_col]),
           .sum_tag_o(pe_sum_tag_w[pe_row][pe_col]),
-          .mac_valid_o(), .mac_last_o(pe_last_w[pe_row][pe_col])
+          .mac_last_o(pe_last_w[pe_row][pe_col])
         );
         assign sum_forward_valid_w[pe_row][pe_col+1] =
             pe_sum_valid_w[pe_row][pe_col];
-        assign sum_forward_last_w[pe_row][pe_col+1] =
-            pe_sum_last_w[pe_row][pe_col];
         assign sum_forward_data_w[pe_row][pe_col+1] =
             pe_sum_data_w[pe_row][pe_col];
         assign sum_forward_tag_w[pe_row][pe_col+1] =
             pe_sum_tag_w[pe_row][pe_col];
         assign sum_reverse_valid_w[pe_row][pe_col] =
             pe_sum_valid_w[pe_row][pe_col];
-        assign sum_reverse_last_w[pe_row][pe_col] =
-            pe_sum_last_w[pe_row][pe_col];
         assign sum_reverse_data_w[pe_row][pe_col] =
             pe_sum_data_w[pe_row][pe_col];
         assign sum_reverse_tag_w[pe_row][pe_col] =

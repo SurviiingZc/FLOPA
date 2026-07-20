@@ -17,6 +17,7 @@ module output_buffer #(
 )(
   input                                  clk,
   input                                  rst_n,
+  input                                  clock_en_i,
   input                                  clear_tile_i,
   input                                  norm_valid_i,
   input      [STRIPE_IDX_W-1:0]         norm_stripe_i,
@@ -72,7 +73,13 @@ module output_buffer #(
   wire out_mem_rd_en_w;
   wire out_mem_en_w;
   wire [OUT_WORD_W-1:0] out_mem_q_w;
+  wire gated_clk_w;
   integer lane;
+
+  fa_clock_gate u_clock_gate (
+    .clk_i(clk), .enable_i(clock_en_i || clear_tile_i),
+    .test_enable_i(1'b0), .clk_o(gated_clk_w)
+  );
 
 `ifndef SYNTHESIS
   initial begin
@@ -129,7 +136,7 @@ module output_buffer #(
 `ifdef ATTN_ASIC
   // Writes have priority over reads because the characterized SRAM is single-port.
   asic_sram_256xwide #(.WIDTH(OUT_WORD_W)) u_out_mem (
-    .clk(clk), .en_i(out_mem_en_w), .wr_en_i(out_wr_valid_w),
+    .clk(gated_clk_w), .en_i(out_mem_en_w), .wr_en_i(out_wr_valid_w),
     .addr_i({{(8-ADDR_W){1'b0}},
              out_wr_valid_w ? out_wr_addr_w : stream_word_addr_w}),
     .wr_data_i(out_wr_data_w), .rd_data_o(out_mem_q_w)
@@ -138,7 +145,7 @@ module output_buffer #(
   (* ram_style = "block" *) reg [OUT_WORD_W-1:0] out_mem [0:DEPTH-1];
   reg [OUT_WORD_W-1:0] out_mem_q;
   assign out_mem_q_w = out_mem_q;
-  always @(posedge clk) begin
+  always @(posedge gated_clk_w) begin
     if (out_wr_valid_w)
       out_mem[out_wr_addr_w] <= out_wr_data_w;
     else if (out_mem_rd_en_w)
@@ -148,7 +155,7 @@ module output_buffer #(
 
   // At a group boundary, flush the eight completed row words sequentially; after
   // normalization, stream them as 16-byte beats under AXI backpressure.
-  always @(posedge clk or negedge rst_n) begin
+  always @(posedge gated_clk_w or negedge rst_n) begin
     if (!rst_n) begin
       flush_active_q <= 1'b0;
       flush_row_q <= {LOCAL_ROW_W{1'b0}};

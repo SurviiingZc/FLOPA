@@ -6,16 +6,14 @@ CORNER="${1:-tt}"
 LIB_DIR="$ROOT_DIR/asic/dc/work/lib"
 RUN_DIR="$ROOT_DIR/asic/dc/work/sram_lib/$CORNER"
 LOG_DIR="$ROOT_DIR/asic/dc/logs"
-SRAM_ROOT="/data/public/SRAM/uhdsp_256x8m4s/NLDM"
 
-case "$CORNER" in
-  tt) LIB_NAME="uhdsp_256x8m4s_tt0p9v25c" ;;
-  ss) LIB_NAME="uhdsp_256x8m4s_ssg0p9v125c" ;;
-  *) echo "usage: $0 [tt|ss]" >&2; exit 2 ;;
-esac
+# shellcheck source=library_paths.sh
+source "$ROOT_DIR/asic/scripts/library_paths.sh"
+fa_select_libraries "$ROOT_DIR" "$CORNER"
 
-LIB_FILE="$SRAM_ROOT/$LIB_NAME.lib"
-DB_FILE="$LIB_DIR/$LIB_NAME.db"
+LIB_NAME="$FA_SRAM_LIB_NAME"
+LIB_FILE="$FA_SRAM_LIB_FILE"
+DB_FILE="$FA_SRAM_DB"
 
 test -s "$LIB_FILE"
 if [ -s "$DB_FILE" ]; then
@@ -23,6 +21,10 @@ if [ -s "$DB_FILE" ]; then
   exit 0
 fi
 
+case "$RUN_DIR" in
+  "$ROOT_DIR"/asic/dc/work/sram_lib/*) ;;
+  *) echo "refusing unsafe SRAM-library path: $RUN_DIR" >&2; exit 2 ;;
+esac
 rm -rf "$RUN_DIR"
 mkdir -p "$RUN_DIR" "$LIB_DIR" "$LOG_DIR"
 

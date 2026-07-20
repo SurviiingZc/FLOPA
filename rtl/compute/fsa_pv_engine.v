@@ -25,7 +25,6 @@ module fsa_pv_engine #(
   input                              array_ready_i,
   output reg                         array_seed_zero_o,
   output reg                         array_valid_o,
-  output reg                         array_last_o,
   output reg [FEATURE_IDX_W-1:0]     array_feature_o,
   output reg [ARRAY_COLS*ARRAY_DATA_W-1:0] array_cols_o,
   input                              array_done_i,
@@ -67,12 +66,10 @@ module fsa_pv_engine #(
     array_start_o = (state_q == ST_ARRAY_START);
     array_seed_zero_o = first_kv_tile_i;
     array_valid_o = 1'b0;
-    array_last_o = 1'b0;
     array_feature_o = receive_count_q[FEATURE_IDX_W-1:0];
     array_cols_o = {ARRAY_COLS*ARRAY_DATA_W{1'b0}};
     if ((state_q == ST_ISSUE || state_q == ST_DRAIN) && v_rd_valid_i) begin
       array_valid_o = 1'b1;
-      array_last_o = (receive_count_q == FEATURE_LAST);
       // V uses the same 32 vertical lanes and signed extension as K in QK mode.
       for (col = 0; col < ARRAY_COLS; col = col + 1) begin
         array_cols_o[col*ARRAY_DATA_W +: ARRAY_DATA_W] =

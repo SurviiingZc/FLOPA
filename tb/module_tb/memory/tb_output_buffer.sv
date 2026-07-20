@@ -5,7 +5,7 @@ module tb_output_buffer;
   `TB_FSDB_DUMP("tb_output_buffer.fsdb",tb_output_buffer)
   localparam ROWS=32,NORM_LANES=8,HEAD_DIM=64,OUT_W=8;
   localparam STRIPE_IDX_W=2,FEATURE_IDX_W=6;
-  reg clk=0,rst_n=0,clear_tile_i=0,norm_valid_i=0;
+  reg clk=0,rst_n=0,clock_en_i=1,clear_tile_i=0,norm_valid_i=0;
   reg [STRIPE_IDX_W-1:0] norm_stripe_i=0; reg [FEATURE_IDX_W-1:0] norm_feature_i=0;
   reg [NORM_LANES*OUT_W-1:0] norm_data_i=0; wire norm_ready_o,norm_group_done_o;
   reg stream_start_i=0; reg [15:0] stream_bytes_i=0; wire [127:0] stream_data_o;

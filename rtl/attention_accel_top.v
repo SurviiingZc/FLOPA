@@ -176,6 +176,7 @@ module attention_accel_top #(
   wire qk_go_w;
   wire pv_go_w;
   wire [1:0] array_phase_w;
+  wire array_controller_busy_w;
   wire array_controller_error_w;
   wire qk_array_clear_w;
   wire qk_array_valid_w;
@@ -183,16 +184,17 @@ module attention_accel_top #(
   wire [ARRAY_ROW_W-1:0] qk_array_rows_w;
   wire [ARRAY_COL_W-1:0] qk_array_cols_w;
   wire qk_done_w;
+  wire qk_busy_w;
   wire qk_error_w;
   wire fused_qk_last_w;
   wire pv_array_start_w;
   wire pv_array_ready_w;
   wire pv_array_seed_zero_w;
   wire pv_array_valid_w;
-  wire pv_array_last_w;
   wire [FEATURE_IDX_W-1:0] pv_array_feature_w;
   wire [ARRAY_COL_W-1:0] pv_array_cols_w;
   wire pv_engine_done_w;
+  wire pv_engine_busy_w;
   wire pv_engine_error_w;
   wire fused_array_pv_done_w;
   wire fused_array_error_w;
@@ -201,6 +203,7 @@ module attention_accel_top #(
   wire softmax_clear_rows_w;
   wire softmax_pv_ready_w;
   wire softmax_done_w;
+  wire softmax_busy_w;
   wire softmax_error_w;
 
   reg [3:0] pv_flow_state_q;
@@ -228,6 +231,7 @@ module attention_accel_top #(
   wire output_stream_ready_w;
   wire output_stream_last_w;
   wire output_stream_done_w;
+  wire output_stream_busy_w;
   wire axi_write_start_w;
   wire axi_write_busy_w;
   wire axi_write_done_w;
@@ -248,6 +252,9 @@ module attention_accel_top #(
   wire fatal_error_w;
   wire [3:0] debug_state_reg_w;
   wire axi_data_ready_w;
+  wire array_clock_en_w;
+  wire normalizer_clock_en_w;
+  wire output_clock_en_w;
 
   // PV completion is separated from final normalization: non-final KV tiles keep
   // (m,l,O) on chip and return immediately to LOAD_KV; only the last tile scans O.
@@ -339,7 +346,8 @@ module attention_accel_top #(
     .clk(clk), .rst_n(rst_n), .clear_i(cfg_soft_reset_w),
     .qk_start_i(qk_request_w), .pv_start_i(pv_request_w), .qk_done_i(qk_done_w), .pv_done_i(pv_engine_done_w),
     .qk_error_i(qk_error_w), .pv_error_i(pv_engine_error_w), .phase_o(array_phase_w),
-    .qk_go_o(qk_go_w), .pv_go_o(pv_go_w), .busy_o(), .error_o(array_controller_error_w)
+    .qk_go_o(qk_go_w), .pv_go_o(pv_go_w),
+    .busy_o(array_controller_busy_w), .error_o(array_controller_error_w)
   );
 
   // QK streams HEAD_DIM feature slices; PV later reuses the same vertical network.
@@ -354,7 +362,7 @@ module attention_accel_top #(
     .array_clear_o(qk_array_clear_w), .array_valid_o(qk_array_valid_w), .array_last_o(qk_array_last_w),
     .array_rows_o(qk_array_rows_w), .array_cols_o(qk_array_cols_w),
     .array_last_i(fused_qk_last_w),
-    .done_o(qk_done_w), .busy_o(), .error_o(qk_error_w)
+    .done_o(qk_done_w), .busy_o(qk_busy_w), .error_o(qk_error_w)
   );
 
   // PV emits V[:,d] and d together. first_kv_tile selects zero instead of O_old.
@@ -369,14 +377,26 @@ module attention_accel_top #(
     .array_start_o(pv_array_start_w), .array_ready_i(pv_array_ready_w),
     .array_seed_zero_o(pv_array_seed_zero_w),
     .array_valid_o(pv_array_valid_w),
-    .array_last_o(pv_array_last_w),
     .array_feature_o(pv_array_feature_w),
     .array_cols_o(pv_array_cols_w), .array_done_i(fused_array_pv_done_w),
-    .done_o(pv_engine_done_w), .busy_o(), .error_o(pv_engine_error_w)
+    .done_o(pv_engine_done_w), .busy_o(pv_engine_busy_w),
+    .error_o(pv_engine_error_w)
   );
 
   assign softmax_start_w = softmax_en_w && !softmax_en_d_q;
   assign softmax_clear_rows_w = load_q_en_w && !load_q_en_d_q;
+  // ASIC ICG enables remain asserted through each complete pipeline drain. FPGA
+  // builds ignore these clock boundaries and infer ordinary register enables.
+  assign array_clock_en_w = cfg_soft_reset_w || softmax_clear_rows_w ||
+      qk_en_w || softmax_en_w || pv_en_w ||
+      qk_busy_w || pv_engine_busy_w || array_controller_busy_w ||
+      softmax_busy_w || (pv_flow_state_q != PV_FLOW_IDLE);
+  assign normalizer_clock_en_w = cfg_soft_reset_w ||
+      (pv_flow_state_q == PV_FLOW_NORM_ISSUE) ||
+      (pv_flow_state_q == PV_FLOW_NORM_DRAIN);
+  assign output_clock_en_w = cfg_soft_reset_w || softmax_clear_rows_w ||
+      normalizer_clock_en_w || wb_en_w || axi_write_busy_w ||
+      output_stream_busy_w || output_stream_valid_w;
   // The fused array owns all PE-local score/P state, row state, and persistent O.
   fsa_fused_array #(
     .ROWS(ARRAY_ROWS), .STRIPE_ROWS(STRIPE_ROWS),
@@ -384,7 +404,8 @@ module attention_accel_top #(
     .SCORE_W(ACC_W), .PROB_W(BETA_W), .ACC_W(ACC_W), .LSE_W(LSE_W),
     .HEAD_DIM(HEAD_DIM), .FEATURE_IDX_W(FEATURE_IDX_W)
   ) u_fused_array (
-    .clk(clk), .rst_n(rst_n), .clear_i(cfg_soft_reset_w),
+    .clk(clk), .rst_n(rst_n), .clock_en_i(array_clock_en_w),
+    .clear_i(cfg_soft_reset_w),
     .clear_rows_i(softmax_clear_rows_w),
     .qk_clear_i(qk_array_clear_w), .qk_valid_i(qk_array_valid_w),
     .qk_last_i(qk_array_last_w), .qk_rows_i(qk_array_rows_w),
@@ -393,16 +414,13 @@ module attention_accel_top #(
     .q_base_i(q_tile_base_w), .k_base_i(kv_tile_base_w),
     .seq_q_i(cfg_seq_q_w), .seq_kv_i(cfg_seq_kv_w),
     .causal_en_i(cfg_causal_en_w),
-    .row_state_rd_en_i(1'b0),
-    .row_state_rd_row_i({((ARRAY_ROWS < 2) ? 1 : $clog2(ARRAY_ROWS)){1'b0}}),
-    .row_state_rd_valid_o(), .row_state_alpha_o(), .row_state_l_o(),
     .softmax_pv_ready_o(softmax_pv_ready_w),
     .softmax_done_o(softmax_done_w),
-    .softmax_busy_o(),
+    .softmax_busy_o(softmax_busy_w),
     .pv_start_i(pv_array_start_w), .pv_ready_o(pv_array_ready_w),
     .pv_seed_zero_i(pv_array_seed_zero_w),
     .pv_valid_i(pv_array_valid_w),
-    .pv_last_i(pv_array_last_w), .pv_feature_i(pv_array_feature_w),
+    .pv_feature_i(pv_array_feature_w),
     .pv_cols_i(pv_array_cols_w), .pv_done_o(fused_array_pv_done_w),
     .norm_rd_en_i(norm_rd_en_w), .norm_rd_stripe_i(norm_stripe_q),
     .norm_rd_feature_i(norm_feature_q), .norm_rd_valid_o(norm_rd_valid_w),
@@ -422,7 +440,7 @@ module attention_accel_top #(
     .LANES(STRIPE_ROWS), .ACC_W(ACC_W), .LSE_W(LSE_W),
     .OUT_W(OUT_W), .TAG_W(NORM_TAG_W)
   ) u_normalizer (
-    .clk(clk), .rst_n(rst_n),
+    .clk(clk), .rst_n(rst_n), .clock_en_i(normalizer_clock_en_w),
     .valid_i(norm_rd_valid_w), .acc_rows_i(norm_acc_rows_w),
     .l_rows_i(norm_l_rows_w), .out_scale_i(cfg_out_scale_w),
     .tag_i({norm_rd_stripe_w, norm_rd_feature_w}),
@@ -433,7 +451,8 @@ module attention_accel_top #(
     .ROWS(ARRAY_ROWS), .NORM_LANES(STRIPE_ROWS), .HEAD_DIM(HEAD_DIM),
     .OUT_W(OUT_W), .GROUP_SIZE(OUTPUT_GROUP_SIZE)
   ) u_output_buffer (
-    .clk(clk), .rst_n(rst_n), .clear_tile_i(softmax_clear_rows_w),
+    .clk(clk), .rst_n(rst_n), .clock_en_i(output_clock_en_w),
+    .clear_tile_i(softmax_clear_rows_w),
     .norm_valid_i(norm_valid_w),
     .norm_stripe_i(norm_tag_w[NORM_TAG_W-1 -: STRIPE_IDX_W]),
     .norm_feature_i(norm_tag_w[FEATURE_IDX_W-1:0]),
@@ -442,14 +461,18 @@ module attention_accel_top #(
     .stream_start_i(output_stream_start_w), .stream_bytes_i(output_stream_bytes_w),
     .stream_data_o(output_stream_data_w), .stream_strb_o(output_stream_strb_w), .stream_valid_o(output_stream_valid_w),
     .stream_ready_i(output_stream_ready_w), .stream_last_o(output_stream_last_w),
-    .stream_busy_o(), .stream_done_o(output_stream_done_w)
+    .stream_busy_o(output_stream_busy_w), .stream_done_o(output_stream_done_w)
   );
 
   // Tail Q tiles write only valid rows; convert the byte count to 128-bit AXI beats.
   always @(*) begin
-    if ({1'b0, cfg_seq_q_w} > {1'b0, q_tile_base_w} + ARRAY_ROWS_17)
+    if ({1'b0, cfg_seq_q_w} <= {1'b0, q_tile_base_w})
+      valid_q_rows_w = 16'd0;
+    else if ({1'b0, cfg_seq_q_w} >=
+             ({1'b0, q_tile_base_w} + ARRAY_ROWS_17))
       valid_q_rows_w = ARRAY_ROWS_16;
-    else valid_q_rows_w = cfg_seq_q_w - q_tile_base_w;
+    else
+      valid_q_rows_w = {1'b0, cfg_seq_q_w} - {1'b0, q_tile_base_w};
     writeback_bytes_w = valid_q_rows_w * HEAD_DIM * (OUT_W/8);
     writeback_beats_full_w = (writeback_bytes_w + 15) >> 4;
     writeback_beats_w = writeback_beats_full_w[15:0];

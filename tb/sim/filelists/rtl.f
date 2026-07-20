@@ -1,4 +1,5 @@
 +incdir+../../rtl/common
+../../rtl/common/fa_clock_gate.v
 ../../rtl/axi/axi4_slave_if.v
 ../../rtl/axi/axi4_master_write.v
 ../../rtl/control/accel_regfile.v

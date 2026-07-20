@@ -24,34 +24,34 @@ done
 ROOT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
 CORNER="${CORNER:-tt}"
 CLOCK_PERIOD="${CLOCK_PERIOD:-3.2}"
+DC_CORES="${DC_CORES:-4}"
+EXPECTED_TOP_SRAM_MACROS="${EXPECTED_TOP_SRAM_MACROS:-480}"
 if [[ ! "$CLOCK_PERIOD" =~ ^[0-9]+([.][0-9]+)?$ ]]; then
   echo "CLOCK_PERIOD must be a positive number" >&2
   exit 2
 fi
-STD_ROOT="/data/public/STD/tcbn28hpcplusbwp12t30p140_190a/tcbn28hpcplusbwp12t30p140_180a_ccs/TSMCHOME/digital/Front_End/timing_power_noise/CCS/tcbn28hpcplusbwp12t30p140_180a"
+if [[ ! "$DC_CORES" =~ ^[1-9][0-9]*$ ]]; then
+  echo "DC_CORES must be a positive integer" >&2
+  exit 2
+fi
+if [[ ! "$EXPECTED_TOP_SRAM_MACROS" =~ ^[0-9]+$ ]]; then
+  echo "EXPECTED_TOP_SRAM_MACROS must be a non-negative integer" >&2
+  exit 2
+fi
 
-case "$CORNER" in
-  tt)
-    STD_DB="$STD_ROOT/tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs.db"
-    SRAM_NAME="uhdsp_256x8m4s_tt0p9v25c"
-    ;;
-  ss)
-    STD_DB="$STD_ROOT/tcbn28hpcplusbwp12t30p140ssg0p9v125c_ccs.db"
-    SRAM_NAME="uhdsp_256x8m4s_ssg0p9v125c"
-    ;;
-  *) echo "CORNER must be tt or ss" >&2; exit 2 ;;
-esac
+# shellcheck source=library_paths.sh
+source "$ROOT_DIR/asic/scripts/library_paths.sh"
+fa_select_libraries "$ROOT_DIR" "$CORNER"
 
 RUN_DIR="$ROOT_DIR/asic/dc/work/synth/$CORNER/$GROUP"
 LOG_DIR="$ROOT_DIR/asic/dc/logs"
-SRAM_DB="$ROOT_DIR/asic/dc/work/lib/$SRAM_NAME.db"
 LOG_FILE="$LOG_DIR/synth_${GROUP}_${CORNER}.log"
 
-test -s "$STD_DB"
-if [ ! -s "$SRAM_DB" ]; then
+test -s "$FA_STD_DB"
+if [ ! -s "$FA_SRAM_DB" ]; then
   "$ROOT_DIR/asic/scripts/prepare_sram_lib.sh" "$CORNER"
 fi
-test -s "$SRAM_DB"
+test -s "$FA_SRAM_DB"
 
 case "$RUN_DIR" in
   "$ROOT_DIR"/asic/dc/work/synth/*) ;;
@@ -63,16 +63,23 @@ mkdir -p "$RUN_DIR" "$LOG_DIR"
 
 export FA_ROOT="$ROOT_DIR"
 export FA_DC_WORK="$RUN_DIR"
-export FA_STD_DB="$STD_DB"
-export FA_SRAM_DB="$SRAM_DB"
 export FA_SYNTH_TOPS="${TOPS[*]}"
 export FA_CLOCK_PERIOD="$CLOCK_PERIOD"
+export FA_CORNER="$CORNER"
+export FA_DC_CORES="$DC_CORES"
+export FA_EXPECTED_TOP_SRAM_MACROS="$EXPECTED_TOP_SRAM_MACROS"
+export FA_PHYSICAL_AWARE="${FA_PHYSICAL_AWARE:-0}"
+export FA_WRITE_ARTIFACTS="${FA_WRITE_ARTIFACTS:-1}"
 
 cd "$RUN_DIR"
-dc_shell -64bit -f "$ROOT_DIR/asic/scripts/synth_group.tcl" \
+DC_ARGS=(-64bit)
+if [ "$FA_PHYSICAL_AWARE" = "1" ]; then
+  DC_ARGS+=(-topographical_mode)
+fi
+dc_shell "${DC_ARGS[@]}" -f "$ROOT_DIR/asic/scripts/synth_group.tcl" \
   2>&1 | tee "$LOG_FILE"
 
-if grep -q '^Error:' "$LOG_FILE"; then
+if grep -Eq '(^|[[:space:]])(Error:|ERROR:)' "$LOG_FILE"; then
   echo "DC reported an error; see $LOG_FILE" >&2
   exit 1
 fi
@@ -82,11 +89,18 @@ for top in "${TOPS[@]}"; do
   RESULT_DIR="$RUN_DIR/$top/results"
   test -s "$REPORT_DIR/qor.rpt"
   test -s "$REPORT_DIR/timing.rpt"
-  test -s "$RESULT_DIR/${top}_mapped.v"
-  test -s "$RESULT_DIR/${top}.ddc"
-  test -s "$RESULT_DIR/${top}.sdc"
-  test -s "$RESULT_DIR/${top}.sdf"
-  if grep -q 'unmapped logic' "$REPORT_DIR/area.rpt"; then
+  test -s "$REPORT_DIR/area.rpt"
+  test -s "$REPORT_DIR/power.rpt"
+  test -s "$REPORT_DIR/check_design.rpt"
+  test -s "$REPORT_DIR/check_timing.rpt"
+  test -s "$REPORT_DIR/run_config.rpt"
+  if [ "$FA_WRITE_ARTIFACTS" = "1" ]; then
+    test -s "$RESULT_DIR/${top}_mapped.v"
+    test -s "$RESULT_DIR/${top}.ddc"
+    test -s "$RESULT_DIR/${top}.sdc"
+    test -s "$RESULT_DIR/${top}.sdf"
+  fi
+  if grep -qi 'unmapped logic' "$REPORT_DIR/area.rpt"; then
     echo "$top contains unmapped logic" >&2
     exit 1
   fi
