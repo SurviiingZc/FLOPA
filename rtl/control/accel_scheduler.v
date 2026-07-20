@@ -1,6 +1,8 @@
 `timescale 1ns/1ps
 `include "attention_defines.vh"
 
+// Job-level prefill scheduler. It walks head -> Q tile -> KV tile, retains
+// online-softmax state across KV tiles, and writes O only after the final KV tile.
 module accel_scheduler (
   input        clk,
   input        rst_n,
@@ -55,6 +57,7 @@ module accel_scheduler (
   wire [16:0] q_tile_count_calc_w;
   wire [16:0] kv_tile_count_calc_w;
 
+  // Stage-1 accepts fixed 32x32 prefill only; decode/GQA scheduling is deferred.
   assign illegal_start_busy_w = start_i && busy_o;
   assign illegal_mode_w = start_i && (!prefill_en_i || decode_en_i);
   assign illegal_dimensions_w = start_i &&
@@ -68,6 +71,8 @@ module accel_scheduler (
   assign run_last_o = (head_index_o == num_q_heads_i - 1'b1) &&
                       ({1'b0, q_tile_index_o} == q_tile_count_q - 1'b1);
 
+  // Phase transitions are handshake-driven so cache, array, and AXI latency
+  // never appears as a fixed controller delay.
   always @(*) begin
     next_state_w = state_o;
     case (state_o)
@@ -94,6 +99,8 @@ module accel_scheduler (
     if (soft_reset_i) next_state_w = `ATTN_STATE_IDLE;
   end
 
+  // Tile indices advance only at phase completion. KV resets after writeback,
+  // while Q/head advance in row-major job order.
   always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
       state_o <= `ATTN_STATE_IDLE;
@@ -156,6 +163,7 @@ module accel_scheduler (
     end
   end
 
+  // Decode the registered phase into one-hot enables used by the top-level blocks.
   always @(*) begin
     idle_o = (state_o == `ATTN_STATE_IDLE) || (state_o == `ATTN_STATE_DONE);
     busy_o = (state_o != `ATTN_STATE_IDLE) && (state_o != `ATTN_STATE_DONE) && (state_o != `ATTN_STATE_ERROR);

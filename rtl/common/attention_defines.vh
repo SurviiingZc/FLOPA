@@ -1,6 +1,7 @@
 `ifndef ATTENTION_DEFINES_VH
 `define ATTENTION_DEFINES_VH
 
+// Global fixed-point widths shared by the array, online-softmax state, and I/O.
 `define ATTN_DATA_W               8
 `define ATTN_ARRAY_DATA_W        16
 `define ATTN_ACC_W               32
@@ -12,6 +13,8 @@
 `define ATTN_LSE_W               32
 `define ATTN_OUT_W                8
 
+// Default physical tile and array geometry. HEAD_DIM is a streamed feature
+// count and does not change the fixed 32x32 PE fabric dimensions.
 `define ATTN_ARRAY_ROWS          32
 `define ATTN_ARRAY_COLS          32
 `define ATTN_ARRAY_STRIPE_ROWS   8
@@ -20,8 +23,10 @@
 `define ATTN_TILE_Q              32
 `define ATTN_TILE_K              32
 `define ATTN_NUM_BANKS           16
-`define ATTN_CACHE_ADDR_W        10
+`define ATTN_CACHE_DEPTH         `ATTN_HEAD_DIM
+`define ATTN_CACHE_ADDR_W         6
 
+// External bus widths and the internal 32-lane cache-word width.
 `define ATTN_AXI_ADDR_W          32
 `define ATTN_AXI_DATA_W         128
 `define ATTN_CACHE_WORD_W       256
@@ -33,6 +38,7 @@
 `define ATTN_DEFAULT_TILE_Q      8'd32
 `define ATTN_DEFAULT_TILE_K      8'd32
 
+// Software-visible operating modes and cache payload selectors.
 `define ATTN_MODESEL_MHA          1'b0
 `define ATTN_MODESEL_GQA          1'b1
 
@@ -40,6 +46,7 @@
 `define ATTN_CACHE_K              2'd1
 `define ATTN_CACHE_V              2'd2
 
+// Phase-multiplexed PE operations and top-level array phases.
 `define ATTN_PE_MAC_INT8          3'd0
 `define ATTN_PE_SUB               3'd1
 `define ATTN_PE_MAX_PASS          3'd2
@@ -54,6 +61,7 @@
 `define ATTN_REDUCE_MAX           1'b0
 `define ATTN_REDUCE_SUM           1'b1
 
+// Scheduler states and sticky software-visible error codes.
 `define ATTN_STATE_IDLE           4'd0
 `define ATTN_STATE_LOAD_Q         4'd1
 `define ATTN_STATE_LOAD_KV        4'd2
@@ -72,6 +80,7 @@
 `define ATTN_ERR_OVERFLOW         4'd5
 `define ATTN_ERR_FATAL            4'd15
 
+// AXI4-Lite register map. All addresses are byte offsets within the control BAR.
 `define ATTN_REG_CONTROL          12'h000
 `define ATTN_REG_STATUS           12'h004
 `define ATTN_REG_ERROR_CODE       12'h008
@@ -109,6 +118,8 @@
 `define ATTN_REG_PERF_MAC_HI      12'h088
 `define ATTN_REG_PERF_TILES       12'h08c
 
+// CONTROL register bit assignments. Command bits generate one-cycle pulses;
+// mode bits are captured with the configuration snapshot at START.
 `define ATTN_CTRL_START_BIT        0
 `define ATTN_CTRL_SOFT_RESET_BIT   1
 `define ATTN_CTRL_CLEAR_DONE_BIT   2

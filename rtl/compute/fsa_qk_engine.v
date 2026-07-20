@@ -1,6 +1,8 @@
 `timescale 1ns/1ps
 `include "attention_defines.vh"
 
+// Streams one Q row vector and one K column vector per head feature into the
+// output-stationary array, then waits for the registered systolic tail to drain.
 module fsa_qk_engine #(
   parameter integer CACHE_ADDR_W = `ATTN_CACHE_ADDR_W,
   parameter integer CACHE_WORD_W = `ATTN_CACHE_WORD_W,
@@ -56,11 +58,13 @@ module fsa_qk_engine #(
   end
 `endif
 
+  // Cache responses are in-order and fixed-latency. receive_count_q identifies
+  // the feature carried by the returned Q/K words, not the request being issued.
   always @(*) begin
     q_rd_en_o = 1'b0;
     k_rd_en_o = 1'b0;
-    q_rd_addr_o = {{(CACHE_ADDR_W-HEAD_DIM_W){1'b0}}, issue_count_q};
-    k_rd_addr_o = {{(CACHE_ADDR_W-HEAD_DIM_W){1'b0}}, issue_count_q};
+    q_rd_addr_o = issue_count_q[CACHE_ADDR_W-1:0];
+    k_rd_addr_o = issue_count_q[CACHE_ADDR_W-1:0];
     array_clear_o = (state_q == ST_CLEAR);
     array_valid_o = 1'b0;
     array_last_o = 1'b0;
@@ -76,6 +80,7 @@ module fsa_qk_engine #(
         q_rd_valid_i && k_rd_valid_i) begin
       array_valid_o = 1'b1;
       array_last_o = (receive_count_q == head_dim_i - 1'b1);
+      // Sign-extend each INT8 cache lane before it enters the shared PE multiplier.
       for (lane = 0; lane < ARRAY_ROWS; lane = lane + 1) begin
         array_rows_o[lane*ARRAY_DATA_W +: ARRAY_DATA_W] =
             {{EXT_W{q_rd_data_i[lane*CACHE_ELEM_W+CACHE_ELEM_W-1]}},
@@ -89,6 +94,7 @@ module fsa_qk_engine #(
     end
   end
 
+  // Separate request and response counters tolerate the cache read latency.
   always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
       state_q <= ST_IDLE;

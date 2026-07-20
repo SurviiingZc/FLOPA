@@ -91,7 +91,12 @@ The logical memory interface is common, but the physical implementation is selec
 - FPGA: infer Xilinx UltraRAM for Q/K/V tile banks with `ram_style = "ultra"`.
 - FPGA output storage: infer block RAM with `ram_style = "block"`.
 
-Each 1024 x 16 Q/K/V bank is composed from four depth slices and two byte lanes, for eight SRAM macros per bank. Sixteen logical banks form one 256-bit ping-pong side. The output accumulator uses a 64 x 1024 organization and the normalized output uses a 64 x 256 organization; both are width-composed from the same 256 x 8 macro in ASIC builds.
+Q/K/V cache depth follows `HEAD_DIM`. Configurations with at most 256 addresses
+use the 256-depth width-composed macro directly; deeper configurations use
+registered depth composition. The registered depth tag is aligned with macro
+read data across slice boundaries. Persistent O is split by stripe row and
+feature group into 32-bit-wide banks. Normalized output uses 256-bit row/group
+words composed from the same 256x8 macro in ASIC builds.
 
 All SRAM ports are single-port. A write has priority over a coincident read. The RTL must suppress read-valid for that collision rather than relying on an unspecified read-during-write value.
 
@@ -153,10 +158,9 @@ This organization maps the FlashAttention tiling idea cleanly onto hardware:
 - Nothing requires a full N x N score buffer.
 - The cache is large enough to absorb timing and bandwidth variation but small enough to stay synthesizable.
 
-For WS-PV, V uses a feature-major contract. Contiguous address `d=0..63`
-returns the 32 key values `V[0:31,d]`; address bit 5 is still the physical
-32-feature-half selector. FPGA software may transpose the 32x64 tile before
-loading; an ASIC DMA path may use bounded 32x32 transpose stages.
+For WS-PV, V uses a feature-major contract. Contiguous address `d` returns the
+32 key values `V[0:31,d]`. FPGA software may transpose the 32xHEAD_DIM tile
+before loading; an ASIC DMA path may use bounded 32x32 transpose stages.
 
 ### 6.5 Timing Rule
 
@@ -200,31 +204,27 @@ The output buffer should be a staging block with registered input and output bou
 
 ### 8.4 Physical Organization
 
-The output buffer parameters derive lane count, row index, address width, and
-depth from the fixed physical core. The active WS-PV format stores one 32-lane
-half-row per address and matches the compute handoff directly:
+The output buffer receives eight normalized rows at one feature per cycle. It
+packs 32 feature bytes locally for each row, then writes eight 256-bit
+row/group words sequentially:
 
-- accumulator: 64 addresses x 1024 bits;
-- normalized output: 64 addresses x 256 bits;
-- AXI stream: lower and upper 128-bit halves of the held 256-bit output word.
+- no accumulator SRAM exists in `output_buffer`;
+- normalized output depth is `ROWS*ceil(HEAD_DIM/32)` words;
+- AXI stream uses the lower and upper 128-bit beats of each held 256-bit word.
 
 The stream reader caches the current 256-bit SRAM word. Backpressure never causes another macro access, and moving from the lower to upper AXI beat does not toggle `CEB`.
 
-The current 1024-bit accumulator access is bounded to the 32-column core. It is
-not a scalable interface for a 128-column monolith. A follow-up banking change
-should use 128/256-bit groups.
+The widest compute-to-normalizer transfer is one stripe: eight 32-bit O values
+and eight 32-bit `l` values. It is fixed-locality data, not an array-state bus.
 
-### 8.5 WS-PV Row-Buffer Contract
+### 8.5 Persistent O-Bank Contract
 
-O remains row-major in the existing buffer. Before a non-first-tile PV run,
-both 32-feature row halves are read, multiplied by alpha, and loaded into two
-stripe-local 1024-bit buffers per active row. During features 0--31, buffer 0
-shifts seeds; during features 32--63, buffer 1 shifts seeds while buffer 0
-collects right-edge results. Buffer 1 collects after issue completes. This
-dual-buffer schedule permits continuous 64-feature issue and writes completed
-halves directly back to the unchanged row-major SRAM. The local storage cost is
-64 Kbits for a 32x32 core, but no feature-major O SRAM or final transpose is
-required.
+Each stripe row owns address-indexed 32-bit O banks split into
+`ceil(HEAD_DIM/ARRAY_COLS)` feature groups. WS-PV reads the old feature and
+writes the tagged returning feature. ASIC groups are independent single-port
+macros; RTL assertions reject same-group read/write collisions. FPGA builds
+infer block RAM. The structure removes whole-row shifts and scales to 64 or 128
+features by changing bank count, not datapath width.
 
 ## 9. Memory/Compute Interface
 

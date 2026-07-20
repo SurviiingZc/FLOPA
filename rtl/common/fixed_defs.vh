@@ -1,6 +1,7 @@
 `ifndef FIXED_DEFS_VH
 `define FIXED_DEFS_VH
 
+// Canonical signed integer widths and saturation bounds used by requantizers.
 `define ATTN_INT8_W               8
 `define ATTN_INT16_W             16
 `define ATTN_INT32_W             32
@@ -13,6 +14,7 @@
 `define ATTN_BETA_ZERO           16'd0
 `define ATTN_BETA_ONE            16'd32767
 
+// Rounding and saturation selectors for scale_requant_unit.
 `define ATTN_ROUND_NEAREST        2'd0
 `define ATTN_ROUND_ZERO           2'd1
 `define ATTN_SAT_INT8             2'd0

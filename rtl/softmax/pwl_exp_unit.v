@@ -1,5 +1,7 @@
 `timescale 1ns/1ps
 
+// Pipelined piecewise-linear exp approximation for non-positive Q8 score deltas.
+// The Q1.15 output represents probability/alpha in [0, 1].
 module pwl_exp_unit (
   input                    clk,
   input                    rst_n,
@@ -14,6 +16,8 @@ module pwl_exp_unit (
   reg signed [15:0] x_s0_q;
   reg [15:0] y_s1_q;
 
+  // Eight 1.0-wide segments use endpoint interpolation; positive inputs clamp to
+  // one and sufficiently negative inputs clamp to zero.
   function [15:0] exp_pwl;
     input signed [15:0] x;
     reg [15:0] magnitude;
@@ -49,6 +53,7 @@ module pwl_exp_unit (
     end
   endfunction
 
+  // Two internal stages plus the output register accept one input every cycle.
   always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
       valid_s0_q <= 1'b0;

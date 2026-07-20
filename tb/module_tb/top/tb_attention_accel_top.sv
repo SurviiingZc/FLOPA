@@ -25,7 +25,7 @@ module tb_attention_accel_top;
   reg rready;
   reg [1:0] tile_load_kind_i;
   reg tile_load_bank_i;
-  reg [9:0] tile_load_addr_i;
+  reg [`ATTN_CACHE_ADDR_W-1:0] tile_load_addr_i;
   reg tile_load_half_i;
   reg [127:0] tile_load_data_i;
   reg tile_load_valid_i;
@@ -93,7 +93,7 @@ module tb_attention_accel_top;
   task load_cache_word;
     input [1:0] kind;
     input bank;
-    input [9:0] addr;
+    input [`ATTN_CACHE_ADDR_W-1:0] addr;
     input [7:0] value;
     begin
       @(negedge clk);

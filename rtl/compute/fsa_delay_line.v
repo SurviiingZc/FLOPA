@@ -1,5 +1,7 @@
 `timescale 1ns/1ps
 
+// Valid-qualified delay used to create systolic row/column skew. Data holds during
+// bubbles while valid/last continue through every registered stage.
 module fsa_delay_line #(
   parameter integer WIDTH = 16,
   parameter integer DEPTH = 1
@@ -16,6 +18,7 @@ module fsa_delay_line #(
 );
 
   generate
+    // DEPTH=0 keeps parameterized boundary wiring legal without adding latency.
     if (DEPTH == 0) begin : g_passthrough
       assign valid_o = valid_i;
       assign last_o = last_i && valid_i;
@@ -30,6 +33,7 @@ module fsa_delay_line #(
       assign last_o = last_q[DEPTH-1];
       assign data_o = data_q[DEPTH-1];
 
+      // Shift payload only with valid to reduce unnecessary data-register toggles.
       always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
           valid_q <= {DEPTH{1'b0}};

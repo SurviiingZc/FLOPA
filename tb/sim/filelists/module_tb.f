@@ -19,6 +19,7 @@
 ../../tb/module_tb/memory/tb_banked_sram.sv
 ../../tb/module_tb/memory/tb_bram_buffer.sv
 ../../tb/module_tb/memory/tb_output_buffer.sv
+../../tb/module_tb/memory/tb_o_accumulator_bank.sv
 ../../tb/module_tb/memory/tb_pingpong_buffer.sv
 ../../tb/module_tb/memory/tb_qkv_tile_cache.sv
 ../../tb/module_tb/memory/tb_stream_fifo.sv

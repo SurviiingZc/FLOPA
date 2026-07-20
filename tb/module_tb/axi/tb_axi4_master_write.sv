@@ -31,6 +31,7 @@ module tb_axi4_master_write;
   wire m_axi_bready;
   integer aw_count;
   integer w_count;
+  integer test_case;
 
   axi4_master_write dut (
     .clk(clk), .rst_n(rst_n), .start_i(start_i), .base_addr_i(base_addr_i),
@@ -62,19 +63,32 @@ module tb_axi4_master_write;
     if (rst_n && m_axi_awvalid && m_axi_awready) begin
       if (m_axi_awsize !== 3'd4) $fatal(1, "AWSIZE mismatch");
       if (m_axi_awburst !== 2'b01) $fatal(1, "AWBURST mismatch");
-      case (aw_count)
-        0: begin if (m_axi_awaddr !== 32'h1000_0000 || m_axi_awlen !== 8'd1) $fatal(1, "burst0 mismatch"); end
-        1: begin if (m_axi_awaddr !== 32'h1000_0020 || m_axi_awlen !== 8'd1) $fatal(1, "burst1 mismatch"); end
-        2: begin if (m_axi_awaddr !== 32'h1000_0040 || m_axi_awlen !== 8'd0) $fatal(1, "burst2 mismatch"); end
-        default: $fatal(1, "too many AW bursts");
-      endcase
+      if (test_case == 0) begin
+        case (aw_count)
+          0: if (m_axi_awaddr !== 32'h1000_0000 || m_axi_awlen !== 8'd1) $fatal(1, "burst0 mismatch");
+          1: if (m_axi_awaddr !== 32'h1000_0020 || m_axi_awlen !== 8'd1) $fatal(1, "burst1 mismatch");
+          2: if (m_axi_awaddr !== 32'h1000_0040 || m_axi_awlen !== 8'd0) $fatal(1, "burst2 mismatch");
+          default: $fatal(1, "too many AW bursts");
+        endcase
+      end else begin
+        case (aw_count)
+          0: if (m_axi_awaddr !== 32'h1000_0ff0 || m_axi_awlen !== 8'd0) $fatal(1, "4KB burst0 mismatch");
+          1: if (m_axi_awaddr !== 32'h1000_1000 || m_axi_awlen !== 8'd1) $fatal(1, "4KB burst1 mismatch");
+          default: $fatal(1, "too many 4KB AW bursts");
+        endcase
+      end
       aw_count = aw_count + 1;
     end
 
     if (rst_n && m_axi_wvalid && m_axi_wready) begin
       w_count = w_count + 1;
-      if ((w_count == 2 || w_count == 4 || w_count == 5) && !m_axi_wlast) $fatal(1, "missing WLAST at beat %0d", w_count);
-      if (!(w_count == 2 || w_count == 4 || w_count == 5) && m_axi_wlast) $fatal(1, "unexpected WLAST at beat %0d", w_count);
+      if (test_case == 0) begin
+        if ((w_count == 2 || w_count == 4 || w_count == 5) && !m_axi_wlast) $fatal(1, "missing WLAST at beat %0d", w_count);
+        if (!(w_count == 2 || w_count == 4 || w_count == 5) && m_axi_wlast) $fatal(1, "unexpected WLAST at beat %0d", w_count);
+      end else begin
+        if ((w_count == 1 || w_count == 3) && !m_axi_wlast) $fatal(1, "missing 4KB WLAST at beat %0d", w_count);
+        if (!(w_count == 1 || w_count == 3) && m_axi_wlast) $fatal(1, "unexpected 4KB WLAST at beat %0d", w_count);
+      end
     end
   end
 
@@ -98,6 +112,7 @@ module tb_axi4_master_write;
     m_axi_wready = 1'b1;
     aw_count = 0;
     w_count = 0;
+    test_case = 0;
 
     repeat (4) @(posedge clk);
     rst_n = 1'b1;
@@ -113,6 +128,21 @@ module tb_axi4_master_write;
     if (!done_o) $fatal(1, "axi master did not finish");
     if (aw_count != 3) $fatal(1, "AW count mismatch: %0d", aw_count);
     if (w_count != 5) $fatal(1, "W count mismatch: %0d", w_count);
+
+    repeat (2) @(posedge clk);
+    test_case = 1;
+    aw_count = 0;
+    w_count = 0;
+    base_addr_i = 32'h1000_0ff0;
+    beat_count_i = 16'd3;
+    burst_len_i = 8'd16;
+    start_i = 1'b1;
+    @(posedge clk);
+    start_i = 1'b0;
+    wait (done_o || error_o);
+    #1;
+    if (error_o || aw_count != 2 || w_count != 3)
+      $fatal(1, "4KB split failed error=%b aw=%0d w=%0d",error_o,aw_count,w_count);
 
     $display("[PASS] tb_axi4_master_write");
     $finish;

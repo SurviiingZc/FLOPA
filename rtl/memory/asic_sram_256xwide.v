@@ -1,6 +1,7 @@
 `timescale 1ns/1ps
 
 // Width-composed 256-deep single-port memory. WIDTH must be a multiple of 8.
+// CEB/WEB are active-low; inactive byte macros remain disabled to reduce power.
 module asic_sram_256xwide #(
   parameter WIDTH = 256
 )(
@@ -13,6 +14,7 @@ module asic_sram_256xwide #(
 );
 
   genvar byte_idx;
+  // Compose arbitrary byte-aligned words from the characterized 256x8 macros.
   generate
     for (byte_idx = 0; byte_idx < WIDTH/8; byte_idx = byte_idx + 1) begin : g_byte
       uhdsp_256x8m4s u_sram (

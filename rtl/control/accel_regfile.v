@@ -1,8 +1,11 @@
 `timescale 1ns/1ps
 `include "attention_defines.vh"
 
+// AXI4-Lite programming model. Software writes shadow registers; a valid START
+// atomically snapshots them into cfg_* outputs so a running job is immutable.
 module accel_regfile #(
-  parameter ADDR_W = `ATTN_AXI_ADDR_W
+  parameter ADDR_W = `ATTN_AXI_ADDR_W,
+  parameter HEAD_DIM = `ATTN_HEAD_DIM
 )(
   input                  clk,
   input                  rst_n,
@@ -97,6 +100,7 @@ module accel_regfile #(
   reg [31:0] prog_out_scale_q;
   reg [31:0] prog_mask_cfg_q;
   reg [31:0] prog_perf_ctrl_q;
+  localparam [7:0] HEAD_DIM_CFG = HEAD_DIM;
 
   wire control_write_w;
   wire requested_start_w;
@@ -107,6 +111,7 @@ module accel_regfile #(
   wire start_cfg_valid_w;
   wire start_alignment_valid_w;
 
+  // START validation covers the Stage-1 prefill contract and 16-byte DMA alignment.
   assign control_write_w = wr_fire_w && wr_addr_w[11:0] == `ATTN_REG_CONTROL && wr_strb_w[0];
   assign requested_start_w = control_write_w && wr_data_w[`ATTN_CTRL_START_BIT];
   assign start_mode_sel_w = control_write_w ? wr_data_w[`ATTN_CTRL_MODE_SEL_BIT] : prog_mode_sel_q;
@@ -117,7 +122,7 @@ module accel_regfile #(
                                    (prog_v_base_q[3:0] == 0) && (prog_o_base_q[3:0] == 0);
   assign start_cfg_valid_w = prog_seq_q_q != 0 && prog_seq_kv_q != 0 &&
       prog_num_q_heads_q != 0 && prog_num_kv_heads_q != 0 &&
-      prog_head_dim_q == `ATTN_HEAD_DIM && prog_tile_q_q == `ATTN_TILE_Q &&
+      prog_head_dim_q == HEAD_DIM_CFG && prog_tile_q_q == `ATTN_TILE_Q &&
       prog_tile_k_q == `ATTN_TILE_K && start_prefill_en_w && !start_decode_en_w &&
       !start_mode_sel_w && prog_num_q_heads_q == prog_num_kv_heads_q && start_alignment_valid_w;
 
@@ -130,6 +135,7 @@ module accel_regfile #(
     .wr_data_o(wr_data_w), .wr_strb_o(wr_strb_w), .rd_addr_o(rd_addr_w)
   );
 
+  // Byte-enable helpers preserve untouched bytes for partial AXI4-Lite writes.
   function [31:0] merge_wstrb;
     input [31:0] old_value;
     input [31:0] new_value;
@@ -163,6 +169,7 @@ module accel_regfile #(
     end
   endfunction
 
+  // Address classifiers centralize DECERR behavior for the read/write channels.
   function is_known_addr;
     input [ADDR_W-1:0] addr;
     begin
@@ -198,6 +205,7 @@ module accel_regfile #(
     end
   endfunction
 
+  // Combinational read mux includes live status/performance counters.
   function [31:0] read_reg_value;
     input [ADDR_W-1:0] addr;
     begin
@@ -244,6 +252,8 @@ module accel_regfile #(
     end
   endfunction
 
+  // Serialize AXI responses, update shadow registers, and create one-cycle command
+  // pulses. Only CONTROL/PERF writes are accepted while a job is busy.
   always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
       s_axi_bresp <= 2'b00;
@@ -304,6 +314,7 @@ module accel_regfile #(
                 cfg_clear_error_pulse_o <= wr_data_w[`ATTN_CTRL_CLEAR_ERROR_BIT];
                 if (wr_data_w[`ATTN_CTRL_CLEAR_ERROR_BIT] || wr_data_w[`ATTN_CTRL_SOFT_RESET_BIT])
                   sticky_error_q <= `ATTN_ERR_NONE;
+                // A successful START copies every shadow field in one cycle.
                 if (wr_data_w[`ATTN_CTRL_START_BIT]) begin
                   if (busy_i || !start_cfg_valid_w) begin
                     s_axi_bresp <= 2'b10;

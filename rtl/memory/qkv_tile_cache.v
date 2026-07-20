@@ -1,6 +1,8 @@
 `timescale 1ns/1ps
 `include "attention_defines.vh"
 
+// Ping-pong Q/K/V tile cache. Each 256-bit word contains 32 INT8 lanes; cache
+// depth is HEAD_DIM features, while the model-level KV history remains in DDR.
 module qkv_tile_cache #(
   parameter ADDR_W = `ATTN_CACHE_ADDR_W,
   parameter BANKS = `ATTN_NUM_BANKS,
@@ -77,6 +79,7 @@ module qkv_tile_cache #(
   wire k_next_valid_w;
   wire v_next_valid_w;
 
+  // Exactly one active bank responds per tensor, so valid safely selects its data.
   assign load_ready_o = 1'b1;
   assign q_rd_data_o = q0_valid_w ? q0_data_w : q1_data_w;
   assign q_rd_valid_o = q0_valid_w | q1_valid_w;
@@ -88,6 +91,8 @@ module qkv_tile_cache #(
   assign kv_next_valid_o = k_next_valid_w & v_next_valid_w;
   assign kv_active_bank_o = k_active_bank_w;
 
+  // Assemble two 128-bit loader beats into one 256-bit cache word. The second half
+  // must match kind, bank, and address captured with the first half.
   always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
       pending_half_q <= 1'b0;
@@ -130,6 +135,7 @@ module qkv_tile_cache #(
     end
   end
 
+  // Q has independent lifetime; K and V switch/consume together as a KV pair.
   pingpong_buffer u_q_pp (
     .clk(clk), .rst_n(rst_n), .clear_i(clear_i),
     .load_commit_i(commit_valid_i && commit_kind_i == `ATTN_CACHE_Q), .load_bank_i(commit_bank_i),
@@ -154,6 +160,8 @@ module qkv_tile_cache #(
     .protocol_error_o(v_pp_error_w)
   );
 
+  // Six physical memories implement Q/K/V x ping/pong. Only the active compute
+  // bank is read while the inactive bank may be filled for the next tile.
   banked_sram #(.BANKS(BANKS), .BANK_W(BANK_W), .ADDR_W(ADDR_W)) u_q0 (
     .clk(clk), .rst_n(rst_n),
     .wr_en_i(word_wr_valid_q && word_wr_kind_q == `ATTN_CACHE_Q && !word_wr_bank_q),

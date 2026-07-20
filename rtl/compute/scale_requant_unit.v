@@ -1,6 +1,8 @@
 `timescale 1ns/1ps
 `include "fixed_defs.vh"
 
+// Three-stage fixed-point scale/requantize pipeline: capture, signed multiply,
+// rounded shift plus zero point, then selectable INT8/INT16 saturation.
 module scale_requant_unit #(
   parameter IN_W = 32,
   parameter SCALE_W = 16,
@@ -44,6 +46,7 @@ module scale_requant_unit #(
   reg signed [PROD_W:0] biased_w;
   reg signed [PROD_W:0] round_bias_w;
 
+  // Apply symmetric round-to-nearest before the arithmetic right shift.
   always @(*) begin
     rounded_w = {product_s1_q[PROD_W-1], product_s1_q};
     round_bias_w = {{PROD_W{1'b0}}, 1'b1};
@@ -58,6 +61,7 @@ module scale_requant_unit #(
     biased_w = (rounded_w >>> shift_s1_q) + zp_s1_q;
   end
 
+  // Valid and all formatting controls are pipelined with the corresponding data.
   always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
       valid_s0_q <= 1'b0;

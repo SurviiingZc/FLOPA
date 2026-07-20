@@ -1,6 +1,8 @@
 `timescale 1ns/1ps
 `include "attention_defines.vh"
 
+// Minimal AXI4-Lite request joiner. AW and W may arrive independently; wr_fire_o
+// pulses only after both halves have been captured. Read requests are single-entry.
 module axi4_slave_if #(
   parameter ADDR_W = `ATTN_AXI_ADDR_W
 )(
@@ -34,10 +36,12 @@ module axi4_slave_if #(
   reg w_hold_q;
   reg ar_hold_q;
 
+  // Backpressure prevents overwriting either one-entry holding register.
   assign s_axi_awready = ~aw_hold_q & ~wr_block_i;
   assign s_axi_wready  = ~w_hold_q  & ~wr_block_i;
   assign s_axi_arready = ~ar_hold_q & ~rd_block_i;
 
+  // Fire pulses transfer ownership to the register file and release held channels.
   always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
       aw_hold_q <= 1'b0;

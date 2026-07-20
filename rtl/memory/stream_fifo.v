@@ -1,5 +1,6 @@
 `timescale 1ns/1ps
 
+// Small ready/valid circular FIFO used to decouple bounded stream latency.
 module stream_fifo #(
   parameter DATA_W = 128,
   parameter DEPTH = 4,
@@ -29,6 +30,7 @@ module stream_fifo #(
   assign push_w = in_valid_i && in_ready_o;
   assign pop_w = out_valid_o && out_ready_i;
 
+  // Simultaneous push/pop advances both pointers while preserving occupancy.
   always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
       wr_ptr_q <= {PTR_W{1'b0}};

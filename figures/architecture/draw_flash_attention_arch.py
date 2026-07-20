@@ -137,17 +137,16 @@ def draw_system_band(ax):
                   color=CONTROL, lw=0.6, mutation=4.2)
         sx += sw + 0.008
 
-    box(ax, 0.719, 0.830, 0.263, 0.145, "Online O Storage + Output", "",
+    box(ax, 0.719, 0.830, 0.263, 0.145, "Final Normalization + Output", "",
         fill=STATE_FILL, edge=STATE, title_color=STATE, title_size=6.5)
-    mini_box(ax, 0.735, 0.865, 0.080, 0.047, "row-major\nINT32 O buffer",
+    mini_box(ax, 0.735, 0.865, 0.066, 0.047, "persistent\nO banks",
              STATE, WHITE, size=5.0, weight="bold")
-    mini_box(ax, 0.827, 0.842, 0.059, 0.038, "alpha rescale\nfeedback",
+    mini_box(ax, 0.813, 0.865, 0.071, 0.047, "8-lane recip.\n+ requantize",
              STATE, WHITE, size=5.0, weight="bold")
-    mini_box(ax, 0.901, 0.865, 0.065, 0.047, "normalize\n+ AXI WB",
+    mini_box(ax, 0.898, 0.865, 0.068, 0.047, "256b pack\n+ AXI WB",
              STATE, WHITE, size=5.0, weight="bold")
-    arrow(ax, 0.815, 0.897, 0.901, 0.897, color=STATE, lw=0.75, mutation=4.8)
-    poly_arrow(ax, [(0.815, 0.880), (0.821, 0.880), (0.821, 0.861),
-                    (0.827, 0.861)], color=STATE, lw=0.68, mutation=4.5)
+    arrow(ax, 0.801, 0.889, 0.813, 0.889, color=STATE, lw=0.75, mutation=4.8)
+    arrow(ax, 0.884, 0.889, 0.898, 0.889, color=STATE, lw=0.75, mutation=4.8)
 
     arrow(ax, 0.153, 0.903, 0.166, 0.903, color=MEMORY, lw=1.0)
     tag(ax, 0.159, 0.922, "128b", color=MEMORY, size=5.0)
@@ -177,7 +176,7 @@ def draw_front_end(ax):
         "Q row | K/V column | O seed", fill=WHITE, edge=MEMORY,
         title_color=MEMORY, title_size=5.55, subtitle_size=5.0)
     box(ax, 0.037, 0.431, 0.150, 0.075, "FSA PV Engine",
-        "V[:,d] issue + row preload", fill=WHITE, edge=STATE,
+        "V[:,d] + feature tag issue", fill=WHITE, edge=STATE,
         title_color=STATE, title_size=5.55, subtitle_size=5.0)
     arrow(ax, 0.187, 0.469, 0.222, 0.469, color=STATE, lw=1.15,
           mutation=6.0)
@@ -253,14 +252,14 @@ def draw_array(ax):
     tag(ax, gx + gw * 0.50, gy + 0.014, "prob_q holds P across 64 continuous features",
         color=STATE, size=5.0, weight="bold")
 
-    # Four stripe-local row-buffer banks, kept beside their owning rows.
+    # Four persistent stripe-local O banks, kept beside their owning rows.
     bx = gx + gw + 0.012
     for stripe in range(4):
         by = gy + stripe * gh / 4 + 0.005
         ax.add_patch(Rectangle((bx, by), 0.027, gh / 4 - 0.010,
                                facecolor=GOLD_FILL, edgecolor=GOLD,
                                linewidth=0.52, zorder=7))
-        ax.text(bx + 0.0135, by + (gh / 4 - 0.010) / 2, "2x\nO row",
+        ax.text(bx + 0.0135, by + (gh / 4 - 0.010) / 2, "O[g]\n8 rows",
                 ha="center", va="center", fontsize=5.0, fontweight="bold",
                 color=GOLD, linespacing=0.90, zorder=8)
     # Representative PE connector.
@@ -281,8 +280,8 @@ def draw_side_units(ax):
     box(ax, 0.786, 0.537, 0.178, 0.071, "Row State (m, l, alpha)",
         "online update | 32 rows", fill=STATE_FILL, edge=STATE,
         title_color=STATE, title_size=5.45, subtitle_size=5.0)
-    box(ax, 0.786, 0.436, 0.178, 0.071, "Row Result Interface",
-        "completed 32-feature half", fill=GOLD_FILL, edge=GOLD,
+    box(ax, 0.786, 0.436, 0.178, 0.071, "Feature-Tagged O Write",
+        "right edge -> row bank[feature]", fill=GOLD_FILL, edge=GOLD,
         title_color=GOLD, title_size=5.45, subtitle_size=5.0)
 
     # Delta leaves the array; probability returns to its originating PE.
@@ -296,10 +295,6 @@ def draw_side_units(ax):
     poly_arrow(ax, [(0.964, 0.472), (0.974, 0.472), (0.974, 0.820),
                     (0.775, 0.820), (0.775, 0.865)],
                color=STATE, lw=1.0, mutation=5.5)
-    poly_arrow(ax, [(0.857, 0.842), (0.857, 0.820), (0.737, 0.820),
-                    (0.737, 0.439)], color=STATE, lw=0.9,
-               linestyle="--", mutation=5.2)
-
     phase_badge(ax, 0.233, 0.765, "1", "QK + ROWMAX", COMPUTE)
     phase_badge(ax, 0.425, 0.765, "2", "DELTA + EXP", STATE)
     phase_badge(ax, 0.603, 0.765, "3", "ROWSUM + STATE", NONLINEAR)
@@ -316,7 +311,7 @@ def draw_pe_panel(ax):
         "Q ->\nK / V down\nvalid + last", fill=MEMORY_FILL, edge=MEMORY,
         title_color=MEMORY, title_size=5.15, subtitle_size=5.0)
 
-    box(ax, 0.158, 0.073, 0.206, 0.179, "Mode-Selected Arithmetic", "",
+    box(ax, 0.158, 0.073, 0.206, 0.179, "Shared Multiplier + ALU", "",
         fill=COMPUTE_FILL, edge=COMPUTE, title_color=COMPUTE,
         title_size=5.35)
     ops = [
@@ -363,30 +358,31 @@ def draw_pe_panel(ax):
 
 def draw_online_o_panel(ax):
     x, y, w, h = 0.610, 0.027, 0.372, 0.290
-    box(ax, x, y, w, h, "Stripe-Local Online O Update",
-        "two 1024-bit half buffers per active row",
+    box(ax, x, y, w, h, "Persistent O-Bank Online Update",
+        "addressed by full feature ID; no preload and no shifting",
         fill=WHITE, edge=INK, title_size=6.15, subtitle_size=5.0)
 
-    mini_box(ax, 0.627, 0.185, 0.061, 0.051, "both O halves\nfrom SRAM", STATE,
+    mini_box(ax, 0.627, 0.174, 0.074, 0.073,
+             "O BANKS\ng0: d=0..31\ng1: d=32..63", STATE,
              STATE_FILL, size=5.0, weight="bold")
-    mini_box(ax, 0.706, 0.185, 0.061, 0.051, "32-lane\nalpha x O", STATE,
+    mini_box(ax, 0.718, 0.185, 0.061, 0.051, "32-lane\nalpha x O[d]", STATE,
              WHITE, size=5.0, weight="bold")
-    mini_box(ax, 0.785, 0.174, 0.074, 0.073, "DUAL BUFFERS\nB0: seed/result\nB1: seed/result",
-             GOLD, GOLD_FILL, size=5.0, weight="bold")
-    mini_box(ax, 0.883, 0.185, 0.075, 0.051, "PE row\nsum + P x V",
+    mini_box(ax, 0.797, 0.185, 0.075, 0.051, "seed[d]\n+ feature tag", GOLD,
+             GOLD_FILL, size=5.0, weight="bold")
+    mini_box(ax, 0.890, 0.185, 0.068, 0.051, "PE row\nsum + P x V",
              COMPUTE, COMPUTE_FILL, size=5.0, weight="bold")
-    arrow(ax, 0.688, 0.210, 0.706, 0.210, color=STATE, lw=0.9, mutation=5.0)
-    arrow(ax, 0.767, 0.210, 0.785, 0.210, color=STATE, lw=0.9, mutation=5.0)
-    arrow(ax, 0.859, 0.210, 0.883, 0.210, color=GOLD, lw=0.9, mutation=5.0)
-    poly_arrow(ax, [(0.921, 0.185), (0.921, 0.158), (0.822, 0.158),
-                    (0.822, 0.174)], color=GOLD, lw=0.9, mutation=5.0)
-    tag(ax, 0.872, 0.147, "right-edge results", color=GOLD, size=5.0)
+    arrow(ax, 0.701, 0.210, 0.718, 0.210, color=STATE, lw=0.9, mutation=5.0)
+    arrow(ax, 0.779, 0.210, 0.797, 0.210, color=STATE, lw=0.9, mutation=5.0)
+    arrow(ax, 0.872, 0.210, 0.890, 0.210, color=GOLD, lw=0.9, mutation=5.0)
+    poly_arrow(ax, [(0.924, 0.185), (0.924, 0.158), (0.664, 0.158),
+                    (0.664, 0.174)], color=GOLD, lw=0.9, mutation=5.0)
+    tag(ax, 0.795, 0.147, "tagged O_new[d] write", color=GOLD, size=5.0)
 
     ax.text(0.796, 0.116, "O_j = alpha_j O_(j-1) + P_j V_j",
             ha="center", va="center", fontsize=5.35, fontweight="bold",
             color=INK, zorder=8)
     ax.text(0.796, 0.087,
-            "64 V features issued continuously  |  one array drain",
+            "read O_old[d] and write O_new[d] overlap the 64-feature stream",
             ha="center", va="center", fontsize=5.0, color=MID, zorder=8)
 
 

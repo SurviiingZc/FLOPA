@@ -1,39 +1,45 @@
 `timescale 1ns/1ps
 `include "tb_fsdb.svh"
 `include "tb_common.svh"
-
 module tb_output_buffer;
-  `TB_FSDB_DUMP("tb_output_buffer.fsdb", tb_output_buffer)
-  reg clk=0,rst_n=0,clear_tile_i=0;
-  reg acc_wr_valid_i=0; reg [4:0] acc_wr_row_i=0; reg acc_wr_half_i=0; reg [1023:0] acc_wr_data_i=0;
-  reg acc_rd_en_i=0; reg [4:0] acc_rd_row_i=0; reg acc_rd_half_i=0; wire [1023:0] acc_rd_data_o; wire acc_rd_valid_o;
-  reg out_wr_valid_i=0; reg [4:0] out_wr_row_i=0; reg out_wr_half_i=0; reg [255:0] out_wr_data_i=0;
-  reg stream_start_i=0; reg [15:0] stream_bytes_i=0; wire [127:0] stream_data_o; wire [15:0] stream_strb_o;
-  wire stream_valid_o; reg stream_ready_i=0; wire stream_last_o,stream_busy_o,stream_done_o;
-  integer errors=0;
-  output_buffer dut (.*);
-  always #5 clk=~clk;
-  `TB_TIMEOUT(250, "tb_output_buffer")
+  `TB_FSDB_DUMP("tb_output_buffer.fsdb",tb_output_buffer)
+  localparam ROWS=32,NORM_LANES=8,HEAD_DIM=64,OUT_W=8;
+  localparam STRIPE_IDX_W=2,FEATURE_IDX_W=6;
+  reg clk=0,rst_n=0,clear_tile_i=0,norm_valid_i=0;
+  reg [STRIPE_IDX_W-1:0] norm_stripe_i=0; reg [FEATURE_IDX_W-1:0] norm_feature_i=0;
+  reg [NORM_LANES*OUT_W-1:0] norm_data_i=0; wire norm_ready_o,norm_group_done_o;
+  reg stream_start_i=0; reg [15:0] stream_bytes_i=0; wire [127:0] stream_data_o;
+  wire [15:0] stream_strb_o; wire stream_valid_o; reg stream_ready_i=0;
+  wire stream_last_o,stream_busy_o,stream_done_o;
+  reg [127:0] expected_first,expected_second; integer feature,lane,errors=0;
+  output_buffer dut(.*);
+  always #5 clk=~clk; `TB_TIMEOUT(300,"tb_output_buffer")
   initial begin
+    expected_first=0; expected_second=0;
+    for(feature=0;feature<16;feature=feature+1)
+      expected_first[feature*8 +: 8]=feature[7:0];
+    for(feature=0;feature<16;feature=feature+1)
+      expected_second[feature*8 +: 8]=(feature+16);
     repeat(3) @(posedge clk); rst_n=1;
-    @(negedge clk); acc_wr_valid_i=1; acc_wr_row_i=31; acc_wr_half_i=1; acc_wr_data_i={32{32'hdeadbeef}};
-    @(negedge clk); acc_wr_valid_i=0; acc_rd_en_i=1; acc_rd_row_i=31; acc_rd_half_i=1;
-    @(negedge clk); acc_rd_en_i=0;
-    wait(acc_rd_valid_o); #1;
-    `TB_CHECK(acc_rd_data_o=={32{32'hdeadbeef}}, "accumulator readback")
-    @(negedge clk); out_wr_valid_i=1; out_wr_row_i=0; out_wr_half_i=0;
-    out_wr_data_i=256'hffeeddccbbaa99887766554433221100_0123456789abcdef0011223344556677;
-    @(negedge clk); out_wr_valid_i=0; stream_bytes_i=20; stream_start_i=1;
+    for(feature=0;feature<32;feature=feature+1) begin
+      @(negedge clk); wait(norm_ready_o);
+      norm_valid_i=1; norm_stripe_i=0; norm_feature_i=feature;
+      for(lane=0;lane<NORM_LANES;lane=lane+1)
+        norm_data_i[lane*OUT_W +: OUT_W]=feature+lane;
+    end
+    @(negedge clk); norm_valid_i=0;
+    wait(norm_group_done_o);
+    @(negedge clk); stream_bytes_i=20; stream_start_i=1;
     @(negedge clk); stream_start_i=0;
     wait(stream_valid_o); #1;
-    `TB_CHECK(stream_data_o==128'h0123456789abcdef0011223344556677 && stream_strb_o==16'hffff && !stream_last_o, "first stream beat")
+    `TB_CHECK(stream_data_o==expected_first && stream_strb_o==16'hffff && !stream_last_o,"first packed beat")
     repeat(2) @(posedge clk); #1;
-    `TB_CHECK(stream_valid_o && stream_data_o==128'h0123456789abcdef0011223344556677, "stream backpressure hold")
+    `TB_CHECK(stream_valid_o && stream_data_o==expected_first,"stream backpressure hold")
     @(negedge clk); stream_ready_i=1; @(posedge clk); #1; @(negedge clk); stream_ready_i=0;
     wait(stream_valid_o); #1;
-    `TB_CHECK(stream_data_o==128'hffeeddccbbaa99887766554433221100 && stream_strb_o==16'h000f && stream_last_o, "partial final beat")
+    `TB_CHECK(stream_data_o==expected_second && stream_strb_o==16'h000f && stream_last_o,"partial second beat")
     @(negedge clk); stream_ready_i=1; @(posedge clk); #1;
-    `TB_CHECK(stream_done_o && !stream_busy_o, "stream completion")
+    `TB_CHECK(stream_done_o && !stream_busy_o,"stream completion")
     `TB_FINISH("tb_output_buffer")
   end
 endmodule

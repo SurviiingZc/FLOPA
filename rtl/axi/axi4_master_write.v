@@ -1,6 +1,8 @@
 `timescale 1ns/1ps
 `include "attention_defines.vh"
 
+// AXI4 write-only burst engine for normalized output. Bursts are split at both
+// the configured maximum length and mandatory 4-KB address boundaries.
 module axi4_master_write #(
   parameter ADDR_W = `ATTN_AXI_ADDR_W,
   parameter DATA_W = `ATTN_AXI_DATA_W
@@ -48,13 +50,31 @@ module axi4_master_write #(
   reg [7:0] burst_left_q;
   reg [ADDR_W-1:0] addr_q;
   reg [7:0] burst_size_q;
+  reg [8:0] beats_to_4k_w;
+  reg [12:0] beats_to_4k_full_w;
+  reg [15:0] burst_size_full_w;
+  reg [7:0] burst_size_next_w;
 
+  // The source advances only on a real W-channel handshake.
   assign data_ready_o = (state_q == ST_W) && m_axi_wready;
   assign m_axi_wvalid = (state_q == ST_W) && data_valid_i;
   assign m_axi_wdata = data_i;
   assign m_axi_wstrb = {(DATA_W/8){1'b1}};
   assign m_axi_wlast = (state_q == ST_W) && (burst_left_q == 8'd1);
 
+  // Select the next burst as min(beats left, configured burst, 4-KB remainder).
+  always @(*) begin
+    beats_to_4k_full_w = (13'd4096 - {1'b0, addr_q[11:0]}) >> 4;
+    beats_to_4k_w = beats_to_4k_full_w[8:0];
+    burst_size_full_w = beats_left_q;
+    if (burst_size_full_w > {8'd0, burst_len_i})
+      burst_size_full_w = {8'd0, burst_len_i};
+    if (burst_size_full_w > {7'd0, beats_to_4k_w})
+      burst_size_full_w = {7'd0, beats_to_4k_w};
+    burst_size_next_w = burst_size_full_w[7:0];
+  end
+
+  // One outstanding burst is allowed: AW -> streamed W beats -> B response.
   always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
       state_q <= ST_IDLE;
@@ -80,7 +100,8 @@ module axi4_master_write #(
           m_axi_awvalid <= 1'b0;
           m_axi_bready <= 1'b0;
           if (start_i) begin
-            if (beat_count_i == 16'd0 || burst_len_i == 8'd0) begin
+            if (beat_count_i == 16'd0 || burst_len_i == 8'd0 ||
+                base_addr_i[3:0] != 4'd0) begin
               error_o <= 1'b1;
               state_q <= ST_ERROR;
             end else begin
@@ -95,9 +116,9 @@ module axi4_master_write #(
         ST_AW: begin
           busy_o <= 1'b1;
           m_axi_bready <= 1'b0;
-          burst_size_q <= (beats_left_q < {8'd0, burst_len_i}) ? beats_left_q[7:0] : burst_len_i;
+          burst_size_q <= burst_size_next_w;
           m_axi_awaddr <= addr_q;
-          m_axi_awlen <= (((beats_left_q < {8'd0, burst_len_i}) ? beats_left_q[7:0] : burst_len_i) - 8'd1);
+          m_axi_awlen <= burst_size_next_w - 8'd1;
           m_axi_awsize <= 3'd4;
           m_axi_awburst <= 2'b01;
           m_axi_awvalid <= 1'b1;

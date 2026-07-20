@@ -161,7 +161,7 @@ def draw_qk_softmax(ax):
 
     row_label(ax, ys["l"], "new_l = old_l x alpha + local_l", EXP)
     stage_bar(ax, ys["l"], xs[4], xs[5],
-              "1 row / cycle; overlaps PV", EXP_FILL, EXP, size=4.8)
+              "1 row / cycle; overlaps PV", EXP_FILL, EXP, size=5.0)
 
     arrow(ax, xs[4], ys["l"] + 0.055, xs[4] + 0.075, ys["l"] + 0.055,
           color=PV, lw=1.0, mutation=6.0)
@@ -170,61 +170,56 @@ def draw_qk_softmax(ax):
             color=PV)
 
 def draw_ws_pv(ax):
-    panel_header(ax, 0.380, "b", "Probability-stationary WS-PV and online O update")
+    panel_header(ax, 0.380, "b", "Probability-stationary WS-PV with persistent O banks")
     ax.text(0.018, 0.346, "Dominant cycles per KV tile:", ha="left",
             va="center", fontsize=5.2, fontstyle="italic", color=INK)
 
-    x0, xseed, xhalf, xissue, xend = 0.220, 0.350, 0.565, 0.780, 0.980
-    duration(ax, x0, xseed, 0.341, "T_seed,total")
-    duration(ax, xseed, xissue, 0.341, "H = 64")
-    duration(ax, xissue, xend, 0.341, "C+R-1")
-    for x in (x0, xseed, xhalf, xissue, xend):
+    x0, xgroup, xissue, xdrain, xend = 0.220, 0.415, 0.610, 0.790, 0.980
+    duration(ax, x0, xissue, 0.341, "H = 64: O-read + V issue")
+    duration(ax, xissue, xdrain, 0.341, "C+R-1 drain")
+    duration(ax, xdrain, xend, 0.341, "last KV: 8-lane NORM + pack/WB")
+    for x in (x0, xgroup, xissue, xdrain, xend):
         boundary(ax, x, 0.085, 0.329)
 
-    ax.text((xseed + xhalf) / 2, 0.309, "features 0--31",
+    ax.text((x0 + xgroup) / 2, 0.309, "g0: features 0--31",
             ha="center", va="center", fontsize=5.2, fontweight="bold",
             color=PV)
-    ax.text((xhalf + xissue) / 2, 0.309, "features 32--63",
+    ax.text((xgroup + xissue) / 2, 0.309, "g1: features 32--63",
             ha="center", va="center", fontsize=5.2, fontweight="bold",
             color=PV)
 
     y_p, y_seed, y_v, y_mac, y_out = 0.260, 0.210, 0.160, 0.110, 0.060
     row_label(ax, y_p, "P held in prob_q", STATE, style="bold")
-    stage_bar(ax, y_p, x0, xend,
-              "stationary across preload, 64 issues, and drain", STATE_FILL, STATE,
+    stage_bar(ax, y_p, x0, xdrain,
+              "stationary across all 64 features and array drain", STATE_FILL, STATE,
               size=5.1, weight="bold")
 
-    row_label(ax, y_seed, "dual O seed/result buffers", PV)
-    stage_bar(ax, y_seed, x0, xseed, "init/load both halves", PV_FILL, PV,
-              size=5.0, weight="bold")
-    stage_bar(ax, y_seed, xseed, xhalf, "buffer 0 shifts", PV_FILL, PV,
-              size=5.0, weight="bold")
-    stage_bar(ax, y_seed, xhalf, xissue, "buffer 1 shifts", PV_FILL, PV,
-              size=5.0, weight="bold")
+    row_label(ax, y_seed, "persistent O-bank seed", PV)
+    stage_bar(ax, y_seed, x0, xissue,
+              "read O_old[:,d] -> alpha x O[d] (first tile selects zero)",
+              PV_FILL, PV, size=5.0, weight="bold")
 
     row_label(ax, y_v, "V[:,d] + seed issue", QK)
-    stage_bar(ax, y_v, xseed, xissue, "64 feature vectors, one per cycle", QK_FILL, QK,
+    stage_bar(ax, y_v, x0, xissue,
+              "64 feature vectors + full feature ID, one per cycle", QK_FILL, QK,
               size=5.0, weight="bold")
 
     row_label(ax, y_mac, "sum = seed + P x V", PV)
-    stage_bar(ax, y_mac, xseed + 0.010, xend,
+    stage_bar(ax, y_mac, x0 + 0.010, xdrain,
               "one continuous WS column wavefront", PV_FILL, PV,
               size=5.0, weight="bold")
 
-    row_label(ax, y_out, "O row-half collect", PV)
-    stage_bar(ax, y_out, xhalf, xissue,
-              "half 0 results", PV_FILL, PV, size=5.0)
-    stage_bar(ax, y_out, xissue, xend,
-              "half 1 results + row-skew drain", PV_FILL, PV, size=5.0)
+    row_label(ax, y_out, "tagged O write / final output", PV)
+    stage_bar(ax, y_out, x0 + 0.145, xdrain,
+              "right edge writes O_new[row,d] directly to bank[d]", PV_FILL, PV,
+              size=5.0, weight="bold")
+    stage_bar(ax, y_out, xdrain, xend,
+              "8-lane norm + 256b writeback", STATE_FILL, STATE,
+              size=5.0, weight="bold")
 
-    poly_arrow(ax, [(xend, y_out + 0.022), (0.988, y_out + 0.022),
-                    (0.988, 0.030), (0.930, 0.030)],
-               color=STATE, lw=0.85, mutation=5.5)
-    ax.text(0.925, 0.030, "last KV: normalize + WB", ha="right", va="center",
-            fontsize=5.0, fontweight="bold", color=STATE)
     ax.text(0.220, 0.012,
-            "T_seed,total=1 for j=0; approximately 4R for j>0.  "
-            "j<last repeats (a)-(b) with retained (m,l,O); j=last normalizes and writes back.",
+            "No row/group preload: g0/g1 are physical SRAM banks only.  "
+            "For j>0, O_old[:,d] is read just in time and overlaps V[:,d] issue.",
             ha="left", va="bottom", fontsize=5.0, color=MID)
 
 

@@ -1,5 +1,8 @@
 `timescale 1ns/1ps
 
+// Counts active scheduler cycles, load/writeback stalls, issued MAC work, and
+// completed KV tiles. Counters are free-running during a job and saturate only
+// through natural 64/32-bit wraparound.
 module perf_counter #(
   parameter MACS_PER_ACTIVE_CYCLE = 1024
 )(
@@ -16,6 +19,7 @@ module perf_counter #(
   output reg [31:0] tile_count_o
 );
 
+  // Gate each event independently so overlapping MAC and stall events are kept.
   always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
       cycle_count_o <= 64'd0;

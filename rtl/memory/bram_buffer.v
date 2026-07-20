@@ -1,5 +1,7 @@
 `timescale 1ns/1ps
 
+// Generic FPGA block-RAM wrapper with registered address and valid-qualified
+// synchronous readback. Writes and reads use independent inferred ports.
 module bram_buffer #(
   parameter DATA_W = 32,
   parameter ADDR_W = 10,
@@ -19,6 +21,7 @@ module bram_buffer #(
   reg [ADDR_W-1:0] rd_addr_q;
   reg rd_en_q;
 
+  // Hold read data when idle to avoid unnecessary output switching.
   always @(posedge clk) begin
     if (wr_en_i) mem[wr_addr_i] <= wr_data_i;
     rd_addr_q <= rd_addr_i;

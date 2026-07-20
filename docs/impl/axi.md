@@ -27,7 +27,8 @@ The output path uses AXI4 master burst writes.
 
 Requirements:
 
-- 128-bit alignment is preferred.
+- 128-bit alignment is required by the current writer; misaligned start
+  addresses raise an error.
 - Burst length should be chosen to match output tile packing.
 - Backpressure must be handled without data loss.
 - Write response must be tracked until completion.
@@ -57,6 +58,10 @@ Policy:
 - Pause cleanly when downstream is not ready.
 - Do not advance the output buffer until the beat is accepted.
 - Write completion should raise the scheduler done signal only after the last response is observed.
+- Limit each burst by remaining beats, configured burst length, and beats to
+  the next 4-KB boundary. No AW transaction may cross a 4-KB boundary.
+- Writeback addressing uses registered head-base/head-stride state and
+  constant-increment Q-tile updates rather than runtime nested multiplications.
 
 ## 6. Integration with Verification
 

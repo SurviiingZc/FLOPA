@@ -82,7 +82,8 @@ The mask stage removes illegal score positions before any max or exp operation.
 - Apply causal masking before row max.
 - Masked elements must not participate in rowsum.
 - Represent masked values using a safe minimum fixed-point pattern.
-- Keep the mask stage simple and fully combinational or one-stage pipelined.
+- Precompute and register one bounded thermometer mask per query row during QK
+  setup; do not replicate full-width key/query comparisons in every lane.
 
 ### 5.3 Timing Rule
 
@@ -201,8 +202,8 @@ finished.
 ## 9. Stationary Probability
 
 Probability is stored in the PE that owns the corresponding score and remains
-stationary throughout one continuous 64-feature WS-PV stream. Half tags are
-used only for seed/result buffering and output-SRAM addressing.
+stationary throughout one continuous `HEAD_DIM`-feature WS-PV stream. Full
+feature tags address persistent O storage; there is no half control state.
 
 ### 9.1 Rules
 
@@ -216,7 +217,7 @@ used only for seed/result buffering and output-SRAM addressing.
 
 Probability does not hop during PV. V-valid and partial-sum-valid tokens remain
 aligned through the column/row skew pipelines; a bubble advances neither the
-row seed nor the row buffer. WS-PV may run concurrently with the central
+row seed nor the feature tag. WS-PV may run concurrently with the central
 one-row-per-cycle `l` updater because it reads stationary probability and
 `alpha`, but it does not consume the newly written `l`.
 
@@ -224,11 +225,14 @@ one-row-per-cycle `l` updater because it reads stationary probability and
 
 ### 10.1 Reciprocal Seed
 
-Use a small LUT or seed table for reciprocal estimation.
+Use a small LUT seed table. The implementation pipelines input capture,
+leading-zero/normalization, and LUT/output shift and accepts one value per cycle.
 
 ### 10.2 Final Normalization
 
-The final normalization stage should compute `O_acc / l_final` with one of the following:
+The final normalization stage computes `O_acc / l_final` for eight rows at the
+same feature each cycle using eight reciprocal lanes and two multiplier stages
+per lane. A stripe/feature tag is delayed with the arithmetic.
 
 - reciprocal seed + multiply,
 - reciprocal seed + one refinement stage,

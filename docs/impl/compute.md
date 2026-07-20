@@ -112,10 +112,11 @@ The fused PE uses signed `accum_q` only for QK Score. During the reverse
 `delta_q` is required. PV reuses the registered rowsum path and does not use a
 PE-local output accumulator.
 
-`prob_q` remains stationary for one continuous 64-feature PV issue stream. The
-two 32-feature halves remain only as row-buffer/output-SRAM address tags; the
-array no longer drains and restarts at feature 31. The obsolete `prob_shift_q`
-and its right-to-left link were removed.
+`prob_q` remains stationary for one continuous `HEAD_DIM`-feature PV issue
+stream. A full feature tag accompanies the horizontal partial sum. Physical
+feature groups are O-memory banks only; the array does not drain or restart at
+a group boundary. The obsolete `prob_shift_q` and its right-to-left link were
+removed. QK and WS-PV select one explicitly shared PE multiplication expression.
 
 ## 5. Array Microarchitecture
 
@@ -131,9 +132,12 @@ The 32x32 array is instantiated as four real 8x32 `fsa_stripe` blocks:
 
 - Q, K, rowmax, reverse-m, rowsum, delta, probability, and accumulator links
   are unpacked constant-neighbor arrays inside a stripe.
-- Probability and accumulator row load are decoded locally to at most 8 rows.
-- Delta and accumulator row reads are selected locally and registered before
-  leaving a stripe.
+- Probability column IDs are decoded locally to one-hot enables with fanout
+  bounded to 8 rows.
+- Delta columns use a registered 8-column-group hierarchy before leaving a
+  stripe.
+- Each stripe owns persistent row-banked O storage; no accumulator row load or
+  result bus crosses the stripe boundary.
 - K data and valid tags cross explicit stripe boundaries.
 
 This reduces global congestion and helps timing closure on a large FPGA fabric.
@@ -149,18 +153,18 @@ This reduces global congestion and helps timing closure on a large FPGA fabric.
 ### 5.4 Array Output Handling
 
 For QK, score values remain in PE-local score registers. They are not exported
-from the array. For PV, only one completed accumulator row is exported at a
-time.
+from the array. For PV, each right-edge result writes its row-local O bank at
+the propagated feature address.
 
 The active output path uses this staged strategy:
 
 - QK score -> PE-local max/subtract/probability path.
 - stationary probability + vertical V -> horizontal partial-sum PV path.
-- each stripe owns two 32-entry row buffers. Half 0 shifts seeds during
-  features 0--31 while half 1 shifts seeds during features 32--63; the emptied
-  half-0 buffer can collect results while half-1 seeds are still issuing.
-- completed row halves leave the stripes in natural staggered row order and
-  write the existing row-major output buffer.
+- non-first KV tiles synchronously read one old-O feature from all row banks,
+  rescale it by row alpha, and inject the results at the left edge;
+- returned features write their exact tagged addresses without whole-buffer
+  shifts or row-wide transfers;
+- final normalization reads one 8-row stripe and one feature per cycle.
 
 Do not create `ROWS*COLS*SCORE_W`, `ROWS*COLS*PROB_W`, or
 `ROWS*COLS*ACC_W` ports between top-level compute blocks.
@@ -255,31 +259,28 @@ registered QK tail event.
 
 ### 8.1 Function
 
-The active PV wrapper restores/rescales both old-O row halves into stripe-local
-buffers, then streams all 64 feature-major V vectors into the fused array in a
-single invocation. Probability remains stationary in each PE.
+The active PV wrapper streams `HEAD_DIM` feature-major V vectors into the fused
+array in one invocation. The fused array reads and rescales old O directly from
+persistent stripe banks. Probability remains stationary in each PE.
 
 ### 8.2 Design Strategy
 
 - Do not expose a beta input port.
-- Reload old output accumulation one row at a time rather than loading a full
-  matrix.
+- Do not preload or shift old-O rows; carry a full feature ID with every issue.
 - Feed V through the same tile cache family used by Q and K.
 - Keep output accumulation local until the tile is complete.
-- Send only tile-complete data to the output buffer or writeback stage.
-- Read alpha through the fused array's narrow synchronous row-state
-  request/response port; do not export an alpha vector.
-- Hold rescale multiplier operands at zero unless a row load is accepted.
+- Keep intermediate O in stripe-local banks until the last KV tile.
+- Hold rescale multiplier operands at zero unless an old-O seed is requested.
 
 ### 8.3 Timing Rule
 
-Start PV only after PE probability registers and the row-state update are
-complete. A row seed advances only when a valid feature-major V word is
-accepted.
+Start PV when PE probability and alpha are complete. The serialized `l` update
+may overlap PV; the top-level sticky completion guard prevents tile advance or
+final normalization before all `l` writes commit.
 
 ### 8.4 Implemented Probability-Stationary WS-PV
 
-The preferred future PV mapping keeps `P[i,k]` in `prob_q` and reuses the PE
+The implemented PV mapping keeps `P[i,k]` in `prob_q` and reuses the PE
 rowsum register/link as a horizontal partial-sum pipeline:
 
 ```text
@@ -287,12 +288,11 @@ sum_out = sum_in + P[i,k] * V[k,d]
 sum_in at row edge = alpha[i] * O_old[i,d]
 ```
 
-This mode is active. V cache address `d=0..63` stores `V[0:31,d]`. O remains
-row-major in two 32-feature halves. Each stripe preloads both halves, issues 64
-features without a half-boundary restart, and collects each completed half into
-the corresponding emptied buffer. The issue time is 64 cycles; complete-tile
-latency also includes the registered column accumulation and row skew drain.
-This avoids an additional feature-major O SRAM and final transpose.
+V cache address `d` stores `V[0:31,d]`. O is persistent and address-indexed as
+`O[stripe][row][feature]`. Every returning result carries `d` and writes that
+address directly. The issue interval is `HEAD_DIM` cycles; complete-tile latency
+also includes registered column accumulation and row skew. No half state,
+feature-major O transpose, or 1024-bit accumulator interface is used.
 
 ## 9. Fixed-Point Scaling and Requantization
 

@@ -1,5 +1,7 @@
 `timescale 1ns/1ps
 
+// Tracks ownership of a two-bank producer/consumer buffer. Loading, consuming,
+// and switching are explicit so DMA can overlap compute without overwriting data.
 module pingpong_buffer (
   input        clk,
   input        rst_n,
@@ -18,6 +20,7 @@ module pingpong_buffer (
   assign active_valid_o = bank_valid_o[active_bank_o];
   assign next_valid_o = bank_valid_o[~active_bank_o];
 
+  // Flag double-commit and switch-to-empty as protocol errors.
   always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
       active_bank_o <= 1'b0;

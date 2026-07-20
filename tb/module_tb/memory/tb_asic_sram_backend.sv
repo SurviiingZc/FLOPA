@@ -84,6 +84,26 @@ module tb_asic_sram_backend;
     end
   endtask
 
+  task read_check_cross_boundary;
+    begin
+      @(negedge clk);
+      rd_en = 1'b1;
+      rd_addr = 10'd255;
+      @(negedge clk);
+      rd_addr = 10'd256;
+      @(posedge clk);
+      #1;
+      if (!rd_valid || rd_data !== {16{16'h25a5}})
+        $fatal(1, "cross-boundary response 0 mismatch got=%h",rd_data);
+      @(negedge clk);
+      rd_en = 1'b0;
+      @(posedge clk);
+      #1;
+      if (!rd_valid || rd_data !== {16{16'h3c3c}})
+        $fatal(1, "cross-boundary response 1 mismatch got=%h",rd_data);
+    end
+  endtask
+
   task write_wide;
     input [7:0] addr;
     input [31:0] data;
@@ -145,6 +165,7 @@ module tb_asic_sram_backend;
     read_check_banked(10'd255,  {16{16'h25a5}});
     read_check_banked(10'd256,  {16{16'h3c3c}});
     read_check_banked(10'd1023, {16{16'h4f0f}});
+    read_check_cross_boundary();
 
     write_wide(8'd3, 32'h0123_4567);
     write_wide(8'd254, 32'h89ab_cdef);
@@ -153,8 +174,8 @@ module tb_asic_sram_backend;
 
     @(negedge clk);
     #1;
-    if (dut_banked.g_bank[0].u_bank.g_depth[0].g_byte[0].u_sram.CEB !== 1'b1 ||
-        dut_banked.g_bank[0].u_bank.g_depth[1].g_byte[0].u_sram.CEB !== 1'b1 ||
+    if (dut_banked.g_bank[0].g_deep.u_bank.g_depth[0].g_byte[0].u_sram.CEB !== 1'b1 ||
+        dut_banked.g_bank[0].g_deep.u_bank.g_depth[1].g_byte[0].u_sram.CEB !== 1'b1 ||
         dut_wide.g_byte[0].u_sram.CEB !== 1'b1) begin
       $fatal(1, "SRAM CEB must be inactive while idle");
     end

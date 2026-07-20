@@ -9,6 +9,7 @@
 ../../rtl/memory/banked_sram.v
 ../../rtl/memory/bram_buffer.v
 ../../rtl/memory/output_buffer.v
+../../rtl/memory/o_accumulator_bank.v
 ../../rtl/memory/pingpong_buffer.v
 ../../rtl/memory/qkv_tile_cache.v
 ../../rtl/memory/stream_fifo.v

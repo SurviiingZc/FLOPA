@@ -1,6 +1,8 @@
 `timescale 1ns/1ps
 `include "attention_defines.vh"
 
+// Enforces mutual exclusion between QK and WS-PV use of the shared PE array.
+// qk_go_o/pv_go_o are one-cycle launch pulses; phase_o remains asserted to done.
 module fsa_controller (
   input            clk,
   input            rst_n,
@@ -18,6 +20,7 @@ module fsa_controller (
   output reg       error_o
 );
 
+  // Concurrent launch requests and engine-reported failures are protocol errors.
   always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
       phase_o <= `ATTN_ARRAY_PHASE_IDLE;

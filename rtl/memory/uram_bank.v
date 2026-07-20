@@ -1,5 +1,6 @@
 `timescale 1ns/1ps
 
+// Generic FPGA UltraRAM wrapper with the same fixed-latency interface as BRAM.
 module uram_bank #(
   parameter DATA_W = 72,
   parameter ADDR_W = 12,
@@ -19,6 +20,7 @@ module uram_bank #(
   reg [ADDR_W-1:0] rd_addr_q;
   reg rd_en_q;
 
+  // Qualifying the data update with rd_en_q preserves a stable idle output.
   always @(posedge clk) begin
     if (wr_en_i) mem[wr_addr_i] <= wr_data_i;
     rd_addr_q <= rd_addr_i;

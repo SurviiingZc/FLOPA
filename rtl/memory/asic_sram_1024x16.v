@@ -1,6 +1,7 @@
 `timescale 1ns/1ps
 
 // 1024x16 single-port logical memory composed from eight 256x8 macros.
+// Only the selected depth slice is enabled, limiting dynamic SRAM power.
 module asic_sram_1024x16 (
   input             clk,
   input             en_i,
@@ -11,9 +12,11 @@ module asic_sram_1024x16 (
 );
 
   wire [15:0] depth_q [0:3];
+  reg [1:0] read_depth_q;
 
   genvar depth_idx;
   genvar byte_idx;
+  // Address[9:8] selects one depth slice; two byte macros form each 16-bit word.
   generate
     for (depth_idx = 0; depth_idx < 4; depth_idx = depth_idx + 1) begin : g_depth
       localparam [1:0] DEPTH_SELECT = depth_idx;
@@ -47,8 +50,14 @@ module asic_sram_1024x16 (
     end
   endgenerate
 
+  // Register the depth tag on a read so the output mux follows synchronous macro
+  // data across consecutive requests that cross a 256-word boundary.
+  always @(posedge clk) begin
+    if (en_i && !wr_en_i) read_depth_q <= addr_i[9:8];
+  end
+
   always @(*) begin
-    case (addr_i[9:8])
+    case (read_depth_q)
       2'd0: rd_data_o = depth_q[0];
       2'd1: rd_data_o = depth_q[1];
       2'd2: rd_data_o = depth_q[2];
