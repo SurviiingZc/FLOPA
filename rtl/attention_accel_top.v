@@ -80,6 +80,8 @@ module attention_accel_top #(
   localparam [STRIPE_IDX_W-1:0] STRIPE_LAST = NUM_STRIPES - 1;
   localparam [16:0] ARRAY_ROWS_17 = ARRAY_ROWS;
   localparam [15:0] ARRAY_ROWS_16 = ARRAY_ROWS;
+  localparam [31:0] HEAD_DIM_32 = HEAD_DIM;
+  localparam [31:0] OUT_BYTES_32 = OUT_W / 8;
 
 `ifndef SYNTHESIS
   // The physical array consumes exactly one 256-bit cache word per issue cycle.
@@ -475,7 +477,8 @@ module attention_accel_top #(
       valid_q_rows_w = ARRAY_ROWS_16;
     else
       valid_q_rows_w = cfg_seq_q_w - q_tile_base_w;
-    writeback_bytes_w = valid_q_rows_w * HEAD_DIM * (OUT_W/8);
+    writeback_bytes_w = {16'd0, valid_q_rows_w} *
+                        HEAD_DIM_32 * OUT_BYTES_32;
     writeback_beats_full_w = (writeback_bytes_w + 15) >> 4;
     writeback_beats_w = writeback_beats_full_w[15:0];
   end

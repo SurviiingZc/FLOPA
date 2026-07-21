@@ -39,9 +39,10 @@ module fsa_qk_engine #(
 
   localparam ST_IDLE = 3'd0;
   localparam ST_CLEAR = 3'd1;
-  localparam ST_ISSUE = 3'd2;
-  localparam ST_DRAIN = 3'd3;
-  localparam ST_DONE = 3'd4;
+  localparam ST_CLEAR_LOCAL = 3'd2;
+  localparam ST_ISSUE = 3'd3;
+  localparam ST_DRAIN = 3'd4;
+  localparam ST_DONE = 3'd5;
   localparam integer CACHE_LANES = CACHE_WORD_W / CACHE_ELEM_W;
   localparam [HEAD_DIM_W-1:0] HEAD_DIM_LIMIT = HEAD_DIM;
 
@@ -66,7 +67,7 @@ module fsa_qk_engine #(
     k_rd_en_o = 1'b0;
     q_rd_addr_o = issue_count_q[CACHE_ADDR_W-1:0];
     k_rd_addr_o = issue_count_q[CACHE_ADDR_W-1:0];
-    array_clear_o = (state_q == ST_CLEAR);
+    array_clear_o = (state_q == ST_CLEAR || state_q == ST_CLEAR_LOCAL);
     array_valid_o = 1'b0;
     array_last_o = 1'b0;
     array_rows_o = {ARRAY_ROWS*ARRAY_DATA_W{1'b0}};
@@ -126,7 +127,10 @@ module fsa_qk_engine #(
             end
           end
         end
-        ST_CLEAR: state_q <= ST_ISSUE;
+        // Hold clear for two cycles: the first reaches stripe-local group
+        // registers and the second guarantees all PE accumulators observe it.
+        ST_CLEAR: state_q <= ST_CLEAR_LOCAL;
+        ST_CLEAR_LOCAL: state_q <= ST_ISSUE;
         ST_ISSUE: begin
           if (issue_count_q < head_dim_i) issue_count_q <= issue_count_q + 1'b1;
           if (q_rd_valid_i ^ k_rd_valid_i) begin

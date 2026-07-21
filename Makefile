@@ -15,12 +15,15 @@ SRAM_INPUT_MIN_DELAY ?= 0.000
 DC_CORES ?= 4
 EXPECTED_TOP_SRAM_MACROS ?= 480
 FREQ_SWEEP_PERIODS ?= 3.2 2.8 2.5 2.3 2.1 1.9
+FANOUT_SWEEP_LIMITS ?= 16 24 32
+POSTCTS_TOP ?= attention_accel_top
 
 SYNTH_SCRIPT := asic/scripts/run_synth.sh
 
 AXI_TOPS := axi4_slave_if axi4_master_write
 CONTROL_TOPS := accel_regfile accel_scheduler perf_counter
-COMPUTE_TOPS := scale_requant_unit fsa_delay_line fsa_fused_pe fsa_stripe \
+COMPUTE_TOPS := fa_signed_mult_pipe2 fa_unsigned_mult_pipe2 \
+	scale_requant_unit score_scale_pipe fsa_delay_line fsa_fused_pe fsa_stripe \
 	fsa_fused_array fsa_controller fsa_qk_engine fsa_pv_engine
 MEMORY_TOPS := asic_sram_1024x16 asic_sram_256xwide banked_sram \
 	o_accumulator_bank output_buffer pingpong_buffer qkv_tile_cache stream_fifo
@@ -42,6 +45,8 @@ SYNTH_ENV = CORNER=$(CORNER) CLOCK_PERIOD=$(CLOCK_PERIOD) \
 	synth-softmax synth-modules synth-system synth-top synth-all \
 	synth-system-tt synth-system-ss synth-all-tt synth-all-ss \
 	synth-frequency-sweep synth-physical physical-config \
+	synth-system-hold synth-fanout-sweep \
+	synth-hold-ff hold-signoff \
 	clean-synth clean-asic
 
 .NOTPARALLEL: synth-modules synth-all synth-all-tt synth-all-ss
@@ -60,6 +65,10 @@ help:
 	@echo "  make synth-system-tt - complete system at TT 0.9 V, 25 C"
 	@echo "  make synth-system-ss - complete system at SS 0.9 V, 125 C"
 	@echo "  make synth-frequency-sweep [CORNER=tt] - sweep periods and emit Fmax CSV"
+	@echo "  make synth-system-hold - separate post-compile logical hold-repair trial"
+	@echo "  make synth-hold-ff FA_MW_LIB=... FA_TLUPLUS_MIN=... - FF/min-RC pre-CTS hold repair"
+	@echo "  make hold-signoff POSTCTS_NETLIST=... POSTCTS_SDC=... POSTCTS_SPEF=... - post-CTS PT hold signoff"
+	@echo "  make synth-fanout-sweep - compare max-fanout limits 16/24/32"
 	@echo "  make synth-physical FA_MW_LIB=/path/to/mw - DC Graphical SPG synthesis"
 	@echo "  make physical-config - print public physical collateral paths"
 	@echo "  make sram-lib        - compile the SRAM Liberty file for CORNER"
@@ -144,6 +153,27 @@ synth-all-ss:
 synth-frequency-sweep:
 	$(SYNTH_ENV) FREQ_SWEEP_PERIODS="$(FREQ_SWEEP_PERIODS)" \
 		asic/scripts/run_frequency_sweep.sh
+
+synth-system-hold:
+	$(SYNTH_ENV) FA_LOGICAL_HOLD_REPAIR=1 \
+		$(SYNTH_SCRIPT) system_hold $(SYSTEM_TOP)
+
+synth-fanout-sweep:
+	$(SYNTH_ENV) FANOUT_SWEEP_LIMITS="$(FANOUT_SWEEP_LIMITS)" \
+		asic/scripts/run_fanout_sweep.sh
+
+# Pre-CTS physical-aware hold repair. The min-RC table is deliberately used
+# for both RC slots because this run is a dedicated early-path stress case.
+synth-hold-ff:
+	FA_MW_LIB="$(FA_MW_LIB)" FA_TLUPLUS_MIN="$(FA_TLUPLUS_MIN)" \
+		CLOCK_PERIOD="$(CLOCK_PERIOD)" DC_CORES="$(DC_CORES)" \
+		asic/scripts/run_prects_hold.sh
+
+# Final hold authority: routed netlist + routed parasitics + propagated CTS.
+hold-signoff:
+	POSTCTS_TOP="$(POSTCTS_TOP)" POSTCTS_NETLIST="$(POSTCTS_NETLIST)" \
+		POSTCTS_SDC="$(POSTCTS_SDC)" POSTCTS_SPEF="$(POSTCTS_SPEF)" \
+		asic/scripts/run_postcts_hold.sh
 
 synth-physical:
 	$(SYNTH_ENV) asic/scripts/run_synth_physical.sh

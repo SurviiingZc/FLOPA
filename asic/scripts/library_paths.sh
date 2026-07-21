@@ -18,8 +18,14 @@ fa_select_libraries() {
       FA_STD_DB="$std_root/tcbn28hpcplusbwp12t30p140ssg0p9v125c_ccs.db"
       FA_SRAM_LIB_NAME="uhdsp_256x8m4s_ssg0p9v125c"
       ;;
+    ff)
+      # Fast-cell/fast-SRAM view used for minimum-delay analysis. This is not
+      # an area/power corner and must not replace TT for nominal QoR reporting.
+      FA_STD_DB="$std_root/tcbn28hpcplusbwp12t30p140ffg0p99v0p99v0c_ccs.db"
+      FA_SRAM_LIB_NAME="uhdsp_256x8m4s_ffg0p99v0c"
+      ;;
     *)
-      echo "CORNER must be tt or ss" >&2
+      echo "CORNER must be tt, ss, or ff" >&2
       return 2
       ;;
   esac

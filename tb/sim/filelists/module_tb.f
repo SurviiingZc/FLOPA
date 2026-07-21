@@ -14,10 +14,12 @@
 ../../tb/module_tb/axi/tb_axi4_master_write.sv
 ../../tb/module_tb/compute/tb_fsa_fused_array.sv
 ../../tb/module_tb/compute/tb_fa_signed_mult_pipe2.sv
+../../tb/module_tb/compute/tb_fa_unsigned_mult_pipe2.sv
 ../../tb/module_tb/compute/tb_fsa_fused_pe.sv
 ../../tb/module_tb/compute/tb_fsa_stripe.sv
 ../../tb/module_tb/compute/tb_fsa_controller.sv
 ../../tb/module_tb/compute/tb_scale_requant_unit.sv
+../../tb/module_tb/compute/tb_score_scale_pipe.sv
 ../../tb/module_tb/memory/tb_banked_sram.sv
 ../../tb/module_tb/memory/tb_bram_buffer.sv
 ../../tb/module_tb/memory/tb_output_buffer.sv

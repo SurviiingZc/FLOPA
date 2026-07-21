@@ -170,6 +170,7 @@ AXI writeback.
 | WS-PV overlapped with serialized l update | 1453 | 66 | 33.2% |
 | Six-point storage/control optimization | 1334 | 119 | 38.6% |
 | Round-4 timing pipeline boundaries | 1348 | -14 | 38.0% |
+| Round-5 local-clear and O-rescale pipelines | 1354 | -6 | 37.7% |
 
 The six-point optimization removed 119 cycles, or 8.2% of the preceding
 1453-cycle implementation. The following timing round deliberately returns 14
@@ -177,7 +178,7 @@ startup cycles to cut three synthesis-critical paths while retaining II=1.
 
 ## 5. Verification Status
 
-All 24 normal module/integration TBs pass with default FSDB generation enabled.
+All 25 normal module/integration TBs pass with default FSDB generation enabled.
 The dedicated TT SRAM-macro backend test also passes. Coverage includes:
 
 - Verilog-2001 VCS lint of `attention_accel_top`, with no RTL lint warnings;
@@ -193,7 +194,7 @@ The dedicated TT SRAM-macro backend test also passes. Coverage includes:
 - consecutive ASIC SRAM responses across addresses 255 and 256 with the
   registered depth-select tag;
 - AXI burst splitting for a transfer beginning at address offset `0xff0`;
-- two-KV-tile top-level flow, completing in 1348 cycles after the timing cuts.
+- two-KV-tile top-level flow, completing in 1354 cycles after the timing cuts.
 
 Before FPGA bitstream sign-off, add or retain system tests for signed random V,
 nontrivial alpha on at least two KV tiles, causal tail tiles, `HEAD_DIM=128`, and
@@ -422,3 +423,99 @@ still appears in the setup top paths, pipeline signed 32x17 itself with the same
 wrapper contract. Hold failures ending at SRAM pins must be repaired in the
 physical flow, not by adding RTL inverter chains or restoring artificial
 `set_min_delay`.
+
+## 10. Round-5 Local-Control and Arithmetic Boundaries
+
+### 10.1 Implemented RTL
+
+- Old-O rescale is now an explicit latency-2, II=1 signed 32x17 pipeline in
+  each 8-row stripe. The SRAM result, alpha, feature, seed-zero, and valid are
+  captured locally; V and its feature/valid metadata receive the same delay.
+- QK clear is registered and replicated once per 8-column group inside each
+  stripe. `ST_CLEAR` is followed by `ST_CLEAR_LOCAL`, so the global FSM only
+  drives local clear registers and every PE observes two complete clear clocks
+  before QK issue begins. The register vector carries keep/dont-touch intent and
+  the DC script preserves matching cells, preventing equivalent-bit merging.
+- The generic requantizer was removed from the 32 score lanes. Dedicated
+  `score_scale_pipe` fixes the score policy and exposes only data, mantissa,
+  shift, and valid, while retaining latency 5 and II=1.
+- PWL exp now registers `base_lo`, `base_lo-base_hi`, fraction, and bypass state
+  immediately before its 16x8 multiplier. The following stage holds only the
+  product; shift/subtract/saturation terminate at the output register. Total
+  PWL latency remains 3 and score-plus-exp tag latency remains 8.
+- Mixed signed/unsigned boundaries and multiplier result contexts were made
+  explicit. VCS Verilog-2001 RTL lint reports no width or conversion warnings.
+
+### 10.2 Measured schedule and acceptance
+
+The two-KV directed top test completes in 1354 cycles, six more than Round 4:
+two cycles are the extra local-clear setup, and four are the two-stage O-rescale
+startup across two PV tiles. Both paths retain II=1, so long-feature steady-state
+throughput is unchanged. The active regression set is 25/25 and includes burst
+tests for the dedicated score scale and the newly split PWL exp.
+
+`MAX_FANOUT=16` remains the default until the scripted 16/24/32 comparison is
+run on this exact RTL hash. Adopt 24 only if setup WNS, transition violations,
+buffer count, and physical congestion are not worse than the 16 result.
+
+## 11. Round-6 LSE Row-State Streaming
+
+### 11.1 Problem and decision
+
+The former serialized update was arithmetically small but physically poor. A
+runtime row index selected 32-bit entries from 1024-bit `old_l` and `sum_rows`
+vectors and a 512-bit alpha vector. Those three 32:1 muxes directly fed a
+32x16 multiply, shift, 48-bit add, overflow reduction, and saturation. The same
+index then decoded a dynamic part-select write into the 1024-bit `l_rows`
+register. This is a genuine setup, fanout, and placement risk and therefore was
+changed rather than waived.
+
+### 11.2 Implemented structure
+
+- `old_l`, captured row sums, and an LSE-private alpha copy are shift streams.
+  Their fixed low slices feed one unsigned 32x16 multiplier; the runtime row
+  counter is carried only as pipeline metadata.
+- The exact multiplier is latency 2 and II=1, split into two unsigned 16x16
+  partial products followed by a registered shifted addition. Only valid bits
+  are reset; qualified arithmetic payload registers stay off the reset tree.
+- The delayed block sum is added after the multiplier. Overflow reduction and
+  saturation terminate at the row-state register boundary.
+- Each result shifts `l_rows` by one row and enters at a fixed high slice. After
+  32 commits, packed row order is identical to the original implementation,
+  without a dynamic wide write decoder.
+- `alpha_rows` itself remains intact because overlapping WS-PV still consumes
+  it. The private 512-bit alpha stream is the only full-vector storage cost;
+  `old_l`, `sum_rows`, and `l_rows` are reused destructively.
+
+The two-cycle multiplier startup is hidden under the already-overlapped WS-PV
+phase. The two-KV top test therefore remains 1354 cycles; this change adds no
+end-to-end cycle.
+
+### 11.3 Related-index audit
+
+Not every variable index is the same problem. Generate-loop part-selects are
+compile-time constants, and variable addresses into Q/K/V/O SRAM arrays are
+intentional memory ports. The remaining normalizer stripe select is a bounded
+4:1 selection followed immediately by a register boundary. The output packer
+was also in the same structural class even though it had no following
+arithmetic: eight 256-bit row registers used a 32-way dynamic byte write and an
+8-way dynamic row read. It now inserts ordered feature bytes at a fixed end and
+destructively shifts completed rows through fixed lane zero during SRAM flush.
+This removes both muxes without another 2 Kbit copy. Probability column
+selection remains stripe-local and one-hot decoded as previously planned.
+
+### 11.4 Verification and synthesis gate
+
+The active regression set is 26 tests. A dedicated unsigned multiplier test
+covers back-to-back traffic, bubbles, and the maximum product. The fused-array
+test now uses distinct score distributions for four rows, so it detects row
+permutation as well as arithmetic errors. The output-buffer test checks
+fixed-port row ordering and a partial final group at `HEAD_DIM=50`. Full RTL
+lint is clean. DC
+analyze/elaborate/link completes with all 480 SRAM macros and no frontend
+warning, error, or `VER-318`; the pre-optimization `check_design` report still
+contains known structural `LINT-28/29/31/52` categories and is not being called
+a clean mapped-netlist check. The next full synthesis must confirm that no
+row-index mux appears before the LSE multiplier, that the two partial products
+map at their intended widths, and that setup/area improve; functional
+simulation alone cannot establish those physical results.

@@ -49,8 +49,10 @@ module scale_requant_unit #(
   reg valid_s3_q;
   wire multiplier_valid_w;
   wire signed [PROD_W-1:0] multiplier_product_w;
-  reg signed [63:0] product_extended_w;
-  reg signed [63:0] shifted_base_w;
+  wire signed [63:0] product_extended_w =
+      {{(64-PROD_W){multiplier_product_w[PROD_W-1]}}, multiplier_product_w};
+  wire signed [63:0] shifted_base_w =
+      $signed(product_extended_w) >>> shift_s2_q;
   reg signed [FORMAT_W-1:0] shifted_clamped_w;
   reg signed [FORMAT_W-1:0] biased_w;
   reg guard_w;
@@ -62,16 +64,13 @@ module scale_requant_unit #(
   // point can bring back into INT16. The remaining add is 18 bits instead of a
   // PROD_W-wide carry chain, which bounds this path for all configured widths.
   always @(*) begin
-    product_extended_w =
-        {{(64-PROD_W){multiplier_product_w[PROD_W-1]}}, multiplier_product_w};
-    shifted_base_w = $signed(product_extended_w) >>> shift_s2_q;
     guard_w = 1'b0;
     sticky_w = 1'b0;
     if (shift_s2_q != 0) begin
       guard_w = product_extended_w[shift_s2_q-1'b1];
       for (discarded_bit = 0; discarded_bit < 63;
            discarded_bit = discarded_bit + 1)
-        if (discarded_bit < {26'd0, (shift_s2_q-1'b1)})
+        if ($unsigned(discarded_bit) < {26'd0, (shift_s2_q-1'b1)})
           sticky_w = sticky_w | product_extended_w[discarded_bit];
     end
     round_increment_w = round_s2_q == `ATTN_ROUND_NEAREST && guard_w &&
@@ -82,11 +81,11 @@ module scale_requant_unit #(
     else if (shifted_base_w < -64'sd65536)
       shifted_clamped_w = -18'sd65536;
     else
-      shifted_clamped_w = shifted_base_w[FORMAT_W-1:0];
+      shifted_clamped_w = $signed(shifted_base_w[FORMAT_W-1:0]);
 
     biased_w = shifted_clamped_w +
-        {{(FORMAT_W-16){zp_s2_q[15]}}, zp_s2_q} +
-        {{(FORMAT_W-1){1'b0}}, round_increment_w};
+        $signed({{(FORMAT_W-16){zp_s2_q[15]}}, zp_s2_q}) +
+        $signed({{(FORMAT_W-1){1'b0}}, round_increment_w});
   end
 
   fa_signed_mult_pipe2 #(
@@ -142,7 +141,7 @@ module scale_requant_unit #(
         end else begin
           if (shifted_s3_q > INT16_MAX_EXT) data_o <= {{(OUT_W-16){1'b0}}, 16'h7fff};
           else if (shifted_s3_q < INT16_MIN_EXT) data_o <= {{(OUT_W-16){1'b1}}, 16'h8000};
-          else data_o <= shifted_s3_q[OUT_W-1:0];
+          else data_o <= $signed(shifted_s3_q[OUT_W-1:0]);
         end
       end
     end

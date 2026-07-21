@@ -24,3 +24,4 @@ set_app_var link_library [list "*" $std_db $sram_db dw_foundation.sldb]
 
 puts "INFO: standard-cell target library: $std_db"
 puts "INFO: SRAM link library: $sram_db"
+puts "INFO: DesignWare synthetic library: dw_foundation.sldb"

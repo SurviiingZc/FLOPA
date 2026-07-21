@@ -53,9 +53,9 @@
   input                                  pv_seed_zero_i,
   input      [STRIPE_ROWS*PROB_W-1:0]    pv_seed_alpha_i,
   input      [TAG_W-1:0]                 pv_seed_feature_i,
-  output reg                             pv_seed_valid_o,
+  output                                 pv_seed_valid_o,
   output     [STRIPE_ROWS*SUM_W-1:0]     pv_seed_data_o,
-  output reg [TAG_W-1:0]                 pv_seed_feature_o,
+  output     [TAG_W-1:0]                 pv_seed_feature_o,
 
   input                                  o_rd_en_i,
   input      [TAG_W-1:0]                 o_rd_feature_i,
@@ -72,6 +72,10 @@
   localparam integer DELTA_GROUPS = (COLS + DELTA_GROUP_SIZE - 1) /
                                     DELTA_GROUP_SIZE;
   localparam integer RESCALE_PRODUCT_W = SUM_W + PROB_W + 1;
+  localparam integer CLEAR_GROUP_SIZE = 8;
+  localparam integer CLEAR_GROUPS = (COLS + CLEAR_GROUP_SIZE - 1) /
+                                    CLEAR_GROUP_SIZE;
+  localparam integer RESCALE_SPLIT_W = (SUM_W > 24) ? 24 : (SUM_W / 2);
 
   wire [DATA_W-1:0] q_data_w [0:STRIPE_ROWS-1][0:COLS];
   wire q_valid_w [0:STRIPE_ROWS-1][0:COLS];
@@ -97,12 +101,24 @@
   wire [STRIPE_ROWS*SUM_W-1:0] o_wr_data_w;
   reg [STRIPE_ROWS*SUM_W-1:0] pv_seed_o_q;
   reg [STRIPE_ROWS*PROB_W-1:0] pv_seed_alpha_q;
+  reg pv_seed_operand_valid_q;
+  reg pv_seed_metadata_valid_s1_q;
+  reg [TAG_W-1:0] pv_seed_feature_operand_q;
+  reg [TAG_W-1:0] pv_seed_feature_s1_q;
+  reg [TAG_W-1:0] pv_seed_feature_s2_q;
+  wire [STRIPE_ROWS-1:0] pv_rescale_valid_w;
   wire signed [RESCALE_PRODUCT_W-1:0] pv_rescale_product_w
       [0:STRIPE_ROWS-1];
   wire signed [RESCALE_PRODUCT_W-1:0] pv_rescale_shifted_w
       [0:STRIPE_ROWS-1];
+  wire [RESCALE_PRODUCT_W-1:0] pv_rescale_shifted_unsigned_w
+      [0:STRIPE_ROWS-1];
 
   reg ws_pv_q;
+  // These identical bits are intentional physical replicas. Preserve them so
+  // synthesis cannot merge the four 8-column clear domains back into one net.
+  (* keep = "true", dont_touch = "true" *)
+  reg [CLEAR_GROUPS-1:0] clear_score_group_q;
   reg [DELTA_GROUPS-1:0] delta_group_valid_w;
   reg [DELTA_GROUPS*COL_IDX_W-1:0] delta_group_index_w;
   reg [DELTA_GROUPS*STRIPE_ROWS*SCORE_W-1:0] delta_group_data_w;
@@ -115,6 +131,7 @@
   integer delta_group;
   integer delta_group_col;
   integer delta_row;
+  reg [31:0] delta_index_unsigned_w;
 
 `ifndef SYNTHESIS
   always @(posedge clk)
@@ -198,7 +215,8 @@
           .SUM_W(SUM_W), .TAG_W(TAG_W)
         ) u_pe (
           .clk(clk), .rst_n(rst_n), .clear_i(clear_i),
-          .clear_score_i(clear_score_i),
+          .clear_score_i(
+              clear_score_group_q[pe_col/CLEAR_GROUP_SIZE]),
           .q_valid_i(q_valid_w[pe_row][pe_col]),
           .q_data_i(q_data_w[pe_row][pe_col]),
           .q_valid_o(q_valid_w[pe_row][pe_col+1]),
@@ -264,16 +282,20 @@
   );
 
   // Capture the synchronous O SRAM response, alpha, and feature locally before
-  // rescaling. This removes SRAM CLK-to-Q from the 32x17 multiplier path. First
-  // KV tiles use the same registered stage with an explicit zero O operand.
+  // the latency-2, II=1 signed 32x17 rescale. This creates three independent
+  // timing regions: SRAM read, multiplier partial products, and product combine.
   always @(posedge clk or negedge rst_n) begin
-    if (!rst_n)
-      pv_seed_valid_o <= 1'b0;
-    else if (clear_i)
-      pv_seed_valid_o <= 1'b0;
-    else
-      pv_seed_valid_o <= pv_seed_operand_valid_i &&
-                         (pv_seed_zero_i || o_rd_valid_o);
+    if (!rst_n) begin
+      pv_seed_operand_valid_q <= 1'b0;
+      pv_seed_metadata_valid_s1_q <= 1'b0;
+    end else if (clear_i) begin
+      pv_seed_operand_valid_q <= 1'b0;
+      pv_seed_metadata_valid_s1_q <= 1'b0;
+    end else begin
+      pv_seed_operand_valid_q <= pv_seed_operand_valid_i &&
+                                 (pv_seed_zero_i || o_rd_valid_o);
+      pv_seed_metadata_valid_s1_q <= pv_seed_operand_valid_q;
+    end
   end
 
   always @(posedge clk) begin
@@ -282,24 +304,37 @@
       pv_seed_o_q <= pv_seed_zero_i ?
           {STRIPE_ROWS*SUM_W{1'b0}} : o_rd_data_o;
       pv_seed_alpha_q <= pv_seed_alpha_i;
-      pv_seed_feature_o <= pv_seed_feature_i;
+      pv_seed_feature_operand_q <= pv_seed_feature_i;
     end
+    if (rst_n && !clear_i && pv_seed_operand_valid_q)
+      pv_seed_feature_s1_q <= pv_seed_feature_operand_q;
+    if (rst_n && !clear_i && pv_seed_metadata_valid_s1_q)
+      pv_seed_feature_s2_q <= pv_seed_feature_s1_q;
   end
+
+  assign pv_seed_valid_o = &pv_rescale_valid_w;
+  assign pv_seed_feature_o = pv_seed_feature_s2_q;
 
   generate
     genvar seed_row;
     for (seed_row = 0; seed_row < STRIPE_ROWS;
          seed_row = seed_row + 1) begin : g_pv_seed_rescale
-      assign pv_rescale_product_w[seed_row] =
-          $signed({{(RESCALE_PRODUCT_W-SUM_W){
-                       pv_seed_o_q[seed_row*SUM_W+SUM_W-1]}},
-                    pv_seed_o_q[seed_row*SUM_W +: SUM_W]}) *
-          $signed({1'b0,
-                    pv_seed_alpha_q[seed_row*PROB_W +: PROB_W]});
+      fa_signed_mult_pipe2 #(
+        .A_W(SUM_W), .B_W(PROB_W+1), .SPLIT_W(RESCALE_SPLIT_W)
+      ) u_o_rescale_multiplier (
+        .clk(clk), .rst_n(rst_n), .valid_i(pv_seed_operand_valid_q),
+        .a_i($signed(pv_seed_o_q[seed_row*SUM_W +: SUM_W])),
+        .b_i($signed({1'b0,
+             pv_seed_alpha_q[seed_row*PROB_W +: PROB_W]})),
+        .valid_o(pv_rescale_valid_w[seed_row]),
+        .product_o(pv_rescale_product_w[seed_row])
+      );
       assign pv_rescale_shifted_w[seed_row] =
           pv_rescale_product_w[seed_row] >>> `ATTN_BETA_FRAC;
+      assign pv_rescale_shifted_unsigned_w[seed_row] =
+          $unsigned(pv_rescale_shifted_w[seed_row]);
       assign pv_seed_data_o[seed_row*SUM_W +: SUM_W] =
-          pv_rescale_shifted_w[seed_row][SUM_W-1:0];
+          pv_rescale_shifted_unsigned_w[seed_row][SUM_W-1:0];
     end
   endgenerate
 
@@ -309,6 +344,7 @@
     delta_group_valid_w = {DELTA_GROUPS{1'b0}};
     delta_group_index_w = {DELTA_GROUPS*COL_IDX_W{1'b0}};
     delta_group_data_w = {DELTA_GROUPS*STRIPE_ROWS*SCORE_W{1'b0}};
+    delta_index_unsigned_w = 32'd0;
     for (delta_group = 0; delta_group < DELTA_GROUPS;
          delta_group = delta_group + 1) begin
       for (delta_group_col = 0; delta_group_col < DELTA_GROUP_SIZE;
@@ -316,13 +352,15 @@
         if ((delta_group*DELTA_GROUP_SIZE + delta_group_col) < COLS &&
             m_valid_w[0][delta_group*DELTA_GROUP_SIZE + delta_group_col]) begin
           delta_group_valid_w[delta_group] = 1'b1;
+          delta_index_unsigned_w =
+              $unsigned(delta_group*DELTA_GROUP_SIZE + delta_group_col);
           delta_group_index_w[delta_group*COL_IDX_W +: COL_IDX_W] =
-              (delta_group[COL_IDX_W-1:0] << 3) +
-              delta_group_col[COL_IDX_W-1:0];
+              delta_index_unsigned_w[COL_IDX_W-1:0];
           for (delta_row = 0; delta_row < STRIPE_ROWS; delta_row = delta_row + 1)
             delta_group_data_w[
                 delta_group*STRIPE_ROWS*SCORE_W + delta_row*SCORE_W +: SCORE_W] =
-                delta_w[delta_row][delta_group*DELTA_GROUP_SIZE + delta_group_col];
+                $unsigned(delta_w[delta_row][
+                    delta_group*DELTA_GROUP_SIZE + delta_group_col]);
         end
       end
     end
@@ -349,13 +387,18 @@
   always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
       ws_pv_q <= 1'b0;
+      clear_score_group_q <= {CLEAR_GROUPS{1'b0}};
       delta_group_valid_q <= {DELTA_GROUPS{1'b0}};
       delta_col_valid_o <= 1'b0;
     end else if (clear_i) begin
       ws_pv_q <= 1'b0;
+      clear_score_group_q <= {CLEAR_GROUPS{1'b0}};
       delta_group_valid_q <= {DELTA_GROUPS{1'b0}};
       delta_col_valid_o <= 1'b0;
     end else begin
+      // A global QK clear drives only these bounded local registers. Each copy
+      // fans out to one 8-column PE group instead of the complete stripe.
+      clear_score_group_q <= {CLEAR_GROUPS{clear_score_i}};
       if (clear_score_i) ws_pv_q <= 1'b0;
       else ws_pv_q <= ws_pv_i;
       delta_group_valid_q <= delta_group_valid_w;

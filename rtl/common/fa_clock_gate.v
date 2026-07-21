@@ -17,7 +17,10 @@ module fa_clock_gate (
     .Q(clk_o)
   );
 `else
-  assign clk_o = clk_i;
+  // FPGA uses root-clock plus CE/EN. Keep the ASIC-only controls referenced so
+  // portable lint does not report intentionally unused wrapper ports.
+  wire fpga_controls_tieoff_w = 1'b0 & (enable_i | test_enable_i);
+  assign clk_o = clk_i | fpga_controls_tieoff_w;
 `endif
 
 endmodule

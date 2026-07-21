@@ -25,7 +25,7 @@ module fa_signed_mult_pipe2 #(
   localparam integer LO_PRODUCT_W = LO_OPERAND_W + B_W;
   localparam integer PRODUCT_W = A_W + B_W;
 
-  wire signed [HI_W-1:0] a_hi_w = a_i[A_W-1:SPLIT_W];
+  wire signed [HI_W-1:0] a_hi_w = $signed(a_i[A_W-1:SPLIT_W]);
   wire signed [LO_OPERAND_W-1:0] a_lo_w =
       $signed({1'b0, a_i[SPLIT_W-1:0]});
   reg signed [HI_PRODUCT_W-1:0] hi_product_s1_q;

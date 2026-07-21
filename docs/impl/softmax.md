@@ -127,13 +127,12 @@ After subtracting row max, the input to exp is non-positive. This is a core simp
 
 Use a small pipelined PWL or LUT-plus-interpolation unit.
 
-Suggested pipeline:
+Implemented three-stage pipeline:
 
-1. Sign/range decode.
-2. Segment selection.
-3. Slope/intercept or LUT read.
-4. Multiply/add.
-5. Output register.
+1. Absolute value, range/segment decode, endpoint selection, and registered
+   `base_lo-base_hi` plus fraction.
+2. Isolated registered 16x8 interpolation multiply.
+3. Shift, 32-bit endpoint subtraction, saturation, and output register.
 
 ### 7.3 Design Rules
 
@@ -152,7 +151,7 @@ scale/exp data. Each result slice returns to its owning stripe, where a local
 column decode writes `prob_q`; no complete score/probability tile is exported.
 
 The implemented scale-plus-exp latency is eight cycles: five registered stages
-in `scale_requant_unit` (including the exact two-stage, II=1 signed multiplier)
+in dedicated `score_scale_pipe` (including the exact two-stage, II=1 signed multiplier)
 followed by three registered stages in `pwl_exp_unit`.
 This is pipeline latency, not initiation interval; the 32-lane path accepts one
 complete score column every cycle.
@@ -189,10 +188,13 @@ The rightmost probability column launches one right-to-left rowsum token per
 row. Probability columns write back in reverse order and remain one cycle ahead
 of that sum token, so local subtraction, exp, and rowsum overlap as one column
 wavefront. All 32 row sums finish together and are captured in 1 Kbit of bounded
-state. The active `old_l*alpha + block_sum` update then remains serialized over
-rows, avoiding 32 parallel LSE multipliers. Capturing all sums also raises the
-PV-ready event, so probability-stationary WS-PV overlaps these serialized
-row-state writes.
+state. Saved `old_l`, captured block sums, and a private alpha copy become three
+shift streams whose fixed low slices feed one latency-2, II=1 unsigned
+`old_l*alpha + block_sum` datapath. Results are inserted at the fixed high end
+of the `l_rows` shift register. The row counter only tags tokens, so no 32:1
+wide operand mux or 1024-bit decoded dynamic write remains. Capturing all sums
+also raises the PV-ready event, so probability-stationary WS-PV overlaps these
+serialized row-state writes.
 
 PV-ready and row-state-done are different contracts. The former requires
 complete `prob_q`, `alpha`, and captured block sums; the latter requires all new
@@ -239,9 +241,8 @@ After the signed 32x33 reciprocal product is arithmetically shifted by 15, the
 implementation checks that the discarded upper bits are a sign extension and
 registers a conservative signed 48-bit value. The output-scale operation is
 therefore an exact signed 48x16 multiply rather than the former effective
-64x16 multiply. If a new TT synthesis has less than 0.20 ns setup margin or SS
-at 2.5 ns fails, this 48x16 operation must move behind a fixed-latency two-stage
-ASIC/FPGA multiplier wrapper; that conditional pipeline is not enabled yet.
+64x16 multiply. It uses the common fixed-latency two-stage, II=1 ASIC/FPGA
+multiplier wrapper; tag and valid metadata cross the same stages.
 
 - reciprocal seed + multiply,
 - reciprocal seed + one refinement stage,

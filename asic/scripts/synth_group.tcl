@@ -21,6 +21,10 @@ set physical_aware [expr {
 set write_artifacts [expr {
   ![info exists env(FA_WRITE_ARTIFACTS)] || $env(FA_WRITE_ARTIFACTS) ne "0"
 }]
+set logical_hold_repair [expr {
+  [info exists env(FA_LOGICAL_HOLD_REPAIR)] &&
+  $env(FA_LOGICAL_HOLD_REPAIR) eq "1"
+}]
 
 source [file join $root_dir asic scripts library_setup.tcl]
 source [file join $root_dir asic scripts rtl_sources.tcl]
@@ -72,6 +76,15 @@ foreach top_name $top_list {
   }
   uniquify
 
+  # Preserve intentional stripe-local clear-token replicas. Their logic values
+  # are identical, so unconstrained optimization would legally merge them and
+  # recreate the high-fanout net this hierarchy is designed to avoid.
+  set local_clear_cells [get_cells -quiet -hierarchical \
+      -filter "full_name =~ */clear_score_group_q_reg*"]
+  if {[sizeof_collection $local_clear_cells] > 0} {
+    set_dont_touch $local_clear_cells
+  }
+
   # Keep placement-relevant stripe and O-bank hierarchy visible in top reports.
   set stripe_cells [get_cells -quiet -hierarchical -filter "ref_name =~ fsa_stripe*"]
   if {[sizeof_collection $stripe_cells] > 0} {
@@ -109,6 +122,25 @@ foreach top_name $top_list {
     compile_ultra
   }
 
+  # Preserve the setup-optimized checkpoint before an optional logical hold
+  # trial. The incremental pass inserts mapped delay/buffer cells on min paths;
+  # it is a budgeting aid, while FF/min-RC post-CTS remains hold signoff.
+  if {$logical_hold_repair} {
+    redirect -file [file join $report_dir timing_pre_hold.rpt] {
+      report_timing -delay_type max -path_type full_clock_expanded \
+        -max_paths 20 -nworst 4 -significant_digits 4
+    }
+    redirect -file [file join $report_dir timing_min_pre_hold.rpt] {
+      report_timing -delay_type min -path_type full_clock_expanded \
+        -max_paths 20 -nworst 4 -significant_digits 4
+    }
+    redirect -file [file join $report_dir qor_pre_hold.rpt] {report_qor}
+    redirect -file [file join $report_dir area_pre_hold.rpt] {
+      report_area -hierarchy
+    }
+    compile -incremental_mapping -only_hold_time
+  }
+
   redirect -file [file join $report_dir check_design.rpt] {check_design}
   redirect -file [file join $report_dir check_timing.rpt] {check_timing}
   redirect -file [file join $report_dir constraints.rpt] {
@@ -126,7 +158,16 @@ foreach top_name $top_list {
   redirect -file [file join $report_dir area.rpt] {report_area -hierarchy}
   redirect -file [file join $report_dir power.rpt] {report_power}
   redirect -file [file join $report_dir references.rpt] {report_reference}
-  redirect -file [file join $report_dir resources.rpt] {report_resources}
+  set resource_report [file join $report_dir resources.rpt]
+  redirect -file $resource_report {report_resources}
+  if {$top_name eq "attention_accel_top"} {
+    set resource_fp [open $resource_report r]
+    set resource_text [read $resource_fp]
+    close $resource_fp
+    if {![regexp {DW_mult} $resource_text]} {
+      error "attention_accel_top did not infer a DesignWare multiplier"
+    }
+  }
   redirect -file [file join $report_dir design.rpt] {report_design}
   redirect -file [file join $report_dir libraries.rpt] {list_libs}
   if {$physical_aware && [llength [info commands report_congestion]] > 0} {
@@ -143,6 +184,16 @@ foreach top_name $top_list {
   puts $config_fp "expected_top_sram_macros=$expected_top_macros"
   puts $config_fp "physical_aware=$physical_aware"
   puts $config_fp "write_artifacts=$write_artifacts"
+  puts $config_fp "designware_library=dw_foundation.sldb"
+  puts $config_fp "logical_hold_repair=$logical_hold_repair"
+  puts $config_fp "preserved_local_clear_registers=[sizeof_collection $local_clear_cells]"
+  foreach provenance_var {
+    FA_GIT_COMMIT FA_GIT_STATUS_HASH FA_RTL_HASH FA_STD_DB_HASH FA_SRAM_DB_HASH
+  } {
+    if {[info exists env($provenance_var)]} {
+      puts $config_fp "$provenance_var=$env($provenance_var)"
+    }
+  }
   foreach constraint_var {
     FA_SETUP_UNCERTAINTY FA_HOLD_UNCERTAINTY FA_CLOCK_TRANSITION
     FA_INPUT_DELAY FA_OUTPUT_DELAY FA_SRAM_INPUT_MIN_DELAY

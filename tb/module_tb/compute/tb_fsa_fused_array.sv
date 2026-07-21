@@ -32,7 +32,8 @@ module tb_fsa_fused_array;
   wire error_o;
   integer row,col,feature,errors=0;
   reg signed [31:0] observed;
-  reg [15:0] expected_prob [0:COLS-1];
+  reg [15:0] expected_prob [0:ROWS-1][0:COLS-1];
+  reg [31:0] expected_l [0:ROWS-1];
 
   fsa_fused_array #(
     .ROWS(ROWS),.STRIPE_ROWS(STRIPE_ROWS),.COLS(COLS),.DATA_W(DATA_W),
@@ -45,6 +46,7 @@ module tb_fsa_fused_array;
     input [STRIPE_IDX_W-1:0] stripe;
     input [FEATURE_IDX_W-1:0] feature_id;
     integer local_row;
+    integer global_row;
     begin
       @(negedge clk);
       norm_rd_en_i=1; norm_rd_stripe_i=stripe; norm_rd_feature_i=feature_id;
@@ -54,28 +56,39 @@ module tb_fsa_fused_array;
         $error("[FAIL] norm read tag"); errors=errors+1;
       end
       for(local_row=0;local_row<STRIPE_ROWS;local_row=local_row+1) begin
+        global_row=stripe*STRIPE_ROWS+local_row;
         observed=norm_rd_acc_o[local_row*ACC_W +: ACC_W];
-        if(observed!==expected_prob[feature_id%COLS]) begin
+        if(observed!==expected_prob[global_row][feature_id%COLS]) begin
           $error("[FAIL] O stripe=%0d row=%0d feature=%0d got=%0d exp=%0d",
                  stripe,local_row,feature_id,observed,
-                 expected_prob[feature_id%COLS]);
+                 expected_prob[global_row][feature_id%COLS]);
           errors=errors+1;
         end
-        if(norm_rd_l_o[local_row*LSE_W +: LSE_W]!==32'd50889) begin
-          $error("[FAIL] l row read"); errors=errors+1;
+        if(norm_rd_l_o[local_row*LSE_W +: LSE_W]!==expected_l[global_row]) begin
+          $error("[FAIL] l row=%0d got=%0d exp=%0d", global_row,
+                 norm_rd_l_o[local_row*LSE_W +: LSE_W], expected_l[global_row]);
+          errors=errors+1;
         end
       end
     end
   endtask
 
   initial begin
-    expected_prob[0]=16'd1632; expected_prob[1]=16'd4435;
-    expected_prob[2]=16'd12055; expected_prob[3]=16'd32767;
+    expected_prob[0][0]=16'd1632; expected_prob[0][1]=16'd4435;
+    expected_prob[0][2]=16'd12055; expected_prob[0][3]=16'd32767;
+    expected_prob[1][0]=16'd81; expected_prob[1][1]=16'd600;
+    expected_prob[1][2]=16'd4435; expected_prob[1][3]=16'd32767;
+    expected_prob[2][0]=16'd0; expected_prob[2][1]=16'd81;
+    expected_prob[2][2]=16'd1632; expected_prob[2][3]=16'd32767;
+    expected_prob[3][0]=16'd0; expected_prob[3][1]=16'd0;
+    expected_prob[3][2]=16'd600; expected_prob[3][3]=16'd32767;
+    expected_l[0]=32'd50889; expected_l[1]=32'd37883;
+    expected_l[2]=32'd34480; expected_l[3]=32'd33367;
     repeat(4) @(posedge clk); rst_n=1;
     @(negedge clk); qk_clear_i=1; clear_rows_i=1;
     @(negedge clk); qk_clear_i=0; clear_rows_i=0;
     for(row=0;row<ROWS;row=row+1)
-      qk_rows_i[row*DATA_W +: DATA_W]=8'sd1;
+      qk_rows_i[row*DATA_W +: DATA_W]=row+1;
     for(col=0;col<COLS;col=col+1)
       qk_cols_i[col*DATA_W +: DATA_W]=col+1;
     qk_valid_i=1; qk_last_i=1;

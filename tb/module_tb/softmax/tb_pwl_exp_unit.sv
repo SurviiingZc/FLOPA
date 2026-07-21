@@ -20,6 +20,13 @@ module tb_pwl_exp_unit;
     check_exp(-16'sd256,16'd12055);
     check_exp(-16'sd128,16'd22411);
     check_exp(-16'sd2048,16'd0);
+    // Adjacent tokens prove that the pre-multiply boundary retains II=1.
+    @(negedge clk); x_i=-16'sd256; valid_i=1;
+    @(negedge clk); x_i=-16'sd128;
+    @(negedge clk); valid_i=0;
+    wait(valid_o); #1; `TB_CHECK(y_o==16'd12055, "PWL exp burst token 0");
+    @(posedge clk); #1;
+    `TB_CHECK(valid_o && y_o==16'd22411, "PWL exp burst token 1");
     `TB_FINISH("tb_pwl_exp_unit")
   end
 endmodule

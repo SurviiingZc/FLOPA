@@ -67,6 +67,7 @@ module fsa_fused_pe #(
   reg signed [MUL_PRODUCT_W-1:0] shared_product_w;
   reg signed [SCORE_W:0] score_next_w;
   reg signed [SUM_W:0] ws_sum_next_w;
+  wire [SUM_W:0] ws_sum_next_unsigned_w = $unsigned(ws_sum_next_w);
   reg signed [SCORE_W-1:0] delta_w;
   reg signed [SCORE_W-1:0] max_score_w;
   wire qk_mac_valid_w = q_valid_i && k_valid_i;
@@ -89,13 +90,13 @@ module fsa_fused_pe #(
       $fatal(1, "fsa_fused_pe malformed PV MAC token");
 `endif
 
-  assign delta_o = accum_q;
+  assign delta_o = $unsigned(accum_q);
 
   // Q/K/V remain native INT8 in the array. Only this multiplier boundary grows
   // Q/P to 17 bits and K/V to 9 bits, giving one exact 17x9 shared multiplier.
   always @(*) begin
-    mul_a_w = {MUL_A_W{1'b0}};
-    mul_b_w = {MUL_B_W{1'b0}};
+    mul_a_w = $signed({MUL_A_W{1'b0}});
+    mul_b_w = $signed({MUL_B_W{1'b0}});
     if (pv_mac_valid_w) begin
       mul_a_w = $signed({1'b0, prob_q});
       mul_b_w = $signed({k_data_i[DATA_W-1], k_data_i});
@@ -106,21 +107,23 @@ module fsa_fused_pe #(
     // Verilog sizes a multiply expression from its operands. Extend only A to
     // the result context so no PV high bits are truncated; the effective
     // variable operands remain 17x9 and synthesis removes the repeated sign.
-    mul_a_product_w =
-        {{MUL_B_W{mul_a_w[MUL_A_W-1]}}, mul_a_w};
+    mul_a_product_w = $signed(
+        {{MUL_B_W{mul_a_w[MUL_A_W-1]}}, mul_a_w});
     shared_product_w = $signed(mul_a_product_w) * $signed(mul_b_w);
 
-    score_next_w = {accum_q[SCORE_W-1], accum_q};
+    score_next_w = $signed({accum_q[SCORE_W-1], accum_q});
     if (qk_mac_valid_w)
-      score_next_w = {accum_q[SCORE_W-1], accum_q} +
-          {{(SCORE_W+1-QK_PRODUCT_W){shared_product_w[QK_PRODUCT_W-1]}},
-           shared_product_w[QK_PRODUCT_W-1:0]};
+      score_next_w = $signed({accum_q[SCORE_W-1], accum_q}) +
+          $signed({{(SCORE_W+1-QK_PRODUCT_W){
+                       shared_product_w[QK_PRODUCT_W-1]}},
+                    shared_product_w[QK_PRODUCT_W-1:0]});
 
-    ws_sum_next_w = {sum_data_i[SUM_W-1], sum_data_i};
+    ws_sum_next_w = $signed({sum_data_i[SUM_W-1], sum_data_i});
     if (pv_mac_valid_w)
-      ws_sum_next_w = {sum_data_i[SUM_W-1], sum_data_i} +
-          {{(SUM_W+1-PV_PRODUCT_W){shared_product_w[PV_PRODUCT_W-1]}},
-           shared_product_w[PV_PRODUCT_W-1:0]};
+      ws_sum_next_w = $signed({sum_data_i[SUM_W-1], sum_data_i}) +
+          $signed({{(SUM_W+1-PV_PRODUCT_W){
+                       shared_product_w[PV_PRODUCT_W-1]}},
+                    shared_product_w[PV_PRODUCT_W-1:0]});
 
     // Masked score lanes contribute -infinity to max and zero probability later.
     delta_w = score_lane_valid_i ?
@@ -156,15 +159,15 @@ module fsa_fused_pe #(
   // clear behavior but use synchronous reset muxes rather than asynchronous pins.
   always @(posedge clk) begin
     if (!rst_n || clear_i) begin
-      accum_q <= {SCORE_W{1'b0}};
+      accum_q <= $signed({SCORE_W{1'b0}});
       prob_q <= {PROB_W{1'b0}};
     end else begin
       if (clear_score_i)
-        accum_q <= {SCORE_W{1'b0}};
+        accum_q <= $signed({SCORE_W{1'b0}});
       else if (m_valid_i)
         accum_q <= delta_w;
       else if (qk_mac_valid_w)
-        accum_q <= score_next_w[SCORE_W-1:0];
+        accum_q <= $signed(score_next_w[SCORE_W-1:0]);
       if (prob_load_i) prob_q <= prob_data_i;
     end
   end
@@ -177,13 +180,13 @@ module fsa_fused_pe #(
       if (k_valid_i) k_data_o <= k_data_i;
       if (max_valid_i) begin
         if ($signed(max_score_w) >= $signed(max_data_i))
-          max_data_o <= max_score_w;
+          max_data_o <= $unsigned(max_score_w);
         else
           max_data_o <= max_data_i;
       end
       if (m_valid_i) m_data_o <= m_data_i;
       if (pv_mac_valid_w) begin
-        sum_data_o <= ws_sum_next_w[SUM_W-1:0];
+        sum_data_o <= ws_sum_next_unsigned_w[SUM_W-1:0];
         sum_tag_o <= sum_tag_i;
       end else if (sum_valid_i) begin
         sum_data_o <= sum_data_i + {{(SUM_W-PROB_W){1'b0}}, prob_q};

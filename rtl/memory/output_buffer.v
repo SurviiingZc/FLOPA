@@ -42,13 +42,14 @@ module output_buffer #(
   localparam integer GROUP_IDX_W = (GROUPS < 2) ? 1 : $clog2(GROUPS);
   localparam integer GROUP_OFFSET_W = (GROUP_SIZE < 2) ? 1 : $clog2(GROUP_SIZE);
   localparam integer ROW_IDX_W = (ROWS < 2) ? 1 : $clog2(ROWS);
+  localparam integer FINAL_GROUP_ITEMS = ((HEAD_DIM - 1) % GROUP_SIZE) + 1;
+  localparam integer FINAL_PAD_W = (GROUP_SIZE - FINAL_GROUP_ITEMS) * OUT_W;
   localparam [LOCAL_ROW_W-1:0] LOCAL_ROW_LAST = NORM_LANES - 1;
   localparam [GROUP_OFFSET_W-1:0] GROUP_OFFSET_LAST = GROUP_SIZE - 1;
   localparam [FEATURE_IDX_W-1:0] FEATURE_LAST = HEAD_DIM - 1;
   localparam [ADDR_W-1:0] GROUPS_ADDR = GROUPS;
 
   reg [OUT_WORD_W-1:0] pack_q [0:NORM_LANES-1];
-  reg [OUT_WORD_W-1:0] pack_next_w [0:NORM_LANES-1];
   reg flush_active_q;
   reg [LOCAL_ROW_W-1:0] flush_row_q;
   reg [STRIPE_IDX_W-1:0] flush_stripe_q;
@@ -82,6 +83,8 @@ module output_buffer #(
   );
 
 `ifndef SYNTHESIS
+  reg [GROUP_OFFSET_W-1:0] expected_norm_offset_q;
+
   initial begin
     if (ROWS % NORM_LANES != 0)
       $fatal(1, "output_buffer ROWS must be divisible by NORM_LANES");
@@ -92,10 +95,28 @@ module output_buffer #(
     if (DEPTH > 256)
       $fatal(1, "output_buffer exceeds the 256-word SRAM depth");
   end
+
+  // Fixed-end packing relies on the normalizer's feature-major contract. Catch
+  // an upstream reorder in simulation instead of silently permuting bytes.
+  always @(posedge gated_clk_w or negedge rst_n) begin
+    if (!rst_n)
+      expected_norm_offset_q <= {GROUP_OFFSET_W{1'b0}};
+    else if (clear_tile_i)
+      expected_norm_offset_q <= {GROUP_OFFSET_W{1'b0}};
+    else if (norm_valid_i && norm_ready_o) begin
+      if (norm_offset_w != expected_norm_offset_q)
+        $fatal(1, "output_buffer non-sequential feature offset got=%0d expected=%0d",
+               norm_offset_w, expected_norm_offset_q);
+      if (norm_group_last_w)
+        expected_norm_offset_q <= {GROUP_OFFSET_W{1'b0}};
+      else
+        expected_norm_offset_q <= expected_norm_offset_q + 1'b1;
+    end
+  end
 `endif
 
-  // feature[high] selects the 32-feature output group and feature[low] selects
-  // the byte position inside each of the eight per-row packing registers.
+  // Feature high bits select the 32-feature output group. Low bits identify
+  // group boundaries and are checked against the required ascending stream.
   assign norm_ready_o = !flush_active_q && !stream_busy_o;
   assign norm_offset_w = norm_feature_i[GROUP_OFFSET_W-1:0];
   assign norm_group_full_w = norm_feature_i >> GROUP_OFFSET_W;
@@ -110,7 +131,9 @@ module output_buffer #(
   assign flush_addr_product_w = flush_global_row_ext_w * groups_const_w;
   assign out_wr_addr_w = flush_addr_product_w[ADDR_W-1:0] +
       {{(ADDR_W-GROUP_IDX_W){1'b0}}, flush_group_q};
-  assign out_wr_data_w = pack_q[flush_row_q];
+  // Completed rows are destructively shifted toward lane zero during flush, so
+  // the SRAM data port never sees an 8:1, 256-bit runtime row selector.
+  assign out_wr_data_w = pack_q[0];
   assign stream_word_addr_w = stream_ptr_q[ADDR_W+4:5];
   assign out_mem_rd_en_w = stream_busy_o && !stream_valid_o &&
       !(loaded_word_valid_q && loaded_word_addr_q == stream_word_addr_w);
@@ -119,14 +142,9 @@ module output_buffer #(
       out_mem_q_w[255:128] : out_mem_q_w[127:0];
   assign stream_last_o = stream_valid_o && (bytes_left_q <= 16);
 
-  // Update one feature byte in every active row and compute the final AXI strobe.
+  // Compute the final AXI strobe. Feature packing itself uses fixed-end shifts
+  // in the sequential block instead of a 32-way dynamic byte write.
   always @(*) begin
-    for (lane = 0; lane < NORM_LANES; lane = lane + 1) begin
-      pack_next_w[lane] = (norm_offset_w == 0) ?
-          {OUT_WORD_W{1'b0}} : pack_q[lane];
-      pack_next_w[lane][norm_offset_w*OUT_W +: OUT_W] =
-          norm_data_i[lane*OUT_W +: OUT_W];
-    end
     if (bytes_left_q >= 16)
       stream_strb_o = 16'hffff;
     else
@@ -184,8 +202,30 @@ module output_buffer #(
         loaded_word_valid_q <= 1'b0;
       end else begin
         if (norm_valid_i && norm_ready_o) begin
-          for (lane = 0; lane < NORM_LANES; lane = lane + 1)
-            pack_q[lane] <= pack_next_w[lane];
+          // Normalizer features arrive in ascending order. Insert each byte at
+          // the fixed high end; after GROUP_SIZE beats feature zero has shifted
+          // to the low byte and the packed word matches the SRAM/AXI layout.
+          for (lane = 0; lane < NORM_LANES; lane = lane + 1) begin
+            if (norm_offset_w == 0) begin
+              if ((FINAL_PAD_W != 0) && (norm_feature_i == FEATURE_LAST))
+                pack_q[lane] <=
+                    {norm_data_i[lane*OUT_W +: OUT_W],
+                     {(OUT_WORD_W-OUT_W){1'b0}}} >> FINAL_PAD_W;
+              else
+                pack_q[lane] <=
+                    {norm_data_i[lane*OUT_W +: OUT_W],
+                     {(OUT_WORD_W-OUT_W){1'b0}}};
+            end else if ((FINAL_PAD_W != 0) &&
+                         (norm_feature_i == FEATURE_LAST)) begin
+              pack_q[lane] <=
+                  {norm_data_i[lane*OUT_W +: OUT_W],
+                   pack_q[lane][OUT_WORD_W-1:OUT_W]} >> FINAL_PAD_W;
+            end else begin
+              pack_q[lane] <=
+                  {norm_data_i[lane*OUT_W +: OUT_W],
+                   pack_q[lane][OUT_WORD_W-1:OUT_W]};
+            end
+          end
           if (norm_group_last_w) begin
             flush_active_q <= 1'b1;
             flush_row_q <= {LOCAL_ROW_W{1'b0}};
@@ -195,6 +235,11 @@ module output_buffer #(
         end
 
         if (flush_active_q) begin
+          // The current lane-zero word is written this cycle. Shift the next
+          // completed row into the same fixed data port for the following cycle.
+          for (lane = 0; lane < NORM_LANES-1; lane = lane + 1)
+            pack_q[lane] <= pack_q[lane+1];
+          pack_q[NORM_LANES-1] <= {OUT_WORD_W{1'b0}};
           if (flush_row_q == LOCAL_ROW_LAST) begin
             flush_active_q <= 1'b0;
             norm_group_done_o <= 1'b1;

@@ -23,15 +23,18 @@ module reciprocal_lut (
   reg [31:0] normalized_w;
   reg [15:0] seed_w;
   reg [63:0] shifted_w;
+  reg [31:0] bit_idx_unsigned_w;
 
   // Find the denominator MSB, normalize it around bit 15, and restore the exponent
   // after the LUT lookup. A zero denominator maps to zero rather than infinity.
   always @(*) begin
     msb_w = 6'd0;
     found_w = 1'b0;
+    bit_idx_unsigned_w = 32'd0;
     for (bit_idx = 31; bit_idx >= 0; bit_idx = bit_idx - 1) begin
       if (!found_w && value_s0_q[bit_idx]) begin
-        msb_w = bit_idx[5:0];
+        bit_idx_unsigned_w = $unsigned(bit_idx);
+        msb_w = bit_idx_unsigned_w[5:0];
         found_w = 1'b1;
       end
     end

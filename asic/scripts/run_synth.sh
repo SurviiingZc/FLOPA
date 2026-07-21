@@ -70,6 +70,12 @@ export FA_DC_CORES="$DC_CORES"
 export FA_EXPECTED_TOP_SRAM_MACROS="$EXPECTED_TOP_SRAM_MACROS"
 export FA_PHYSICAL_AWARE="${FA_PHYSICAL_AWARE:-0}"
 export FA_WRITE_ARTIFACTS="${FA_WRITE_ARTIFACTS:-1}"
+export FA_LOGICAL_HOLD_REPAIR="${FA_LOGICAL_HOLD_REPAIR:-0}"
+export FA_GIT_COMMIT="$(git -C "$ROOT_DIR" rev-parse HEAD 2>/dev/null || echo unknown)"
+export FA_GIT_STATUS_HASH="$(git -C "$ROOT_DIR" status --porcelain=v1 | sha256sum | awk '{print $1}')"
+export FA_RTL_HASH="$(find "$ROOT_DIR/rtl" -type f -print0 | sort -z | xargs -0 sha256sum | sha256sum | awk '{print $1}')"
+export FA_STD_DB_HASH="$(sha256sum "$FA_STD_DB" | awk '{print $1}')"
+export FA_SRAM_DB_HASH="$(sha256sum "$FA_SRAM_DB" | awk '{print $1}')"
 
 cd "$RUN_DIR"
 DC_ARGS=(-64bit)
@@ -94,6 +100,10 @@ for top in "${TOPS[@]}"; do
   test -s "$REPORT_DIR/check_design.rpt"
   test -s "$REPORT_DIR/check_timing.rpt"
   test -s "$REPORT_DIR/run_config.rpt"
+  if [ "$FA_LOGICAL_HOLD_REPAIR" = "1" ]; then
+    test -s "$REPORT_DIR/qor_pre_hold.rpt"
+    test -s "$REPORT_DIR/timing_min_pre_hold.rpt"
+  fi
   if [ "$FA_WRITE_ARTIFACTS" = "1" ]; then
     test -s "$RESULT_DIR/${top}_mapped.v"
     test -s "$RESULT_DIR/${top}.ddc"
@@ -102,6 +112,11 @@ for top in "${TOPS[@]}"; do
   fi
   if grep -qi 'unmapped logic' "$REPORT_DIR/area.rpt"; then
     echo "$top contains unmapped logic" >&2
+    exit 1
+  fi
+  if [ "$top" = "attention_accel_top" ] &&
+     ! grep -q 'DW_mult' "$REPORT_DIR/resources.rpt"; then
+    echo "$top did not infer DesignWare multipliers" >&2
     exit 1
   fi
 done

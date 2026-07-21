@@ -13,48 +13,56 @@ module pwl_exp_unit (
 
   reg valid_s0_q;
   reg valid_s1_q;
-  reg signed [15:0] x_s0_q;
-  reg [15:0] y_s1_q;
+  reg [15:0] base_s0_q;
+  reg [15:0] endpoint_delta_s0_q;
+  reg [7:0] fraction_s0_q;
+  reg bypass_s0_q;
+  reg [15:0] bypass_value_s0_q;
+  reg [23:0] interpolation_s1_q;
+  reg [15:0] base_s1_q;
+  reg bypass_s1_q;
+  reg [15:0] bypass_value_s1_q;
 
-  // Eight 1.0-wide segments use endpoint interpolation; positive inputs clamp to
-  // one and sufficiently negative inputs clamp to zero.
-  function [15:0] exp_pwl;
-    input signed [15:0] x;
-    reg [15:0] magnitude;
-    reg [3:0] segment;
-    reg [7:0] fraction;
-    reg [15:0] base_lo;
-    reg [15:0] base_hi;
-    reg [23:0] interpolation;
-    reg [31:0] result_value;
-    begin
-      if (x >= 0) begin
-        exp_pwl = 16'd32767;
-      end else if (x <= -16'sd2048) begin
-        exp_pwl = 16'd0;
-      end else begin
-        magnitude = -x;
-        segment = magnitude[11:8];
-        fraction = magnitude[7:0];
-        case (segment)
-          4'd0: begin base_lo = 16'd32767; base_hi = 16'd12055; end
-          4'd1: begin base_lo = 16'd12055; base_hi = 16'd4435; end
-          4'd2: begin base_lo = 16'd4435; base_hi = 16'd1632; end
-          4'd3: begin base_lo = 16'd1632; base_hi = 16'd600; end
-          4'd4: begin base_lo = 16'd600; base_hi = 16'd221; end
-          4'd5: begin base_lo = 16'd221; base_hi = 16'd81; end
-          4'd6: begin base_lo = 16'd81; base_hi = 16'd30; end
-          default: begin base_lo = 16'd30; base_hi = 16'd11; end
-        endcase
-        // The endpoint delta is 16 bit and the fractional coordinate is 8 bit.
-        // Keep that effective 16x8 multiplier explicit instead of presenting
-        // synthesis with two artificially zero-extended 32-bit operands.
-        interpolation = {8'd0, (base_lo - base_hi)} * fraction;
-        result_value = {16'd0, base_lo} - ({8'd0, interpolation} >> 8);
-        exp_pwl = result_value[15:0];
-      end
+  reg [15:0] magnitude_w;
+  reg [3:0] segment_w;
+  reg [15:0] base_lo_w;
+  reg [15:0] base_hi_w;
+  reg bypass_w;
+  reg [15:0] bypass_value_w;
+  wire [31:0] interpolation_term_w = {8'd0, interpolation_s1_q} >> 8;
+  wire [31:0] result_value_w = {16'd0, base_s1_q} - interpolation_term_w;
+
+  // Stage 0 contains only absolute value, segment decode/table selection and the
+  // 16-bit endpoint subtraction. Registering endpoint_delta_s0_q here is the
+  // timing boundary immediately before the 16x8 interpolation multiplier.
+  always @(*) begin
+    magnitude_w = 16'd0;
+    segment_w = 4'd0;
+    base_lo_w = 16'd0;
+    base_hi_w = 16'd0;
+    bypass_w = 1'b0;
+    bypass_value_w = 16'd0;
+    if (x_i >= 0) begin
+      bypass_w = 1'b1;
+      bypass_value_w = 16'd32767;
+    end else if (x_i <= -16'sd2048) begin
+      bypass_w = 1'b1;
+      bypass_value_w = 16'd0;
+    end else begin
+      magnitude_w = $unsigned(-$signed(x_i));
+      segment_w = magnitude_w[11:8];
+      case (segment_w)
+        4'd0: begin base_lo_w = 16'd32767; base_hi_w = 16'd12055; end
+        4'd1: begin base_lo_w = 16'd12055; base_hi_w = 16'd4435; end
+        4'd2: begin base_lo_w = 16'd4435; base_hi_w = 16'd1632; end
+        4'd3: begin base_lo_w = 16'd1632; base_hi_w = 16'd600; end
+        4'd4: begin base_lo_w = 16'd600; base_hi_w = 16'd221; end
+        4'd5: begin base_lo_w = 16'd221; base_hi_w = 16'd81; end
+        4'd6: begin base_lo_w = 16'd81; base_hi_w = 16'd30; end
+        default: begin base_lo_w = 16'd30; base_hi_w = 16'd11; end
+      endcase
     end
-  endfunction
+  end
 
   // Two internal stages plus the output register accept one input every cycle.
   always @(posedge clk or negedge rst_n) begin
@@ -66,9 +74,32 @@ module pwl_exp_unit (
       valid_s0_q <= valid_i;
       valid_s1_q <= valid_s0_q;
       valid_o <= valid_s1_q;
-      if (valid_i) x_s0_q <= x_i;
-      if (valid_s0_q) y_s1_q <= exp_pwl(x_s0_q);
-      if (valid_s1_q) y_o <= y_s1_q;
+      if (valid_i) begin
+        base_s0_q <= base_lo_w;
+        endpoint_delta_s0_q <= base_lo_w - base_hi_w;
+        fraction_s0_q <= magnitude_w[7:0];
+        bypass_s0_q <= bypass_w;
+        bypass_value_s0_q <= bypass_value_w;
+      end
+      if (valid_s0_q) begin
+        // Isolated 16x8 stage; DesignWare/DSP mapping sees no decode or subtract
+        // logic on the multiplier input path.
+        interpolation_s1_q <=
+            {8'd0, endpoint_delta_s0_q} * {16'd0, fraction_s0_q};
+        base_s1_q <= base_s0_q;
+        bypass_s1_q <= bypass_s0_q;
+        bypass_value_s1_q <= bypass_value_s0_q;
+      end
+      if (valid_s1_q) begin
+        if (bypass_s1_q)
+          y_o <= bypass_value_s1_q;
+        else if (result_value_w[31])
+          y_o <= 16'd0;
+        else if (result_value_w > 32'd32767)
+          y_o <= 16'd32767;
+        else
+          y_o <= result_value_w[15:0];
+      end
     end
   end
 

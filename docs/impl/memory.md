@@ -212,6 +212,13 @@ row/group words sequentially:
 - normalized output depth is `ROWS*ceil(HEAD_DIM/32)` words;
 - AXI stream uses the lower and upper 128-bit beats of each held 256-bit word.
 
+Feature order is an explicit ascending contract. Every valid feature shifts the
+eight row packers by one byte and inserts new data at a fixed high end; a
+parameter-constant alignment shift handles a partial final group. During flush,
+the completed row words shift destructively toward lane zero, which is the only
+SRAM write-data port. Thus neither the feature ID nor the flush-row counter
+selects data from a 256-bit packed register at runtime.
+
 The stream reader caches the current 256-bit SRAM word. Backpressure never causes another macro access, and moving from the lower to upper AXI beat does not toggle `CEB`.
 
 The widest compute-to-normalizer transfer is one stripe: eight 32-bit O values

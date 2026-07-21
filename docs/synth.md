@@ -477,3 +477,100 @@ the authority for SRAM hold closure.
    setup仍满足 margin；只作为 buffer budget 数据。
 5. **Physical signoff:** SS/max-RC setup 与 FF/min-RC propagated-clock hold 均通过，
    再以 VCK190 post-route 3.2 ns WNS >= 0 验收 312.5 MHz。
+
+## 12. 2026-07-21 round-5 implementation for the next synthesis
+
+### 12.1 Timing cuts and DesignWare mapping
+
+- Stripe O-rescale is a latency-2, II=1 signed 32x17 pipeline. Local registers
+  separate O-SRAM Q, alpha, feature, and valid from the multiplier; V receives
+  the same two-cycle delay before array injection.
+- QK clear is registered per stripe and replicated by 8-column group. The QK
+  FSM now executes `ST_CLEAR` and `ST_CLEAR_LOCAL` before issue.
+- The 32 score lanes instantiate dedicated `score_scale_pipe` blocks instead of
+  generic requantizers with constant mode/zero-point inputs.
+- PWL exp registers the decoded endpoint difference immediately before the
+  16x8 multiplier. Its latency remains 3 and the combined score/exp latency
+  remains 8.
+- `dw_foundation.sldb` is explicitly in both `synthetic_library` and
+  `link_library`. Every complete top synthesis writes `resources.rpt` and fails
+  if no `DW_mult` resource is present. The RTL wrappers preserve simulation and
+  FPGA inference while allowing DC Ultra to choose the timed DesignWare
+  multiplier architecture.
+
+### 12.2 Hold flow and why it fixes hold
+
+Hold is a minimum-delay failure: new data reaches the capture pin too soon after
+the active clock edge. Adding a functional RTL pipeline usually creates another
+short register-to-SRAM path and therefore does not solve it. The implemented
+flow has three distinct levels:
+
+1. `make synth-system-hold` runs an optional post-setup incremental mapping
+   pass with `compile -incremental_mapping -only_hold_time`. DC inserts mapped
+   buffers/delay cells on short paths and reports setup before and after the
+   repair. This is a logical buffer-budget experiment, not signoff.
+2. `make synth-hold-ff FA_MW_LIB=... FA_TLUPLUS_MIN=...` uses the characterized
+   FF 0.99 V/0 C standard-cell DB, matching FF SRAM DB, physical placement, and
+   minimum RC. This exposes realistic early data paths before CTS.
+3. After CTS and routing, `make hold-signoff POSTCTS_NETLIST=... POSTCTS_SDC=...
+   POSTCTS_SPEF=...` runs PrimeTime with routed SPEF and
+   `set_propagated_clock`. P&R hold optimization must insert delay cells/buffer
+   pairs on the reported D/A/CEB/WEB branches and rerun setup. Only this third
+   step is hold authority because it includes real clock skew and parasitics.
+
+The default SRAM input min-delay remains zero; Liberty hold, hold uncertainty,
+and `set_fix_hold` are retained, so no artificial 0.2 ns requirement is double
+counted.
+
+### 12.3 Warning, regression, and fanout status
+
+VCS Verilog-2001 RTL lint is clean. DC analyze/elaborate/link resolves all 480
+SRAM macros, and the previous 14 `VER-318` conversion warnings are gone. The
+active module/integration suite is 25/25, and the two-KV top completes in 1354
+cycles.
+
+The FF SRAM Liberty was compiled to
+`asic/dc/work/lib/uhdsp_256x8m4s_ffg0p99v0c.db` and DC loaded the generated DB
+successfully. Library Compiler still emits the foundry-source `LBDB-366`
+NLPM-configuration warning and an exit-time tool crash after `write_lib`; the
+wrapper validates the completed DB, and the independent DC read proves that the
+artifact is usable. This warning is not an RTL timing waiver.
+
+No new `compile_ultra` QoR result is claimed in this implementation round.
+`MAX_FANOUT=16` intentionally remains the default. Run
+`make synth-fanout-sweep CORNER=tt CLOCK_PERIOD=1.7`; change the default to 24
+only when its WNS, transition violations, buffer count, and physical congestion
+are no worse than the 16 case.
+
+## 13. Round-6 LSE mux-removal synthesis gate
+
+The LSE row-state update no longer uses a runtime row index to read three wide
+packed vectors or write one selected slice of `l_rows`. Fixed-low-port shift
+streams now feed a single latency-2, II=1 unsigned 32x16 multiplier, and each
+completed result enters a fixed high slice of the result shift register. This
+is expected to remove the mux-plus-multiply critical path and the replicated
+dynamic-write decode. It adds one private 512-bit alpha stream; the other three
+wide state vectors are reused rather than duplicated.
+
+The same audit removed the output packer's 32-way byte part-select and 8-way,
+256-bit row selector. Ordered normalized bytes enter a fixed end of each row
+register; completed rows shift destructively through fixed lane zero while the
+SRAM address counter advances. No second 2 Kbit packing bank is introduced.
+
+This round has passed VCS RTL lint and the 26-test regression. DC
+analyze/elaborate/link completes with all 480 SRAM macros and no frontend
+warning, error, or `VER-318`. Its pre-optimization `check_design` report still
+contains the existing `LINT-28/29/31/52` categories; this statement does not
+claim a clean mapped netlist. This round has not yet produced post-
+`compile_ultra` QoR. In the next TT 1.7 ns and SS run, inspect the LSE path group and
+`resources.rpt` for all of the following acceptance criteria:
+
+1. No row-counter-driven 32:1 mux occurs before the LSE multiplier.
+2. The wrapper resolves to two 16x16 partial multipliers plus one 48-bit add,
+   rather than widened zero-padded multipliers.
+3. LSE setup slack, transition, and fanout improve without a material area or
+   clock-power regression from the additional alpha stream.
+4. Output-buffer packing no longer contains dynamic 32-way byte-write or
+   8-way row-read muxes, and its ordered-feature protocol assertion remains clean.
+5. FF/min-RC post-CTS hold remains the hold authority; this architectural
+   change is not claimed as a hold fix.

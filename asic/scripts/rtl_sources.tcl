@@ -6,6 +6,7 @@ if {![info exists root_dir]} {
 set fa_rtl_relative_files [list \
   rtl/common/fa_clock_gate.v \
   rtl/common/fa_signed_mult_pipe2.v \
+  rtl/common/fa_unsigned_mult_pipe2.v \
   rtl/axi/axi4_slave_if.v \
   rtl/axi/axi4_master_write.v \
   rtl/control/accel_regfile.v \
@@ -22,6 +23,7 @@ set fa_rtl_relative_files [list \
   rtl/memory/stream_fifo.v \
   rtl/memory/uram_bank.v \
   rtl/compute/scale_requant_unit.v \
+  rtl/compute/score_scale_pipe.v \
   rtl/compute/fsa_delay_line.v \
   rtl/compute/fsa_fused_pe.v \
   rtl/compute/fsa_stripe.v \

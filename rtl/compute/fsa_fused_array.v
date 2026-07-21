@@ -85,7 +85,8 @@ module fsa_fused_array #(
   localparam SM_M_STREAM = 4'd5;
   localparam SM_SUM_WAIT = 4'd6;
   localparam SM_L_UPDATE = 4'd7;
-  localparam SM_DONE = 4'd8;
+  localparam SM_L_DRAIN = 4'd8;
+  localparam SM_DONE = 4'd9;
 
   reg [3:0] softmax_state_q;
   reg mac_phase_pv_q;
@@ -102,6 +103,7 @@ module fsa_fused_array #(
   reg [ROWS*LSE_W-1:0] old_l_q;
   reg [ROWS*LSE_W-1:0] sum_rows_q;
   reg [ROWS*PROB_W-1:0] alpha_rows_q;
+  reg [ROWS*PROB_W-1:0] alpha_update_stream_q;
   reg [ROWS-1:0] row_state_valid_q;
   reg [ROWS-1:0] old_row_state_valid_q;
   reg [ROWS-1:0] max_ready_rows_q;
@@ -169,26 +171,83 @@ module fsa_fused_array #(
   integer consistency_stripe;
   integer mask_row;
   integer mask_col;
-  integer query_index_w;
-  integer valid_col_count_w;
-  integer causal_col_count_w;
-  integer seq_kv_int_w;
-  integer seq_q_int_w;
-  integer k_base_int_w;
+  reg [31:0] query_index_w;
+  reg [31:0] valid_col_count_w;
+  reg [31:0] causal_col_count_w;
+  reg [31:0] seq_kv_int_w;
+  reg [31:0] seq_q_int_w;
+  reg [31:0] k_base_int_w;
   reg signed [SCORE_W-1:0] old_m_w;
   reg signed [SCORE_W-1:0] block_max_w;
   reg signed [SCORE_W-1:0] next_m_w;
-  reg [L_PRODUCT_W-1:0] l_product_w;
-  reg [L_PRODUCT_W:0] l_total_w;
+  reg [LSE_W-1:0] lse_sum_s0_q;
+  reg [LSE_W-1:0] lse_sum_s1_q;
+  reg [ROW_IDX_W-1:0] lse_row_s0_q;
+  reg [ROW_IDX_W-1:0] lse_row_s1_q;
+  reg lse_metadata_valid_s0_q;
+  reg lse_metadata_valid_s1_q;
   reg pv_issue_valid_q;
   reg pv_issue_seed_zero_q;
   reg [FEATURE_IDX_W-1:0] pv_issue_feature_q;
   reg [COLS*DATA_W-1:0] pv_issue_cols_q;
   reg [COLS*DATA_W-1:0] pv_rescale_cols_q;
+  reg [COLS*DATA_W-1:0] pv_rescale_cols_s1_q;
+  reg [COLS*DATA_W-1:0] pv_rescale_cols_s2_q;
   reg [QK_COMPLETION_DEPTH-1:0] qk_completion_q;
   reg norm_request_q;
   reg [STRIPE_IDX_W-1:0] norm_request_stripe_q;
   reg [FEATURE_IDX_W-1:0] norm_request_feature_q;
+
+  wire lse_issue_valid_w = (softmax_state_q == SM_L_UPDATE);
+  wire lse_product_valid_w;
+  wire [L_PRODUCT_W-1:0] lse_product_w;
+  wire [L_PRODUCT_W:0] lse_total_w =
+      {1'b0, (lse_product_w >> `ATTN_BETA_FRAC)} +
+      {{(L_PRODUCT_W+1-LSE_W){1'b0}}, lse_sum_s1_q};
+  wire [LSE_W-1:0] lse_new_l_w =
+      (|lse_total_w[L_PRODUCT_W:LSE_W]) ?
+      {LSE_W{1'b1}} : lse_total_w[LSE_W-1:0];
+  wire lse_result_valid_w = lse_product_valid_w &&
+                            lse_metadata_valid_s1_q;
+  wire [ROWS*LSE_W-1:0] lse_new_l_extended_w =
+      {{((ROWS-1)*LSE_W){1'b0}}, lse_new_l_w};
+  wire [ROWS*LSE_W-1:0] l_rows_shifted_w =
+      (l_rows_q >> LSE_W) |
+      (lse_new_l_extended_w << ((ROWS-1)*LSE_W));
+
+  // The row-state update consumes fixed low slices of three shift streams.
+  // There is no counter-driven 32:1 operand mux in front of this multiplier.
+  fa_unsigned_mult_pipe2 #(
+    .A_W(LSE_W), .B_W(PROB_W), .SPLIT_W(LSE_W/2)
+  ) u_lse_update_multiplier (
+    .clk(array_clk_w), .rst_n(rst_n), .valid_i(lse_issue_valid_w),
+    .a_i(old_l_q[LSE_W-1:0]),
+    .b_i(alpha_update_stream_q[PROB_W-1:0]),
+    .valid_o(lse_product_valid_w), .product_o(lse_product_w)
+  );
+
+  // Sum and row metadata cross the same two cycles as the multiplier. Synchronous
+  // clear suppresses any product that was already in flight.
+  always @(posedge array_clk_w or negedge rst_n) begin
+    if (!rst_n) begin
+      lse_metadata_valid_s0_q <= 1'b0;
+      lse_metadata_valid_s1_q <= 1'b0;
+    end else if (clear_i) begin
+      lse_metadata_valid_s0_q <= 1'b0;
+      lse_metadata_valid_s1_q <= 1'b0;
+    end else begin
+      lse_metadata_valid_s0_q <= lse_issue_valid_w;
+      lse_metadata_valid_s1_q <= lse_metadata_valid_s0_q;
+      if (lse_issue_valid_w) begin
+        lse_sum_s0_q <= sum_rows_q[LSE_W-1:0];
+        lse_row_s0_q <= lse_update_row_q;
+      end
+      if (lse_metadata_valid_s0_q) begin
+        lse_sum_s1_q <= lse_sum_s0_q;
+        lse_row_s1_q <= lse_row_s0_q;
+      end
+    end
+  end
 
 `ifndef SYNTHESIS
   initial begin
@@ -232,11 +291,11 @@ module fsa_fused_array #(
   // of one V[:,d] transfer and its full feature ID.
   assign pipeline_clear_w = clear_i || qk_clear_i || pv_start_i;
   assign source_is_pv_w = mac_phase_pv_q;
-  // The stripe-local O operand stage adds one PV cycle. Delay V by the same
-  // cycle and launch the vertical network only when every stripe seed is ready.
+  // The stripe-local operand register and latency-2 O-rescale add three PV
+  // stages. V follows the same payload pipeline before entering column skew.
   assign source_valid_w = source_is_pv_w ?
                           all_stripe_pv_seed_valid_w : qk_valid_i;
-  assign source_cols_w = source_is_pv_w ? pv_rescale_cols_q : qk_cols_i;
+  assign source_cols_w = source_is_pv_w ? pv_rescale_cols_s2_q : qk_cols_i;
 
   // One diagonal completion shift register replaces q_last/k_last/mac_last in
   // every PE. Tap row+1 launches that row's column-0 max after its final MAC;
@@ -266,7 +325,7 @@ module fsa_fused_array #(
     seq_q_int_w = {16'd0, seq_q_i};
     k_base_int_w = {16'd0, k_base_i};
     for (mask_row = 0; mask_row < ROWS; mask_row = mask_row + 1) begin
-      query_index_w = q_base_i + mask_row;
+      query_index_w = {16'd0, q_base_i} + $unsigned(mask_row);
       if (seq_kv_int_w <= k_base_int_w)
         valid_col_count_w = 0;
       else if ((seq_kv_int_w - k_base_int_w) >= COLS)
@@ -286,8 +345,8 @@ module fsa_fused_array #(
       if (query_index_w >= seq_q_int_w)
         valid_col_count_w = 0;
       for (mask_col = 0; mask_col < COLS; mask_col = mask_col + 1)
-        lane_valid_next_w[mask_row*COLS+mask_col] =
-            mask_col < valid_col_count_w;
+        lane_valid_next_w[$unsigned(mask_row*COLS+mask_col)] =
+            $unsigned(mask_col) < valid_col_count_w;
     end
   end
 
@@ -438,12 +497,10 @@ module fsa_fused_array #(
   generate
     genvar exp_lane;
     for (exp_lane = 0; exp_lane < EXP_LANES; exp_lane = exp_lane + 1) begin : g_exp_lane
-      scale_requant_unit #(.IN_W(SCORE_W), .SCALE_W(16), .OUT_W(16)) u_scale (
+      score_scale_pipe #(.IN_W(SCORE_W), .SCALE_W(16), .OUT_W(16)) u_scale (
         .clk(array_clk_w), .rst_n(rst_n), .valid_i(exp_source_valid_w),
         .data_i(exp_source_data_w[exp_lane*SCORE_W +: SCORE_W]),
         .scale_mant_i(score_scale_i[15:0]), .shift_i(score_scale_i[21:16]),
-        .zero_point_i(16'sd0), .round_mode_i(`ATTN_ROUND_NEAREST),
-        .sat_mode_i(`ATTN_SAT_INT16),
         .valid_o(scaled_exp_valid_w[exp_lane]),
         .data_o(scaled_exp_data_w[exp_lane*16 +: 16])
       );
@@ -470,15 +527,17 @@ module fsa_fused_array #(
   // alpha=exp(m_old-m_new), with alpha=0 for an uninitialized row state.
   always @(*) begin
     for (row_idx = 0; row_idx < ROWS; row_idx = row_idx + 1) begin
-      old_m_w = m_rows_q[row_idx*SCORE_W +: SCORE_W];
-      block_max_w = block_max_rows_q[row_idx*SCORE_W +: SCORE_W];
+      old_m_w = $signed(m_rows_q[row_idx*SCORE_W +: SCORE_W]);
+      block_max_w = $signed(
+          block_max_rows_q[row_idx*SCORE_W +: SCORE_W]);
       if (row_state_valid_q[row_idx] && $signed(old_m_w) >= $signed(block_max_w))
         next_m_w = old_m_w;
       else
         next_m_w = block_max_w;
-      m_pending_q[row_idx*SCORE_W +: SCORE_W] = next_m_w;
+      m_pending_q[row_idx*SCORE_W +: SCORE_W] = $unsigned(next_m_w);
       if (row_state_valid_q[row_idx])
-        alpha_delta_q[row_idx*SCORE_W +: SCORE_W] = $signed(old_m_w) - $signed(next_m_w);
+        alpha_delta_q[row_idx*SCORE_W +: SCORE_W] = $unsigned(
+            $signed(old_m_w) - $signed(next_m_w));
       else
         alpha_delta_q[row_idx*SCORE_W +: SCORE_W] = {SCORE_W{1'b0}};
     end
@@ -545,6 +604,8 @@ module fsa_fused_array #(
       pv_issue_cols_q <= pv_cols_i;
       if (pv_issue_valid_q)
         pv_rescale_cols_q <= pv_issue_cols_q;
+      pv_rescale_cols_s1_q <= pv_rescale_cols_q;
+      pv_rescale_cols_s2_q <= pv_rescale_cols_s1_q;
       norm_request_q <= norm_rd_en_i;
       if (norm_rd_en_i) begin
         norm_request_stripe_q <= norm_rd_stripe_i;
@@ -633,22 +694,25 @@ module fsa_fused_array #(
         SM_SUM_WAIT: begin
           if (&sum_right_valid_w) begin
             sum_rows_q <= sum_right_data_w;
+            alpha_update_stream_q <= alpha_rows_q;
             lse_update_row_q <= {ROW_IDX_W{1'b0}};
             softmax_pv_ready_o <= 1'b1;
             softmax_state_q <= SM_L_UPDATE;
           end
         end
         SM_L_UPDATE: begin
-          if (|l_total_w[L_PRODUCT_W:LSE_W])
-            l_rows_q[lse_update_row_q*LSE_W +: LSE_W] <= {LSE_W{1'b1}};
-          else
-            l_rows_q[lse_update_row_q*LSE_W +: LSE_W] <= l_total_w[LSE_W-1:0];
-          if (row_has_valid_w[lse_update_row_q])
-            row_state_valid_q[lse_update_row_q] <= 1'b1;
+          // Destructive stream shifts are safe: alpha_rows_q remains intact for
+          // overlapping WS-PV, while old_l_q and sum_rows_q have no later reader.
+          old_l_q <= old_l_q >> LSE_W;
+          sum_rows_q <= sum_rows_q >> LSE_W;
+          alpha_update_stream_q <= alpha_update_stream_q >> PROB_W;
           if (lse_update_row_q == ROW_LAST)
-            softmax_state_q <= SM_DONE;
+            softmax_state_q <= SM_L_DRAIN;
           else
             lse_update_row_q <= lse_update_row_q + 1'b1;
+        end
+        SM_L_DRAIN: begin
+          // Wait for the last two products to leave the II=1 multiplier.
         end
         SM_DONE: begin
           softmax_done_o <= 1'b1;
@@ -663,25 +727,21 @@ module fsa_fused_array #(
         end
       endcase
 
+      // Insert each completed row at the fixed high end. After ROWS commits the
+      // shift register is ordered identically to the original packed l_rows_q.
+      if (lse_result_valid_w) begin
+        l_rows_q <= l_rows_shifted_w;
+        if (lse_row_s1_q == ROW_LAST) begin
+          row_state_valid_q <= row_state_valid_q | row_has_valid_w;
+          softmax_state_q <= SM_DONE;
+        end
+      end
+
       if (sum_right_valid_w[ROWS-1] &&
           sum_right_tag_w[(ROWS-1)*FEATURE_IDX_W +: FEATURE_IDX_W] ==
           FEATURE_LAST)
         pv_done_o <= 1'b1;
     end
-  end
-
-  // A single row-state multiplier updates l_new=alpha*l_old+rowsum(P) one row per
-  // cycle; WS-PV is allowed to overlap this serialized state update.
-  always @(*) begin
-    // Extend only old_l to establish Verilog's full product context; alpha stays
-    // at its native width, so synthesis can retain an effective 32x16 multiply.
-    l_product_w =
-        $unsigned({{(L_PRODUCT_W-LSE_W){1'b0}},
-                   old_l_q[lse_update_row_q*LSE_W +: LSE_W]}) *
-        $unsigned(alpha_rows_q[lse_update_row_q*PROB_W +: PROB_W]);
-    l_total_w = {1'b0, (l_product_w >> `ATTN_BETA_FRAC)} +
-                {{(L_PRODUCT_W+1-LSE_W){1'b0}},
-                 sum_rows_q[lse_update_row_q*LSE_W +: LSE_W]};
   end
 
 endmodule

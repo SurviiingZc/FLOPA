@@ -222,7 +222,7 @@ score 和 delta 不占用两套寄存器。
 每个完成的 delta column 由四个固定 8-row stripe slices 组成 32-row vector，进入：
 
 ```text
-32 x scale_requant_unit -> 32 x pwl_exp_unit
+32 x score_scale_pipe -> 32 x pwl_exp_unit
 ```
 
 组合流水 latency 为 8 cycles，列 initiation interval 为 1。column tag 与数据一起
@@ -232,8 +232,11 @@ probability writeback 形成连续列波。rowsum token 比所需 probability wr
 晚一个周期跟随该波，因此 SUB、exp、probability writeback 和 rowsum 相互重叠，
 而不是四次串行扫描。
 
-32 个 row sums 同时完成后暂存为 1024-bit bounded state；一个中心
-`old_l*alpha` datapath 每周期提交一行 `l_new`。
+32 个 row sums 同时完成后暂存为 1024-bit bounded state。`old_l`、captured sums
+和独立 alpha copy 作为三条 shift stream，从固定低位端口进入一个 latency=2、
+II=1 的 unsigned `old_l*alpha` datapath；结果从固定高位写入 `l_rows` shift
+register，每周期提交一行 `l_new`。行计数器只作为流水 tag，不再选择三条宽
+packed vector，也不再译码 1024-bit 动态写使能。
 
 ### 4.5 Probability-Stationary WS-PV
 
@@ -489,9 +492,11 @@ selector、clock/control hierarchy 和 floorplan。
 - module TB 默认生成 FSDB。
 - top TB 覆盖两个 KV tiles、online recurrence、final normalization、AXI
   writeback 以及 WS-PV/`l` update overlap。
-- 当前 top TB 为 1348 cycles，原始 fused baseline 为 2174 cycles。新增 14 cycles
+- 当前 top TB 为 1354 cycles，原始 fused baseline 为 2174 cycles。Round-4 新增 14 cycles
   来自 score-scale 两级乘法流水和 stripe-local O-seed 寄存边界；两条路径均保持
-  II=1，因此长序列 steady-state 吞吐不变。
+  II=1。Round-5 再增加 6 cycles，来自每个 QK tile 的 local-clear 建立周期和每个
+  PV tile 的两级 O-rescale startup；这些路径同样保持 II=1，因此长序列
+  steady-state 吞吐不变。
 - `HEAD_DIM=128` elaboration 通过。
 - 已覆盖 4-KB AXI burst splitting 和 128-bit backpressure。
 
@@ -690,6 +695,7 @@ Total   = 2 * seq_q * seq_kv * head_dim
 | WS-PV overlapped with `l` update | 1453 | 33.2% |
 | Persistent O + 8-lane normalization | 1334 | 38.6% |
 | Round-4 timing pipeline boundaries | 1348 | 38.0% |
+| Round-5 local-clear and O-rescale pipelines | 1354 | 37.7% |
 
 该数字是 regression baseline，不是完整模型吞吐。
 
@@ -773,6 +779,7 @@ compute time，ping-pong 才真正隐藏传输。
 | `fsa_stripe.v` | 8x32 local routing、delta selector、persistent O ownership |
 | `fsa_fused_pe.v` | score/probability state 和 nearest-neighbor arithmetic |
 | `scale_requant_unit.v` | fixed-point scale/round/saturate |
+| `score_scale_pipe.v` | dedicated score scale/round/saturate, latency 5 |
 | `pwl_exp_unit.v` | Q8-to-Q1.15 PWL exp |
 | `reciprocal_lut.v` | pipelined reciprocal approximation |
 | `online_normalizer.v` | 8-row O/l normalization 和 INT8 output |

@@ -127,9 +127,15 @@ feature groups are O-memory banks only; the array does not drain or restart at
 a group boundary. The obsolete `prob_shift_q` and its right-to-left link were
 removed. QK and WS-PV select one explicitly shared PE multiplication expression.
 
-The old-O rescale is an exact signed 32x17 multiply, and the serialized LSE
+The old-O rescale is an exact latency-2, II=1 signed 32x17 multiply, and the serialized LSE
 update is an exact unsigned 32x16 multiply. Operands are not pre-expanded to a
 common wide width before multiplication, avoiding accidental 48x48 hardware.
+
+The O-bank response, alpha, feature ID, seed-zero, and valid are first captured
+at the stripe boundary. They feed the two-stage rescale wrapper, while V and its
+feature/valid token are delayed by the same two stages before column skew. Thus
+the array receives matched `{alpha*O_old[:,d], V[:,d], d}` tokens without a
+single-cycle SRAM-Q-to-multiply-to-skew path.
 
 ## 5. Array Microarchitecture
 
@@ -198,6 +204,11 @@ core beyond 32 columns.
   registers through every PE. One array-level `ROWS+COLS` sideband shift
   tracks the diagonal wavefront. Fixed tap `row+1` launches each stripe row's
   first max compare, while the final tap generates the registered QK tail.
+- QK clear is replicated inside each stripe by 8-column group. The QK engine
+  spends one cycle in `ST_CLEAR` and one in `ST_CLEAR_LOCAL` before issue, so
+  the global clear token ends at four local registers per stripe rather than
+  directly driving all PE accumulator clear pins. These intentional equivalent
+  register copies are preserved from synthesis merging.
 - The registered partial max reaches column `c+1` when that column's final
   score is ready, so rowmax overlaps the QK tail instead of rescanning the row.
 - Rowmax propagates left to right through PE compare/pass registers.
@@ -210,7 +221,12 @@ core beyond 32 columns.
   start a right-to-left rowsum. The sum token follows the column writeback wave,
   so reverse-m/SUB, exp, and rowsum overlap.
 - All row sums finish together and enter a 32x32-bit capture register. The
-  single `old_l*alpha` multiplier then updates one row per cycle.
+  captured sums, saved old sums, and alpha values are consumed as fixed-low-port
+  shift streams. A latency-2, II=1 unsigned multiplier updates one row per cycle;
+  the row counter is metadata only and never selects a wide packed operand.
+- Completed `l_new` values enter the fixed high end of the `l_rows` shift
+  register. This removes the former 32:1 operand muxes and decoded 1024-bit
+  dynamic write while preserving row order after all 32 commits.
 - Capturing the row sums pulses `softmax_pv_ready_o`; WS-PV starts while that
   serialized row-state update continues. The later `softmax_done_o` pulse
   denotes completion of all `l` writes, not probability readiness.

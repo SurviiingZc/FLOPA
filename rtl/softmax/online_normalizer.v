@@ -40,7 +40,7 @@ module online_normalizer #(
       if (shift != 0) begin
         guard_bit = value[shift-1'b1];
         for (bit_index = 0; bit_index < 63; bit_index = bit_index + 1)
-          if (bit_index < {26'd0, (shift-1'b1)})
+          if ($unsigned(bit_index) < {26'd0, (shift-1'b1)})
             sticky_bit = sticky_bit | value[bit_index];
       end
       round_increment = guard_bit && (!value[63] || sticky_bit);
@@ -99,10 +99,11 @@ module online_normalizer #(
         .reciprocal_o(reciprocal_w[lane*32 +: 32])
       );
 
-      assign out_rows_o[lane*OUT_W +: OUT_W] = result_q;
+      assign out_rows_o[lane*OUT_W +: OUT_W] = $unsigned(result_q);
       assign norm_shifted_full_w =
           $signed(norm_product_q) >>> `ATTN_BETA_FRAC;
-      assign norm_reduced_w = norm_shifted_full_w[NORM_REDUCED_W-1:0];
+      assign norm_reduced_w =
+          $signed(norm_shifted_full_w[NORM_REDUCED_W-1:0]);
       assign round_increment_value_w =
           round_increment(scale_product_w, result_shift_q);
 
@@ -132,7 +133,7 @@ module online_normalizer #(
         round_increment_w = round_increment_value_w;
         rounded_narrow_w =
             $signed({shifted_w[OUT_W-1], shifted_w[OUT_W-1:0]}) +
-            {{8{1'b0}}, round_increment_w};
+            $signed({{8{1'b0}}, round_increment_w});
       end
 
       // Payload registers are valid-qualified and intentionally unreset. The first
@@ -143,7 +144,7 @@ module online_normalizer #(
               $signed({{(64-ACC_W){acc_s2_q[lane*ACC_W+ACC_W-1]}},
                        acc_s2_q[lane*ACC_W +: ACC_W]}) *
               $signed({1'b0, reciprocal_w[lane*32 +: 32]});
-          scale_mant_q <= scale_s2_q[15:0];
+          scale_mant_q <= $signed(scale_s2_q[15:0]);
           scale_shift_q <= scale_s2_q[21:16];
         end
         if (norm_valid_q)
@@ -156,7 +157,7 @@ module online_normalizer #(
           else if (shifted_w < -64'sd128 || rounded_narrow_w < -9'sd128)
             result_q <= -8'sd128;
           else
-            result_q <= rounded_narrow_w[OUT_W-1:0];
+            result_q <= $signed(rounded_narrow_w[OUT_W-1:0]);
         end
       end
     end

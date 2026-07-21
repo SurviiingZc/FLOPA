@@ -44,6 +44,7 @@ module axi4_master_write #(
   localparam ST_B     = 3'd3;
   localparam ST_DONE  = 3'd4;
   localparam ST_ERROR = 3'd5;
+  localparam [ADDR_W-1:0] BYTES_PER_BEAT = DATA_W / 8;
 
   reg [2:0] state_q;
   reg [15:0] beats_left_q;
@@ -154,7 +155,8 @@ module axi4_master_write #(
               busy_o <= 1'b0;
               state_q <= ST_DONE;
             end else begin
-              addr_q <= addr_q + (burst_size_q * (DATA_W/8));
+              addr_q <= addr_q +
+                  ({{(ADDR_W-8){1'b0}}, burst_size_q} * BYTES_PER_BEAT);
               state_q <= ST_AW;
             end
           end
