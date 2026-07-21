@@ -3,7 +3,11 @@
 
 // Global fixed-point widths shared by the array, online-softmax state, and I/O.
 `define ATTN_DATA_W               8
-`define ATTN_ARRAY_DATA_W        16
+`define ATTN_ARRAY_DATA_W         8
+`define ATTN_MULT_PIPE2_LATENCY   2
+`define ATTN_SCALE_REQUANT_LATENCY 5
+`define ATTN_PWL_EXP_LATENCY      3
+`define ATTN_SCORE_EXP_LATENCY    (`ATTN_SCALE_REQUANT_LATENCY + `ATTN_PWL_EXP_LATENCY)
 `define ATTN_ACC_W               32
 `define ATTN_SCORE_W             32
 `define ATTN_SCORE_FIXED_W       16

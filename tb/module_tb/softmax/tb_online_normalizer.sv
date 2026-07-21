@@ -7,24 +7,53 @@ module tb_online_normalizer;
   reg clk=0,rst_n=0,clock_en_i=1,valid_i=0; reg [LANES*ACC_W-1:0] acc_rows_i=0;
   reg [LANES*LSE_W-1:0] l_rows_i=0; reg [31:0] out_scale_i=0; reg [TAG_W-1:0] tag_i=0;
   wire valid_o; wire [LANES*OUT_W-1:0] out_rows_o; wire [TAG_W-1:0] tag_o;
-  integer lane,errors=0;
+  integer lane,seen,negative_expected,errors=0;
   online_normalizer #(.LANES(LANES),.TAG_W(TAG_W)) dut(.*);
   always #5 clk=~clk; `TB_TIMEOUT(100,"tb_online_normalizer")
   initial begin
     repeat(3) @(posedge clk); rst_n=1;
+
+    // Two adjacent requests followed by a bubble and a third request prove that
+    // lane data, tag, and shift metadata share the latency-2 multiplier contract.
+    @(negedge clk);
     for(lane=0;lane<LANES;lane=lane+1) begin
       acc_rows_i[lane*ACC_W +: ACC_W]=(lane[0])?-32'sd32768:32'sd32768;
       l_rows_i[lane*LSE_W +: LSE_W]=32'd32768;
     end
-    out_scale_i=32'd1; tag_i=8'ha5;
-    @(negedge clk); valid_i=1; @(negedge clk); valid_i=0;
-    wait(valid_o); #1;
-    `TB_CHECK(tag_o==8'ha5,"normalizer tag alignment")
-    for(lane=0;lane<LANES;lane=lane+1) begin
-      if(lane[0]) begin
-        `TB_CHECK($signed(out_rows_o[lane*OUT_W +: OUT_W])==-128,"negative lane")
-      end else begin
-        `TB_CHECK($signed(out_rows_o[lane*OUT_W +: OUT_W])==127,"positive lane")
+    out_scale_i=32'd1; tag_i=8'ha5; valid_i=1;
+
+    @(negedge clk);
+    for(lane=0;lane<LANES;lane=lane+1)
+      acc_rows_i[lane*ACC_W +: ACC_W]=(lane[0])?32'sd32768:-32'sd32768;
+    tag_i=8'h3c;
+
+    @(negedge clk); valid_i=0;
+    @(negedge clk);
+    for(lane=0;lane<LANES;lane=lane+1)
+      acc_rows_i[lane*ACC_W +: ACC_W]=(lane[0])?-32'sd32768:32'sd32768;
+    tag_i=8'h7e; valid_i=1;
+    @(negedge clk); valid_i=0;
+
+    seen=0;
+    while(seen<3) begin
+      @(negedge clk);
+      if(valid_o) begin
+        case(seen)
+          0: `TB_CHECK(tag_o==8'ha5,"normalizer first tag alignment")
+          1: `TB_CHECK(tag_o==8'h3c,"normalizer adjacent tag alignment")
+          default: `TB_CHECK(tag_o==8'h7e,"normalizer bubble tag alignment")
+        endcase
+        for(lane=0;lane<LANES;lane=lane+1) begin
+          negative_expected = (seen==1) ? !lane[0] : lane[0];
+          if(negative_expected) begin
+            `TB_CHECK($signed(out_rows_o[lane*OUT_W +: OUT_W])==-128,
+                      "negative lane")
+          end else begin
+            `TB_CHECK($signed(out_rows_o[lane*OUT_W +: OUT_W])==127,
+                      "positive lane")
+          end
+        end
+        seen=seen+1;
       end
     end
     `TB_FINISH("tb_online_normalizer")

@@ -4,7 +4,7 @@
 
 module tb_fsa_fused_array;
   `TB_FSDB_DUMP("tb_fsa_fused_array.fsdb", tb_fsa_fused_array)
-  localparam ROWS=4, STRIPE_ROWS=2, COLS=4, DATA_W=16;
+  localparam ROWS=4, STRIPE_ROWS=2, COLS=4, DATA_W=8;
   localparam SCORE_W=32, PROB_W=16, ACC_W=32, LSE_W=32, HEAD_DIM=8;
   localparam FEATURE_IDX_W=3, STRIPE_IDX_W=1;
   reg clk=0,rst_n=0,clock_en_i=1,clear_i=0,clear_rows_i=0;
@@ -75,7 +75,7 @@ module tb_fsa_fused_array;
     @(negedge clk); qk_clear_i=1; clear_rows_i=1;
     @(negedge clk); qk_clear_i=0; clear_rows_i=0;
     for(row=0;row<ROWS;row=row+1)
-      qk_rows_i[row*DATA_W +: DATA_W]=16'sd1;
+      qk_rows_i[row*DATA_W +: DATA_W]=8'sd1;
     for(col=0;col<COLS;col=col+1)
       qk_cols_i[col*DATA_W +: DATA_W]=col+1;
     qk_valid_i=1; qk_last_i=1;
@@ -92,7 +92,7 @@ module tb_fsa_fused_array;
       @(negedge clk);
       pv_cols_i=0;
       for(col=0;col<COLS;col=col+1)
-        pv_cols_i[col*DATA_W +: DATA_W]=(col==(feature%COLS))?16'sd1:16'sd0;
+        pv_cols_i[col*DATA_W +: DATA_W]=(col==(feature%COLS))?8'sd1:8'sd0;
       pv_feature_i=feature[FEATURE_IDX_W-1:0];
       pv_valid_i=1;
     end

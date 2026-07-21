@@ -38,8 +38,6 @@ module fsa_delay_line #(
         if (!rst_n) begin
           valid_q <= {DEPTH{1'b0}};
           last_q <= {DEPTH{1'b0}};
-          for (stage = 0; stage < DEPTH; stage = stage + 1)
-            data_q[stage] <= {WIDTH{1'b0}};
         end else if (clear_i) begin
           valid_q <= {DEPTH{1'b0}};
           last_q <= {DEPTH{1'b0}};

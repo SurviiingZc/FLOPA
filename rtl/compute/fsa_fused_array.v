@@ -68,9 +68,9 @@ module fsa_fused_array #(
   localparam integer NUM_STRIPES = ROWS / STRIPE_ROWS;
   localparam integer STRIPE_IDX_W = (NUM_STRIPES < 2) ? 1 : $clog2(NUM_STRIPES);
   localparam integer EXP_LANES = ROWS;
-  localparam integer EXP_LATENCY = 7;
+  localparam integer EXP_LATENCY = `ATTN_SCORE_EXP_LATENCY;
   localparam integer L_PRODUCT_W = LSE_W + PROB_W;
-  localparam integer RESCALE_W = ACC_W + PROB_W;
+  localparam integer QK_COMPLETION_DEPTH = ROWS + COLS;
   localparam [ROW_IDX_W-1:0] ROW_LAST = ROWS - 1;
   localparam [COL_IDX_W-1:0] COL_LAST = COLS - 1;
   localparam [FEATURE_IDX_W-1:0] FEATURE_LAST = HEAD_DIM - 1;
@@ -108,10 +108,9 @@ module fsa_fused_array #(
 
   wire [ROWS*DATA_W-1:0] q_boundary_data_w;
   wire [ROWS-1:0] q_boundary_valid_w;
-  wire [ROWS-1:0] q_boundary_last_w;
   wire [COLS*DATA_W-1:0] k_boundary_data_w;
   wire [COLS-1:0] k_boundary_valid_w;
-  wire [COLS-1:0] k_boundary_last_w;
+  wire [ROWS-1:0] qk_row_done_w;
   reg [ROWS*COLS-1:0] lane_valid_q;
   reg [ROWS*COLS-1:0] lane_valid_next_w;
   wire [ROWS-1:0] row_has_valid_w;
@@ -120,7 +119,6 @@ module fsa_fused_array #(
   wire [ROWS*LSE_W-1:0] sum_right_data_w;
   wire [ROWS-1:0] sum_right_valid_w;
   wire [ROWS*FEATURE_IDX_W-1:0] sum_right_tag_w;
-  wire [ROWS*ACC_W-1:0] pv_seed_source_w;
   wire [ROWS*(ACC_W+FEATURE_IDX_W)-1:0] pv_seed_boundary_packed_w;
   wire [ROWS*ACC_W-1:0] pv_seed_boundary_data_w;
   wire [ROWS*FEATURE_IDX_W-1:0] pv_seed_boundary_tag_w;
@@ -128,8 +126,6 @@ module fsa_fused_array #(
 
   wire [COLS*DATA_W-1:0] stripe_k_data_w [0:NUM_STRIPES];
   wire [COLS-1:0] stripe_k_valid_w [0:NUM_STRIPES];
-  wire [COLS-1:0] stripe_k_last_w [0:NUM_STRIPES];
-  wire [NUM_STRIPES-1:0] stripe_tail_mac_last_w;
   wire [NUM_STRIPES-1:0] stripe_delta_col_valid_w;
   wire [COL_IDX_W-1:0] stripe_delta_col_index_w [0:NUM_STRIPES-1];
   wire [STRIPE_ROWS*SCORE_W-1:0] stripe_delta_col_data_w [0:NUM_STRIPES-1];
@@ -137,6 +133,12 @@ module fsa_fused_array #(
   wire [STRIPE_ROWS*ACC_W-1:0] stripe_o_rd_data_w [0:NUM_STRIPES-1];
   wire [NUM_STRIPES-1:0] stripe_o_rd_en_w;
   wire [FEATURE_IDX_W-1:0] stripe_o_rd_feature_w [0:NUM_STRIPES-1];
+  wire [NUM_STRIPES-1:0] stripe_pv_seed_valid_w;
+  wire [STRIPE_ROWS*ACC_W-1:0] stripe_pv_seed_data_w
+      [0:NUM_STRIPES-1];
+  wire [FEATURE_IDX_W-1:0] stripe_pv_seed_feature_w
+      [0:NUM_STRIPES-1];
+  wire all_stripe_pv_seed_valid_w = &stripe_pv_seed_valid_w;
 
   wire [ROWS*SCORE_W-1:0] delta_col_data_w;
   wire delta_col_valid_w;
@@ -156,12 +158,8 @@ module fsa_fused_array #(
   wire pipeline_clear_w;
   wire source_is_pv_w;
   wire source_valid_w;
-  wire source_last_w;
   wire [COLS*DATA_W-1:0] source_cols_w;
   wire seed_read_request_w;
-  wire [ROWS*ACC_W-1:0] o_seed_rows_w;
-  wire signed [2*RESCALE_W-1:0] pv_rescale_product_w [0:ROWS-1];
-  wire signed [2*RESCALE_W-1:0] pv_rescale_shifted_w [0:ROWS-1];
   wire [NUM_STRIPES*STRIPE_ROWS*ACC_W-1:0] stripe_o_rd_flat_w;
   wire array_gate_enable_w;
   wire array_clk_w;
@@ -186,6 +184,8 @@ module fsa_fused_array #(
   reg pv_issue_seed_zero_q;
   reg [FEATURE_IDX_W-1:0] pv_issue_feature_q;
   reg [COLS*DATA_W-1:0] pv_issue_cols_q;
+  reg [COLS*DATA_W-1:0] pv_rescale_cols_q;
+  reg [QK_COMPLETION_DEPTH-1:0] qk_completion_q;
   reg norm_request_q;
   reg [STRIPE_IDX_W-1:0] norm_request_stripe_q;
   reg [FEATURE_IDX_W-1:0] norm_request_feature_q;
@@ -196,6 +196,8 @@ module fsa_fused_array #(
     if (ROWS % STRIPE_ROWS != 0) $fatal(1, "ROWS must be divisible by STRIPE_ROWS");
     if ((1 << LOCAL_ROW_IDX_W) != STRIPE_ROWS)
       $fatal(1, "STRIPE_ROWS must be a power of two");
+    if (QK_COMPLETION_DEPTH < ROWS + 1)
+      $fatal(1, "QK completion sideband is too short for rowmax launch");
   end
 
   always @(posedge clk) begin
@@ -207,6 +209,13 @@ module fsa_fused_array #(
         if (stripe_delta_col_index_w[consistency_stripe] !=
             stripe_delta_col_index_w[0])
           $fatal(1, "fsa_fused_array stripe delta-column tag mismatch");
+    end
+    if (rst_n && all_stripe_pv_seed_valid_w) begin
+      for (consistency_stripe = 1; consistency_stripe < NUM_STRIPES;
+           consistency_stripe = consistency_stripe + 1)
+        if (stripe_pv_seed_feature_w[consistency_stripe] !=
+            stripe_pv_seed_feature_w[0])
+          $fatal(1, "fsa_fused_array stripe PV-seed feature mismatch");
     end
   end
 `endif
@@ -223,9 +232,25 @@ module fsa_fused_array #(
   // of one V[:,d] transfer and its full feature ID.
   assign pipeline_clear_w = clear_i || qk_clear_i || pv_start_i;
   assign source_is_pv_w = mac_phase_pv_q;
-  assign source_valid_w = source_is_pv_w ? pv_issue_valid_q : qk_valid_i;
-  assign source_last_w = source_is_pv_w ? 1'b0 : qk_last_i;
-  assign source_cols_w = source_is_pv_w ? pv_issue_cols_q : qk_cols_i;
+  // The stripe-local O operand stage adds one PV cycle. Delay V by the same
+  // cycle and launch the vertical network only when every stripe seed is ready.
+  assign source_valid_w = source_is_pv_w ?
+                          all_stripe_pv_seed_valid_w : qk_valid_i;
+  assign source_cols_w = source_is_pv_w ? pv_rescale_cols_q : qk_cols_i;
+
+  // One diagonal completion shift register replaces q_last/k_last/mac_last in
+  // every PE. Tap row+1 launches that row's column-0 max after its final MAC;
+  // the final tap preserves the former bottom-right completion latency.
+  always @(posedge array_clk_w or negedge rst_n) begin
+    if (!rst_n)
+      qk_completion_q <= {QK_COMPLETION_DEPTH{1'b0}};
+    else if (pipeline_clear_w)
+      qk_completion_q <= {QK_COMPLETION_DEPTH{1'b0}};
+    else
+      qk_completion_q <=
+          {qk_completion_q[QK_COMPLETION_DEPTH-2:0],
+           qk_valid_i && qk_last_i};
+  end
   // For non-first KV tiles, the incoming V feature ID is simultaneously used as
   // the persistent O-bank read address. First-tile seeds bypass memory with zero.
   assign seed_read_request_w = pv_valid_i && !pv_seed_zero_i;
@@ -266,27 +291,29 @@ module fsa_fused_array #(
     end
   end
 
-  // Row skew aligns Q with K during QK. The second delay line carries
-  // {feature ID, alpha-rescaled O_old[row,d]} together, preserving alignment at
-  // every WS-PV row boundary while V[:,d] follows the column-skew network.
+  // Row skew aligns Q with K during QK. The second delay line receives the
+  // stripe-local registered/rescaled O seed and its feature tag while the
+  // equally delayed V[:,d] follows the column-skew network.
   generate
     genvar skew_row;
     for (skew_row = 0; skew_row < ROWS; skew_row = skew_row + 1) begin : g_q_skew
       fsa_delay_line #(.WIDTH(DATA_W), .DEPTH(skew_row+1)) u_q_skew (
         .clk(array_clk_w), .rst_n(rst_n), .clear_i(pipeline_clear_w),
-        .valid_i(qk_valid_i), .last_i(qk_last_i),
+        .valid_i(qk_valid_i), .last_i(1'b0),
         .data_i(qk_rows_i[skew_row*DATA_W +: DATA_W]),
         .valid_o(q_boundary_valid_w[skew_row]),
-        .last_o(q_boundary_last_w[skew_row]),
+        .last_o(),
         .data_o(q_boundary_data_w[skew_row*DATA_W +: DATA_W])
       );
 
       fsa_delay_line #(.WIDTH(ACC_W+FEATURE_IDX_W), .DEPTH(skew_row+1))
       u_pv_seed_skew (
         .clk(array_clk_w), .rst_n(rst_n), .clear_i(pipeline_clear_w),
-        .valid_i(pv_issue_valid_q), .last_i(1'b0),
-        .data_i({pv_issue_feature_q,
-                 pv_seed_source_w[skew_row*ACC_W +: ACC_W]}),
+        .valid_i(stripe_pv_seed_valid_w[skew_row/STRIPE_ROWS]),
+        .last_i(1'b0),
+        .data_i({stripe_pv_seed_feature_w[skew_row/STRIPE_ROWS],
+                 stripe_pv_seed_data_w[skew_row/STRIPE_ROWS][
+                     (skew_row%STRIPE_ROWS)*ACC_W +: ACC_W]}),
         .valid_o(pv_seed_boundary_valid_w[skew_row]),
         .last_o(),
         .data_o(pv_seed_boundary_packed_w[
@@ -299,28 +326,16 @@ module fsa_fused_array #(
           pv_seed_boundary_packed_w[
               skew_row*(ACC_W+FEATURE_IDX_W)+ACC_W +: FEATURE_IDX_W];
 
-      // Compute seed[row,d] = alpha[row] * O_old[row,d] in Q1.15. The synchronous
-      // O read and the registered V/feature capture have matching one-cycle delay.
-      assign pv_rescale_product_w[skew_row] =
-          $signed({{PROB_W{o_seed_rows_w[skew_row*ACC_W+ACC_W-1]}},
-                   o_seed_rows_w[skew_row*ACC_W +: ACC_W]}) *
-          $signed({{ACC_W{1'b0}},
-                   alpha_rows_q[skew_row*PROB_W +: PROB_W]});
-      assign pv_rescale_shifted_w[skew_row] =
-          pv_rescale_product_w[skew_row] >>> `ATTN_BETA_FRAC;
-      assign pv_seed_source_w[skew_row*ACC_W +: ACC_W] =
-          pv_issue_seed_zero_q ? {ACC_W{1'b0}} :
-          pv_rescale_shifted_w[skew_row][ACC_W-1:0];
     end
 
     genvar skew_col;
     for (skew_col = 0; skew_col < COLS; skew_col = skew_col + 1) begin : g_k_skew
       fsa_delay_line #(.WIDTH(DATA_W), .DEPTH(skew_col+1)) u_k_skew (
         .clk(array_clk_w), .rst_n(rst_n), .clear_i(pipeline_clear_w),
-        .valid_i(source_valid_w), .last_i(source_last_w),
+        .valid_i(source_valid_w), .last_i(1'b0),
         .data_i(source_cols_w[skew_col*DATA_W +: DATA_W]),
         .valid_o(k_boundary_valid_w[skew_col]),
-        .last_o(k_boundary_last_w[skew_col]),
+        .last_o(),
         .data_o(k_boundary_data_w[skew_col*DATA_W +: DATA_W])
       );
     end
@@ -329,11 +344,11 @@ module fsa_fused_array #(
     for (valid_row = 0; valid_row < ROWS; valid_row = valid_row + 1) begin : g_row_valid
       assign row_has_valid_w[valid_row] =
           |lane_valid_q[valid_row*COLS +: COLS];
+      assign qk_row_done_w[valid_row] = qk_completion_q[valid_row+1];
     end
 
     assign stripe_k_data_w[0] = k_boundary_data_w;
     assign stripe_k_valid_w[0] = k_boundary_valid_w;
-    assign stripe_k_last_w[0] = k_boundary_last_w;
 
     genvar stripe;
     for (stripe = 0; stripe < NUM_STRIPES; stripe = stripe + 1) begin : g_stripe
@@ -354,9 +369,6 @@ module fsa_fused_array #(
       assign stripe_o_rd_flat_w[
           stripe*STRIPE_ROWS*ACC_W +: STRIPE_ROWS*ACC_W] =
           stripe_o_rd_data_w[stripe];
-      assign o_seed_rows_w[ROW_BASE*ACC_W +: STRIPE_ROWS*ACC_W] =
-          stripe_o_rd_data_w[stripe];
-
       fsa_stripe #(
         .STRIPE_ROWS(STRIPE_ROWS), .COLS(COLS), .DATA_W(DATA_W),
         .SCORE_W(SCORE_W), .PROB_W(PROB_W), .SUM_W(ACC_W),
@@ -367,13 +379,11 @@ module fsa_fused_array #(
         .clear_score_i(qk_clear_i), .ws_pv_i(source_is_pv_w),
         .q_rows_i(q_boundary_data_w[ROW_BASE*DATA_W +: STRIPE_ROWS*DATA_W]),
         .q_valid_i(q_boundary_valid_w[ROW_BASE +: STRIPE_ROWS]),
-        .q_last_i(q_boundary_last_w[ROW_BASE +: STRIPE_ROWS]),
+        .qk_row_done_i(qk_row_done_w[ROW_BASE +: STRIPE_ROWS]),
         .k_top_data_i(stripe_k_data_w[stripe]),
         .k_top_valid_i(stripe_k_valid_w[stripe]),
-        .k_top_last_i(stripe_k_last_w[stripe]),
         .k_bottom_data_o(stripe_k_data_w[stripe+1]),
         .k_bottom_valid_o(stripe_k_valid_w[stripe+1]),
-        .k_bottom_last_o(stripe_k_last_w[stripe+1]),
         .lane_valid_i(lane_valid_q[ROW_BASE*COLS +: STRIPE_ROWS*COLS]),
         .max_done_valid_o(max_right_valid_w[ROW_BASE +: STRIPE_ROWS]),
         .max_done_data_o(max_right_data_w[ROW_BASE*SCORE_W +: STRIPE_ROWS*SCORE_W]),
@@ -393,19 +403,27 @@ module fsa_fused_array #(
             ROW_BASE*ACC_W +: STRIPE_ROWS*ACC_W]),
         .pv_sum_tag_i(pv_seed_boundary_tag_w[
             ROW_BASE*FEATURE_IDX_W +: STRIPE_ROWS*FEATURE_IDX_W]),
+        .pv_seed_operand_valid_i(pv_issue_valid_q),
+        .pv_seed_zero_i(pv_issue_seed_zero_q),
+        .pv_seed_alpha_i(alpha_rows_q[
+            ROW_BASE*PROB_W +: STRIPE_ROWS*PROB_W]),
+        .pv_seed_feature_i(pv_issue_feature_q),
+        .pv_seed_valid_o(stripe_pv_seed_valid_w[stripe]),
+        .pv_seed_data_o(stripe_pv_seed_data_w[stripe]),
+        .pv_seed_feature_o(stripe_pv_seed_feature_w[stripe]),
         .o_rd_en_i(stripe_o_rd_en_w[stripe]),
         .o_rd_feature_i(stripe_o_rd_feature_w[stripe]),
         .o_rd_valid_o(stripe_o_rd_valid_w[stripe]),
         .o_rd_data_o(stripe_o_rd_data_w[stripe]),
         .delta_col_valid_o(stripe_delta_col_valid_w[stripe]),
         .delta_col_index_o(stripe_delta_col_index_w[stripe]),
-        .delta_col_data_o(stripe_delta_col_data_w[stripe]),
-        .tail_mac_last_o(stripe_tail_mac_last_w[stripe])
+        .delta_col_data_o(stripe_delta_col_data_w[stripe])
       );
     end
   endgenerate
 
-  assign qk_tail_last_w = stripe_tail_mac_last_w[NUM_STRIPES-1] && !source_is_pv_w;
+  assign qk_tail_last_w =
+      qk_completion_q[QK_COMPLETION_DEPTH-1] && !source_is_pv_w;
 
   // Select the requested eight-row O/l slice for the final normalizer only.
   always @(*) begin
@@ -476,8 +494,6 @@ module fsa_fused_array #(
       lse_update_row_q <= {ROW_IDX_W{1'b0}};
       sum_launch_rows_q <= {ROWS{1'b0}};
       prob_col_tag_valid_q <= {EXP_LATENCY{1'b0}};
-      for (tag_stage = 0; tag_stage < EXP_LATENCY; tag_stage = tag_stage + 1)
-        prob_col_tag_q[tag_stage] <= {COL_IDX_W{1'b0}};
       m_rows_q <= {ROWS*SCORE_W{1'b0}};
       block_max_rows_q <= {ROWS*SCORE_W{1'b0}};
       l_rows_q <= {ROWS*LSE_W{1'b0}};
@@ -496,14 +512,8 @@ module fsa_fused_array #(
       lane_valid_q <= {ROWS*COLS{1'b0}};
       pv_issue_valid_q <= 1'b0;
       pv_issue_seed_zero_q <= 1'b0;
-      pv_issue_feature_q <= {FEATURE_IDX_W{1'b0}};
-      pv_issue_cols_q <= {COLS*DATA_W{1'b0}};
       norm_request_q <= 1'b0;
-      norm_request_stripe_q <= {STRIPE_IDX_W{1'b0}};
-      norm_request_feature_q <= {FEATURE_IDX_W{1'b0}};
       norm_rd_valid_o <= 1'b0;
-      norm_rd_stripe_o <= {STRIPE_IDX_W{1'b0}};
-      norm_rd_feature_o <= {FEATURE_IDX_W{1'b0}};
       error_o <= 1'b0;
     end else if (clear_i) begin
       softmax_state_q <= SM_IDLE;
@@ -533,6 +543,8 @@ module fsa_fused_array #(
       pv_issue_seed_zero_q <= pv_seed_zero_i;
       pv_issue_feature_q <= pv_feature_i;
       pv_issue_cols_q <= pv_cols_i;
+      if (pv_issue_valid_q)
+        pv_rescale_cols_q <= pv_issue_cols_q;
       norm_request_q <= norm_rd_en_i;
       if (norm_rd_en_i) begin
         norm_request_stripe_q <= norm_rd_stripe_i;
@@ -661,9 +673,12 @@ module fsa_fused_array #(
   // A single row-state multiplier updates l_new=alpha*l_old+rowsum(P) one row per
   // cycle; WS-PV is allowed to overlap this serialized state update.
   always @(*) begin
+    // Extend only old_l to establish Verilog's full product context; alpha stays
+    // at its native width, so synthesis can retain an effective 32x16 multiply.
     l_product_w =
-        {{PROB_W{1'b0}}, old_l_q[lse_update_row_q*LSE_W +: LSE_W]} *
-        alpha_rows_q[lse_update_row_q*PROB_W +: PROB_W];
+        $unsigned({{(L_PRODUCT_W-LSE_W){1'b0}},
+                   old_l_q[lse_update_row_q*LSE_W +: LSE_W]}) *
+        $unsigned(alpha_rows_q[lse_update_row_q*PROB_W +: PROB_W]);
     l_total_w = {1'b0, (l_product_w >> `ATTN_BETA_FRAC)} +
                 {{(L_PRODUCT_W+1-LSE_W){1'b0}},
                  sum_rows_q[lse_update_row_q*LSE_W +: LSE_W]};

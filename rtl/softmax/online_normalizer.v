@@ -23,6 +23,8 @@ module online_normalizer #(
   output reg [TAG_W-1:0]        tag_o
 );
 
+  localparam integer NORM_REDUCED_W = 48;
+
   // Round signed two's-complement values to nearest with ties away from zero.
   // For negative values, an arithmetic shift already rounds toward -infinity,
   // so it is corrected toward zero only when the discarded magnitude is < 0.5.
@@ -38,7 +40,7 @@ module online_normalizer #(
       if (shift != 0) begin
         guard_bit = value[shift-1'b1];
         for (bit_index = 0; bit_index < 63; bit_index = bit_index + 1)
-          if (bit_index < shift-1'b1)
+          if (bit_index < {26'd0, (shift-1'b1)})
             sticky_bit = sticky_bit | value[bit_index];
       end
       round_increment = guard_bit && (!value[63] || sticky_bit);
@@ -64,9 +66,12 @@ module online_normalizer #(
   reg [TAG_W-1:0] tag_s1_q;
   reg [TAG_W-1:0] tag_s2_q;
   reg [TAG_W-1:0] norm_tag_q;
-  reg [TAG_W-1:0] scale_tag_q;
+  reg [TAG_W-1:0] mult_tag_s1_q;
+  reg [TAG_W-1:0] mult_tag_s2_q;
   reg norm_valid_q;
-  reg scale_valid_q;
+  reg mult_metadata_valid_s1_q;
+  wire [LANES-1:0] scale_product_valid_w;
+  wire all_scale_product_valid_w = &scale_product_valid_w;
 
   // Each lane owns a reciprocal and two multipliers so all rows in a stripe are
   // normalized together while features stream one per cycle.
@@ -74,12 +79,16 @@ module online_normalizer #(
     genvar lane;
     for (lane = 0; lane < LANES; lane = lane + 1) begin : g_lane
       reg signed [63:0] norm_product_q;
-      reg signed [63:0] scale_product_q;
+      wire signed [63:0] norm_shifted_full_w;
+      wire signed [NORM_REDUCED_W-1:0] norm_reduced_w;
+      wire signed [63:0] scale_product_w;
       reg signed [15:0] scale_mant_q;
       reg [5:0] scale_shift_q;
+      reg [5:0] scale_shift_s1_q;
       reg [5:0] result_shift_q;
       reg signed [63:0] shifted_w;
       reg round_increment_w;
+      wire round_increment_value_w;
       reg signed [8:0] rounded_narrow_w;
       reg signed [OUT_W-1:0] result_q;
 
@@ -91,49 +100,63 @@ module online_normalizer #(
       );
 
       assign out_rows_o[lane*OUT_W +: OUT_W] = result_q;
+      assign norm_shifted_full_w =
+          $signed(norm_product_q) >>> `ATTN_BETA_FRAC;
+      assign norm_reduced_w = norm_shifted_full_w[NORM_REDUCED_W-1:0];
+      assign round_increment_value_w =
+          round_increment(scale_product_w, result_shift_q);
+
+      fa_signed_mult_pipe2 #(
+        .A_W(NORM_REDUCED_W), .B_W(16), .SPLIT_W(24)
+      ) u_output_scale_multiplier (
+        .clk(gated_clk_w), .rst_n(rst_n), .valid_i(norm_valid_q),
+        .a_i(norm_reduced_w), .b_i(scale_mant_q),
+        .valid_o(scale_product_valid_w[lane]), .product_o(scale_product_w)
+      );
+
+`ifndef SYNTHESIS
+      // ACC32 times the bounded reciprocal is below 2^61 in magnitude; after the
+      // Q1.15 shift it must be a sign extension of this conservative 48-bit slice.
+      always @(posedge gated_clk_w)
+        if (rst_n && norm_valid_q &&
+            norm_shifted_full_w !=
+            {{(64-NORM_REDUCED_W){norm_reduced_w[NORM_REDUCED_W-1]}},
+             norm_reduced_w})
+          $fatal(1, "online_normalizer reduced operand overflow lane=%0d", lane);
+`endif
 
       // Shift first, then round only the 9-bit saturation candidate. This removes
       // the former 64-bit rounding-bias adder and its reported ripple carry path.
       always @(*) begin
-        shifted_w = $signed(scale_product_q) >>> result_shift_q;
-        round_increment_w = round_increment(scale_product_q, result_shift_q);
+        shifted_w = $signed(scale_product_w) >>> result_shift_q;
+        round_increment_w = round_increment_value_w;
         rounded_narrow_w =
             $signed({shifted_w[OUT_W-1], shifted_w[OUT_W-1:0]}) +
             {{8{1'b0}}, round_increment_w};
       end
 
-      // First multiply by reciprocal(l), then by output scale, then saturate.
-      always @(posedge gated_clk_w or negedge rst_n) begin
-        if (!rst_n) begin
-          norm_product_q <= 64'sd0;
-          scale_product_q <= 64'sd0;
-          scale_mant_q <= 16'sd0;
-          scale_shift_q <= 6'd0;
-          result_shift_q <= 6'd0;
-          result_q <= {OUT_W{1'b0}};
-        end else begin
-          if (all_reciprocal_valid_w) begin
-            norm_product_q <=
-                $signed({{(64-ACC_W){acc_s2_q[lane*ACC_W+ACC_W-1]}},
-                         acc_s2_q[lane*ACC_W +: ACC_W]}) *
-                $signed({1'b0, reciprocal_w[lane*32 +: 32]});
-            scale_mant_q <= scale_s2_q[15:0];
-            scale_shift_q <= scale_s2_q[21:16];
-          end
-          if (norm_valid_q) begin
-            scale_product_q <=
-                $signed(norm_product_q >>> `ATTN_BETA_FRAC) *
-                $signed(scale_mant_q);
-            result_shift_q <= scale_shift_q;
-          end
-          if (scale_valid_q) begin
-            if (shifted_w > 64'sd127 || rounded_narrow_w > 9'sd127)
-              result_q <= 8'sd127;
-            else if (shifted_w < -64'sd128 || rounded_narrow_w < -9'sd128)
-              result_q <= -8'sd128;
-            else
-              result_q <= rounded_narrow_w[OUT_W-1:0];
-          end
+      // Payload registers are valid-qualified and intentionally unreset. The first
+      // multiply is 32x33; the exact 48x16 scale uses the shared two-stage wrapper.
+      always @(posedge gated_clk_w) begin
+        if (all_reciprocal_valid_w) begin
+          norm_product_q <=
+              $signed({{(64-ACC_W){acc_s2_q[lane*ACC_W+ACC_W-1]}},
+                       acc_s2_q[lane*ACC_W +: ACC_W]}) *
+              $signed({1'b0, reciprocal_w[lane*32 +: 32]});
+          scale_mant_q <= scale_s2_q[15:0];
+          scale_shift_q <= scale_s2_q[21:16];
+        end
+        if (norm_valid_q)
+          scale_shift_s1_q <= scale_shift_q;
+        if (mult_metadata_valid_s1_q)
+          result_shift_q <= scale_shift_s1_q;
+        if (scale_product_valid_w[lane]) begin
+          if (shifted_w > 64'sd127 || rounded_narrow_w > 9'sd127)
+            result_q <= 8'sd127;
+          else if (shifted_w < -64'sd128 || rounded_narrow_w < -9'sd128)
+            result_q <= -8'sd128;
+          else
+            result_q <= rounded_narrow_w[OUT_W-1:0];
         end
       end
     end
@@ -142,21 +165,9 @@ module online_normalizer #(
   // Delay O, scale, and tag to match reciprocal latency before the lane pipelines.
   always @(posedge gated_clk_w or negedge rst_n) begin
     if (!rst_n) begin
-      acc_s0_q <= {LANES*ACC_W{1'b0}};
-      acc_s1_q <= {LANES*ACC_W{1'b0}};
-      acc_s2_q <= {LANES*ACC_W{1'b0}};
-      scale_s0_q <= 32'd0;
-      scale_s1_q <= 32'd0;
-      scale_s2_q <= 32'd0;
-      tag_s0_q <= {TAG_W{1'b0}};
-      tag_s1_q <= {TAG_W{1'b0}};
-      tag_s2_q <= {TAG_W{1'b0}};
-      norm_tag_q <= {TAG_W{1'b0}};
-      scale_tag_q <= {TAG_W{1'b0}};
       norm_valid_q <= 1'b0;
-      scale_valid_q <= 1'b0;
+      mult_metadata_valid_s1_q <= 1'b0;
       valid_o <= 1'b0;
-      tag_o <= {TAG_W{1'b0}};
     end else begin
       acc_s0_q <= acc_rows_i;
       acc_s1_q <= acc_s0_q;
@@ -168,14 +179,16 @@ module online_normalizer #(
       tag_s1_q <= tag_s0_q;
       tag_s2_q <= tag_s1_q;
       norm_valid_q <= all_reciprocal_valid_w;
-      scale_valid_q <= norm_valid_q;
-      valid_o <= scale_valid_q;
+      mult_metadata_valid_s1_q <= norm_valid_q;
+      valid_o <= all_scale_product_valid_w;
       if (all_reciprocal_valid_w)
         norm_tag_q <= tag_s2_q;
       if (norm_valid_q)
-        scale_tag_q <= norm_tag_q;
-      if (scale_valid_q)
-        tag_o <= scale_tag_q;
+        mult_tag_s1_q <= norm_tag_q;
+      if (mult_metadata_valid_s1_q)
+        mult_tag_s2_q <= mult_tag_s1_q;
+      if (all_scale_product_valid_w)
+        tag_o <= mult_tag_s2_q;
     end
   end
 

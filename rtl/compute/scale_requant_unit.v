@@ -1,8 +1,8 @@
 `timescale 1ns/1ps
 `include "fixed_defs.vh"
 
-// Three-stage fixed-point scale/requantize pipeline: capture, signed multiply,
-// rounded shift plus zero point, then selectable INT8/INT16 saturation.
+// Fixed-point scale/requantize pipeline with a true two-stage signed multiplier,
+// rounded shift plus zero point, and selectable INT8/INT16 saturation.
 module scale_requant_unit #(
   parameter IN_W = 32,
   parameter SCALE_W = 16,
@@ -22,27 +22,33 @@ module scale_requant_unit #(
 );
 
   localparam PROD_W = IN_W + SCALE_W;
+  localparam MULT_SPLIT_W = (IN_W > 24) ? 24 : (IN_W / 2);
   localparam FORMAT_W = 18;
   localparam signed [FORMAT_W-1:0] INT8_MAX_EXT = 127;
   localparam signed [FORMAT_W-1:0] INT8_MIN_EXT = -128;
   localparam signed [FORMAT_W-1:0] INT16_MAX_EXT = 32767;
   localparam signed [FORMAT_W-1:0] INT16_MIN_EXT = -32768;
   reg valid_s0_q;
-  reg valid_s1_q;
+  reg metadata_valid_s1_q;
   reg signed [IN_W-1:0] data_s0_q;
   reg signed [SCALE_W-1:0] scale_s0_q;
   reg [5:0] shift_s0_q;
   reg signed [15:0] zp_s0_q;
   reg [1:0] round_s0_q;
   reg [1:0] sat_s0_q;
-  reg signed [PROD_W-1:0] product_s1_q;
   reg [5:0] shift_s1_q;
   reg signed [15:0] zp_s1_q;
   reg [1:0] round_s1_q;
   reg [1:0] sat_s1_q;
-  reg signed [FORMAT_W-1:0] shifted_s2_q;
+  reg [5:0] shift_s2_q;
+  reg signed [15:0] zp_s2_q;
+  reg [1:0] round_s2_q;
   reg [1:0] sat_s2_q;
-  reg valid_s2_q;
+  reg signed [FORMAT_W-1:0] shifted_s3_q;
+  reg [1:0] sat_s3_q;
+  reg valid_s3_q;
+  wire multiplier_valid_w;
+  wire signed [PROD_W-1:0] multiplier_product_w;
   reg signed [63:0] product_extended_w;
   reg signed [63:0] shifted_base_w;
   reg signed [FORMAT_W-1:0] shifted_clamped_w;
@@ -57,18 +63,18 @@ module scale_requant_unit #(
   // PROD_W-wide carry chain, which bounds this path for all configured widths.
   always @(*) begin
     product_extended_w =
-        {{(64-PROD_W){product_s1_q[PROD_W-1]}}, product_s1_q};
-    shifted_base_w = $signed(product_extended_w) >>> shift_s1_q;
+        {{(64-PROD_W){multiplier_product_w[PROD_W-1]}}, multiplier_product_w};
+    shifted_base_w = $signed(product_extended_w) >>> shift_s2_q;
     guard_w = 1'b0;
     sticky_w = 1'b0;
-    if (shift_s1_q != 0) begin
-      guard_w = product_extended_w[shift_s1_q-1'b1];
+    if (shift_s2_q != 0) begin
+      guard_w = product_extended_w[shift_s2_q-1'b1];
       for (discarded_bit = 0; discarded_bit < 63;
            discarded_bit = discarded_bit + 1)
-        if (discarded_bit < shift_s1_q-1'b1)
+        if (discarded_bit < {26'd0, (shift_s2_q-1'b1)})
           sticky_w = sticky_w | product_extended_w[discarded_bit];
     end
-    round_increment_w = round_s1_q == `ATTN_ROUND_NEAREST && guard_w &&
+    round_increment_w = round_s2_q == `ATTN_ROUND_NEAREST && guard_w &&
         (!product_extended_w[63] || sticky_w);
 
     if (shifted_base_w > 64'sd65535)
@@ -79,36 +85,30 @@ module scale_requant_unit #(
       shifted_clamped_w = shifted_base_w[FORMAT_W-1:0];
 
     biased_w = shifted_clamped_w +
-        {{(FORMAT_W-16){zp_s1_q[15]}}, zp_s1_q} +
+        {{(FORMAT_W-16){zp_s2_q[15]}}, zp_s2_q} +
         {{(FORMAT_W-1){1'b0}}, round_increment_w};
   end
+
+  fa_signed_mult_pipe2 #(
+    .A_W(IN_W), .B_W(SCALE_W), .SPLIT_W(MULT_SPLIT_W)
+  ) u_scale_multiplier (
+    .clk(clk), .rst_n(rst_n), .valid_i(valid_s0_q),
+    .a_i(data_s0_q), .b_i(scale_s0_q),
+    .valid_o(multiplier_valid_w), .product_o(multiplier_product_w)
+  );
 
   // Valid and all formatting controls are pipelined with the corresponding data.
   always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
       valid_s0_q <= 1'b0;
-      valid_s1_q <= 1'b0;
-      valid_s2_q <= 1'b0;
+      metadata_valid_s1_q <= 1'b0;
+      valid_s3_q <= 1'b0;
       valid_o <= 1'b0;
-      data_s0_q <= {IN_W{1'b0}};
-      scale_s0_q <= {SCALE_W{1'b0}};
-      shift_s0_q <= 6'd0;
-      zp_s0_q <= 16'sd0;
-      round_s0_q <= 2'd0;
-      sat_s0_q <= 2'd0;
-      product_s1_q <= {PROD_W{1'b0}};
-      shift_s1_q <= 6'd0;
-      zp_s1_q <= 16'sd0;
-      round_s1_q <= 2'd0;
-      sat_s1_q <= 2'd0;
-      shifted_s2_q <= {FORMAT_W{1'b0}};
-      sat_s2_q <= 2'd0;
-      data_o <= {OUT_W{1'b0}};
     end else begin
       valid_s0_q <= valid_i;
-      valid_s1_q <= valid_s0_q;
-      valid_s2_q <= valid_s1_q;
-      valid_o <= valid_s2_q;
+      metadata_valid_s1_q <= valid_s0_q;
+      valid_s3_q <= multiplier_valid_w;
+      valid_o <= valid_s3_q;
 
       if (valid_i) begin
         data_s0_q <= data_i;
@@ -119,25 +119,30 @@ module scale_requant_unit #(
         sat_s0_q <= sat_mode_i;
       end
       if (valid_s0_q) begin
-        product_s1_q <= $signed(data_s0_q) * $signed(scale_s0_q);
         shift_s1_q <= shift_s0_q;
         zp_s1_q <= zp_s0_q;
         round_s1_q <= round_s0_q;
         sat_s1_q <= sat_s0_q;
       end
-      if (valid_s1_q) begin
-        shifted_s2_q <= biased_w;
+      if (metadata_valid_s1_q) begin
+        shift_s2_q <= shift_s1_q;
+        zp_s2_q <= zp_s1_q;
+        round_s2_q <= round_s1_q;
         sat_s2_q <= sat_s1_q;
       end
-      if (valid_s2_q) begin
-        if (sat_s2_q == `ATTN_SAT_INT8) begin
-          if (shifted_s2_q > INT8_MAX_EXT) data_o <= {{(OUT_W-8){1'b0}}, 8'h7f};
-          else if (shifted_s2_q < INT8_MIN_EXT) data_o <= {{(OUT_W-8){1'b1}}, 8'h80};
-          else data_o <= {{(OUT_W-8){shifted_s2_q[7]}}, shifted_s2_q[7:0]};
+      if (multiplier_valid_w) begin
+        shifted_s3_q <= biased_w;
+        sat_s3_q <= sat_s2_q;
+      end
+      if (valid_s3_q) begin
+        if (sat_s3_q == `ATTN_SAT_INT8) begin
+          if (shifted_s3_q > INT8_MAX_EXT) data_o <= {{(OUT_W-8){1'b0}}, 8'h7f};
+          else if (shifted_s3_q < INT8_MIN_EXT) data_o <= {{(OUT_W-8){1'b1}}, 8'h80};
+          else data_o <= {{(OUT_W-8){shifted_s3_q[7]}}, shifted_s3_q[7:0]};
         end else begin
-          if (shifted_s2_q > INT16_MAX_EXT) data_o <= {{(OUT_W-16){1'b0}}, 16'h7fff};
-          else if (shifted_s2_q < INT16_MIN_EXT) data_o <= {{(OUT_W-16){1'b1}}, 16'h8000};
-          else data_o <= shifted_s2_q[OUT_W-1:0];
+          if (shifted_s3_q > INT16_MAX_EXT) data_o <= {{(OUT_W-16){1'b0}}, 16'h7fff};
+          else if (shifted_s3_q < INT16_MIN_EXT) data_o <= {{(OUT_W-16){1'b1}}, 16'h8000};
+          else data_o <= shifted_s3_q[OUT_W-1:0];
         end
       end
     end

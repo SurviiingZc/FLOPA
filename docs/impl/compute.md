@@ -95,13 +95,22 @@ If the arithmetic width or DSP mapping requires it, split the arithmetic stage f
 
 ### 4.5 PE Reset and Gating
 
-- Reset local state cleanly.
+- Reset valid, phase, counter, and externally observable state. Datapath
+  payload registers protected by a valid bit are intentionally not
+  asynchronously reset; no payload may be consumed until its valid token has
+  traversed the same pipeline.
 - Gate useless toggling when valid is low.
 - Keep output stable when no new input is accepted.
-- Implement MAC as signed INT8 x INT8 into the signed 32-bit accumulator; the
-  wider PE operand bus is retained for SUB, MAX, ADD, and SCALE modes.
-- Keep the MAC and SCALE multiplications inside their respective mode branches,
-  and drive their intermediate products to zero in all inactive modes.
+- Keep Q/K/V storage and links at native signed INT8 width. At the shared
+  multiplier only, form a signed 17-bit A operand from signed Q or unsigned
+  Q1.15 P, and a signed 9-bit B operand from signed K/V.
+- The resulting 17x9 multiplier produces an exact 16-bit QK product or exact
+  24-bit PV product before sign extension into the signed 32-bit datapath.
+- Verilog result sizing is made explicit by extending one operand to the
+  product context at the multiplier boundary. The other operand stays 9 bit;
+  synthesis must be checked to ensure repeated sign bits fold to an effective
+  17x9 implementation.
+- Drive multiplier operands to zero whenever neither QK nor PV is active.
 - Keep the INT8 multiply and 32-bit accumulation in one registered cycle unless
   mapped slow-corner timing no longer meets the target clock after placement.
 
@@ -117,6 +126,10 @@ stream. A full feature tag accompanies the horizontal partial sum. Physical
 feature groups are O-memory banks only; the array does not drain or restart at
 a group boundary. The obsolete `prob_shift_q` and its right-to-left link were
 removed. QK and WS-PV select one explicitly shared PE multiplication expression.
+
+The old-O rescale is an exact signed 32x17 multiply, and the serialized LSE
+update is an exact unsigned 32x16 multiply. Operands are not pre-expanded to a
+common wide width before multiplication, avoiding accidental 48x48 hardware.
 
 ## 5. Array Microarchitecture
 
@@ -181,13 +194,17 @@ core beyond 32 columns.
 - K/V columns enter from the top and are delayed by column index.
 - Each PE boundary is registered, so column `c` completes one cycle before
   column `c+1` in the same row.
-- The QK-last token of column `c` launches its local max compare. The registered
-  partial max reaches column `c+1` when that column's final score is ready, so
-  rowmax overlaps the QK tail instead of rescanning the row later.
+- QK completion no longer propagates as `q_last`, `k_last`, and `mac_last`
+  registers through every PE. One array-level `ROWS+COLS` sideband shift
+  tracks the diagonal wavefront. Fixed tap `row+1` launches each stripe row's
+  first max compare, while the final tap generates the registered QK tail.
+- The registered partial max reaches column `c+1` when that column's final
+  score is ready, so rowmax overlaps the QK tail instead of rescanning the row.
 - Rowmax propagates left to right through PE compare/pass registers.
 - `m_new` propagates right to left; each PE stores `score-m_new` locally.
-- The shared scale-plus-exp pipeline has seven cycles of latency (four scale
-  stages plus three PWL-exp stages), accepts one 32-row column vector per cycle,
+- The shared scale-plus-exp pipeline has eight cycles of latency (five scale
+  stages, including a two-stage II=1 multiplier, plus three PWL-exp stages),
+  accepts one 32-row column vector per cycle,
   and writes probabilities back to the tagged PE column.
 - One cycle after the rightmost probability column writes `prob_q`, all rows
   start a right-to-left rowsum. The sum token follows the column writeback wave,

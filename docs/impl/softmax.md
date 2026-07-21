@@ -147,12 +147,13 @@ Suggested pipeline:
 Exp should be a dedicated multi-cycle or multi-stage pipe. It should never sit directly after a wide reduction with no register cut.
 
 The implemented exp source is a registered 32-row delta-column assembled from
-four fixed eight-row stripe slices. A seven-stage column tag travels with the
+four fixed eight-row stripe slices. An eight-stage column tag travels with the
 scale/exp data. Each result slice returns to its owning stripe, where a local
 column decode writes `prob_q`; no complete score/probability tile is exported.
 
-The implemented scale-plus-exp latency is seven cycles: four registered stages
-in `scale_requant_unit` followed by three registered stages in `pwl_exp_unit`.
+The implemented scale-plus-exp latency is eight cycles: five registered stages
+in `scale_requant_unit` (including the exact two-stage, II=1 signed multiplier)
+followed by three registered stages in `pwl_exp_unit`.
 This is pipeline latency, not initiation interval; the 32-lane path accepts one
 complete score column every cycle.
 
@@ -233,6 +234,14 @@ leading-zero/normalization, and LUT/output shift and accepts one value per cycle
 The final normalization stage computes `O_acc / l_final` for eight rows at the
 same feature each cycle using eight reciprocal lanes and two multiplier stages
 per lane. A stripe/feature tag is delayed with the arithmetic.
+
+After the signed 32x33 reciprocal product is arithmetically shifted by 15, the
+implementation checks that the discarded upper bits are a sign extension and
+registers a conservative signed 48-bit value. The output-scale operation is
+therefore an exact signed 48x16 multiply rather than the former effective
+64x16 multiply. If a new TT synthesis has less than 0.20 ns setup margin or SS
+at 2.5 ns fails, this 48x16 operation must move behind a fixed-latency two-stage
+ASIC/FPGA multiplier wrapper; that conditional pipeline is not enabled yet.
 
 - reciprocal seed + multiply,
 - reciprocal seed + one refinement stage,

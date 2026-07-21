@@ -42,7 +42,6 @@ module fsa_qk_engine #(
   localparam ST_ISSUE = 3'd2;
   localparam ST_DRAIN = 3'd3;
   localparam ST_DONE = 3'd4;
-  localparam integer EXT_W = ARRAY_DATA_W - CACHE_ELEM_W;
   localparam integer CACHE_LANES = CACHE_WORD_W / CACHE_ELEM_W;
   localparam [HEAD_DIM_W-1:0] HEAD_DIM_LIMIT = HEAD_DIM;
 
@@ -55,6 +54,8 @@ module fsa_qk_engine #(
   initial begin
     if (ARRAY_ROWS != CACHE_LANES || ARRAY_COLS != CACHE_LANES)
       $fatal(1, "fsa_qk_engine physical rows/cols must equal CACHE_LANES");
+    if (ARRAY_DATA_W != CACHE_ELEM_W)
+      $fatal(1, "fsa_qk_engine requires a native INT8 array data path");
   end
 `endif
 
@@ -80,16 +81,15 @@ module fsa_qk_engine #(
         q_rd_valid_i && k_rd_valid_i) begin
       array_valid_o = 1'b1;
       array_last_o = (receive_count_q == head_dim_i - 1'b1);
-      // Sign-extend each INT8 cache lane before it enters the shared PE multiplier.
+      // Keep Q/K as native signed INT8 through the array; the PE alone extends
+      // operands at its exact 17x9 shared multiplier boundary.
       for (lane = 0; lane < ARRAY_ROWS; lane = lane + 1) begin
         array_rows_o[lane*ARRAY_DATA_W +: ARRAY_DATA_W] =
-            {{EXT_W{q_rd_data_i[lane*CACHE_ELEM_W+CACHE_ELEM_W-1]}},
-             q_rd_data_i[lane*CACHE_ELEM_W +: CACHE_ELEM_W]};
+            q_rd_data_i[lane*CACHE_ELEM_W +: CACHE_ELEM_W];
       end
       for (lane = 0; lane < ARRAY_COLS; lane = lane + 1) begin
         array_cols_o[lane*ARRAY_DATA_W +: ARRAY_DATA_W] =
-            {{EXT_W{k_rd_data_i[lane*CACHE_ELEM_W+CACHE_ELEM_W-1]}},
-             k_rd_data_i[lane*CACHE_ELEM_W +: CACHE_ELEM_W]};
+            k_rd_data_i[lane*CACHE_ELEM_W +: CACHE_ELEM_W];
       end
     end
   end

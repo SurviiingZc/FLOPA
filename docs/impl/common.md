@@ -48,8 +48,14 @@ Define these in the header file:
 ## 5. Numeric Policy
 
 - Q/K/V input: signed INT8.
+- Q/K/V remain signed INT8 through cache, engine, array boundary, and PE
+  forwarding registers. Sign extension is permitted only while forming the PE
+  multiplier operands.
+- Probability remains an independent unsigned Q1.15, 16-bit format. It must
+  not inherit the Q/K/V array width.
 - QK accumulation: signed INT32.
-- Softmax state: fixed-point or BF16-like representation.
+- Softmax state: fixed-point `m`, `l`, alpha, and probability formats defined
+  by the shared attention header; no BF16 datapath is currently implemented.
 - Final output: INT8 or INT16 depending on configuration.
 
 ## 6. Header Policy

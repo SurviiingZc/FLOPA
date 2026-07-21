@@ -5,6 +5,7 @@ if {![info exists root_dir]} {
 # Keep this list in dependency order. Headers are found through search_path.
 set fa_rtl_relative_files [list \
   rtl/common/fa_clock_gate.v \
+  rtl/common/fa_signed_mult_pipe2.v \
   rtl/axi/axi4_slave_if.v \
   rtl/axi/axi4_master_write.v \
   rtl/control/accel_regfile.v \

@@ -56,11 +56,12 @@
 
 功耗复测必须回标实际 prefill SAIF/VCD；检查 `report_clock_gating`、ICG 数量、各 gated-clock activity 和 clock power 占比。
 
-### S3: SRAM hold - constraints implemented, pending physical verification
+### S3: SRAM hold - corrected in Round 3, pending physical verification
 
 - setup uncertainty 与 hold uncertainty 分离，默认分别为 0.100 ns 和 0.020 ns。
 - 对 `core_clk` 启用 `set_fix_hold`。
-- SRAM 除 CLK 外的输入设置默认 0.200 ns minimum path，促使 DC 在 D/A/CE/WE 周围保留或插入 hold buffer。
+- Round-1 曾对 SRAM 非 CLK 输入设置默认 0.200 ns minimum path；Round-3 已删除
+  该默认值，只保留 Liberty hold、hold uncertainty 和 `set_fix_hold`。
 - 不在 RTL 中添加伪延迟。最终 hold 只能在 CTS 后用 propagated clock 修复和签核。
 
 复测要求：逻辑综合 hold WNS 不小于 0；物理阶段分别在 fast cell/fast RC 和实际 SRAM fast corner 下检查，并报告 SRAM D/A/control 三类 endpoint。
@@ -162,9 +163,12 @@ norm_product_q[63:0] >>> 15  x  signed scale_mant_q[15:0]
 
 ### 8.2 PE width and multiplier opportunity
 
-Q/K/V cache 元素实际为 signed INT8，但 `ATTN_ARRAY_DATA_W` 当前为 16，QK/PV engine 先把每个 INT8 sign-extend 到 16 bit，再通过阵列寄存和端口传输。扩展应只发生在乘法器入口，不应让阵列存储和连线永久翻倍。
+Round-2 RTL 中 Q/K/V cache 元素实际为 signed INT8，但当时
+`ATTN_ARRAY_DATA_W` 为 16，QK/PV engine 先把每个 INT8 sign-extend 到 16 bit，
+再通过阵列寄存和端口传输。分析结论是扩展只应发生在乘法器入口，不应让阵列
+存储和连线永久翻倍；该结论已在 Round-3 RTL 实施。
 
-下一轮优先重构为独立位宽：
+Round-3 采用以下独立位宽：
 
 - `QKV_W=8`：Q/K/V 阵列寄存、水平/垂直链和 engine 接口使用 8 bit。
 - `PROB_W=16`：P 继续保留 unsigned Q1.15，不与 QKV 宽度绑定。
@@ -226,3 +230,250 @@ Round-3 完成后先跑 module/top simulation 和 TT/SS 2.5 ns system synthesis�
 进入 CTS 前：完成 SRAM 重组选择、宏 floorplan、ICG 分区、reset strategy 和 scan plan。流片签核要求全 PVT/RC/OCV setup/hold、IR-drop、EM、DRC/LVS 和门级等价验证通过。
 
 后续问题按以下格式追加：日期与 commit、corner/period/activity、关键指标、问题编号和优先级、路径起止点、根因、修改、回归、状态、下一步。
+
+## 10. 2026-07-21 round-3 implementation status
+
+本轮按 Round-2 报告实施了以下修改，但尚未用新的完整 `compile_ultra` 结果替换
+Round-2 数字：
+
+1. Q/K/V 阵列通路由 16 bit 恢复为 native signed INT8，PE 共享乘法器为 17x9；
+   QK/PV product 分别保持精确 16/24 bit。
+2. normalizer 把移位后的中间值做 sign-extension 检查并缩为 signed 48 bit，再做
+   48x16 scale multiply。仅当新 TT 裕量小于 0.20 ns 或 SS 2.5 ns 不通过时，才启用
+   固定延迟 two-stage multiplier wrapper。
+3. 默认 SRAM input min-delay 已由 0.2 ns 改为 0；Liberty hold、hold uncertainty
+   和 `set_fix_hold` 保留。正式 hold 修复留给 fast SRAM/cell、min-RC、CTS
+   propagated-clock 场景。
+4. PE 内二维 `q_last/k_last/mac_last` 已删除，改为阵列外 `ROWS+COLS` 一维
+   completion sideband 和固定 taps。
+5. valid 保护的主要 datapath payload 已取消异步 reset；控制状态、valid、计数器、
+   必要 tag 和外部可见状态保留 reset。
+6. 同类审计额外把 old-O rescale 从意外宽乘法收敛为 signed 32x17，把
+   `old_l*alpha` 收敛为 unsigned 32x16。
+7. 对所有 mixed-width `*` 显式建立完整 product context，消除 Verilog 乘积高位
+   截断歧义；PE、requant、normalizer、O-rescale 和 LSE 的 multiplier
+   width-mismatch lint 已清零。综合时仍需确认重复 sign/zero bits 被折叠为有效
+   17x9、48x16 等资源，而不是保留成表面扩展位宽。
+
+现有 23 个 module/integration regression 全部通过，top 仍为 1334 cycles；新增 PE
+directed TB 覆盖 signed INT8 和 signed V 的极值，`HEAD_DIM=128` 顶层重新
+elaborate 通过。频率扫描在 RTL 修改期间已经
+启动，其结果跨越不同源码版本，不得用于本轮 Fmax、面积或功耗结论。必须以固定
+source hash 重新运行 TT/SS sweep。
+
+The status above is the historical Round-3 checkpoint. The current pre-synthesis
+baseline is 24 active regressions and 1348 top cycles after implementing the
+timing pipelines documented in Section 11.7.
+
+### 10.1 New synthesis acceptance criteria
+
+| Check | Acceptance |
+| --- | --- |
+| TT 2.5 ns setup | WNS >= 0.20 ns；否则启用两级 normalizer multiplier |
+| SS 2.5 ns setup | WNS >= 0；否则启用两级 multiplier 并重新扫描 |
+| PE resources | 确认每 PE 只有一处 17x9 phase-shared multiply，不重复 QK/PV hardware |
+| Array area/power | 与 Round-2 比较 fused-array area、sequential count 和 multiplier power |
+| Completion network | `q_last/k_last/mac_last` 不再出现在 mapped hierarchy |
+| Reset | 按 async-reset cell count、reset fanout 和 X-prop regression 验收 |
+| Hold | 逻辑报告不再含默认 0.2 ns requirement；最终只看 fast/min-RC CTS 场景 |
+| Fanout | 分别用 16/24/32 阈值比较 QoR，不为 fanout=19 预先改 RTL |
+| Power | UVM 后对 idle、Re10K prefill、LLM prefill 报告 SAIF coverage 和 gated-clock activity |
+
+SAIF 的 workload、文件命名、回标路径、报告和验收项见
+`asic/docs/saif_power_plan.md`。在 coverage 达标前，只报告结构性面积/门控趋势，
+不发布绝对 mW 或节能百分比。
+
+## 11. 2026-07-21 frequency-1p9ns report audit and optimization plan
+
+### 11.1 Report validity and headline result
+
+`frequency_1p9ns` 使用了 Round-3 RTL，但继承了扫描启动时的旧环境：
+
+```text
+corner                  = TT 0.9 V / 25 C
+clock period            = 1.900 ns
+setup/hold uncertainty  = 0.100 / 0.020 ns
+wire load               = ZeroWireload
+clock                    = ideal
+FA_SRAM_INPUT_MIN_DELAY  = 0.200 ns   # stale; current default is zero
+```
+
+因此该点不能表述为“1.9 ns 有裕量通过”。最差 setup data arrival 为
+`1.7909 ns`，required time 也为 `1.7909 ns`，WNS 精确为 `0.0000 ns`；summary
+CSV 从 `qor.rpt` 只保留两位小数，也会隐藏小于 0.01 ns 的裕量。
+
+| Item | Result | Assessment |
+| --- | ---: | --- |
+| Setup WNS/TNS | 0.0000 / 0 ns | 压线通过，没有 physical/OCV margin |
+| Hold WNS/TNS | -0.2941 / -1831.57 ns | 7424 paths；旧 0.2 ns min-delay 是主因之一 |
+| Cell area | 2491044.77 um2 | Round-3 width/reset/sideband 优化已显著降低面积 |
+| Sequential cells | 228730 | reset/sideband FF 数量下降，但阵列仍是主体 |
+| Buffer/inverter cells | 233766 | 高频约束和大阵列控制/数据网仍有较大 buffering 压力 |
+| High-fanout timing warning | 16 nets | DC 对这些网络按 fanout=1000 估算，zero-wire 结果不可信 |
+| Max-fanout constraint | threshold 16, actual up to 21 | 不能据此判定物理拥塞，按 16/24/32 比较 QoR |
+
+3.2/2.8 ns 点仍属于旧 RTL，2.5 ns 以后面积从约 3.144M um2 跳到约
+2.486M um2，完整 sweep 不能作为单一源码版本的趋势曲线。下一次 sweep 必须记录
+commit、dirty-diff hash 和配置，并在源码变化时中止。
+
+### 11.2 Setup path classification
+
+前 20 条 max paths 可归为四类：
+
+1. **P0: persistent O SRAM -> `alpha*O_old` -> PV seed skew.** 前八条以及多条
+   后续路径属于这一类。最差路径从 stripe 3 O-bank SRAM Q 出发，经过 32x17
+   rescale/mux/add network，到 row-31 `u_pv_seed_skew` stage-0 register。SRAM
+   CLK-to-Q 已占 `0.3443 ns`，其余组合路径约 `1.4466 ns`。
+2. **P0: normalizer 48x16 scale multiplier.** `scale_mant_q` 到
+   `scale_product_q` 仍进入 top 20，已经满足启用固定两级 multiplier wrapper 的
+   条件。
+3. **P0: 32-lane score scale 32x16 multiplier.** 多个 `scale_requant_unit`
+   的 scale input 到 product register 压线，1.7 ns 目标下必须增加可配置乘法流水。
+4. **P1: stripe `ws_pv_q` 到 PE `accum_q`.** phase bit 参与共享乘法/累加选择并
+   驱动一个 stripe 的 PE。应利用 QK/PV valid-token 互斥消除累加路径上的冗余
+   mode mux，或生成 stripe-local registered one-hot enables；不能把一个全局模式
+   网直接复制到整个阵列。
+
+当前 PE 17x9 MAC 本身没有进入 top 20，不应先给 1024 个 PE 增加流水级。
+
+### 11.3 Ordered setup optimization
+
+#### P0-A: split SRAM read and O-rescale
+
+在每个 8-row stripe 内、靠近 O-bank 增加一层 `{O_old, alpha, feature, valid}`
+operand register，使当前单周期路径拆成：
+
+```text
+SRAM Q -> local operand register
+local operand register -> 32x17 rescale -> existing row-skew stage 0
+```
+
+V column payload、feature tag、seed-zero 和 valid 同步延迟一周期；`pv_done` 必须
+等待最后一个延迟后的 feature 写入 O-bank。乘法器仍保持 II=1，因此只增加每个
+KV tile 一个 PV startup cycle，不降低 64-feature steady-state throughput。寄存和
+乘法应留在 stripe hierarchy 内，避免 O data/alpha 跨越整个 fused-array 后再返回
+row skew。
+
+若第二段在 TT 1.7 ns 仍不足，再把 32x17 rescale 替换成 latency=2、II=1 的统一
+multiplier wrapper；不要在外围继续堆组合加法或依赖 retiming 穿过 SRAM boundary。
+
+#### P0-B: pipeline both remaining wide multipliers
+
+- normalizer 48x16 使用两级、II=1 wrapper；tag/valid/result-shift 同步增加一级。
+- `scale_requant_unit` 32x16 使用可配置两级 wrapper；`EXP_LATENCY` 不再硬编码为
+  7，而由 scale latency 与 PWL-exp latency计算，probability column tag/rowsum
+  launch 随之对齐。
+- ASIC 分支可用固定端口/latency 的 DesignWare pipeline，FPGA 分支保持可推断
+  DSP register；两者必须共享 cycle-accurate wrapper contract。
+
+这两项增加 startup latency但保持每周期 32-column exp 和每周期 8-row normalize
+吞吐。需新增 back-to-back valid、bubble、极值和 tag-latency regression。
+
+#### P1: remove mode select from the PE score critical path
+
+生成互斥的 `qk_mac_en` 与 `pv_mac_en`：QK 累加只由 Q/K valid token 驱动，PV
+乘加只由 V/sum valid token 驱动。`ws_pv` 只控制数据流方向和 phase state，不再
+进入 `accum_q` 的乘积选择/写使能关键锥。若物理报告仍显示 control congestion，
+每 stripe 再按 8-column group 注册/复制 enable，而不是全阵列广播。
+
+### 11.4 Hold root cause
+
+7424 条 hold violation 全部终止于 SRAM inputs：
+
+| SRAM pin class | Violating paths |
+| --- | ---: |
+| D | 3840 |
+| A | 2624 |
+| CEB | 480 |
+| WEB | 480 |
+
+最差 D path 只有一个 launch FF CLK-to-Q，arrival=`0.0460 ns`。旧报告把
+`0.2000 ns set_min_delay + 0.0200 ns hold uncertainty + 0.1201 ns Liberty hold`
+累加成 `0.3401 ns` required time，因此 slack=`-0.2941 ns`。删除人工 min-delay
+后，按同一 TT/ideal-clock 数字估算 WNS 约为 `-0.0941 ns`，仍需真实 hold repair。
+
+功能 RTL 中增加一级普通正沿寄存器不能解决该类 hold：新寄存器 Q 到 SRAM D/A
+仍是同沿短路径。也不得用 inverter chain RTL 或伪 `set_min_delay` 代替后端修复，
+因为综合可能优化掉它们，且无法覆盖 CTS skew、min-RC 和 fast PVT。
+
+### 11.5 Hold repair flow
+
+#### Stage H0: clean logical rerun
+
+1. 清空独立 run directory，显式设置 `SRAM_INPUT_MIN_DELAY=0.0`，并在
+   `run_config.rpt` 中检查为零。
+2. setup compile 完成后保留 `set_fix_hold [get_clocks core_clk]`，增加可选的：
+
+```tcl
+compile -incremental_mapping -only_hold_time
+```
+
+该步骤只用于预估 buffer 数和逻辑 setup/hold tradeoff；执行后必须重新报告 max
+timing，不能以牺牲 setup margin 为代价清零 hold。
+3. 分别报告 SRAM D/A/CEB/WEB 四类 endpoint 的 WNS/TNS/count，不再只给总数。
+
+#### Stage H1: add a real fast/min corner
+
+当前脚本只有 `tt/ss`。增加 0.9-V 设计对应的 fast view：
+
+```text
+standard cell: tcbn28hpcplusbwp12t30p140ffg0p99v0c_ccs.db
+SRAM:         uhdsp_256x8m4s_ffg0p99v0c.lib/.db
+RC:           min-RC
+```
+
+逻辑综合 fast view 用于暴露风险，不作为 signoff。正式 MCMM 使用 SS/max-RC 做
+setup，FF/min-RC 做 hold，并加载同一 SRAM macro 的匹配 PVT model。
+
+#### Stage H2: CTS/post-route repair
+
+- 完成 CTS 后使用 propagated clock 重算 launch/capture skew。
+- 在 SRAM D/A/CEB/WEB branches 上由 P&R 插入合法 delay cells 或 buffer pairs，
+  并执行 hold-focused clock/route optimization。
+- O-bank/QKV/output SRAM 周围预留 hold-buffer whitespace、halo 和 routing channel；
+  不把 launch FF 紧贴 macro pin 到没有插 buffer 的空间。
+- 每次 hold repair 后重新检查 SS/max-RC setup，防止 delay insertion 破坏高频路径。
+- 最终要求所有 functional/test modes、OCV views 的 setup/hold WNS >= 0；TT
+  ideal-clock hold 清零不是签核条件。
+
+### 11.6 Constraint and report cleanup
+
+- sweep summary 从 `timing.rpt` 提取至少四位小数的 WNS，不再使用 `qor.rpt`
+  两位小数值。
+- 每个 run 保存 source hash、dirty diff hash、library checksum、constraint values、
+  top-20 path-category summary 和 high-fanout net report。
+- `rst_n` 已被 false-path/ideal-network 处理，`TIM-216` 是无 input-delay 提示，可
+  明确 waiver；不能用它掩盖其他 unconstrained endpoints。
+- max-fanout threshold 分别跑 16/24/32。当前实际最大约 21，优先以 transition、
+  capacitance、buffer count、physical congestion 和 WNS 决定，不追求 threshold=16
+  报告清零。
+- 继续清理 `VER-318`；`scale_requant_unit` constant zero-point/mode 产生的
+  `LINT-28` 应通过专用 score-scale wrapper 或精确 waiver 处理，不要保留 32 份
+  无效通用接口。
+
+### 11.7 RTL implementation status for the next synthesis run
+
+P0-A, P0-B, and P1 are now implemented. Each stripe registers O SRAM output,
+alpha, feature, zero, and valid before the signed 32x17 rescale; V and its tag
+are delayed by the same cycle. Normalizer 48x16 and score-scale 32x16 use the
+exact latency-2, II=1 `fa_signed_mult_pipe2` wrapper. Score-scale plus PWL-exp
+latency is derived as 5+3=8 cycles rather than hard-coded. PE score accumulation
+uses mutually exclusive QK/PV valid tokens and no longer depends on `ws_pv`.
+
+The pre-synthesis RTL gate is 24/24 active regressions, top completion at 1348
+cycles, clean width lint, and successful `HEAD_DIM=128` elaboration. These are
+functional results only. The next synthesis must establish the new setup area,
+register clock power, and fanout numbers; FF/min-RC post-CTS analysis remains
+the authority for SRAM hold closure.
+
+### 11.8 Acceptance sequence
+
+1. **Rerun baseline:** current RTL, TT 1.9 ns, min-delay=0，确认新的真实 setup/hold。
+2. **RTL timing round:** 实施 P0-A/P0-B/P1 后，23 TB、signed extremes、bubble、
+   two-KV recurrence、`HEAD_DIM=128` 和 top cycle model 全部通过。
+3. **Logical target:** TT 1.7 ns WNS >= 0.10 ns；SS 2.0 ns WNS >= 0；PE 17x9
+   不重复；新增流水保持 II=1。
+4. **Logical hold trial:** optional `compile -only_hold_time` 后 hold >= 0，同时 TT
+   setup仍满足 margin；只作为 buffer budget 数据。
+5. **Physical signoff:** SS/max-RC setup 与 FF/min-RC propagated-clock hold 均通过，
+   再以 VCK190 post-route 3.2 ns WNS >= 0 验收 312.5 MHz。

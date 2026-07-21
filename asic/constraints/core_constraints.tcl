@@ -48,19 +48,19 @@ proc fa_apply_core_constraints {clock_period} {
   set_max_fanout $max_fanout [current_design]
 }
 
-# Constrain all non-clock SRAM inputs to retain an explicit minimum data path.
-# DC may implement this with delay cells/buffers; place-and-route must recheck it
-# with propagated clocks and the actual macro placement rather than RTL delays.
+# Optional explicit minimum-data-path requirement for SRAM inputs. The default is
+# zero because Liberty hold plus hold uncertainty already models the requirement;
+# a nonzero value is reserved for a separately justified physical constraint.
 proc fa_apply_sram_hold_constraints {macro_cells} {
   if {[sizeof_collection $macro_cells] == 0} {
     return
   }
-  set min_delay [fa_env_or_default FA_SRAM_INPUT_MIN_DELAY 0.200]
+  set min_delay [fa_env_or_default FA_SRAM_INPUT_MIN_DELAY 0.000]
   set macro_inputs [get_pins -quiet -of_objects $macro_cells \
       -filter "direction == in"]
   set macro_clocks [filter_collection $macro_inputs "full_name =~ */CLK"]
   set macro_data_inputs [remove_from_collection $macro_inputs $macro_clocks]
-  if {[sizeof_collection $macro_data_inputs] > 0} {
+  if {$min_delay > 0.0 && [sizeof_collection $macro_data_inputs] > 0} {
     set_min_delay $min_delay -to $macro_data_inputs
   }
 }

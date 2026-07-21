@@ -25,7 +25,7 @@ module pwl_exp_unit (
     reg [7:0] fraction;
     reg [15:0] base_lo;
     reg [15:0] base_hi;
-    reg [31:0] interpolation;
+    reg [23:0] interpolation;
     reg [31:0] result_value;
     begin
       if (x >= 0) begin
@@ -46,8 +46,11 @@ module pwl_exp_unit (
           4'd6: begin base_lo = 16'd81; base_hi = 16'd30; end
           default: begin base_lo = 16'd30; base_hi = 16'd11; end
         endcase
-        interpolation = {16'd0, (base_lo - base_hi)} * {24'd0, fraction};
-        result_value = {16'd0, base_lo} - (interpolation >> 8);
+        // The endpoint delta is 16 bit and the fractional coordinate is 8 bit.
+        // Keep that effective 16x8 multiplier explicit instead of presenting
+        // synthesis with two artificially zero-extended 32-bit operands.
+        interpolation = {8'd0, (base_lo - base_hi)} * fraction;
+        result_value = {16'd0, base_lo} - ({8'd0, interpolation} >> 8);
         exp_pwl = result_value[15:0];
       end
     end
@@ -59,9 +62,6 @@ module pwl_exp_unit (
       valid_s0_q <= 1'b0;
       valid_s1_q <= 1'b0;
       valid_o <= 1'b0;
-      x_s0_q <= 16'sd0;
-      y_s1_q <= 16'd0;
-      y_o <= 16'd0;
     end else begin
       valid_s0_q <= valid_i;
       valid_s1_q <= valid_s0_q;

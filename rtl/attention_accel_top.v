@@ -86,6 +86,8 @@ module attention_accel_top #(
   initial begin
     if (ARRAY_ROWS != CACHE_LANES || ARRAY_COLS != CACHE_LANES)
       $fatal(1, "physical array dimensions must equal CACHE_LANES");
+    if (ARRAY_DATA_W != `ATTN_DATA_W)
+      $fatal(1, "physical Q/K/V array path must remain native INT8");
     if (ARRAY_ROWS % STRIPE_ROWS != 0)
       $fatal(1, "ARRAY_ROWS must be divisible by STRIPE_ROWS");
   end
@@ -472,7 +474,7 @@ module attention_accel_top #(
              ({1'b0, q_tile_base_w} + ARRAY_ROWS_17))
       valid_q_rows_w = ARRAY_ROWS_16;
     else
-      valid_q_rows_w = {1'b0, cfg_seq_q_w} - {1'b0, q_tile_base_w};
+      valid_q_rows_w = cfg_seq_q_w - q_tile_base_w;
     writeback_bytes_w = valid_q_rows_w * HEAD_DIM * (OUT_W/8);
     writeback_beats_full_w = (writeback_bytes_w + 15) >> 4;
     writeback_beats_w = writeback_beats_full_w[15:0];

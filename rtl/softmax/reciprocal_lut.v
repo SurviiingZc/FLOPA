@@ -73,13 +73,8 @@ module reciprocal_lut (
   always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
       valid_s0_q <= 1'b0;
-      value_s0_q <= 32'd0;
       valid_s1_q <= 1'b0;
-      found_s1_q <= 1'b0;
-      msb_s1_q <= 6'd0;
-      normalized_s1_q <= 32'd0;
       valid_o <= 1'b0;
-      reciprocal_o <= 32'd0;
     end else begin
       valid_s0_q <= valid_i;
       if (valid_i)

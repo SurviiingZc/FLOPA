@@ -13,6 +13,8 @@
 ../../tb/module_tb/axi/tb_axi4_slave_if.sv
 ../../tb/module_tb/axi/tb_axi4_master_write.sv
 ../../tb/module_tb/compute/tb_fsa_fused_array.sv
+../../tb/module_tb/compute/tb_fa_signed_mult_pipe2.sv
+../../tb/module_tb/compute/tb_fsa_fused_pe.sv
 ../../tb/module_tb/compute/tb_fsa_stripe.sv
 ../../tb/module_tb/compute/tb_fsa_controller.sv
 ../../tb/module_tb/compute/tb_scale_requant_unit.sv

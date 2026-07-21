@@ -13,8 +13,8 @@ The physical array remains 32x32, partitioned into four 8x32 stripes. Logical
 dimensions larger than 32 are tiled by the scheduler. A monolithic 128x128
 physical array is not supported by changing parameters alone.
 
-The numerical policy is unchanged in this round: Q/K/V are loaded as INT8 and
-sign-extended at the array boundary, probability is unsigned Q1.15, and O uses
+Q/K/V are loaded and transported through the array as native signed INT8 and
+are extended only at the PE multiplier input. Probability is unsigned Q1.15, and O uses
 the existing signed 32-bit accumulation path. Wider accumulation, formal
 overflow bounds, and revised saturation/rounding are separate work items.
 
@@ -169,16 +169,15 @@ AXI writeback.
 | Column-overlapped SUB/exp/rowsum | 1519 | 62 | 30.1% |
 | WS-PV overlapped with serialized l update | 1453 | 66 | 33.2% |
 | Six-point storage/control optimization | 1334 | 119 | 38.6% |
+| Round-4 timing pipeline boundaries | 1348 | -14 | 38.0% |
 
-The latest round removes 119 cycles, or 8.2% of the preceding 1453-cycle
-implementation. Most of the gain comes from removing non-first-tile O row
-preload and the old half-oriented control path. Eight-lane final normalization
-adds serialization only after the final KV tile and is offset by eliminating
-the old wide accumulator-buffer traversal.
+The six-point optimization removed 119 cycles, or 8.2% of the preceding
+1453-cycle implementation. The following timing round deliberately returns 14
+startup cycles to cut three synthesis-critical paths while retaining II=1.
 
 ## 5. Verification Status
 
-All 22 normal module/integration TBs pass with default FSDB generation enabled.
+All 24 normal module/integration TBs pass with default FSDB generation enabled.
 The dedicated TT SRAM-macro backend test also passes. Coverage includes:
 
 - Verilog-2001 VCS lint of `attention_accel_top`, with no RTL lint warnings;
@@ -194,7 +193,7 @@ The dedicated TT SRAM-macro backend test also passes. Coverage includes:
 - consecutive ASIC SRAM responses across addresses 255 and 256 with the
   registered depth-select tag;
 - AXI burst splitting for a transfer beginning at address offset `0xff0`;
-- two-KV-tile top-level flow, completing in 1334 cycles.
+- two-KV-tile top-level flow, completing in 1348 cycles after the timing cuts.
 
 Before FPGA bitstream sign-off, add or retain system tests for signed random V,
 nontrivial alpha on at least two KV tiles, causal tail tiles, `HEAD_DIM=128`, and
@@ -322,3 +321,104 @@ Report:
 Stage 2 is accepted only when native GQA reduces K/V traffic, token outputs
 match the reference, and end-to-end latency includes DMA and software overhead.
 Until then, the RTL release is classified as a prefill baseline.
+
+## 8. Round-3 Datapath and Physical-Risk Cleanup
+
+### 8.1 Implemented RTL changes
+
+- Q/K/V engine outputs, array links, and PE forwarding registers now remain
+  signed INT8. The phase-exclusive PE multiplier uses signed 17-bit and 9-bit
+  operands, preserving exact 16-bit QK and 24-bit PV products while keeping P
+  as independent unsigned Q1.15.
+- The final normalizer verifies the sign-extension bound after the first
+  product shift, narrows it to signed 48 bit, and feeds an exact latency-2,
+  II=1 48x16 multiplier. Valid, tag, and result-shift metadata cross the same
+  two registered boundaries.
+- `q_last`, `k_last`, and `mac_last` were removed from every PE. A single
+  `ROWS+COLS` array-level completion shift register supplies fixed rowmax taps
+  and the final QK-done tap.
+- Valid-qualified Q/K/V, skew, arithmetic, exp, reciprocal, and normalization
+  payload registers no longer carry unnecessary asynchronous reset. Valid,
+  phase, counters, tags needed for addressing, and externally observable state
+  retain deterministic reset behavior.
+- The default SRAM input `set_min_delay` is zero. Liberty hold checks, hold
+  uncertainty, and `set_fix_hold` remain; signoff repair is reserved for the
+  fast-cell/fast-SRAM/min-RC propagated-clock CTS scenario.
+- Every mixed-width multiply was audited for Verilog expression sizing. One
+  operand is extended only to the result context so high product bits cannot be
+  truncated, while the other retains its native width and synthesis can fold
+  the repeated sign/zero bits. This removed all multiplier width-mismatch lint
+  findings in PE, requant, normalizer, O-rescale, and LSE paths.
+
+### 8.2 Similar wide-multiply issues removed
+
+The audit also found two operands that had been widened before multiplication,
+causing hardware wider than the source formats required. Old-O rescale now uses
+an exact signed 32x17 multiply, and serialized `old_l*alpha` uses an exact
+unsigned 32x16 multiply. This avoids accidental 48x48 structures without
+changing the online recurrence or cycle schedule.
+
+### 8.3 Verification and remaining gates
+
+The dedicated PE test includes signed INT8 extremes (`-128*-128`,
+`127*-128`, `-128*127`) and signed V extremes with Q1.15 P. Compute, softmax,
+and top regressions pass. The completion sideband and reset cleanup did not alter
+the schedule before the timing-pipeline round described below.
+Top-level `HEAD_DIM=128` elaboration also passes after the width changes.
+
+Before release to FPGA implementation, run full RTL lint plus randomized signed
+V, causal tails, loader stalls, reset/X-propagation, and `HEAD_DIM=128`. Before
+ASIC conclusions, rerun TT/SS synthesis from one fixed source hash. The old
+frequency sweep was started before these edits and is therefore a mixed-revision
+artifact. SAIF collection is specified in `asic/docs/saif_power_plan.md` but is
+deferred until the UVM system workloads exist. Fanout=19 is not restructured;
+compare thresholds 16/24/32 using timing, transition, buffer, and congestion
+reports first.
+
+## 9. Round-4 Timing-Pipeline Implementation
+
+### 9.1 Implemented changes
+
+- A shared exact signed multiplier wrapper now has latency 2 and II=1. Stage 1
+  computes signed high and zero-positive low partial products; stage 2 performs
+  the shifted addition. This creates a real arithmetic register boundary for
+  both ASIC mapping and FPGA DSP inference without changing fixed-point results.
+- Every normalizer lane uses the wrapper for its reduced signed 48x16 output
+  scale. The eight lanes still accept and retire one complete stripe per cycle.
+- All 32 score-scale lanes use the same contract for signed 32x16 requantization.
+  Scale latency is defined centrally as five cycles and PWL-exp latency as three
+  cycles, so the probability column tag uses the derived eight-cycle total.
+- Each stripe captures `{O_old, alpha, feature, zero, valid}` beside its O-bank.
+  The following cycle performs signed 32x17 O rescale, while V payload and its
+  feature tag receive the matching one-cycle delay before entering row skew.
+  This cuts the former SRAM-Q-to-multiplier-to-array-register path.
+- PE score accumulation no longer consumes `ws_pv`. Mutually exclusive QK and
+  PV valid tokens select the operation; `ws_pv` remains stripe-local only for
+  link direction and phase-controlled O-bank behavior.
+- PWL-exp endpoint interpolation now exposes its real unsigned 16x8 operands,
+  rather than two artificial 32-bit zero-extended operands.
+
+### 9.2 Cost and measured schedule
+
+The two wide pipelines and stripe seed boundary add startup latency but keep
+II=1. The two-KV-tile top regression changes from 1334 to 1348 cycles, a
+14-cycle increase (1.0%) for this short directed case; long prefill throughput
+is still governed by one score column and one PV feature accepted per cycle.
+The wrapper adds one partial-product register pair plus one result register per
+instance. This is an intentional register-for-critical-path tradeoff; the next
+TT/SS and VCK190 reports must confirm that the added register clock power is
+smaller than the timing and routing benefit.
+
+### 9.3 Verification and remaining gates
+
+The active regression set is 24 tests, including a dedicated multiplier test
+with back-to-back tokens, bubbles, random vectors, and signed extremes. Compute,
+softmax, and two-KV top regressions pass, top completes in 1348 cycles, RTL lint
+has no width mismatch, and `HEAD_DIM=128` elaboration passes.
+
+This round does not claim hold closure. Re-run TT 1.9/1.7 ns with SRAM input
+min-delay zero, then SS setup and FF/min-RC propagated-clock hold. If O rescale
+still appears in the setup top paths, pipeline signed 32x17 itself with the same
+wrapper contract. Hold failures ending at SRAM pins must be repaired in the
+physical flow, not by adding RTL inverter chains or restoring artificial
+`set_min_delay`.

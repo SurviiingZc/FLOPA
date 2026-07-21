@@ -40,7 +40,6 @@ module fsa_pv_engine #(
   localparam ST_DRAIN = 3'd4;
   localparam ST_DONE = 3'd5;
   localparam integer CACHE_LANES = CACHE_WORD_W / CACHE_ELEM_W;
-  localparam integer EXT_W = ARRAY_DATA_W - CACHE_ELEM_W;
   localparam [FEATURE_IDX_W:0] FEATURE_LIMIT = HEAD_DIM;
   localparam [FEATURE_IDX_W:0] FEATURE_LAST = HEAD_DIM - 1;
 
@@ -53,6 +52,8 @@ module fsa_pv_engine #(
   initial begin
     if (ARRAY_COLS != CACHE_LANES)
       $fatal(1, "fsa_pv_engine physical columns must equal CACHE_LANES");
+    if (ARRAY_DATA_W != CACHE_ELEM_W)
+      $fatal(1, "fsa_pv_engine requires a native INT8 array data path");
     if (CACHE_ADDR_W < FEATURE_IDX_W)
       $fatal(1, "fsa_pv_engine cache address is narrower than HEAD_DIM");
   end
@@ -70,11 +71,10 @@ module fsa_pv_engine #(
     array_cols_o = {ARRAY_COLS*ARRAY_DATA_W{1'b0}};
     if ((state_q == ST_ISSUE || state_q == ST_DRAIN) && v_rd_valid_i) begin
       array_valid_o = 1'b1;
-      // V uses the same 32 vertical lanes and signed extension as K in QK mode.
+      // V remains signed INT8 on the same 32 vertical lanes used by K.
       for (col = 0; col < ARRAY_COLS; col = col + 1) begin
         array_cols_o[col*ARRAY_DATA_W +: ARRAY_DATA_W] =
-            {{EXT_W{v_rd_data_i[col*CACHE_ELEM_W+CACHE_ELEM_W-1]}},
-             v_rd_data_i[col*CACHE_ELEM_W +: CACHE_ELEM_W]};
+            v_rd_data_i[col*CACHE_ELEM_W +: CACHE_ELEM_W];
       end
     end
   end

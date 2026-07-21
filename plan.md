@@ -4,7 +4,7 @@
 
 本文描述当前 RTL 已经实现的架构、明确的功能边界和后续开发路线，取代旧版
 `plan.md` 中混杂的历史 OS-PV、外置 softmax、BF16-like 数据通路和建议性缓存
-容量。文档状态日期为 2026-07-20。
+容量。文档状态日期为 2026-07-21。
 
 设计事实按以下优先级维护：
 
@@ -107,7 +107,7 @@ SRAM，也不写入外存。
 | 数据 | 格式/位宽 | 当前用途 |
 | --- | --- | --- |
 | cache Q/K/V | signed INT8 | 一个 256-bit word 包含 32 lanes |
-| array Q/K/V 边界 | 先 sign-extend 到 16 bit | 后续计划恢复为 8-bit 存储/传输 |
+| array Q/K/V 边界 | signed INT8 | 只在 PE 乘法器入口扩展 |
 | QK score/delta | signed INT32 | PE-local `accum_q` |
 | scale 后 score | signed Q8-style 16 bit | PWL exp 输入 |
 | probability/alpha | unsigned Q1.15 | `[0,32767]` |
@@ -225,7 +225,7 @@ score 和 delta 不占用两套寄存器。
 32 x scale_requant_unit -> 32 x pwl_exp_unit
 ```
 
-组合流水 latency 为 7 cycles，列 initiation interval 为 1。column tag 与数据一起
+组合流水 latency 为 8 cycles，列 initiation interval 为 1。column tag 与数据一起
 返回，stripe 在本地译码为 32-bit one-hot，每个被选列只驱动本 stripe 的 8 个 PE。
 
 probability writeback 形成连续列波。rowsum token 比所需 probability writeback
@@ -484,12 +484,14 @@ selector、clock/control hierarchy 和 floorplan。
 
 当前状态：
 
-- 22 个普通 module/integration TB 全部通过。
+- 24 个普通 module/integration TB 全部通过。
 - ASIC SRAM backend 专用测试通过。
 - module TB 默认生成 FSDB。
 - top TB 覆盖两个 KV tiles、online recurrence、final normalization、AXI
   writeback 以及 WS-PV/`l` update overlap。
-- 当前 top TB 为 1334 cycles，原始 fused baseline 为 2174 cycles。
+- 当前 top TB 为 1348 cycles，原始 fused baseline 为 2174 cycles。新增 14 cycles
+  来自 score-scale 两级乘法流水和 stripe-local O-seed 寄存边界；两条路径均保持
+  II=1，因此长序列 steady-state 吞吐不变。
 - `HEAD_DIM=128` elaboration 通过。
 - 已覆盖 4-KB AXI burst splitting 和 128-bit backpressure。
 
@@ -518,9 +520,10 @@ Round-2 条件为 TT 0.9 V/25 C、2.5 ns、ideal clock、zero wire load：
 | Clock internal power | 5.5262 mW | 报告 dynamic 的 64.5% |
 | SRAM macros | 480 | 组织正确但利用率低 |
 
-旧 rounding carry critical path 已消除。前 20 条 setup paths 都结束于 normalizer
-scale multiplier。频率扫描仍在运行，保留为当前 RTL baseline；可实现 ASIC 频率
-必须由 physical-aware SS 结果决定。
+旧 rounding carry critical path 已消除。前 20 条 setup paths 都结束于旧版
+normalizer scale multiplier。本轮 RTL 已改变乘法器位宽、completion 网络与 reset
+结构，因此修改期间启动的频率扫描不能作为当前 RTL baseline；必须固定本轮源码
+版本后重跑。可实现 ASIC 频率仍必须由 physical-aware SS 结果决定。
 
 4350 条 max-fanout violation 的实际最大 fanout 只有 19，主要来自全局阈值 16，
 不是新的千级负载网络。剩余 check-design finding 应分类处理，不能为清零报告盲删
@@ -530,11 +533,14 @@ scale multiplier。频率扫描仍在运行，保留为当前 RTL baseline；可
 
 ### 11.1 Round 3：数据通路与时序
 
-以下内容均为计划，尚未修改 RTL。
+P0-A、P0-B、P0-C、P1-A 和 datapath reset 已完成 RTL/约束修改并通过现有仿真；
+其面积、功耗和时序收益仍待固定版本的 TT/SS 综合确认。两级 II=1 multiplier
+已经用于 normalizer 48x16 和 score-scale 32x16，stripe-local O-seed 寄存边界也已
+切断 SRAM read 到 rescale 的单周期路径。SAIF 实际采样和 fanout 阈值扫描尚未执行。
 
 #### P0-A：原生 8-bit Q/K/V Array Path
 
-当前 engine 把 cache INT8 lane sign-extend 到 16-bit array path。下一版拆分：
+engine、array boundary、PE forwarding register 已恢复为 native signed INT8：
 
 ```text
 QKV_W  = 8
@@ -543,10 +549,11 @@ multiplier A = 17 bit：signed Q 或 zero-extended P
 multiplier B = 9 bit： signed K/V
 ```
 
-PE 共享乘法器从近似 17x17 降为 17x9。QK 保留精确 16-bit product，PV 保留精确
+PE 共享乘法器已从近似 17x17 降为 17x9。QK 保留精确 16-bit product，PV 保留精确
 24-bit product，再 sign-extend 到 32-bit accumulator。32-lane row/column bus 从
 512 bit 降为 256 bit。该修改不改变 cycle schedule，是近期最大的 PE 面积、功耗
-和 routing 优化点。
+和 routing 优化点。另检查并删除了 old-O rescale 和 LSE 路径中先扩展再相乘造成的
+意外宽乘法。
 
 #### P0-B：Normalizer Critical Path
 
@@ -556,9 +563,8 @@ PE 共享乘法器从近似 17x17 降为 17x9。QK 保留精确 16-bit product�
 (norm_product_q[63:0] >>> 15) * signed_scale[15:0]
 ```
 
-range analysis 表明移位后幅值小于 2^46。第一步把它注册为保守的 signed 48-bit
-operand，再做 48x16 multiply，并用边界/随机 equivalence test 证明 saturation
-结果一致。
+range analysis 表明移位后幅值小于 2^46。RTL 已在 sign-extension 检查后把结果
+缩为保守的 signed 48-bit operand，再做 48x16 multiply；现有边界和顶层回归通过。
 
 若 TT slack 仍小于 0.20 ns 或 SS 2.5 ns 不通过，再加入固定 latency 的 two-stage
 multiplier wrapper：ASIC 使用 pipelined DesignWare mapping，FPGA 推断等价 DSP
@@ -567,23 +573,24 @@ pipeline。该修改只增加 startup latency，不降低每周期 8-row output 
 #### P0-C：修正 SRAM Hold Constraint
 
 当前默认 0.2 ns `set_min_delay` 与 macro 自带 0.1208 ns hold requirement、0.02 ns
-uncertainty 叠加。下一版把默认 min-delay 恢复为 0，保留 Liberty hold、hold
+uncertainty 叠加。当前约束已把默认 min-delay 恢复为 0，保留 Liberty hold、hold
 uncertainty 和 `set_fix_hold`。最终修复在 CTS 后使用 fast-cell/fast-SRAM/min-RC
 与 propagated clock 完成。
 
 #### P1-A：Completion Sideband
 
-系统只消费 bottom-right QK completion，但 `q_last/k_last/mac_last` 当前在二维 PE
-grid 中传播。改成经过证明的一维 sideband delay 或固定 latency completion path，
-预计删除约 3072 个 sideband registers 和大量 hierarchy ports。
+原二维 PE `q_last/k_last/mac_last` 网络已删除。当前使用阵列外
+`ROWS+COLS` 一维 completion shift register，以固定 row taps 启动 rowmax、末端 tap
+产生 QK completion，约删除 3072 个 sideband registers 及其 hierarchy ports。
 
 #### P1-B：真实功耗与 Reset
 
-- 增加 SAIF readback、annotation coverage、hierarchical power 和
-  `report_clock_gating`。
+- SAIF workload、readback、annotation coverage、hierarchical power 和
+  `report_clock_gating` 流程已写入 `asic/docs/saif_power_plan.md`，实际采样等待 UVM
+  系统级 workload。
 - 分别测 idle、Re10K prefill、SmolLM2 prefill。
-- valid 保护的数据 payload 取消 async reset；state、valid、tag、counter 和外部
-  可见 state 保持 reset。
+- valid 保护的主要数据 payload 已取消 async reset；state、valid、tag、counter 和
+  外部可见 state 保持 reset。
 - 用 reset X-propagation 和 gate-level test 验收。
 
 #### P2：Fanout 与报告清理
@@ -682,6 +689,7 @@ Total   = 2 * seq_q * seq_kv * head_dim
 | Column-overlapped SUB/exp/rowsum | 1519 | 30.1% |
 | WS-PV overlapped with `l` update | 1453 | 33.2% |
 | Persistent O + 8-lane normalization | 1334 | 38.6% |
+| Round-4 timing pipeline boundaries | 1348 | 38.0% |
 
 该数字是 regression baseline，不是完整模型吞吐。
 
