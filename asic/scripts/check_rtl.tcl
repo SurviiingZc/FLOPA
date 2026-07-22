@@ -34,6 +34,24 @@ if {$sram_count != $expected_top_macros} {
 }
 puts "INFO: resolved $sram_count uhdsp_256x8m4s instances"
 
+# Each portable multiplier wrapper must bind to the explicit ASIC DW02_mult
+# branch. Check this before synthesis can flatten or rename resource cells.
+set signed_mult_wrapper_cells [get_cells -quiet -hierarchical \
+    -filter "ref_name =~ fa_signed_mult_comb*"]
+set unsigned_mult_wrapper_cells [get_cells -quiet -hierarchical \
+    -filter "ref_name =~ fa_unsigned_mult_comb*"]
+set dw_multiplier_cells [get_cells -quiet -hierarchical \
+    -filter "ref_name =~ DW02_mult*"]
+set mult_wrapper_count [expr {
+  [sizeof_collection $signed_mult_wrapper_cells] +
+  [sizeof_collection $unsigned_mult_wrapper_cells]
+}]
+set dw_multiplier_count [sizeof_collection $dw_multiplier_cells]
+if {$mult_wrapper_count == 0 || $dw_multiplier_count != $mult_wrapper_count} {
+  error "linked $mult_wrapper_count multiplier wrappers but $dw_multiplier_count DW02_mult instances"
+}
+puts "INFO: resolved $dw_multiplier_count DW02_mult instances for $mult_wrapper_count wrappers"
+
 fa_apply_core_constraints $env(FA_CLOCK_PERIOD)
 fa_apply_sram_hold_constraints $sram_cells
 
@@ -53,6 +71,8 @@ puts $config_fp "clock_period_ns=$env(FA_CLOCK_PERIOD)"
 puts $config_fp "standard_cell_db=$std_db"
 puts $config_fp "sram_db=$sram_db"
 puts $config_fp "sram_macro_count=$sram_count"
+puts $config_fp "multiplier_wrapper_count=$mult_wrapper_count"
+puts $config_fp "linked_dw02_mult_count=$dw_multiplier_count"
 close $config_fp
 
 exit

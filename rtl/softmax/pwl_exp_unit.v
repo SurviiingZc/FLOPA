@@ -22,6 +22,7 @@ module pwl_exp_unit (
   reg [15:0] base_s1_q;
   reg bypass_s1_q;
   reg [15:0] bypass_value_s1_q;
+  wire [23:0] interpolation_product_w;
 
   reg [15:0] magnitude_w;
   reg [3:0] segment_w;
@@ -31,6 +32,13 @@ module pwl_exp_unit (
   reg [15:0] bypass_value_w;
   wire [31:0] interpolation_term_w = {8'd0, interpolation_s1_q} >> 8;
   wire [31:0] result_value_w = {16'd0, base_s1_q} - interpolation_term_w;
+
+  fa_unsigned_mult_comb #(
+    .A_W(16), .B_W(8)
+  ) u_interpolation_multiplier (
+    .a_i(endpoint_delta_s0_q), .b_i(fraction_s0_q),
+    .product_o(interpolation_product_w)
+  );
 
   // Stage 0 contains only absolute value, segment decode/table selection and the
   // 16-bit endpoint subtraction. Registering endpoint_delta_s0_q here is the
@@ -84,8 +92,7 @@ module pwl_exp_unit (
       if (valid_s0_q) begin
         // Isolated 16x8 stage; DesignWare/DSP mapping sees no decode or subtract
         // logic on the multiplier input path.
-        interpolation_s1_q <=
-            {8'd0, endpoint_delta_s0_q} * {16'd0, fraction_s0_q};
+        interpolation_s1_q <= interpolation_product_w;
         base_s1_q <= base_s0_q;
         bypass_s1_q <= bypass_s0_q;
         bypass_value_s1_q <= bypass_value_s0_q;

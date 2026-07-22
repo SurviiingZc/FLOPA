@@ -99,6 +99,7 @@ for top in "${TOPS[@]}"; do
   test -s "$REPORT_DIR/power.rpt"
   test -s "$REPORT_DIR/check_design.rpt"
   test -s "$REPORT_DIR/check_timing.rpt"
+  test -s "$REPORT_DIR/timing_status.rpt"
   test -s "$REPORT_DIR/run_config.rpt"
   if [ "$FA_LOGICAL_HOLD_REPAIR" = "1" ]; then
     test -s "$REPORT_DIR/qor_pre_hold.rpt"
@@ -109,15 +110,36 @@ for top in "${TOPS[@]}"; do
     test -s "$RESULT_DIR/${top}.ddc"
     test -s "$RESULT_DIR/${top}.sdc"
     test -s "$RESULT_DIR/${top}.sdf"
+    if grep -Eq '\*\*SEQGEN\*\*|GTECH_' "$RESULT_DIR/${top}_mapped.v"; then
+      echo "$top mapped netlist still contains generic SEQGEN/GTECH cells" >&2
+      exit 1
+    fi
   fi
   if grep -qi 'unmapped logic' "$REPORT_DIR/area.rpt"; then
     echo "$top contains unmapped logic" >&2
     exit 1
   fi
-  if [ "$top" = "attention_accel_top" ] &&
-     ! grep -q 'DW_mult' "$REPORT_DIR/resources.rpt"; then
-    echo "$top did not infer DesignWare multipliers" >&2
-    exit 1
+  if [ "$FA_LOGICAL_HOLD_REPAIR" = "1" ]; then
+    if ! grep -qx 'setup_violating_paths=0' "$REPORT_DIR/timing_status.rpt"; then
+      echo "$top logical hold repair broke or failed setup timing" >&2
+      exit 1
+    fi
+    if ! grep -qx 'hold_violating_paths=0' "$REPORT_DIR/timing_status.rpt"; then
+      echo "$top logical hold repair left minimum-delay violations" >&2
+      exit 1
+    fi
+  fi
+  if [ "$top" = "attention_accel_top" ]; then
+    wrapper_count=$(awk -F= '$1 == "multiplier_wrapper_count" {print $2}' \
+      "$REPORT_DIR/run_config.rpt")
+    dw_count=$(awk -F= '$1 == "linked_dw02_mult_count" {print $2}' \
+      "$REPORT_DIR/run_config.rpt")
+    if [[ ! "$wrapper_count" =~ ^[1-9][0-9]*$ ]] ||
+       [[ ! "$dw_count" =~ ^[1-9][0-9]*$ ]] ||
+       [ "$wrapper_count" -ne "$dw_count" ]; then
+      echo "$top DesignWare binding mismatch: wrappers=$wrapper_count DW02_mult=$dw_count" >&2
+      exit 1
+    fi
   fi
 done
 

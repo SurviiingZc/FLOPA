@@ -7,6 +7,7 @@
 +incdir+../../tb/module_tb/memory
 +incdir+../../tb/module_tb/top
 ../../tb/module_tb/common/tb_fixed_defs_smoke.sv
+../../tb/module_tb/common/tb_fa_clear_replica.sv
 ../../tb/module_tb/control/tb_accel_regfile.sv
 ../../tb/module_tb/control/tb_accel_scheduler.sv
 ../../tb/module_tb/control/tb_perf_counter.sv
@@ -18,16 +19,12 @@
 ../../tb/module_tb/compute/tb_fsa_fused_pe.sv
 ../../tb/module_tb/compute/tb_fsa_stripe.sv
 ../../tb/module_tb/compute/tb_fsa_controller.sv
-../../tb/module_tb/compute/tb_scale_requant_unit.sv
 ../../tb/module_tb/compute/tb_score_scale_pipe.sv
 ../../tb/module_tb/memory/tb_banked_sram.sv
-../../tb/module_tb/memory/tb_bram_buffer.sv
 ../../tb/module_tb/memory/tb_output_buffer.sv
 ../../tb/module_tb/memory/tb_o_accumulator_bank.sv
 ../../tb/module_tb/memory/tb_pingpong_buffer.sv
 ../../tb/module_tb/memory/tb_qkv_tile_cache.sv
-../../tb/module_tb/memory/tb_stream_fifo.sv
-../../tb/module_tb/memory/tb_uram_bank.sv
 ../../tb/module_tb/softmax/tb_online_normalizer.sv
 ../../tb/module_tb/softmax/tb_pwl_exp_unit.sv
 ../../tb/module_tb/softmax/tb_reciprocal_lut.sv

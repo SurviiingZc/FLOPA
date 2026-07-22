@@ -14,7 +14,7 @@
 `define ATTN_BETA_ZERO           16'd0
 `define ATTN_BETA_ONE            16'd32767
 
-// Rounding and saturation selectors for scale_requant_unit.
+// Shared rounding and saturation selectors retained for fixed-point formats.
 `define ATTN_ROUND_NEAREST        2'd0
 `define ATTN_ROUND_ZERO           2'd1
 `define ATTN_SAT_INT8             2'd0

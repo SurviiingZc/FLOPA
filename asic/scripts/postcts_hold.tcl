@@ -41,19 +41,30 @@ redirect -file [file join $report_dir hold_timing.rpt] {
   report_timing -delay_type min -path_type full_clock_expanded \
     -max_paths 100 -nworst 10 -significant_digits 4
 }
+redirect -file [file join $report_dir setup_constraints.rpt] {
+  report_constraint -all_violators -max_delay
+}
+redirect -file [file join $report_dir setup_timing.rpt] {
+  report_timing -delay_type max -path_type full_clock_expanded \
+    -max_paths 100 -nworst 10 -significant_digits 4
+}
 
 set violating_paths [get_timing_paths -delay_type min \
     -slack_lesser_than 0.0 -max_paths 100000]
 set violation_count [sizeof_collection $violating_paths]
+set setup_violating_paths [get_timing_paths -delay_type max \
+    -slack_lesser_than 0.0 -max_paths 100000]
+set setup_violation_count [sizeof_collection $setup_violating_paths]
 set status_fp [open [file join $report_dir status.rpt] w]
 puts $status_fp "corner=ffg0p99v0c"
 puts $status_fp "clock_mode=propagated"
 puts $status_fp "parasitics=$env(FA_POSTCTS_SPEF)"
 puts $status_fp "hold_violating_paths=$violation_count"
+puts $status_fp "setup_violating_paths=$setup_violation_count"
 close $status_fp
 
-if {$violation_count != 0} {
-  puts stderr "ERROR: post-CTS hold has $violation_count violating paths"
+if {$violation_count != 0 || $setup_violation_count != 0} {
+  puts stderr "ERROR: post-CTS timing has $violation_count hold and $setup_violation_count setup violating paths"
   exit 3
 }
 exit

@@ -96,6 +96,7 @@
   wire [TAG_W-1:0] pe_sum_tag_w [0:STRIPE_ROWS-1][0:COLS-1];
   wire [SCORE_W-1:0] delta_w [0:STRIPE_ROWS-1][0:COLS-1];
   wire [COLS-1:0] prob_col_select_w;
+  wire [CLEAR_GROUPS-1:0] clear_score_group_w;
   wire [STRIPE_ROWS-1:0] o_wr_valid_w;
   wire [STRIPE_ROWS*TAG_W-1:0] o_wr_feature_w;
   wire [STRIPE_ROWS*SUM_W-1:0] o_wr_data_w;
@@ -115,10 +116,6 @@
       [0:STRIPE_ROWS-1];
 
   reg ws_pv_q;
-  // These identical bits are intentional physical replicas. Preserve them so
-  // synthesis cannot merge the four 8-column clear domains back into one net.
-  (* keep = "true", dont_touch = "true" *)
-  reg [CLEAR_GROUPS-1:0] clear_score_group_q;
   reg [DELTA_GROUPS-1:0] delta_group_valid_w;
   reg [DELTA_GROUPS*COL_IDX_W-1:0] delta_group_index_w;
   reg [DELTA_GROUPS*STRIPE_ROWS*SCORE_W-1:0] delta_group_data_w;
@@ -143,6 +140,20 @@
   // drives only eight local PEs instead of broadcasting a binary select globally.
   assign prob_col_select_w = prob_col_load_valid_i ?
       ({{(COLS-1){1'b0}}, 1'b1} << prob_col_load_col_i) : {COLS{1'b0}};
+
+  // Register one independent clear token per bounded column group.  Keeping
+  // these as leaf instances localizes fanout without freezing an unmapped
+  // generic register during technology mapping.
+  generate
+    genvar clear_group;
+    for (clear_group = 0; clear_group < CLEAR_GROUPS;
+         clear_group = clear_group + 1) begin : g_clear_replica
+      fa_clear_replica u_clear_replica (
+        .clk(clk), .rst_n(rst_n), .clear_i(clear_i),
+        .token_i(clear_score_i), .token_o(clear_score_group_w[clear_group])
+      );
+    end
+  endgenerate
 
   // Wire nearest-neighbor systolic boundaries and the bidirectional row-reduction
   // links. No full score or probability tile crosses the stripe interface.
@@ -216,7 +227,7 @@
         ) u_pe (
           .clk(clk), .rst_n(rst_n), .clear_i(clear_i),
           .clear_score_i(
-              clear_score_group_q[pe_col/CLEAR_GROUP_SIZE]),
+              clear_score_group_w[pe_col/CLEAR_GROUP_SIZE]),
           .q_valid_i(q_valid_w[pe_row][pe_col]),
           .q_data_i(q_data_w[pe_row][pe_col]),
           .q_valid_o(q_valid_w[pe_row][pe_col+1]),
@@ -387,18 +398,13 @@
   always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
       ws_pv_q <= 1'b0;
-      clear_score_group_q <= {CLEAR_GROUPS{1'b0}};
       delta_group_valid_q <= {DELTA_GROUPS{1'b0}};
       delta_col_valid_o <= 1'b0;
     end else if (clear_i) begin
       ws_pv_q <= 1'b0;
-      clear_score_group_q <= {CLEAR_GROUPS{1'b0}};
       delta_group_valid_q <= {DELTA_GROUPS{1'b0}};
       delta_col_valid_o <= 1'b0;
     end else begin
-      // A global QK clear drives only these bounded local registers. Each copy
-      // fans out to one 8-column PE group instead of the complete stripe.
-      clear_score_group_q <= {CLEAR_GROUPS{clear_score_i}};
       if (clear_score_i) ws_pv_q <= 1'b0;
       else ws_pv_q <= ws_pv_i;
       delta_group_valid_q <= delta_group_valid_w;

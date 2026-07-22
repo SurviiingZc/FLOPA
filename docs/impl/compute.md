@@ -9,9 +9,9 @@ This document defines the implementation strategy for the compute datapath:
 - `rtl/compute/fsa_fused_array.v`
 - `rtl/compute/fsa_delay_line.v`
 - `rtl/compute/fsa_controller.v`
-- `rtl/compute/scale_requant_unit.v`
 - `rtl/compute/fsa_qk_engine.v`
 - `rtl/compute/fsa_pv_engine.v`
+- `rtl/common/fa_clear_replica.v`
 
 `fsa_fused_array`, `fsa_qk_engine`, and `fsa_pv_engine` form the only
 top-level compute datapath. The superseded external score/probability path and
@@ -43,6 +43,12 @@ The array is implemented as a hierarchy instead of a flat 1024-PE blob:
 - Register selected state at every stripe boundary.
 - Keep row-state broadcast local to a stripe when possible.
 - Use narrow, registered control signals to cross stripe boundaries.
+
+The QK score clear is one such local control. Each stripe instantiates one
+`fa_clear_replica` per eight columns, so a replicated output drives only eight
+PE columns. The leaf hierarchy may be preserved against cross-group merging,
+but its internal flop must remain technology-mappable; applying `dont_touch` to
+an unmapped generic register is forbidden.
 
 This preserves the 32x32 logical behavior while shortening the critical routing distance.
 
@@ -311,6 +317,11 @@ Start PV when PE probability and alpha are complete. The serialized `l` update
 may overlap PV; the top-level sticky completion guard prevents tile advance or
 final normalization before all `l` writes commit.
 
+The reverse `m_new` wave starts from registered `m_rows_q`. `SM_ALPHA_WAIT`
+commits the combinational `m_pending_q` result first and only then advances to
+`SM_M_START`; using `m_rows_q` therefore adds no cycle while isolating block-max
+selection from the PE `Score-m_new` subtraction path.
+
 ### 8.4 Implemented Probability-Stationary WS-PV
 
 The implemented PV mapping keeps `P[i,k]` in `prob_q` and reuses the PE
@@ -354,11 +365,10 @@ The requant unit must be pipelined if it sits on a critical path. Do not allow a
 
 Recommended order:
 
-1. `scale_requant_unit.v`
-2. `fsa_fused_pe.v`
-3. `fsa_delay_line.v`
-4. `fsa_stripe.v`
-5. `fsa_fused_array.v`
+1. `fsa_fused_pe.v`
+2. `fsa_delay_line.v`
+3. `fsa_stripe.v`
+4. `fsa_fused_array.v`
 6. `fsa_controller.v`
 7. `fsa_qk_engine.v`
 8. `fsa_pv_engine.v`

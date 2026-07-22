@@ -8,10 +8,7 @@ This document defines the implementation strategy for all on-chip storage and ti
 - `rtl/memory/banked_sram.v`
 - `rtl/memory/asic_sram_1024x16.v`
 - `rtl/memory/asic_sram_256xwide.v`
-- `rtl/memory/uram_bank.v`
-- `rtl/memory/bram_buffer.v`
 - `rtl/memory/qkv_tile_cache.v`
-- `rtl/memory/stream_fifo.v`
 - `rtl/memory/output_buffer.v`
 
 ## 2. Design Basis
@@ -35,7 +32,7 @@ The first version should not depend on a single giant RAM block with irregular a
 Preferred strategy:
 
 - Q/K/V staged in separate banked caches;
-- short FIFOs for lane alignment;
+- registered valid/ready handoffs for lane alignment;
 - output buffered separately;
 - banked SRAM for tile storage;
 - explicit ping-pong around tile boundaries.
@@ -166,11 +163,11 @@ before loading; an ASIC DMA path may use bounded 32x32 transpose stages.
 
 Cache load, unpack, and issue should be separated by at least one register stage.
 
-## 7. Stream FIFO
+## 7. Registered Stream Handoffs
 
 ### 7.1 Purpose
 
-Short FIFOs are used for:
+The retained design uses registered valid/ready handoffs for:
 
 - lane alignment,
 - bubble absorption,
@@ -179,10 +176,9 @@ Short FIFOs are used for:
 
 ### 7.2 Design Rules
 
-- Keep the FIFO shallow.
-- Keep full and empty flags registered.
-- Do not let the FIFO become a hidden large buffer.
-- Use FIFOs to absorb short latency mismatches, not to redesign the architecture.
+- Keep handoff state local to its producer and consumer.
+- Do not introduce a hidden large buffer solely to absorb phase mismatches.
+- Register every ready/valid boundary that crosses cache, array, or AXI logic.
 
 ## 8. Output Buffer
 
@@ -250,7 +246,7 @@ For a first version that is easier to close:
 
 1. Use separate Q, K, and V tile caches.
 2. Use explicit ping-pong bits.
-3. Use shallow FIFOs for staging only.
+3. Use registered handoffs for staging only.
 4. Keep output buffering separate from tile caching.
 5. Register every cache boundary.
 6. Avoid direct compute-to-AXI coupling.
@@ -259,7 +255,7 @@ For a first version that is easier to close:
 
 - Each banked SRAM configuration must have a module TB.
 - Ping-pong switching must be deterministic.
-- Cache and FIFO behavior must be checked with boundary cases.
+- Cache handoff behavior must be checked with boundary cases.
 - Output packing must be checked against the AXI write width.
 
 ## 12. References

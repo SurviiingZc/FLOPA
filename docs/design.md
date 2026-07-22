@@ -179,7 +179,6 @@ The first version should keep one primary clock domain for RTL simplicity.
 | `rtl/compute/fsa_fused_array.v` | Active 32x32 FSA array | Registered QK/V skew, PE-local online softmax, shared 32-lane exp, and probability-stationary WS-PV. |
 | `rtl/compute/fsa_delay_line.v` | Systolic skew stage | Registers row/column boundary data and valid/last tokens. |
 | `rtl/compute/fsa_controller.v` | Array mode controller | Controls QK/PV phases, PE modes, score hold, and WS-PV timing. |
-| `rtl/compute/scale_requant_unit.v` | Fixed-point rescale/requantization | Signed multiply, shift, round, saturate, and optional zero-point add. |
 | `rtl/compute/fsa_qk_engine.v` | Active QK wrapper | Reads Q/K tiles and drives the fused array without score/matrix output ports. |
 | `rtl/compute/fsa_pv_engine.v` | Active PV wrapper | Restores one O-accumulator row at a time and streams V; probability remains inside the PE array. |
 
@@ -197,10 +196,7 @@ The first version should keep one primary clock domain for RTL simplicity.
 | --- | --- | --- |
 | `rtl/memory/pingpong_buffer.v` | Double buffering | Switch banks only at tile boundaries. |
 | `rtl/memory/banked_sram.v` | Generic banked SRAM wrapper | Parameterized bank count and width. Can infer BRAM/URAM or map to SRAM macros. |
-| `rtl/memory/uram_bank.v` | URAM-specific bank wrapper | FPGA-oriented large tile-cache storage. |
-| `rtl/memory/bram_buffer.v` | BRAM buffer wrapper | Smaller buffers, output tile, staging FIFO. |
 | `rtl/memory/qkv_tile_cache.v` | Q/K/V tile cache | Unified staging cache for Q, K, and V tiles. |
-| `rtl/memory/stream_fifo.v` | Short stream FIFO | Handles local backpressure and pipeline alignment. |
 | `rtl/memory/output_buffer.v` | Output aggregation | Packs final O tile for AXI master writeback. |
 
 ## 7. Module Design Methods

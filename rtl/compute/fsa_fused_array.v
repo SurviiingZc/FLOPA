@@ -447,7 +447,10 @@ module fsa_fused_array #(
         .max_done_valid_o(max_right_valid_w[ROW_BASE +: STRIPE_ROWS]),
         .max_done_data_o(max_right_data_w[ROW_BASE*SCORE_W +: STRIPE_ROWS*SCORE_W]),
         .m_start_valid_i({STRIPE_ROWS{softmax_state_q == SM_M_START}}),
-        .m_start_data_i(m_pending_q[ROW_BASE*SCORE_W +: STRIPE_ROWS*SCORE_W]),
+        // SM_ALPHA_WAIT commits m_pending_q before SM_M_START.  Source the
+        // reverse wave from that register boundary so block-max selection is
+        // not combinationally chained into every PE delta subtractor.
+        .m_start_data_i(m_rows_q[ROW_BASE*SCORE_W +: STRIPE_ROWS*SCORE_W]),
         .sum_start_valid_i(sum_launch_rows_q[ROW_BASE +: STRIPE_ROWS]),
         .sum_done_valid_o(sum_right_valid_w[ROW_BASE +: STRIPE_ROWS]),
         .sum_done_data_o(sum_right_data_w[ROW_BASE*LSE_W +: STRIPE_ROWS*LSE_W]),

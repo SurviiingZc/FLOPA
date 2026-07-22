@@ -15,18 +15,18 @@ SRAM_INPUT_MIN_DELAY ?= 0.000
 DC_CORES ?= 4
 EXPECTED_TOP_SRAM_MACROS ?= 480
 FREQ_SWEEP_PERIODS ?= 3.2 2.8 2.5 2.3 2.1 1.9
-FANOUT_SWEEP_LIMITS ?= 16 24 32
+FANOUT_SWEEP_LIMITS ?= 24 32
 POSTCTS_TOP ?= attention_accel_top
 
 SYNTH_SCRIPT := asic/scripts/run_synth.sh
 
 AXI_TOPS := axi4_slave_if axi4_master_write
 CONTROL_TOPS := accel_regfile accel_scheduler perf_counter
-COMPUTE_TOPS := fa_signed_mult_pipe2 fa_unsigned_mult_pipe2 \
-	scale_requant_unit score_scale_pipe fsa_delay_line fsa_fused_pe fsa_stripe \
+COMPUTE_TOPS := fa_clear_replica fa_signed_mult_pipe2 fa_unsigned_mult_pipe2 \
+	score_scale_pipe fsa_delay_line fsa_fused_pe fsa_stripe \
 	fsa_fused_array fsa_controller fsa_qk_engine fsa_pv_engine
 MEMORY_TOPS := asic_sram_1024x16 asic_sram_256xwide banked_sram \
-	o_accumulator_bank output_buffer pingpong_buffer qkv_tile_cache stream_fifo
+	o_accumulator_bank output_buffer pingpong_buffer qkv_tile_cache
 SOFTMAX_TOPS := pwl_exp_unit reciprocal_lut online_normalizer
 SYSTEM_TOP := attention_accel_top
 

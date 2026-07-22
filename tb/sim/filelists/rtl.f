@@ -1,5 +1,7 @@
 +incdir+../../rtl/common
 ../../rtl/common/fa_clock_gate.v
+../../rtl/common/fa_clear_replica.v
+../../rtl/common/fa_mult_comb.v
 ../../rtl/common/fa_signed_mult_pipe2.v
 ../../rtl/common/fa_unsigned_mult_pipe2.v
 ../../rtl/axi/axi4_slave_if.v
@@ -10,14 +12,10 @@
 ../../rtl/memory/asic_sram_1024x16.v
 ../../rtl/memory/asic_sram_256xwide.v
 ../../rtl/memory/banked_sram.v
-../../rtl/memory/bram_buffer.v
 ../../rtl/memory/output_buffer.v
 ../../rtl/memory/o_accumulator_bank.v
 ../../rtl/memory/pingpong_buffer.v
 ../../rtl/memory/qkv_tile_cache.v
-../../rtl/memory/stream_fifo.v
-../../rtl/memory/uram_bank.v
-../../rtl/compute/scale_requant_unit.v
 ../../rtl/compute/score_scale_pipe.v
 ../../rtl/compute/fsa_delay_line.v
 ../../rtl/compute/fsa_fused_pe.v

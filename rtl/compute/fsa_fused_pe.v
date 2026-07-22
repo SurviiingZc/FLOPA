@@ -56,6 +56,8 @@ module fsa_fused_pe #(
   localparam integer MUL_PRODUCT_W = MUL_A_W + MUL_B_W;
   localparam integer QK_PRODUCT_W = 2 * DATA_W;
   localparam integer PV_PRODUCT_W = PROB_W + DATA_W;
+  localparam integer SHARED_ADD_W =
+      ((SCORE_W > SUM_W) ? SCORE_W : SUM_W) + 1;
   localparam signed [SCORE_W-1:0] SCORE_MIN =
       {1'b1, {(SCORE_W-1){1'b0}}};
 
@@ -63,15 +65,23 @@ module fsa_fused_pe #(
   reg [PROB_W-1:0] prob_q;
   reg signed [MUL_A_W-1:0] mul_a_w;
   reg signed [MUL_B_W-1:0] mul_b_w;
-  reg signed [MUL_PRODUCT_W-1:0] mul_a_product_w;
-  reg signed [MUL_PRODUCT_W-1:0] shared_product_w;
-  reg signed [SCORE_W:0] score_next_w;
-  reg signed [SUM_W:0] ws_sum_next_w;
-  wire [SUM_W:0] ws_sum_next_unsigned_w = $unsigned(ws_sum_next_w);
+  wire signed [MUL_PRODUCT_W-1:0] shared_product_w;
+  reg signed [SHARED_ADD_W-1:0] shared_add_a_w;
+  reg signed [SHARED_ADD_W-1:0] shared_add_b_w;
+  wire signed [SHARED_ADD_W-1:0] shared_add_result_w =
+      $signed(shared_add_a_w) + $signed(shared_add_b_w);
   reg signed [SCORE_W-1:0] delta_w;
   reg signed [SCORE_W-1:0] max_score_w;
   wire qk_mac_valid_w = q_valid_i && k_valid_i;
   wire pv_mac_valid_w = pv_mac_valid_i && sum_valid_i && k_valid_i;
+
+  // QK and PV tokens are mutually exclusive, so one exact 17x9 DesignWare
+  // multiplier serves both modes without a second arithmetic unit.
+  fa_signed_mult_comb #(
+    .A_W(MUL_A_W), .B_W(MUL_B_W)
+  ) u_shared_multiplier (
+    .a_i(mul_a_w), .b_i(mul_b_w), .product_o(shared_product_w)
+  );
 
 `ifndef SYNTHESIS
   initial begin
@@ -86,6 +96,8 @@ module fsa_fused_pe #(
   always @(posedge clk)
     if (rst_n && qk_mac_valid_w && pv_mac_valid_w)
       $fatal(1, "fsa_fused_pe QK and PV valid tokens overlap");
+    else if (rst_n && qk_mac_valid_w && sum_valid_i)
+      $fatal(1, "fsa_fused_pe QK and rowsum valid tokens overlap");
     else if (rst_n && pv_mac_valid_i && !(sum_valid_i && k_valid_i))
       $fatal(1, "fsa_fused_pe malformed PV MAC token");
 `endif
@@ -94,6 +106,8 @@ module fsa_fused_pe #(
 
   // Q/K/V remain native INT8 in the array. Only this multiplier boundary grows
   // Q/P to 17 bits and K/V to 9 bits, giving one exact 17x9 shared multiplier.
+  // QK, WS-PV, and rowsum are phase-mutually-exclusive, so their former three
+  // adders share one 33-bit add datapath with operand isolation.
   always @(*) begin
     mul_a_w = $signed({MUL_A_W{1'b0}});
     mul_b_w = $signed({MUL_B_W{1'b0}});
@@ -104,31 +118,30 @@ module fsa_fused_pe #(
       mul_a_w = $signed({{(MUL_A_W-DATA_W){q_data_i[DATA_W-1]}}, q_data_i});
       mul_b_w = $signed({k_data_i[DATA_W-1], k_data_i});
     end
-    // Verilog sizes a multiply expression from its operands. Extend only A to
-    // the result context so no PV high bits are truncated; the effective
-    // variable operands remain 17x9 and synthesis removes the repeated sign.
-    mul_a_product_w = $signed(
-        {{MUL_B_W{mul_a_w[MUL_A_W-1]}}, mul_a_w});
-    shared_product_w = $signed(mul_a_product_w) * $signed(mul_b_w);
-
-    score_next_w = $signed({accum_q[SCORE_W-1], accum_q});
-    if (qk_mac_valid_w)
-      score_next_w = $signed({accum_q[SCORE_W-1], accum_q}) +
-          $signed({{(SCORE_W+1-QK_PRODUCT_W){
-                       shared_product_w[QK_PRODUCT_W-1]}},
-                    shared_product_w[QK_PRODUCT_W-1:0]});
-
-    ws_sum_next_w = $signed({sum_data_i[SUM_W-1], sum_data_i});
-    if (pv_mac_valid_w)
-      ws_sum_next_w = $signed({sum_data_i[SUM_W-1], sum_data_i}) +
-          $signed({{(SUM_W+1-PV_PRODUCT_W){
-                       shared_product_w[PV_PRODUCT_W-1]}},
-                    shared_product_w[PV_PRODUCT_W-1:0]});
+    shared_add_a_w = $signed({SHARED_ADD_W{1'b0}});
+    shared_add_b_w = $signed({SHARED_ADD_W{1'b0}});
+    if (qk_mac_valid_w) begin
+      shared_add_a_w = $signed({{(SHARED_ADD_W-SCORE_W){accum_q[SCORE_W-1]}},
+                                accum_q});
+      shared_add_b_w = $signed({{(SHARED_ADD_W-QK_PRODUCT_W){
+                                  shared_product_w[QK_PRODUCT_W-1]}},
+                                shared_product_w[QK_PRODUCT_W-1:0]});
+    end else if (pv_mac_valid_w) begin
+      shared_add_a_w = $signed({{(SHARED_ADD_W-SUM_W){sum_data_i[SUM_W-1]}},
+                                sum_data_i});
+      shared_add_b_w = $signed({{(SHARED_ADD_W-PV_PRODUCT_W){
+                                  shared_product_w[PV_PRODUCT_W-1]}},
+                                shared_product_w[PV_PRODUCT_W-1:0]});
+    end else if (sum_valid_i) begin
+      shared_add_a_w = $signed({{(SHARED_ADD_W-SUM_W){sum_data_i[SUM_W-1]}},
+                                sum_data_i});
+      shared_add_b_w = $signed({{(SHARED_ADD_W-PROB_W){1'b0}}, prob_q});
+    end
 
     // Masked score lanes contribute -infinity to max and zero probability later.
-    delta_w = score_lane_valid_i ?
+    delta_w = (m_valid_i && score_lane_valid_i) ?
               $signed(accum_q) - $signed(m_data_i) : SCORE_MIN;
-    max_score_w = score_lane_valid_i ? accum_q : SCORE_MIN;
+    max_score_w = (max_valid_i && score_lane_valid_i) ? accum_q : SCORE_MIN;
   end
 
   // Only control tokens use asynchronous reset. Payload registers are qualified
@@ -167,7 +180,7 @@ module fsa_fused_pe #(
       else if (m_valid_i)
         accum_q <= delta_w;
       else if (qk_mac_valid_w)
-        accum_q <= $signed(score_next_w[SCORE_W-1:0]);
+        accum_q <= $signed(shared_add_result_w[SCORE_W-1:0]);
       if (prob_load_i) prob_q <= prob_data_i;
     end
   end
@@ -185,11 +198,8 @@ module fsa_fused_pe #(
           max_data_o <= max_data_i;
       end
       if (m_valid_i) m_data_o <= m_data_i;
-      if (pv_mac_valid_w) begin
-        sum_data_o <= ws_sum_next_unsigned_w[SUM_W-1:0];
-        sum_tag_o <= sum_tag_i;
-      end else if (sum_valid_i) begin
-        sum_data_o <= sum_data_i + {{(SUM_W-PROB_W){1'b0}}, prob_q};
+      if (pv_mac_valid_w || sum_valid_i) begin
+        sum_data_o <= $unsigned(shared_add_result_w[SUM_W-1:0]);
         sum_tag_o <= sum_tag_i;
       end
     end

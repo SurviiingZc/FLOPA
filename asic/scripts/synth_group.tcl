@@ -76,13 +76,38 @@ foreach top_name $top_list {
   }
   uniquify
 
-  # Preserve intentional stripe-local clear-token replicas. Their logic values
-  # are identical, so unconstrained optimization would legally merge them and
-  # recreate the high-fanout net this hierarchy is designed to avoid.
-  set local_clear_cells [get_cells -quiet -hierarchical \
-      -filter "full_name =~ */clear_score_group_q_reg*"]
-  if {[sizeof_collection $local_clear_cells] > 0} {
-    set_dont_touch $local_clear_cells
+  # Validate the explicit DesignWare boundary before compile_ultra can flatten,
+  # constant-fold, or rename multiplier resources. Post-map resource names are
+  # optimization artifacts and are not a stable proof of DW02_mult binding.
+  set signed_mult_wrapper_cells [get_cells -quiet -hierarchical \
+      -filter "ref_name =~ fa_signed_mult_comb*"]
+  set unsigned_mult_wrapper_cells [get_cells -quiet -hierarchical \
+      -filter "ref_name =~ fa_unsigned_mult_comb*"]
+  set dw_multiplier_cells [get_cells -quiet -hierarchical \
+      -filter "ref_name =~ DW02_mult*"]
+  set mult_wrapper_count [expr {
+    [sizeof_collection $signed_mult_wrapper_cells] +
+    [sizeof_collection $unsigned_mult_wrapper_cells]
+  }]
+  set dw_multiplier_count [sizeof_collection $dw_multiplier_cells]
+  if {$top_name eq "attention_accel_top"} {
+    if {$mult_wrapper_count == 0} {
+      error "attention_accel_top contains no explicit multiplier wrappers"
+    }
+    if {$dw_multiplier_count != $mult_wrapper_count} {
+      error "attention_accel_top linked $mult_wrapper_count multiplier wrappers but $dw_multiplier_count DW02_mult instances"
+    }
+  }
+
+  # Keep each clear-token replica as an independent leaf boundary. Do not put
+  # dont_touch on its internal generic flop: that would prevent technology
+  # mapping and leave **SEQGEN** cells in the delivered netlist.
+  set clear_replica_cells [get_cells -quiet -hierarchical \
+      -filter "ref_name =~ fa_clear_replica*"]
+  set clear_replica_count [sizeof_collection $clear_replica_cells]
+  if {$clear_replica_count > 0} {
+    set_ungroup $clear_replica_cells false
+    set_boundary_optimization $clear_replica_cells false
   }
 
   # Keep placement-relevant stripe and O-bank hierarchy visible in top reports.
@@ -154,20 +179,32 @@ foreach top_name $top_list {
     report_timing -delay_type min -path_type full_clock_expanded \
       -max_paths 10 -nworst 2 -significant_digits 4
   }
+  # Machine-readable pass/fail gate. One violating path is sufficient to fail
+  # the run; requesting every path on the 32x32 top triggers TIM-104 and adds no
+  # information to this gate. Detailed path/count data remains in the reports.
+  set setup_worst_path [get_timing_paths -delay_type max -max_paths 1]
+  set hold_worst_path [get_timing_paths -delay_type min -max_paths 1]
+  set setup_violation_present 0
+  set hold_violation_present 0
+  if {[sizeof_collection $setup_worst_path] > 0 &&
+      [get_attribute $setup_worst_path slack] < 0.0} {
+    set setup_violation_present 1
+  }
+  if {[sizeof_collection $hold_worst_path] > 0 &&
+      [get_attribute $hold_worst_path slack] < 0.0} {
+    set hold_violation_present 1
+  }
+  set timing_status_fp [open [file join $report_dir timing_status.rpt] w]
+  puts $timing_status_fp "setup_violating_paths=$setup_violation_present"
+  puts $timing_status_fp "hold_violating_paths=$hold_violation_present"
+  puts $timing_status_fp "hold_enforced=$logical_hold_repair"
+  close $timing_status_fp
   redirect -file [file join $report_dir qor.rpt] {report_qor}
   redirect -file [file join $report_dir area.rpt] {report_area -hierarchy}
   redirect -file [file join $report_dir power.rpt] {report_power}
   redirect -file [file join $report_dir references.rpt] {report_reference}
   set resource_report [file join $report_dir resources.rpt]
   redirect -file $resource_report {report_resources}
-  if {$top_name eq "attention_accel_top"} {
-    set resource_fp [open $resource_report r]
-    set resource_text [read $resource_fp]
-    close $resource_fp
-    if {![regexp {DW_mult} $resource_text]} {
-      error "attention_accel_top did not infer a DesignWare multiplier"
-    }
-  }
   redirect -file [file join $report_dir design.rpt] {report_design}
   redirect -file [file join $report_dir libraries.rpt] {list_libs}
   if {$physical_aware && [llength [info commands report_congestion]] > 0} {
@@ -185,8 +222,12 @@ foreach top_name $top_list {
   puts $config_fp "physical_aware=$physical_aware"
   puts $config_fp "write_artifacts=$write_artifacts"
   puts $config_fp "designware_library=dw_foundation.sldb"
+  puts $config_fp "multiplier_wrapper_count=$mult_wrapper_count"
+  puts $config_fp "linked_dw02_mult_count=$dw_multiplier_count"
   puts $config_fp "logical_hold_repair=$logical_hold_repair"
-  puts $config_fp "preserved_local_clear_registers=[sizeof_collection $local_clear_cells]"
+  # Collections captured before compile_ultra are invalid after optimization;
+  # write the stable integer recorded before compile instead of reusing _sel IDs.
+  puts $config_fp "preserved_clear_replica_instances=$clear_replica_count"
   foreach provenance_var {
     FA_GIT_COMMIT FA_GIT_STATUS_HASH FA_RTL_HASH FA_STD_DB_HASH FA_SRAM_DB_HASH
   } {

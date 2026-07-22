@@ -237,12 +237,25 @@ The final normalization stage computes `O_acc / l_final` for eight rows at the
 same feature each cycle using eight reciprocal lanes and two multiplier stages
 per lane. A stripe/feature tag is delayed with the arithmetic.
 
-After the signed 32x33 reciprocal product is arithmetically shifted by 15, the
+The bounded 30-bit reciprocal is explicitly converted to a positive signed
+31-bit operand. The resulting signed 32x31 product uses the common latency-2,
+II=1 partial-product wrapper: stage 1 computes 16x31 and 17x31 products in parallel, and
+stage 2 combines them. After the result is arithmetically shifted by 15, the
 implementation checks that the discarded upper bits are a sign extension and
-registers a conservative signed 48-bit value. The output-scale operation is
-therefore an exact signed 48x16 multiply rather than the former effective
-64x16 multiply. It uses the common fixed-latency two-stage, II=1 ASIC/FPGA
-multiplier wrapper; tag and valid metadata cross the same stages.
+passes a conservative signed 48-bit value into a second latency-2, II=1 exact
+48x16 output-scale multiplier. Scale, tag, and valid metadata cross both
+pipelines, so back-to-back feature tokens remain aligned.
+
+Under `ATTN_ASIC`, every variable-by-variable multiplier is instantiated through
+`fa_signed_mult_comb` or `fa_unsigned_mult_comb`, whose implementation is an
+explicit `DW02_mult`; simulation and FPGA builds use the equivalent portable `*`
+branch. Parameter-constant address arithmetic remains eligible for synthesis
+strength reduction and does not force a physical multiplier.
+
+Within a PE, the QK score update, WS-PV update, and rowsum update share one
+operand-isolated 33-bit adder. `accum_q` remains the stationary score register;
+`sum_data_o` remains the horizontal token register, so only the arithmetic cone
+is shared and the systolic dataflow is unchanged.
 
 - reciprocal seed + multiply,
 - reciprocal seed + one refinement stage,

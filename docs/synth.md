@@ -493,10 +493,10 @@ the authority for SRAM hold closure.
   16x8 multiplier. Its latency remains 3 and the combined score/exp latency
   remains 8.
 - `dw_foundation.sldb` is explicitly in both `synthetic_library` and
-  `link_library`. Every complete top synthesis writes `resources.rpt` and fails
-  if no `DW_mult` resource is present. The RTL wrappers preserve simulation and
-  FPGA inference while allowing DC Ultra to choose the timed DesignWare
-  multiplier architecture.
+  `link_library`. Every complete top synthesis checks, before optimization,
+  that each common multiplier wrapper links exactly one `DW02_mult`. The RTL
+  wrappers preserve simulation and FPGA inference while allowing DC Ultra to
+  choose the timed DesignWare multiplier architecture.
 
 ### 12.2 Hold flow and why it fixes hold
 
@@ -574,3 +574,149 @@ claim a clean mapped netlist. This round has not yet produced post-
    8-way row-read muxes, and its ordered-feature protocol assertion remains clean.
 5. FF/min-RC post-CTS hold remains the hold authority; this architectural
    change is not claimed as a hold fix.
+
+## 14. 2026-07-21 round-6 synthesis result and round-7 correction
+
+### 14.1 Result classification
+
+The TT 0.9 V/25 C, 1.7 ns system compile completed optimization and wrote
+reports, but it is a failed delivery run because the mapped design retained 16
+generic `**SEQGEN**` cells. All 16 are the four `clear_score_group_q` copies in
+each of four stripes. The cause was the DC script applying `set_dont_touch`
+before those generic flops could map. SRAM black boxes are expected linked
+macros and are not this failure. Reported QoR is useful for diagnosis but is not
+an accepted baseline until the corrected netlist contains no generic cells.
+
+Provisional results from that run are:
+
+| Metric | Result |
+| --- | ---: |
+| Setup WNS / TNS at 1.7 ns | 0.0000 / 0.0000 ns |
+| Setup logic levels | 62 |
+| Total cell area | 2.523 mm^2 |
+| Fused-array area share | 2.135 mm^2 / 84.6% |
+| Leaf cells | 1,501,965 |
+| Combinational / sequential cells | 1,261,940 / 240,025 |
+| Buffer/inverter cells | 223,229 |
+| Max-fanout violations at limit 16 | 8,234 |
+| Vectorless dynamic / leakage / total power | 13.483 / 10.451 / 23.939 mW |
+| Clock dynamic share | 8.127 mW, about 60% of dynamic |
+
+Power is vectorless and includes unannotated black-box outputs (`PWR-428`), so
+it is suitable only for relative triage, not an absolute power claim.
+
+### 14.2 Setup correction
+
+The worst setup path ran from registered block maxima through combinational
+`m_pending_q`, into stripe `m_start_data`, and then through the PE 32-bit delta
+subtractor to `accum_q`. The state machine already executes
+`m_rows_q <= m_pending_q` in `SM_ALPHA_WAIT` before `SM_M_START`. The stripe now
+sources `m_start_data` from `m_rows_q`, using the existing register boundary
+with no protocol or cycle change. The next TT run must establish at least
+0.10 ns WNS at 1.7 ns. If it does not, the next independent setup candidate is
+the normalizer's first 32x33 reciprocal multiply; it must not be changed before
+the new path ordering is measured.
+
+### 14.3 Mapped-clear correction
+
+`fa_clear_replica` replaces the protected register vector. Four leaf instances
+per stripe retain the intended eight-column fanout domains. DC applies
+`set_ungroup false` and `set_boundary_optimization false` to those instances,
+not `set_dont_touch` to their internal flops. `run_synth.sh` now rejects mapped
+Verilog containing either `**SEQGEN**` or `GTECH_`, in addition to the existing
+area-report unmapped-logic check.
+
+### 14.4 Hold diagnosis and closure sequence
+
+The failed run has hold WNS -0.0941 ns, hold TNS -406.49 ns, and 5602 violating
+paths. The worst path is a PE right-edge result register to O-SRAM D: data
+arrival is 0.046 ns while the SRAM Liberty hold plus 0.020 ns uncertainty
+requires 0.1401 ns. Endpoint classification shows 3548 paths in O banks, 1734
+in tile cache, and 288 in output buffer; pin classification gives 3840 D, 1454
+A, 142 CEB, and 134 WEB paths. These 5570 SRAM paths dominate the problem.
+
+Changing clock period cannot repair hold, and adding an RTL pipeline merely
+creates another short register-to-SRAM path. The corrected flow is:
+
+1. Every run writes `timing_status.rpt` with setup/hold violation-presence flags
+   (`0` means clean and `1` means at least one failing path); detailed counts
+   remain in `report_qor`/constraint reports. Limiting this gate to one path
+   also avoids `TIM-104` on the large top design.
+2. `make synth-system-hold` runs mapped hold-only incremental optimization and
+   fails unless both counts are zero; pre/post reports expose setup damage.
+3. `make synth-hold-ff` uses matching FF cells, FF SRAM, minimum RC, and physical
+   placement. It is a pre-CTS implementation gate, not signoff.
+4. Place-and-route inserts legal delay cells or buffer pairs on SRAM D/A/CEB/WEB
+   branches while preserving SS/max-RC setup.
+5. `make hold-signoff` checks both setup and hold using routed SPEF and propagated
+   clocks, and fails if either direction has a negative path.
+
+`SRAM_INPUT_MIN_DELAY` remains 0.000 ns. Liberty hold, hold uncertainty, and
+`set_fix_hold` remain active; no artificial 0.2 ns constraint or RTL delay chain
+is used to manufacture a clean report.
+
+### 14.5 Pre-synthesis verification
+
+The existing 26-test regression and the new dedicated clear-replica test all
+pass; after the normalizer pipeline correction, the end-to-end two-KV test is
+1362 cycles. VCS RTL lint is clean.
+DC analyze/elaborate/link resolves 16 independent clear-replica instances and
+all 480 SRAM macros. A focused TT synthesis maps `token_o_reg` to
+`DFCNQD1BWP12T30P140`; its mapped Verilog contains no generic cell and the new
+timing status reports zero setup and hold violations. A complete 32x32 system
+compile was deliberately not repeated in this edit round. The next required
+measurement is `make synth-system CORNER=tt CLOCK_PERIOD=1.7`, followed by the
+explicit logical-hold and FF/min-RC flows.
+
+## 15. Round-7 multiplier and report correction
+
+The completed 1.7 ns run exposed two independent issues. First, the pre-compile
+`clear_replica_cells` DC collection was reused after `compile_ultra`, when its
+selection handle was no longer valid, producing `SEL-001`. The script now stores
+the integer replica count before compilation and writes that stable value into
+`run_config.rpt`. No pre-compile collection is reused for this report field.
+
+Second, the new setup endpoint was the single-cycle signed 32x33 normalizer
+reciprocal product. It is now a latency-2, II=1 partial-product pipeline with
+16x33 and 17x33 stage-1 multipliers and a registered 65-bit combine stage. The
+existing 48x16 output-scale pipeline follows it; scale, shift, valid, and tag
+metadata gain the matching cycle. This adds one normalizer startup cycle without
+reducing steady-state throughput.
+
+All variable-by-variable multiplication sites now pass through the common
+signed or unsigned combinational multiplier wrapper. ASIC synthesis explicitly
+instantiates `DW02_mult` with `TC=1` or `TC=0`; FPGA and RTL simulation retain
+portable operator inference. This covers PE QK/PV sharing, PWL interpolation,
+normalizer partial products, LSE/O-rescale and score-scale wrappers, and runtime
+top-level stride/byte products. Compile-time parameter multiplication remains
+constant arithmetic and may be strength-reduced. The synthesis flow validates
+the binding immediately after link by requiring a one-to-one match between
+multiplier wrappers and linked `DW02_mult` instances. It intentionally does not
+require `DW_mult_tc` or `DW_mult_uns` in `resources.rpt`: `compile_ultra` may
+flatten, constant-fold, rename, or select an architecture such as
+`benc_radix8`, so those post-map resource labels are not stable interface
+contracts.
+
+## 16. Round-8 Width and PE Accumulator Reduction
+
+`reciprocal_lut` now emits a bounded 30-bit unsigned reciprocal: its 15-bit
+seed can shift left by at most 15 positions, so the former bits 31:30 were
+always zero. `online_normalizer` consequently uses the exact signed 32x31
+reciprocal product rather than 32x33, without changing pipeline latency.
+
+Within each fused PE, QK score accumulation, WS-PV accumulation, and rowsum
+are phase-mutually-exclusive. Their three former 33-bit add cones are now one
+operand-isolated shared adder. `accum_q` and `sum_data_o` remain separate
+registers because score is stationary PE state while PV/LSE is a horizontal
+stream token. The unused `scale_requant_unit`, `bram_buffer`, `stream_fifo`,
+and `uram_bank` RTL modules and their directed testbenches were removed from
+the active source and regression lists.
+
+Post-fix TT validation resolves all 480 SRAM macros and finds exactly 1220
+multiplier wrappers and 1220 linked `DW02_mult` instances in the complete
+32x32 top. A mapped `pwl_exp_unit` synthesis at 1.7 ns completes with no DC
+error, zero setup/hold violation flags, and no `TIM-104`. The earlier top run's
+`attention_accel_top did not infer DW_mult_tc` message was therefore a flow
+false positive rather than an RTL/library binding failure. A fresh full-system
+run is still required to regenerate mapped top artifacts after this script-only
+correction.

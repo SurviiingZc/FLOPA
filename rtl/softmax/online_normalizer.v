@@ -23,6 +23,7 @@ module online_normalizer #(
   output reg [TAG_W-1:0]        tag_o
 );
 
+  localparam integer RECIP_W = 30;
   localparam integer NORM_REDUCED_W = 48;
 
   // Round signed two's-complement values to nearest with ties away from zero.
@@ -54,7 +55,7 @@ module online_normalizer #(
   );
 
   wire [LANES-1:0] reciprocal_valid_w;
-  wire [LANES*32-1:0] reciprocal_w;
+  wire [LANES*RECIP_W-1:0] reciprocal_w;
   wire all_reciprocal_valid_w = &reciprocal_valid_w;
   reg [LANES*ACC_W-1:0] acc_s0_q;
   reg [LANES*ACC_W-1:0] acc_s1_q;
@@ -66,10 +67,13 @@ module online_normalizer #(
   reg [TAG_W-1:0] tag_s1_q;
   reg [TAG_W-1:0] tag_s2_q;
   reg [TAG_W-1:0] norm_tag_q;
+  reg [TAG_W-1:0] norm_tag_s1_q;
   reg [TAG_W-1:0] mult_tag_s1_q;
   reg [TAG_W-1:0] mult_tag_s2_q;
   reg norm_valid_q;
   reg mult_metadata_valid_s1_q;
+  wire [LANES-1:0] norm_product_valid_w;
+  wire all_norm_product_valid_w = &norm_product_valid_w;
   wire [LANES-1:0] scale_product_valid_w;
   wire all_scale_product_valid_w = &scale_product_valid_w;
 
@@ -78,13 +82,21 @@ module online_normalizer #(
   generate
     genvar lane;
     for (lane = 0; lane < LANES; lane = lane + 1) begin : g_lane
-      reg signed [63:0] norm_product_q;
+      localparam integer NORM_MULT_B_W = RECIP_W + 1;
+      localparam integer NORM_PRODUCT_W = ACC_W + NORM_MULT_B_W;
+      wire signed [NORM_PRODUCT_W-1:0] norm_product_full_w;
+      wire signed [63:0] norm_product_w =
+          $signed({{(64-NORM_PRODUCT_W){
+                    norm_product_full_w[NORM_PRODUCT_W-1]}},
+                   norm_product_full_w});
       wire signed [63:0] norm_shifted_full_w;
       wire signed [NORM_REDUCED_W-1:0] norm_reduced_w;
       wire signed [63:0] scale_product_w;
       reg signed [15:0] scale_mant_q;
+      reg signed [15:0] scale_mant_s1_q;
       reg [5:0] scale_shift_q;
       reg [5:0] scale_shift_s1_q;
+      reg [5:0] scale_shift_s2_q;
       reg [5:0] result_shift_q;
       reg signed [63:0] shifted_w;
       reg round_increment_w;
@@ -92,34 +104,49 @@ module online_normalizer #(
       reg signed [8:0] rounded_narrow_w;
       reg signed [OUT_W-1:0] result_q;
 
-      reciprocal_lut u_reciprocal (
+      reciprocal_lut #(.RECIP_W(RECIP_W)) u_reciprocal (
         .clk(gated_clk_w), .rst_n(rst_n), .valid_i(valid_i),
         .value_i(l_rows_i[lane*LSE_W +: LSE_W]),
         .valid_o(reciprocal_valid_w[lane]),
-        .reciprocal_o(reciprocal_w[lane*32 +: 32])
+        .reciprocal_o(reciprocal_w[lane*RECIP_W +: RECIP_W])
       );
 
       assign out_rows_o[lane*OUT_W +: OUT_W] = $unsigned(result_q);
       assign norm_shifted_full_w =
-          $signed(norm_product_q) >>> `ATTN_BETA_FRAC;
+          $signed(norm_product_w) >>> `ATTN_BETA_FRAC;
       assign norm_reduced_w =
           $signed(norm_shifted_full_w[NORM_REDUCED_W-1:0]);
       assign round_increment_value_w =
           round_increment(scale_product_w, result_shift_q);
 
+      // The reciprocal is bounded to 30 unsigned bits; its explicit zero sign bit
+      // gives an exact signed 32x31 product without widening the multiplier to 33.
+      // Split the former single-cycle product into two registered partial
+      // products and a registered combine stage. The wrapper remains II=1.
+      fa_signed_mult_pipe2 #(
+        .A_W(ACC_W), .B_W(NORM_MULT_B_W), .SPLIT_W(ACC_W/2)
+      ) u_reciprocal_multiplier (
+        .clk(gated_clk_w), .rst_n(rst_n),
+        .valid_i(all_reciprocal_valid_w),
+        .a_i($signed(acc_s2_q[lane*ACC_W +: ACC_W])),
+        .b_i($signed({1'b0,
+             reciprocal_w[lane*RECIP_W +: RECIP_W]})),
+        .valid_o(norm_product_valid_w[lane]),
+        .product_o(norm_product_full_w)
+      );
+
       fa_signed_mult_pipe2 #(
         .A_W(NORM_REDUCED_W), .B_W(16), .SPLIT_W(24)
       ) u_output_scale_multiplier (
-        .clk(gated_clk_w), .rst_n(rst_n), .valid_i(norm_valid_q),
-        .a_i(norm_reduced_w), .b_i(scale_mant_q),
+        .clk(gated_clk_w), .rst_n(rst_n),
+        .valid_i(norm_product_valid_w[lane]),
+        .a_i(norm_reduced_w), .b_i(scale_mant_s1_q),
         .valid_o(scale_product_valid_w[lane]), .product_o(scale_product_w)
       );
 
 `ifndef SYNTHESIS
-      // ACC32 times the bounded reciprocal is below 2^61 in magnitude; after the
-      // Q1.15 shift it must be a sign extension of this conservative 48-bit slice.
       always @(posedge gated_clk_w)
-        if (rst_n && norm_valid_q &&
+        if (rst_n && norm_product_valid_w[lane] &&
             norm_shifted_full_w !=
             {{(64-NORM_REDUCED_W){norm_reduced_w[NORM_REDUCED_W-1]}},
              norm_reduced_w})
@@ -136,21 +163,21 @@ module online_normalizer #(
             $signed({{8{1'b0}}, round_increment_w});
       end
 
-      // Payload registers are valid-qualified and intentionally unreset. The first
-      // multiply is 32x33; the exact 48x16 scale uses the shared two-stage wrapper.
+      // Metadata follows the two multiplier pipelines. Payload registers are
+      // valid-qualified and intentionally unreset to reduce reset-tree load.
       always @(posedge gated_clk_w) begin
         if (all_reciprocal_valid_w) begin
-          norm_product_q <=
-              $signed({{(64-ACC_W){acc_s2_q[lane*ACC_W+ACC_W-1]}},
-                       acc_s2_q[lane*ACC_W +: ACC_W]}) *
-              $signed({1'b0, reciprocal_w[lane*32 +: 32]});
           scale_mant_q <= $signed(scale_s2_q[15:0]);
           scale_shift_q <= scale_s2_q[21:16];
         end
-        if (norm_valid_q)
+        if (norm_valid_q) begin
+          scale_mant_s1_q <= scale_mant_q;
           scale_shift_s1_q <= scale_shift_q;
+        end
+        if (norm_product_valid_w[lane])
+          scale_shift_s2_q <= scale_shift_s1_q;
         if (mult_metadata_valid_s1_q)
-          result_shift_q <= scale_shift_s1_q;
+          result_shift_q <= scale_shift_s2_q;
         if (scale_product_valid_w[lane]) begin
           if (shifted_w > 64'sd127 || rounded_narrow_w > 9'sd127)
             result_q <= 8'sd127;
@@ -180,12 +207,14 @@ module online_normalizer #(
       tag_s1_q <= tag_s0_q;
       tag_s2_q <= tag_s1_q;
       norm_valid_q <= all_reciprocal_valid_w;
-      mult_metadata_valid_s1_q <= norm_valid_q;
+      mult_metadata_valid_s1_q <= all_norm_product_valid_w;
       valid_o <= all_scale_product_valid_w;
       if (all_reciprocal_valid_w)
         norm_tag_q <= tag_s2_q;
       if (norm_valid_q)
-        mult_tag_s1_q <= norm_tag_q;
+        norm_tag_s1_q <= norm_tag_q;
+      if (all_norm_product_valid_w)
+        mult_tag_s1_q <= norm_tag_s1_q;
       if (mult_metadata_valid_s1_q)
         mult_tag_s2_q <= mult_tag_s1_q;
       if (all_scale_product_valid_w)

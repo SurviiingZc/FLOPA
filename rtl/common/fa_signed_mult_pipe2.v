@@ -31,6 +31,20 @@ module fa_signed_mult_pipe2 #(
   reg signed [HI_PRODUCT_W-1:0] hi_product_s1_q;
   reg signed [LO_PRODUCT_W-1:0] lo_product_s1_q;
   reg valid_s1_q;
+  wire signed [HI_PRODUCT_W-1:0] hi_product_w;
+  wire signed [LO_PRODUCT_W-1:0] lo_product_w;
+
+  fa_signed_mult_comb #(
+    .A_W(HI_W), .B_W(B_W)
+  ) u_hi_multiplier (
+    .a_i(a_hi_w), .b_i(b_i), .product_o(hi_product_w)
+  );
+
+  fa_signed_mult_comb #(
+    .A_W(LO_OPERAND_W), .B_W(B_W)
+  ) u_lo_multiplier (
+    .a_i(a_lo_w), .b_i(b_i), .product_o(lo_product_w)
+  );
 
   wire signed [PRODUCT_W-1:0] hi_product_extended_w =
       $signed({{(PRODUCT_W-HI_PRODUCT_W){
@@ -66,13 +80,9 @@ module fa_signed_mult_pipe2 #(
   always @(posedge clk) begin
     if (rst_n) begin
       if (valid_i) begin
-        // Explicit result contexts prevent Verilog from truncating mixed-width
-        // products while retaining the effective HI_WxB_W and (SPLIT_W+1)xB_W
-        // variable operands after constant sign-extension is optimized.
-        hi_product_s1_q <=
-            $signed({{B_W{a_hi_w[HI_W-1]}}, a_hi_w}) * $signed(b_i);
-        lo_product_s1_q <=
-            $signed({{B_W{a_lo_w[LO_OPERAND_W-1]}}, a_lo_w}) * $signed(b_i);
+        // Each partial product has an explicit DesignWare boundary in ASIC mode.
+        hi_product_s1_q <= hi_product_w;
+        lo_product_s1_q <= lo_product_w;
       end
       if (valid_s1_q)
         product_o <= combined_product_w;

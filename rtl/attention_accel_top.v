@@ -80,8 +80,7 @@ module attention_accel_top #(
   localparam [STRIPE_IDX_W-1:0] STRIPE_LAST = NUM_STRIPES - 1;
   localparam [16:0] ARRAY_ROWS_17 = ARRAY_ROWS;
   localparam [15:0] ARRAY_ROWS_16 = ARRAY_ROWS;
-  localparam [31:0] HEAD_DIM_32 = HEAD_DIM;
-  localparam [31:0] OUT_BYTES_32 = OUT_W / 8;
+  localparam [31:0] OUTPUT_ROW_BYTES_32 = HEAD_DIM * (OUT_W / 8);
 
 `ifndef SYNTHESIS
   // The physical array consumes exactly one 256-bit cache word per issue cycle.
@@ -243,6 +242,8 @@ module attention_accel_top #(
   reg [31:0] writeback_addr_q;
   reg [31:0] head_base_addr_q;
   reg [63:0] head_stride_bytes_q;
+  wire [47:0] head_stride_product_w;
+  wire [47:0] writeback_bytes_product_w;
   reg [15:0] writeback_beats_w;
   reg [15:0] valid_q_rows_w;
   reg [31:0] writeback_bytes_w;
@@ -269,6 +270,22 @@ module attention_accel_top #(
   localparam PV_FLOW_NORM_DRAIN = 4'd4;
   localparam PV_FLOW_COMPLETE = 4'd5;
   localparam PV_FLOW_WAIT_L = 4'd6;
+
+  // Runtime configuration products use explicit unsigned DesignWare boundaries.
+  // Constant factors remain parameters so DC may still strength-reduce them.
+  fa_unsigned_mult_comb #(
+    .A_W(16), .B_W(32)
+  ) u_head_stride_multiplier (
+    .a_i(cfg_seq_q_w), .b_i(cfg_o_stride_w),
+    .product_o(head_stride_product_w)
+  );
+
+  fa_unsigned_mult_comb #(
+    .A_W(16), .B_W(32)
+  ) u_writeback_bytes_multiplier (
+    .a_i(valid_q_rows_w), .b_i(OUTPUT_ROW_BYTES_32),
+    .product_o(writeback_bytes_product_w)
+  );
 
   assign debug_state_o = debug_state_reg_w;
   assign irq_o = scheduler_done_w | scheduler_error_w;
@@ -477,8 +494,7 @@ module attention_accel_top #(
       valid_q_rows_w = ARRAY_ROWS_16;
     else
       valid_q_rows_w = cfg_seq_q_w - q_tile_base_w;
-    writeback_bytes_w = {16'd0, valid_q_rows_w} *
-                        HEAD_DIM_32 * OUT_BYTES_32;
+    writeback_bytes_w = writeback_bytes_product_w[31:0];
     writeback_beats_full_w = (writeback_bytes_w + 15) >> 4;
     writeback_beats_w = writeback_beats_full_w[15:0];
   end
@@ -541,7 +557,7 @@ module attention_accel_top #(
       norm_feature_q <= {FEATURE_IDX_W{1'b0}};
       writeback_addr_q <= cfg_o_base_w[31:0];
       head_base_addr_q <= cfg_o_base_w[31:0];
-      head_stride_bytes_q <= {48'd0, cfg_seq_q_w} * cfg_o_stride_w;
+      head_stride_bytes_q <= {16'd0, head_stride_product_w};
     end else begin
       qk_en_d_q <= qk_en_w;
       softmax_en_d_q <= softmax_en_w;
@@ -554,7 +570,7 @@ module attention_accel_top #(
       if (cfg_start_w) begin
         writeback_addr_q <= cfg_o_base_w[31:0];
         head_base_addr_q <= cfg_o_base_w[31:0];
-        head_stride_bytes_q <= {48'd0, cfg_seq_q_w} * cfg_o_stride_w;
+        head_stride_bytes_q <= {16'd0, head_stride_product_w};
       end else if (axi_write_done_w) begin
         if ({1'b0, q_tile_base_w} + ARRAY_ROWS_17 >= {1'b0, cfg_seq_q_w}) begin
           head_base_addr_q <= head_base_addr_q + head_stride_bytes_q[31:0];

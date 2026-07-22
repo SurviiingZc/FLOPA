@@ -1,14 +1,16 @@
 `timescale 1ns/1ps
 
-// Leading-one normalization plus a 16-entry reciprocal seed LUT. The result is
-// rescaled to the original unsigned 32-bit denominator for final O/l normalization.
-module reciprocal_lut (
+// Leading-one normalization plus a 16-entry reciprocal seed LUT. The 15-bit
+// seed can shift left by at most 15 bits, so every exact result fits in 30 bits.
+module reciprocal_lut #(
+  parameter integer RECIP_W = 30
+)(
   input             clk,
   input             rst_n,
   input             valid_i,
   input      [31:0] value_i,
   output reg        valid_o,
-  output reg [31:0] reciprocal_o
+  output reg [RECIP_W-1:0] reciprocal_o
 );
 
   integer bit_idx;
@@ -24,6 +26,13 @@ module reciprocal_lut (
   reg [15:0] seed_w;
   reg [63:0] shifted_w;
   reg [31:0] bit_idx_unsigned_w;
+
+`ifndef SYNTHESIS
+  initial begin
+    if (RECIP_W < 30)
+      $fatal(1, "reciprocal_lut requires RECIP_W >= 30");
+  end
+`endif
 
   // Find the denominator MSB, normalize it around bit 15, and restore the exponent
   // after the LUT lookup. A zero denominator maps to zero rather than infinity.
@@ -72,7 +81,7 @@ module reciprocal_lut (
       shifted_w = {48'd0, seed_w} << (15 - msb_s1_q);
   end
 
-  // Pipeline capture, normalization metadata, and saturated reciprocal output.
+  // Pipeline capture, normalization metadata, and the bounded reciprocal output.
   always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
       valid_s0_q <= 1'b0;
@@ -90,8 +99,7 @@ module reciprocal_lut (
       end
       valid_o <= valid_s1_q;
       if (valid_s1_q)
-        reciprocal_o <= (shifted_w[63:32] != 0) ?
-            32'hffff_ffff : shifted_w[31:0];
+        reciprocal_o <= shifted_w[RECIP_W-1:0];
     end
   end
 

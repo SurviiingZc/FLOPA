@@ -434,8 +434,10 @@ physical flow, not by adding RTL inverter chains or restoring artificial
 - QK clear is registered and replicated once per 8-column group inside each
   stripe. `ST_CLEAR` is followed by `ST_CLEAR_LOCAL`, so the global FSM only
   drives local clear registers and every PE observes two complete clear clocks
-  before QK issue begins. The register vector carries keep/dont-touch intent and
-  the DC script preserves matching cells, preventing equivalent-bit merging.
+  before QK issue begins. Each copy is now a `fa_clear_replica` leaf instance.
+  DC preserves its hierarchy and disables cross-boundary optimization, but does
+  not apply `dont_touch` to the internal generic flop; the replica therefore
+  remains physically independent and still maps to a real library cell.
 - The generic requantizer was removed from the 32 score lanes. Dedicated
   `score_scale_pipe` fixes the score policy and exposes only data, mantissa,
   shift, and valid, while retaining latency 5 and II=1.
@@ -519,3 +521,38 @@ a clean mapped-netlist check. The next full synthesis must confirm that no
 row-index mux appears before the LSE multiplier, that the two partial products
 map at their intended widths, and that setup/area improve; functional
 simulation alone cannot establish those physical results.
+
+## 12. Round-7 Mapped-Control and Timing-Closure Corrections
+
+### 12.1 Unmapped clear replicas
+
+The previous clear replication intent was correct, but its implementation was
+not: pre-compile `set_dont_touch` froze 16 generic clear flops as `**SEQGEN**`.
+The flow correctly rejected the resulting mapped netlist. The four replicas in
+each stripe are now separate `fa_clear_replica` leaves. `set_ungroup false` and
+`set_boundary_optimization false` protect the four physical domains, while the
+internal flop remains available for technology mapping. The synthesis wrapper
+also scans every delivered mapped Verilog file for `**SEQGEN**` and `GTECH_`.
+
+### 12.2 Block-max setup boundary
+
+`SM_ALPHA_WAIT` already commits `m_pending_q` into `m_rows_q` before entering
+`SM_M_START`. The reverse max wave nevertheless used `m_pending_q`, retaining a
+62-level path from block/local-max selection through the PE delta subtractor.
+The stripe input now uses `m_rows_q`. This consumes the existing state boundary,
+adds no register and no cycle, and prevents block-max combinational logic from
+being chained into all 1024 PE subtraction endpoints.
+
+### 12.3 Hold policy
+
+The TT ideal-clock run's worst hold path is a 0.046 ns register-to-O-SRAM input
+path against 0.1401 ns required time, giving -0.0941 ns. Of 5602 reported paths,
+5570 end on SRAM pins: 3840 D, 1454 A, 142 CEB, and 134 WEB. This is a physical
+minimum-delay problem, not a reason to add functional RTL latency.
+
+All synthesis runs now emit `timing_status.rpt`. Ordinary TT/SS setup runs retain
+hold violations as diagnostics. Explicit `synth-system-hold` and FF/min-RC runs
+must finish with zero setup and zero hold violating paths. Post-CTS PrimeTime
+likewise checks both directions with propagated clocks and routed SPEF. The SRAM
+input min-delay default remains zero; final repair belongs to legal delay cells
+or buffer pairs inserted on the reported macro branches during place and route.

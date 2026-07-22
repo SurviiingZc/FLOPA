@@ -15,12 +15,12 @@ TOP_AXI_WR := tb_axi4_master_write
 TOP_PE := tb_fsa_fused_array
 TOP_ACCEL := tb_attention_accel_top
 
-COMMON_TOPS := tb_fixed_defs_smoke
+COMMON_TOPS := tb_fixed_defs_smoke tb_fa_clear_replica
 CONTROL_TOPS := tb_accel_regfile tb_accel_scheduler tb_perf_counter
 AXI_TOPS := tb_axi4_slave_if tb_axi4_master_write
-COMPUTE_TOPS := tb_fsa_fused_array tb_fa_signed_mult_pipe2 tb_fa_unsigned_mult_pipe2 tb_fsa_fused_pe tb_fsa_stripe tb_fsa_controller tb_scale_requant_unit tb_score_scale_pipe
-MEMORY_TOPS := tb_banked_sram tb_bram_buffer tb_output_buffer \
-	tb_o_accumulator_bank tb_pingpong_buffer tb_qkv_tile_cache tb_stream_fifo tb_uram_bank
+COMPUTE_TOPS := tb_fsa_fused_array tb_fa_signed_mult_pipe2 tb_fa_unsigned_mult_pipe2 tb_fsa_fused_pe tb_fsa_stripe tb_fsa_controller tb_score_scale_pipe
+MEMORY_TOPS := tb_banked_sram tb_output_buffer \
+	tb_o_accumulator_bank tb_pingpong_buffer tb_qkv_tile_cache
 SOFTMAX_TOPS := tb_online_normalizer tb_pwl_exp_unit tb_reciprocal_lut
 TOP_TOPS := tb_attention_accel_top
 MODULE_TOPS := $(COMMON_TOPS) $(CONTROL_TOPS) $(AXI_TOPS) $(COMPUTE_TOPS) \

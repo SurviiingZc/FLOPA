@@ -14,7 +14,7 @@ proc fa_apply_core_constraints {clock_period} {
   set input_transition [fa_env_or_default FA_INPUT_TRANSITION 0.050]
   set output_load [fa_env_or_default FA_OUTPUT_LOAD 0.020]
   set max_transition [fa_env_or_default FA_MAX_TRANSITION 0.300]
-  set max_fanout [fa_env_or_default FA_MAX_FANOUT 16]
+  set max_fanout [fa_env_or_default FA_MAX_FANOUT 24]
 
   set clock_ports [get_ports -quiet clk]
   if {[sizeof_collection $clock_ports] == 0} {

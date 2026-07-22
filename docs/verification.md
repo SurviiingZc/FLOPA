@@ -72,9 +72,9 @@ Targets:
 
 - `fixed_defs.vh` numeric helpers and constants.
 - `accel_regfile.v`.
-- `banked_sram.v`, `pingpong_buffer.v`, `stream_fifo.v`.
+- `banked_sram.v`, `pingpong_buffer.v`, and `output_buffer.v`.
 - `pwl_exp_unit.v`, `reciprocal_lut.v`, `online_normalizer.v`.
-- `fsa_fused_array.v`, `scale_requant_unit.v`, and `fsa_controller.v`.
+- `fsa_fused_array.v`, `score_scale_pipe.v`, and `fsa_controller.v`.
 - `axi4_master_write.v` and AXI handshake logic.
 
 ### 5.2 Required TB Structure
