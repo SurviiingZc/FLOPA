@@ -38,6 +38,12 @@ novas*
 *.log
 *.out
 
+# UVM source directories deliberately use names otherwise reserved for outputs.
+!tb/uvm/env/
+!tb/uvm/env/*.svh
+!tb/uvm/coverage/
+!tb/uvm/coverage/*.svh
+
 # Synopsys DC
 *.svf
 *.ddc
