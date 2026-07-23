@@ -73,6 +73,61 @@ module tb_fsa_fused_array;
     end
   endtask
 
+  // Continuous feature-major reads are the normalizer use case. The response
+  // tag must select the same O[:,d] payload even while the next O-bank address
+  // is issued, otherwise every output feature is shifted by one.
+  task check_norm_read_stream;
+    input [STRIPE_IDX_W-1:0] stripe;
+    integer sent_feature;
+    integer seen_feature;
+    integer local_row;
+    integer global_row;
+    reg signed [31:0] stream_observed;
+    begin
+      seen_feature = 0;
+      fork
+        begin
+          for (sent_feature = 0; sent_feature < HEAD_DIM;
+               sent_feature = sent_feature + 1) begin
+            @(negedge clk);
+            norm_rd_en_i = 1'b1;
+            norm_rd_stripe_i = stripe;
+            norm_rd_feature_i = sent_feature[FEATURE_IDX_W-1:0];
+          end
+          @(negedge clk);
+          norm_rd_en_i = 1'b0;
+        end
+        begin
+          while (seen_feature < HEAD_DIM) begin
+            @(negedge clk);
+            if (norm_rd_valid_o) begin
+              if (norm_rd_stripe_o !== stripe ||
+                  norm_rd_feature_o !== seen_feature[FEATURE_IDX_W-1:0]) begin
+                $error("[FAIL] streamed norm tag stripe=%0d feature=%0d exp_feature=%0d",
+                       norm_rd_stripe_o, norm_rd_feature_o, seen_feature);
+                errors = errors + 1;
+              end
+              for (local_row = 0; local_row < STRIPE_ROWS;
+                   local_row = local_row + 1) begin
+                global_row = stripe*STRIPE_ROWS + local_row;
+                stream_observed =
+                    norm_rd_acc_o[local_row*ACC_W +: ACC_W];
+                if (stream_observed !==
+                    expected_prob[global_row][seen_feature%COLS]) begin
+                  $error("[FAIL] streamed O stripe=%0d row=%0d feature=%0d got=%0d exp=%0d",
+                         stripe, local_row, seen_feature, stream_observed,
+                         expected_prob[global_row][seen_feature%COLS]);
+                  errors = errors + 1;
+                end
+              end
+              seen_feature = seen_feature + 1;
+            end
+          end
+        end
+      join
+    end
+  endtask
+
   initial begin
     expected_prob[0][0]=16'd1632; expected_prob[0][1]=16'd4435;
     expected_prob[0][2]=16'd12055; expected_prob[0][3]=16'd32767;
@@ -111,6 +166,8 @@ module tb_fsa_fused_array;
     end
     @(negedge clk); pv_valid_i=0;
     wait(pv_done_o);
+    check_norm_read_stream(0);
+    check_norm_read_stream(1);
     check_o_feature(0,0); check_o_feature(0,7);
     check_o_feature(1,3); check_o_feature(1,6);
     @(negedge clk);

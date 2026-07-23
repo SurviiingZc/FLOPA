@@ -61,6 +61,9 @@ class fa_random_qkv_test extends fa_base_test;
     super.configure();
     cfg.stimulus = FA_STIM_RANDOM_SMALL;
     cfg.ready_low_pct = 25;
+    // Only this workload is an SAIF profile; all other random-based tests
+    // retain their ordinary transaction order even when compiled with SAIF code.
+    cfg.saif_capture = $test$plusargs("SAIF_ENABLE");
   endfunction
   virtual task run_sequence();
     fa_random_qkv_vseq seq;
@@ -150,6 +153,123 @@ class fa_causal_random_test extends fa_base_test;
   virtual task run_sequence();
     fa_random_qkv_vseq seq;
     seq = fa_random_qkv_vseq::type_id::create("causal_random_seq");
+    seq.start(env.vseqr);
+  endtask
+endclass
+
+class fa_two_tile_pingpong_test extends fa_base_test;
+  `uvm_component_utils(fa_two_tile_pingpong_test)
+  function new(string name = "fa_two_tile_pingpong_test", uvm_component parent = null);
+    super.new(name, parent);
+  endfunction
+  virtual function void configure();
+    super.configure();
+    cfg.seq_q = 64;
+    cfg.seq_kv = 64;
+    cfg.stimulus = FA_STIM_RANDOM_SMALL;
+    cfg.ready_low_pct = 0;
+    cfg.saif_capture = $test$plusargs("SAIF_ENABLE");
+  endfunction
+  virtual task run_sequence();
+    fa_two_tile_pingpong_vseq seq;
+    seq = fa_two_tile_pingpong_vseq::type_id::create("two_tile_pingpong_seq");
+    seq.start(env.vseqr);
+  endtask
+endclass
+
+class fa_two_tile_random_backpressure_test extends fa_base_test;
+  `uvm_component_utils(fa_two_tile_random_backpressure_test)
+  function new(string name = "fa_two_tile_random_backpressure_test", uvm_component parent = null);
+    super.new(name, parent);
+  endfunction
+  virtual function void configure();
+    super.configure();
+    cfg.seq_q = 64;
+    cfg.seq_kv = 64;
+    cfg.stimulus = FA_STIM_RANDOM_SMALL;
+    cfg.ready_low_pct = 50;
+    cfg.saif_capture = $test$plusargs("SAIF_ENABLE");
+  endfunction
+  virtual task run_sequence();
+    fa_two_tile_pingpong_vseq seq;
+    seq = fa_two_tile_pingpong_vseq::type_id::create("two_tile_random_backpressure_seq");
+    seq.start(env.vseqr);
+  endtask
+endclass
+
+class fa_decode_smoke_test extends fa_base_test;
+  `uvm_component_utils(fa_decode_smoke_test)
+  function new(string name = "fa_decode_smoke_test", uvm_component parent = null);
+    super.new(name, parent);
+  endfunction
+  virtual function void configure();
+    super.configure();
+    cfg.decode_en = 1;
+    cfg.causal_en = 1;
+    cfg.seq_q = 1;
+    cfg.seq_kv = 32;
+  endfunction
+  virtual task run_sequence();
+    fa_decode_vseq seq;
+    seq = fa_decode_vseq::type_id::create("decode_smoke_seq");
+    seq.start(env.vseqr);
+  endtask
+endclass
+
+class fa_decode_backpressure_test extends fa_base_test;
+  `uvm_component_utils(fa_decode_backpressure_test)
+  function new(string name = "fa_decode_backpressure_test", uvm_component parent = null);
+    super.new(name, parent);
+  endfunction
+  virtual function void configure();
+    super.configure();
+    cfg.decode_en = 1;
+    cfg.causal_en = 0;
+    cfg.seq_q = 1;
+    cfg.seq_kv = 32;
+    cfg.ready_low_pct = 50;
+  endfunction
+  virtual task run_sequence();
+    fa_decode_vseq seq;
+    seq = fa_decode_vseq::type_id::create("decode_backpressure_seq");
+    seq.start(env.vseqr);
+  endtask
+endclass
+
+class fa_decode_random_test extends fa_base_test;
+  `uvm_component_utils(fa_decode_random_test)
+  function new(string name = "fa_decode_random_test", uvm_component parent = null);
+    super.new(name, parent);
+  endfunction
+  virtual function void configure();
+    super.configure();
+    cfg.decode_en = 1;
+    cfg.causal_en = 1;
+    cfg.seq_q = 1;
+    cfg.seq_kv = 32;
+    cfg.stimulus = FA_STIM_RANDOM_SMALL;
+    cfg.ready_low_pct = 25;
+  endfunction
+  virtual task run_sequence();
+    fa_decode_vseq seq;
+    seq = fa_decode_vseq::type_id::create("decode_random_seq");
+    seq.start(env.vseqr);
+  endtask
+endclass
+
+class fa_decode_illegal_config_test extends fa_base_test;
+  `uvm_component_utils(fa_decode_illegal_config_test)
+  function new(string name = "fa_decode_illegal_config_test", uvm_component parent = null);
+    super.new(name, parent);
+  endfunction
+  virtual function void configure();
+    super.configure();
+    cfg.enable_data_check = 0;
+    cfg.allow_axil_error_response = 1;
+  endfunction
+  virtual task run_sequence();
+    fa_decode_illegal_config_vseq seq;
+    seq = fa_decode_illegal_config_vseq::type_id::create("decode_illegal_config_seq");
     seq.start(env.vseqr);
   endtask
 endclass

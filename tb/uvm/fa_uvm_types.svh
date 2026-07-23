@@ -13,14 +13,17 @@ typedef enum int unsigned {
   FA_STIM_PWL_SEGMENTS,
   FA_STIM_ARITH_ROUNDING,
   FA_STIM_POSITIVE_SAT,
-  FA_STIM_NEGATIVE_SAT
+  FA_STIM_NEGATIVE_SAT,
+  FA_STIM_TWO_TILE_PINGPONG
 } fa_stimulus_e;
+
+localparam int unsigned FA_MAX_SEQ = 2 * `ATTN_ARRAY_ROWS;
 
 class fa_qkv_tensor extends uvm_object;
   `uvm_object_utils(fa_qkv_tensor)
-  byte signed q [0:`ATTN_ARRAY_ROWS-1][0:`ATTN_HEAD_DIM-1];
-  byte signed k [0:`ATTN_ARRAY_COLS-1][0:`ATTN_HEAD_DIM-1];
-  byte signed v [0:`ATTN_ARRAY_COLS-1][0:`ATTN_HEAD_DIM-1];
+  byte signed q [0:FA_MAX_SEQ-1][0:`ATTN_HEAD_DIM-1];
+  byte signed k [0:FA_MAX_SEQ-1][0:`ATTN_HEAD_DIM-1];
+  byte signed v [0:FA_MAX_SEQ-1][0:`ATTN_HEAD_DIM-1];
 
   function new(string name = "fa_qkv_tensor");
     super.new(name);
@@ -28,7 +31,7 @@ class fa_qkv_tensor extends uvm_object;
 
   function void fill_constant(byte signed q_value, byte signed k_value,
                               byte signed v_value);
-    for (int unsigned row = 0; row < `ATTN_ARRAY_ROWS; row++)
+    for (int unsigned row = 0; row < FA_MAX_SEQ; row++)
       for (int unsigned dim = 0; dim < `ATTN_HEAD_DIM; dim++) begin
         q[row][dim] = q_value;
         k[row][dim] = k_value;
@@ -38,7 +41,7 @@ class fa_qkv_tensor extends uvm_object;
 
   function void fill_random_small();
     int signed value;
-    for (int unsigned row = 0; row < `ATTN_ARRAY_ROWS; row++)
+    for (int unsigned row = 0; row < FA_MAX_SEQ; row++)
       for (int unsigned dim = 0; dim < `ATTN_HEAD_DIM; dim++) begin
         value = -4 + $urandom_range(8);
         q[row][dim] = value;
@@ -53,7 +56,7 @@ class fa_qkv_tensor extends uvm_object;
     // Q dot K produces score deltas at 256-point boundaries, covering every
     // PWL segment and the x <= -2048 zero-output clamp.
     int signed key_level;
-    for (int unsigned row = 0; row < `ATTN_ARRAY_ROWS; row++)
+    for (int unsigned row = 0; row < FA_MAX_SEQ; row++)
       for (int unsigned dim = 0; dim < `ATTN_HEAD_DIM; dim++) begin
         q[row][dim] = 8'sd1;
         key_level = 8 - (row * 4);
@@ -66,11 +69,22 @@ class fa_qkv_tensor extends uvm_object;
   function void fill_arith_rounding();
     // The first Q/K feature makes score deltas of 0, -1, -2 and -3. With
     // scale mantissa=5 and shift=2, -1*5 has guard and sticky bits both set.
-    for (int unsigned row = 0; row < `ATTN_ARRAY_ROWS; row++)
+    for (int unsigned row = 0; row < FA_MAX_SEQ; row++)
       for (int unsigned dim = 0; dim < `ATTN_HEAD_DIM; dim++) begin
         q[row][dim] = (dim == 0) ? 8'sd1 : 8'sd0;
         k[row][dim] = (dim == 0) ? (8'sd2 - (row % 4)) : 8'sd0;
         v[row][dim] = 8'sd1;
+      end
+  endfunction
+
+  function void fill_two_tile_pingpong();
+    for (int unsigned row = 0; row < FA_MAX_SEQ; row++)
+      for (int unsigned dim = 0; dim < `ATTN_HEAD_DIM; dim++) begin
+        q[row][dim] = (row < `ATTN_ARRAY_ROWS) ? 8'sd0 :
+                      ((dim == 0) ? 8'sd1 : 8'sd0);
+        k[row][dim] = (row < `ATTN_ARRAY_COLS) ? 8'sd0 :
+                      ((dim == 0) ? 8'sd1 : 8'sd0);
+        v[row][dim] = (row < `ATTN_ARRAY_COLS) ? 8'sd1 : 8'sd5;
       end
   endfunction
 
@@ -82,6 +96,7 @@ class fa_qkv_tensor extends uvm_object;
       FA_STIM_ARITH_ROUNDING: fill_arith_rounding();
       FA_STIM_POSITIVE_SAT: fill_constant(8'sd0, 8'sd0, 8'sd127);
       FA_STIM_NEGATIVE_SAT: fill_constant(8'sd0, 8'sd0, -8'sd128);
+      FA_STIM_TWO_TILE_PINGPONG: fill_two_tile_pingpong();
       default: fill_constant(8'sd0, 8'sd0, 8'sd0);
     endcase
   endfunction
@@ -89,7 +104,10 @@ endclass
 
 class fa_model_event extends uvm_sequence_item;
   fa_stimulus_e stimulus;
+  bit decode_en;
   bit causal_en;
+  bit multi_q_tile;
+  bit multi_kv_tile;
   bit [7:0] pwl_segment_mask;
   bit saw_exp_zero;
   bit saw_exp_one;
@@ -103,7 +121,10 @@ class fa_model_event extends uvm_sequence_item;
 
   `uvm_object_utils_begin(fa_model_event)
     `uvm_field_enum(fa_stimulus_e, stimulus, UVM_DEFAULT)
+    `uvm_field_int(decode_en, UVM_DEFAULT)
     `uvm_field_int(causal_en, UVM_DEFAULT)
+    `uvm_field_int(multi_q_tile, UVM_DEFAULT)
+    `uvm_field_int(multi_kv_tile, UVM_DEFAULT)
     `uvm_field_int(pwl_segment_mask, UVM_DEFAULT)
     `uvm_field_int(saw_exp_zero, UVM_DEFAULT)
     `uvm_field_int(saw_exp_one, UVM_DEFAULT)
@@ -200,6 +221,7 @@ class fa_test_cfg extends uvm_object;
   rand int unsigned ready_low_pct;
   bit [31:0]       score_scale;
   bit [31:0]       out_scale;
+  bit              decode_en;
   bit              causal_en;
   bit              enable_reference_model;
   fa_stimulus_e    stimulus;
@@ -208,10 +230,12 @@ class fa_test_cfg extends uvm_object;
   byte signed      canonical_value;
   bit              enable_data_check;
   bit              allow_axil_error_response;
+  bit              saif_capture;
 
-  constraint c_supported_prefill {
-    seq_q inside {[1:32]};
-    seq_kv inside {[1:64]};
+  constraint c_supported_mode {
+    seq_q inside {[1:FA_MAX_SEQ]};
+    seq_kv inside {[1:FA_MAX_SEQ]};
+    decode_en -> seq_q == 1;
     num_q_heads == 1;
     num_kv_heads == 1;
     head_dim == `ATTN_HEAD_DIM;
@@ -231,6 +255,7 @@ class fa_test_cfg extends uvm_object;
     `uvm_field_int(ready_low_pct, UVM_DEFAULT)
     `uvm_field_int(score_scale, UVM_DEFAULT)
     `uvm_field_int(out_scale, UVM_DEFAULT)
+    `uvm_field_int(decode_en, UVM_DEFAULT)
     `uvm_field_int(causal_en, UVM_DEFAULT)
     `uvm_field_enum(fa_stimulus_e, stimulus, UVM_DEFAULT)
     `uvm_field_int(enable_reference_model, UVM_DEFAULT)
@@ -238,6 +263,7 @@ class fa_test_cfg extends uvm_object;
     `uvm_field_int(canonical_value, UVM_DEFAULT)
     `uvm_field_int(enable_data_check, UVM_DEFAULT)
     `uvm_field_int(allow_axil_error_response, UVM_DEFAULT)
+    `uvm_field_int(saif_capture, UVM_DEFAULT)
   `uvm_object_utils_end
 
   function new(string name = "fa_test_cfg");
@@ -252,6 +278,7 @@ class fa_test_cfg extends uvm_object;
     ready_low_pct = 0;
     score_scale = 32'h0000_0001;
     out_scale = 32'h000f_0001;
+    decode_en = 0;
     causal_en = 0;
     enable_reference_model = 1;
     stimulus = FA_STIM_CANONICAL;
@@ -260,6 +287,7 @@ class fa_test_cfg extends uvm_object;
     canonical_value = 1;
     enable_data_check = 1;
     allow_axil_error_response = 0;
+    saif_capture = 0;
   endfunction
 endclass
 

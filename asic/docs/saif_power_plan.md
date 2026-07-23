@@ -2,11 +2,11 @@
 
 ## 1. Scope and timing
 
-This plan defines the ASIC activity-based power flow for the fixed 32x32
-prefill RTL. Script implementation and final measurements are intentionally
-deferred until the UVM system test can reproduce complete loader, compute,
-normalization, and AXI-write traffic. Vectorless power remains useful only for
-structural comparison.
+This plan defines the ASIC activity-based power flow for the fixed 2x2-tile
+(64x64) prefill RTL. The first executable profile is
+`fa_two_tile_pingpong_test` with random Q/K/V and no output backpressure: it
+captures Q/K/V bank loading, ping-pong refills, accelerator execution, and both
+AXI writebacks. Vectorless power remains useful only for structural comparison.
 
 Power must be measured from one frozen RTL/netlist hash, one documented PVT
 corner, and one documented clock period. Never compare SAIF files generated
@@ -39,7 +39,26 @@ asic/power/saif/<rtl_hash>/<profile>.json
 
 The JSON sidecar records simulator version, source hash, clock period, seed,
 start/end cycles, configuration registers, tile counts, loader stalls, and
-pass/fail status. A failing or truncated simulation must not publish SAIF.
+pass/fail status. A failing or truncated simulation must never publish SAIF.
+
+`tb/sim/scripts/run_saif_random_qkv.sh` implements this contract for
+`fa_two_tile_pingpong_test` with seed 301 by default. Its capture starts after
+all AXI-Lite configuration writes and ends after the second writeback
+completion, so reset, UVM startup, and one-time configuration are excluded
+while both random Q/K/V tile loads, ping-pong refills, compute, normalization,
+and unstalled output AXI traffic are included. The DUT hierarchy is
+`tb_top/dut`; the matching DC strip path is therefore `tb_top/dut`, not
+`tb_attention_accel_top/dut`.
+
+Because SAIF activity is normalized by simulation time, the script runs this
+profile at `SIM_CLOCK_PERIOD_NS=1.6` by default. `tb_top` otherwise retains
+its 10 ns simulation-clock default. The DC `CLOCK_PERIOD` must equal the
+sidecar's `clock_period_ns`; the readback script rejects a mismatch.
+
+This profile is a 64x64, D=64 UVM prefill fixture with two Q tiles and two KV
+tiles, not an 8192-token Re10K or LLM system workload. It validates SAIF
+mechanics, hierarchy mapping, and ping-pong scheduling; the representative
+Re10K/LLM profiles remain required before drawing system energy conclusions.
 
 ## 4. Synthesis and power readback
 
@@ -48,7 +67,7 @@ sequence is conceptually:
 
 ```tcl
 read_saif -input <profile>.saif \
-  -strip_path tb_attention_accel_top/dut \
+  -strip_path tb_top/dut \
   -instance attention_accel_top
 report_saif -hierarchy > reports/<profile>/saif_coverage.rpt
 report_clock_gating -multi_stage -verbose \
@@ -63,6 +82,11 @@ Design Compiler power tool version. Report annotation coverage separately for
 nets, sequential cells, combinational cells, SRAM pins, and generated/gated
 clocks. SRAM internal power requires compatible macro power models; black-box
 outputs must be called out rather than treated as zero activity.
+
+`asic/scripts/run_saif_power.sh` performs the mapped-DDC readback. It refuses
+to use a DDC whose recorded RTL hash differs from the current RTL unless
+`ALLOW_STALE_DDC=1` is explicitly supplied. Reports are placed under
+`asic/power/reports/<rtl_hash>/<profile>/<corner>/`.
 
 ## 5. Required reports
 

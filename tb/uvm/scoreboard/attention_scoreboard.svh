@@ -14,9 +14,12 @@ class attention_scoreboard extends uvm_component;
   int unsigned v_load_words;
   int unsigned q_load_words;
   int unsigned k_load_words;
+  int unsigned invalid_output_bytes;
   bit [31:0] status_q;
   bit start_seen;
   bit model_reported;
+  bit address_error_reported;
+  bit output_seen [int unsigned];
 
   function new(string name = "attention_scoreboard", uvm_component parent = null);
     super.new(name, parent);
@@ -42,6 +45,20 @@ class attention_scoreboard extends uvm_component;
         model_reported = 1;
       end
     end
+  endfunction
+
+  function int unsigned expected_q_load_words();
+    int unsigned q_tiles;
+    q_tiles = cfg.decode_en ? 1 : ((cfg.seq_q + `ATTN_TILE_Q - 1) / `ATTN_TILE_Q);
+    return q_tiles * cfg.head_dim;
+  endfunction
+
+  function int unsigned expected_kv_load_words();
+    int unsigned q_tiles;
+    int unsigned kv_tiles;
+    q_tiles = cfg.decode_en ? 1 : ((cfg.seq_q + `ATTN_TILE_Q - 1) / `ATTN_TILE_Q);
+    kv_tiles = (cfg.seq_kv + `ATTN_TILE_K - 1) / `ATTN_TILE_K;
+    return q_tiles * kv_tiles * cfg.head_dim;
   endfunction
 
   task consume_axil();
@@ -82,9 +99,17 @@ class attention_scoreboard extends uvm_component;
     for (int unsigned lane = 0; lane < 16; lane++) begin
       if (tr.strb[lane]) begin
         byte_address = tr.addr + lane;
-        if (byte_address >= `ATTN_ARRAY_ROWS * `ATTN_HEAD_DIM) begin
-          `uvm_error("SB_ADDR", $sformatf("write byte address %0d exceeds one-tile output", byte_address))
+        if (byte_address >= (cfg.decode_en ? `ATTN_HEAD_DIM : cfg.seq_q * `ATTN_HEAD_DIM)) begin
+          invalid_output_bytes++;
+          if (!address_error_reported) begin
+            `uvm_error("SB_ADDR", $sformatf("first invalid write byte address %0d; expected range is [0:%0d]",
+              byte_address, (cfg.decode_en ? `ATTN_HEAD_DIM : cfg.seq_q * `ATTN_HEAD_DIM) - 1))
+            address_error_reported = 1;
+          end
         end else begin
+          if (output_seen.exists(byte_address))
+            `uvm_error("SB_DUP", $sformatf("duplicate write byte address %0d", byte_address))
+          output_seen[byte_address] = 1;
           expected = ref_model.expected_byte(byte_address);
           actual = tr.data[lane*8 +: 8];
           if (actual !== expected)
@@ -122,11 +147,32 @@ class attention_scoreboard extends uvm_component;
   endtask
 
   function void report_phase(uvm_phase phase);
+    int unsigned expected_bytes;
+    int unsigned missing_bytes;
+    expected_bytes = cfg.decode_en ? `ATTN_HEAD_DIM : cfg.seq_q * `ATTN_HEAD_DIM;
     if (cfg.enable_data_check && output_beats == 0)
       `uvm_error("SB_DATA", "No AXI write beats observed in data-checking test")
-    if (cfg.enable_data_check && output_bytes != `ATTN_ARRAY_ROWS * `ATTN_HEAD_DIM)
+    if (cfg.enable_data_check && output_bytes != expected_bytes)
       `uvm_error("SB_BYTES", $sformatf("output bytes=%0d expected=%0d", output_bytes,
-                 `ATTN_ARRAY_ROWS * `ATTN_HEAD_DIM))
+                 expected_bytes))
+    if (cfg.enable_data_check && invalid_output_bytes != 0)
+      `uvm_error("SB_ADDR_SUMMARY", $sformatf("invalid output bytes=%0d", invalid_output_bytes))
+    if (cfg.enable_data_check) begin
+      for (int unsigned byte_address = 0; byte_address < expected_bytes; byte_address++)
+        if (!output_seen.exists(byte_address))
+          missing_bytes++;
+      if (missing_bytes != 0)
+        `uvm_error("SB_MISSING", $sformatf("missing expected output bytes=%0d", missing_bytes))
+    end
+    if (cfg.enable_data_check && q_load_words != expected_q_load_words())
+      `uvm_error("SB_LOAD_Q", $sformatf("Q load words=%0d expected=%0d",
+        q_load_words, expected_q_load_words()))
+    if (cfg.enable_data_check && k_load_words != expected_kv_load_words())
+      `uvm_error("SB_LOAD_K", $sformatf("K load words=%0d expected=%0d",
+        k_load_words, expected_kv_load_words()))
+    if (cfg.enable_data_check && v_load_words != expected_kv_load_words())
+      `uvm_error("SB_LOAD_V", $sformatf("V load words=%0d expected=%0d",
+        v_load_words, expected_kv_load_words()))
     `uvm_info("SB_SUMMARY", $sformatf("q/k/v load words=%0d/%0d/%0d, output beats=%0d bytes=%0d", q_load_words, k_load_words, v_load_words, output_beats, output_bytes), UVM_LOW)
   endfunction
 endclass

@@ -193,6 +193,12 @@ module fsa_fused_array #(
   reg [COLS*DATA_W-1:0] pv_rescale_cols_q;
   reg [COLS*DATA_W-1:0] pv_rescale_cols_s1_q;
   reg [COLS*DATA_W-1:0] pv_rescale_cols_s2_q;
+  // Keep a shadow feature tag with the V payload pipeline. PEs receive their
+  // writeback tag from the O-seed wave, and this tag proves that wave is paired
+  // with the V[:,d] value entering the column-skew network.
+  reg [FEATURE_IDX_W-1:0] pv_rescale_feature_q;
+  reg [FEATURE_IDX_W-1:0] pv_rescale_feature_s1_q;
+  reg [FEATURE_IDX_W-1:0] pv_rescale_feature_s2_q;
   reg [QK_COMPLETION_DEPTH-1:0] qk_completion_q;
   reg norm_request_q;
   reg [STRIPE_IDX_W-1:0] norm_request_stripe_q;
@@ -275,6 +281,8 @@ module fsa_fused_array #(
         if (stripe_pv_seed_feature_w[consistency_stripe] !=
             stripe_pv_seed_feature_w[0])
           $fatal(1, "fsa_fused_array stripe PV-seed feature mismatch");
+      if (stripe_pv_seed_feature_w[0] != pv_rescale_feature_s2_q)
+        $fatal(1, "fsa_fused_array V/O-seed feature misalignment");
     end
   end
 `endif
@@ -487,14 +495,6 @@ module fsa_fused_array #(
   assign qk_tail_last_w =
       qk_completion_q[QK_COMPLETION_DEPTH-1] && !source_is_pv_w;
 
-  // Select the requested eight-row O/l slice for the final normalizer only.
-  always @(*) begin
-    norm_rd_acc_o = stripe_o_rd_flat_w[
-        norm_request_stripe_q*STRIPE_ROWS*ACC_W +: STRIPE_ROWS*ACC_W];
-    norm_rd_l_o = l_rows_q[
-        norm_request_stripe_q*STRIPE_ROWS*LSE_W +: STRIPE_ROWS*LSE_W];
-  end
-
   // One exp lane per row accepts a completed score column each cycle. The delayed
   // column tag returns probabilities to the exact PE column that produced delta.
   generate
@@ -546,9 +546,9 @@ module fsa_fused_array #(
     end
   end
 
-  // Register all data/tag/valid paths. In particular pv_issue_cols_q,
-  // pv_issue_feature_q, and the synchronous O-bank output advance together before
-  // row/column skew, which is the RTL point that aligns O_old[:,d] with V[:,d].
+  // Register all data/tag/valid paths. In particular the V payload and its
+  // shadow feature tag advance together with the synchronous O-bank response
+  // before row/column skew, which aligns O_old[:,d] with V[:,d].
   always @(posedge array_clk_w or negedge rst_n) begin
     if (!rst_n) begin
       softmax_state_q <= SM_IDLE;
@@ -576,6 +576,10 @@ module fsa_fused_array #(
       pv_issue_seed_zero_q <= 1'b0;
       norm_request_q <= 1'b0;
       norm_rd_valid_o <= 1'b0;
+      norm_rd_acc_o <= {STRIPE_ROWS*ACC_W{1'b0}};
+      norm_rd_l_o <= {STRIPE_ROWS*LSE_W{1'b0}};
+      norm_rd_stripe_o <= {STRIPE_IDX_W{1'b0}};
+      norm_rd_feature_o <= {FEATURE_IDX_W{1'b0}};
       error_o <= 1'b0;
     end else if (clear_i) begin
       softmax_state_q <= SM_IDLE;
@@ -591,6 +595,10 @@ module fsa_fused_array #(
       pv_issue_valid_q <= 1'b0;
       norm_request_q <= 1'b0;
       norm_rd_valid_o <= 1'b0;
+      norm_rd_acc_o <= {STRIPE_ROWS*ACC_W{1'b0}};
+      norm_rd_l_o <= {STRIPE_ROWS*LSE_W{1'b0}};
+      norm_rd_stripe_o <= {STRIPE_IDX_W{1'b0}};
+      norm_rd_feature_o <= {FEATURE_IDX_W{1'b0}};
       sum_launch_rows_q <= {ROWS{1'b0}};
       prob_col_tag_valid_q <= {EXP_LATENCY{1'b0}};
       sum_rows_q <= {ROWS*LSE_W{1'b0}};
@@ -607,16 +615,28 @@ module fsa_fused_array #(
       pv_issue_cols_q <= pv_cols_i;
       if (pv_issue_valid_q)
         pv_rescale_cols_q <= pv_issue_cols_q;
+      if (pv_issue_valid_q)
+        pv_rescale_feature_q <= pv_issue_feature_q;
       pv_rescale_cols_s1_q <= pv_rescale_cols_q;
+      pv_rescale_feature_s1_q <= pv_rescale_feature_q;
       pv_rescale_cols_s2_q <= pv_rescale_cols_s1_q;
+      pv_rescale_feature_s2_q <= pv_rescale_feature_s1_q;
       norm_request_q <= norm_rd_en_i;
       if (norm_rd_en_i) begin
         norm_request_stripe_q <= norm_rd_stripe_i;
         norm_request_feature_q <= norm_rd_feature_i;
       end
+      // O-bank data changes on every synchronous read response. Capture the
+      // selected payload with the delayed request tag; exposing a combinational
+      // O-bank output here would pair tag d with the next response O[:,d+1]
+      // during the feature-major normalizer scan.
       norm_rd_valid_o <= norm_request_q &&
           stripe_o_rd_valid_w[norm_request_stripe_q];
       if (norm_request_q && stripe_o_rd_valid_w[norm_request_stripe_q]) begin
+        norm_rd_acc_o <= stripe_o_rd_flat_w[
+            norm_request_stripe_q*STRIPE_ROWS*ACC_W +: STRIPE_ROWS*ACC_W];
+        norm_rd_l_o <= l_rows_q[
+            norm_request_stripe_q*STRIPE_ROWS*LSE_W +: STRIPE_ROWS*LSE_W];
         norm_rd_stripe_o <= norm_request_stripe_q;
         norm_rd_feature_o <= norm_request_feature_q;
       end

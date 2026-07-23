@@ -34,6 +34,8 @@ endclass
 class fa_tile_coverage extends uvm_subscriber #(fa_tile_item);
   `uvm_component_utils(fa_tile_coverage)
   fa_tile_item tr;
+  virtual fa_status_if status_vif;
+  bit [3:0] state;
 
   covergroup cg;
     option.per_instance = 1;
@@ -46,6 +48,13 @@ class fa_tile_coverage extends uvm_subscriber #(fa_tile_item);
       bins last = {63};
     }
     kind_x_bank_x_action: cross cp_kind, cp_bank, cp_action;
+    cp_kv_bank_phase: coverpoint {tr.bank, state}
+      iff (!tr.is_commit && (tr.kind == FA_TILE_K || tr.kind == FA_TILE_V)) {
+      bins preload_bank0 = {{1'b0, `ATTN_STATE_IDLE}};
+      bins preload_bank1 = {{1'b1, `ATTN_STATE_IDLE}};
+      bins refill_bank0_after_switch = {{1'b0, `ATTN_STATE_QK}};
+      bins refill_bank1_during_writeback = {{1'b1, `ATTN_STATE_WRITEBACK}};
+    }
   endgroup
 
   function new(string name = "fa_tile_coverage", uvm_component parent = null);
@@ -53,8 +62,15 @@ class fa_tile_coverage extends uvm_subscriber #(fa_tile_item);
     cg = new();
   endfunction
 
+  function void build_phase(uvm_phase phase);
+    super.build_phase(phase);
+    if (!uvm_config_db#(virtual fa_status_if)::get(this, "", "status_vif", status_vif))
+      `uvm_fatal("NOSTATUS", "fa_tile_coverage requires status_vif")
+  endfunction
+
   function void write(fa_tile_item t);
     tr = t;
+    state = status_vif.debug_state;
     cg.sample();
   endfunction
 endclass
@@ -143,6 +159,13 @@ class fa_math_coverage extends uvm_subscriber #(fa_model_event);
       bins arith_rounding = {FA_STIM_ARITH_ROUNDING};
       bins positive_sat = {FA_STIM_POSITIVE_SAT};
       bins negative_sat = {FA_STIM_NEGATIVE_SAT};
+      bins two_tile_pingpong = {FA_STIM_TWO_TILE_PINGPONG};
+    }
+    cp_mode: coverpoint tr.decode_en { bins prefill = {0}; bins decode = {1}; }
+    cp_tile_shape: coverpoint {tr.multi_q_tile, tr.multi_kv_tile} {
+      bins one_by_one = {2'b00};
+      bins two_by_two = {2'b11};
+      illegal_bins asymmetric = {2'b01, 2'b10};
     }
     cp_causal: coverpoint tr.causal_en { bins disabled = {0}; bins enabled = {1}; }
     cp_pwl_segment: coverpoint tr.pwl_segment_mask {
@@ -168,8 +191,11 @@ class fa_math_coverage extends uvm_subscriber #(fa_model_event);
     cp_valid_lanes: coverpoint tr.valid_lanes {
       bins full = {1024};
       bins causal = {528};
+      bins decode_full_context = {32};
+      bins two_tile_full = {4096};
       bins other = default;
     }
+    mode_x_causal: cross cp_mode, cp_causal;
     stimulus_x_causal: cross cp_stimulus, cp_causal;
     stimulus_x_output_sat: cross cp_stimulus, cp_output_sat;
     stimulus_x_score_round: cross cp_stimulus, cp_score_round;

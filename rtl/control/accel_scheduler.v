@@ -1,8 +1,8 @@
 `timescale 1ns/1ps
 `include "attention_defines.vh"
 
-// Job-level prefill scheduler. It walks head -> Q tile -> KV tile, retains
-// online-softmax state across KV tiles, and writes O only after the final KV tile.
+// Job-level MHA scheduler. Prefill walks head -> Q tile -> KV tile; single-token
+// decode uses the same KV loop with one physical Q tile and row zero valid.
 module accel_scheduler (
   input        clk,
   input        rst_n,
@@ -11,11 +11,13 @@ module accel_scheduler (
   input        clear_done_i,
   input        clear_error_i,
   input        fatal_error_i,
+  input        mode_sel_i,
   input        prefill_en_i,
   input        decode_en_i,
   input [15:0] seq_q_i,
   input [15:0] seq_kv_i,
   input [7:0]  num_q_heads_i,
+  input [7:0]  num_kv_heads_i,
   input [7:0]  tile_q_i,
   input [7:0]  tile_k_i,
   input        load_q_done_i,
@@ -45,31 +47,39 @@ module accel_scheduler (
   output [15:0] q_tile_base_o,
   output [15:0] kv_tile_base_o,
   output       tile_last_o,
-  output       run_last_o
+  output       run_last_o,
+  output       decode_active_o
 );
 
   reg [3:0] next_state_w;
   reg [11:0] q_tile_count_q;
   reg [11:0] kv_tile_count_q;
+  reg decode_active_q;
   wire illegal_start_busy_w;
   wire illegal_mode_w;
   wire illegal_dimensions_w;
   wire [16:0] q_tile_count_calc_w;
   wire [16:0] kv_tile_count_calc_w;
 
-  // Stage-1 accepts fixed 32x32 prefill only; decode/GQA scheduling is deferred.
+  // Decode is deliberately limited to MHA and one query token. It retains the
+  // existing 32-row physical tile and relies on the array mask to disable rows 1..31.
   assign illegal_start_busy_w = start_i && busy_o;
-  assign illegal_mode_w = start_i && (!prefill_en_i || decode_en_i);
+  assign illegal_mode_w = start_i &&
+      ((prefill_en_i == decode_en_i) || mode_sel_i ||
+       (num_q_heads_i != num_kv_heads_i));
   assign illegal_dimensions_w = start_i &&
       (seq_q_i == 0 || seq_kv_i == 0 || num_q_heads_i == 0 ||
-       tile_q_i != `ATTN_TILE_Q || tile_k_i != `ATTN_TILE_K);
-  assign q_tile_count_calc_w = ({1'b0, seq_q_i} + 17'd31) >> 5;
+       num_kv_heads_i == 0 || tile_q_i != `ATTN_TILE_Q ||
+       tile_k_i != `ATTN_TILE_K || (decode_en_i && seq_q_i != 16'd1));
+  assign q_tile_count_calc_w = decode_en_i ? 17'd1 :
+                               (({1'b0, seq_q_i} + 17'd31) >> 5);
   assign kv_tile_count_calc_w = ({1'b0, seq_kv_i} + 17'd31) >> 5;
   assign q_tile_base_o = {q_tile_index_o, 5'b0};
   assign kv_tile_base_o = {kv_tile_index_o, 5'b0};
   assign tile_last_o = ({1'b0, kv_tile_index_o} == kv_tile_count_q - 1'b1);
   assign run_last_o = (head_index_o == num_q_heads_i - 1'b1) &&
                       ({1'b0, q_tile_index_o} == q_tile_count_q - 1'b1);
+  assign decode_active_o = decode_active_q;
 
   // Phase transitions are handshake-driven so cache, array, and AXI latency
   // never appears as a fixed controller delay.
@@ -112,6 +122,7 @@ module accel_scheduler (
       kv_tile_index_o <= 11'd0;
       q_tile_count_q <= 12'd0;
       kv_tile_count_q <= 12'd0;
+      decode_active_q <= 1'b0;
     end else begin
       state_o <= next_state_w;
       if (soft_reset_i) begin
@@ -123,6 +134,7 @@ module accel_scheduler (
         kv_tile_index_o <= 11'd0;
         q_tile_count_q <= 12'd0;
         kv_tile_count_q <= 12'd0;
+        decode_active_q <= 1'b0;
       end else begin
         if (start_i && (state_o == `ATTN_STATE_IDLE || state_o == `ATTN_STATE_DONE) &&
             !illegal_mode_w && !illegal_dimensions_w) begin
@@ -131,6 +143,7 @@ module accel_scheduler (
           kv_tile_index_o <= 11'd0;
           q_tile_count_q <= q_tile_count_calc_w[11:0];
           kv_tile_count_q <= kv_tile_count_calc_w[11:0];
+          decode_active_q <= decode_en_i;
           done_o <= 1'b0;
         end
         if (state_o == `ATTN_STATE_PV && pv_done_i) begin

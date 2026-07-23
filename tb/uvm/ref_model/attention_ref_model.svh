@@ -1,17 +1,16 @@
 `ifndef ATTENTION_REF_MODEL_SVH
 `define ATTENTION_REF_MODEL_SVH
 
-// Bit-accurate first-tile model for the active 32x32x64 prefill datapath.
-// It mirrors score_scale_pipe, pwl_exp_unit, reciprocal_lut, and
-// online_normalizer. Online accumulation across multiple KV tiles is excluded
-// until the serialized LSE recurrence is modelled as a separate milestone.
+// Bit-accurate model for up to two 32-row Q/K/V tiles and single-token MHA
+// decode. It mirrors score_scale_pipe, pwl_exp_unit, reciprocal_lut, and the
+// final normalizer result across the complete configured KV context.
 class attention_ref_model extends uvm_object;
   `uvm_object_utils(attention_ref_model)
 
-  byte signed q_mem [0:`ATTN_ARRAY_ROWS-1][0:`ATTN_HEAD_DIM-1];
-  byte signed k_mem [0:`ATTN_ARRAY_COLS-1][0:`ATTN_HEAD_DIM-1];
-  byte signed v_mem [0:`ATTN_ARRAY_COLS-1][0:`ATTN_HEAD_DIM-1];
-  byte signed expected [0:`ATTN_ARRAY_ROWS-1][0:`ATTN_HEAD_DIM-1];
+  byte signed q_mem [0:FA_MAX_SEQ-1][0:`ATTN_HEAD_DIM-1];
+  byte signed k_mem [0:FA_MAX_SEQ-1][0:`ATTN_HEAD_DIM-1];
+  byte signed v_mem [0:FA_MAX_SEQ-1][0:`ATTN_HEAD_DIM-1];
+  byte signed expected [0:FA_MAX_SEQ-1][0:`ATTN_HEAD_DIM-1];
   bit q_loaded;
   bit k_loaded;
   bit v_loaded;
@@ -171,8 +170,30 @@ class attention_ref_model extends uvm_object;
     return rounded[7:0];
   endfunction
 
+  function automatic longint signed wrap_signed_width(
+    longint signed value, int unsigned width);
+    longint unsigned mask;
+    longint unsigned raw;
+    if (width >= 64)
+      return value;
+    mask = (64'h1 << width) - 1;
+    raw = $unsigned(value) & mask;
+    if (raw & (64'h1 << (width - 1)))
+      return $signed(raw | ~mask);
+    return $signed(raw);
+  endfunction
+
+  function automatic longint unsigned saturate_unsigned_width(
+    longint unsigned value, int unsigned width);
+    longint unsigned max_value;
+    if (width >= 64)
+      return value;
+    max_value = (64'h1 << width) - 1;
+    return (value > max_value) ? max_value : value;
+  endfunction
+
   function void load_word(fa_tile_item tr);
-    if (tr.bank != 0 || tr.is_commit || tr.addr >= `ATTN_HEAD_DIM)
+    if (tr.is_commit || tr.addr >= `ATTN_HEAD_DIM)
       return;
     for (int unsigned lane = 0; lane < `ATTN_ARRAY_ROWS; lane++) begin
       case (tr.kind)
@@ -189,65 +210,131 @@ class attention_ref_model extends uvm_object;
   endfunction
 
   function void calculate(fa_test_cfg cfg);
-    longint signed score [0:`ATTN_ARRAY_ROWS-1][0:`ATTN_ARRAY_COLS-1];
+    longint signed score [0:FA_MAX_SEQ-1][0:FA_MAX_SEQ-1];
     longint signed raw_dot;
-    longint signed row_max;
-    longint unsigned l_value;
+    longint signed block_max;
+    longint signed next_m;
+    longint signed alpha;
     longint signed accumulator;
+    longint signed m_state [0:FA_MAX_SEQ-1];
+    longint signed acc_state [0:FA_MAX_SEQ-1][0:`ATTN_HEAD_DIM-1];
+    longint unsigned l_state [0:FA_MAX_SEQ-1];
+    longint unsigned block_sum;
     bit [15:0] probability;
     bit valid_lane;
-    bit have_row_max;
+    bit row_state_valid [0:FA_MAX_SEQ-1];
+    bit have_block_max;
+    int unsigned rows_to_process;
+    int unsigned cols_to_process;
     golden_valid = 0;
     last_event = fa_model_event::type_id::create("model_event");
     last_event.stimulus = cfg.stimulus;
+    last_event.decode_en = cfg.decode_en;
     last_event.causal_en = cfg.causal_en;
+    last_event.multi_q_tile = (cfg.seq_q > `ATTN_ARRAY_ROWS);
+    last_event.multi_kv_tile = (cfg.seq_kv > `ATTN_ARRAY_COLS);
     if (!(q_loaded && k_loaded && v_loaded)) begin
       `uvm_error("REF_INPUT", "Reference model started before all Q/K/V words were observed")
       return;
     end
-    if (cfg.seq_q != `ATTN_ARRAY_ROWS || cfg.seq_kv != `ATTN_ARRAY_COLS ||
-        cfg.head_dim != `ATTN_HEAD_DIM) begin
-      `uvm_error("REF_SCOPE", "Bit-exact model currently supports one full 32x32x64 tile")
+    if (cfg.head_dim != `ATTN_HEAD_DIM || cfg.seq_kv == 0 ||
+        cfg.seq_kv > FA_MAX_SEQ || cfg.seq_q == 0 ||
+        cfg.seq_q > FA_MAX_SEQ || (cfg.decode_en && cfg.seq_q != 1)) begin
+      `uvm_error("REF_SCOPE", "Bit-exact model supports up to two 32x32x64 tiles or single-token decode")
       return;
     end
-    for (int unsigned row = 0; row < `ATTN_ARRAY_ROWS; row++) begin
-      row_max = 0;
-      have_row_max = 0;
-      for (int unsigned col = 0; col < `ATTN_ARRAY_COLS; col++) begin
+    for (int unsigned row = 0; row < cfg.seq_q; row++)
+      for (int unsigned dim = 0; dim < `ATTN_HEAD_DIM; dim++)
+        q_mem[row][dim] = cfg.tensor.q[row][dim];
+    for (int unsigned col = 0; col < cfg.seq_kv; col++)
+      for (int unsigned dim = 0; dim < `ATTN_HEAD_DIM; dim++) begin
+        k_mem[col][dim] = cfg.tensor.k[col][dim];
+        v_mem[col][dim] = cfg.tensor.v[col][dim];
+      end
+    rows_to_process = cfg.decode_en ? 1 : cfg.seq_q;
+    cols_to_process = cfg.seq_kv;
+    for (int unsigned row = 0; row < rows_to_process; row++) begin
+      for (int unsigned col = 0; col < cols_to_process; col++) begin
         raw_dot = 0;
         for (int unsigned dim = 0; dim < `ATTN_HEAD_DIM; dim++)
           raw_dot += q_mem[row][dim] * k_mem[col][dim];
-        score[row][col] = raw_dot;
-        valid_lane = !cfg.causal_en || (col <= row);
-        if (valid_lane && (!have_row_max || raw_dot > row_max)) begin
-          row_max = raw_dot;
-          have_row_max = 1;
-        end
+        score[row][col] = wrap_signed_width(raw_dot, `ATTN_ACC_W);
       end
-      l_value = 0;
-      for (int unsigned col = 0; col < `ATTN_ARRAY_COLS; col++) begin
-        valid_lane = !cfg.causal_en || (col <= row);
-        if (valid_lane) begin
-          probability = pwl_exp_exact(
-              signed16(score_scale_exact(score[row][col] - row_max,
-                                         cfg.score_scale, last_event)), last_event);
-          l_value += probability;
-          last_event.valid_lanes++;
-        end
-      end
-      for (int unsigned dim = 0; dim < `ATTN_HEAD_DIM; dim++) begin
-        accumulator = 0;
-        for (int unsigned col = 0; col < `ATTN_ARRAY_COLS; col++) begin
-          valid_lane = !cfg.causal_en || (col <= row);
-          if (valid_lane) begin
-            probability = pwl_exp_exact(
-                signed16(score_scale_exact(score[row][col] - row_max,
-                                           cfg.score_scale, last_event)), last_event);
-            accumulator += $signed({1'b0, probability}) * v_mem[col][dim];
+
+      // Match the RTL's FlashAttention recurrence per physical KV tile. A
+      // global softmax is not bit-equivalent because PWL(alpha) is applied to
+      // the old O/L state at every tile boundary.
+      row_state_valid[row] = 0;
+      m_state[row] = 0;
+      l_state[row] = 0;
+      for (int unsigned dim = 0; dim < `ATTN_HEAD_DIM; dim++)
+        acc_state[row][dim] = 0;
+      for (int unsigned block_start = 0; block_start < cols_to_process;
+           block_start += `ATTN_TILE_K) begin
+        int unsigned block_end;
+        block_end = ((block_start + `ATTN_TILE_K) < cols_to_process) ?
+                    (block_start + `ATTN_TILE_K) : cols_to_process;
+        block_max = 0;
+        have_block_max = 0;
+        for (int unsigned col = block_start; col < block_end; col++) begin
+          valid_lane = cfg.decode_en || !cfg.causal_en || (col <= row);
+          if (valid_lane && (!have_block_max || score[row][col] > block_max)) begin
+            block_max = score[row][col];
+            have_block_max = 1;
           end
         end
-        expected[row][dim] = normalize_exact(accumulator, l_value,
-                                              cfg.out_scale, last_event);
+
+        if (have_block_max) begin
+          next_m = (row_state_valid[row] && m_state[row] >= block_max) ?
+                   m_state[row] : block_max;
+          alpha = row_state_valid[row] ?
+                  pwl_exp_exact(signed16(score_scale_exact(m_state[row] - next_m,
+                                                            cfg.score_scale,
+                                                            last_event)), last_event) : 0;
+          block_sum = 0;
+          for (int unsigned col = block_start; col < block_end; col++) begin
+            valid_lane = cfg.decode_en || !cfg.causal_en || (col <= row);
+            if (valid_lane) begin
+              probability = pwl_exp_exact(
+                  signed16(score_scale_exact(score[row][col] - next_m,
+                                             cfg.score_scale, last_event)), last_event);
+              block_sum += probability;
+              last_event.valid_lanes++;
+            end
+          end
+          l_state[row] = saturate_unsigned_width(
+              ((l_state[row] * alpha) >> `ATTN_BETA_FRAC) + block_sum,
+              `ATTN_LSE_W);
+
+          for (int unsigned dim = 0; dim < `ATTN_HEAD_DIM; dim++) begin
+            accumulator = row_state_valid[row] ?
+                wrap_signed_width((acc_state[row][dim] * alpha) >>> `ATTN_BETA_FRAC,
+                                  `ATTN_ACC_W) : 0;
+            for (int unsigned col = block_start; col < block_end; col++) begin
+              valid_lane = cfg.decode_en || !cfg.causal_en || (col <= row);
+              if (valid_lane) begin
+                probability = pwl_exp_exact(
+                    signed16(score_scale_exact(score[row][col] - next_m,
+                                               cfg.score_scale, last_event)), last_event);
+                accumulator = wrap_signed_width(
+                    accumulator + $signed({1'b0, probability}) * v_mem[col][dim],
+                    `ATTN_ACC_W);
+              end
+            end
+            acc_state[row][dim] = accumulator;
+          end
+          m_state[row] = next_m;
+          row_state_valid[row] = 1;
+        end
+      end
+
+      for (int unsigned dim = 0; dim < `ATTN_HEAD_DIM; dim++) begin
+        accumulator = acc_state[row][dim];
+        if (row_state_valid[row])
+          expected[row][dim] = normalize_exact(accumulator, l_state[row],
+                                                cfg.out_scale, last_event);
+        else
+          expected[row][dim] = 0;
       end
     end
     golden_valid = 1;

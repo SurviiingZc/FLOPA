@@ -1,0 +1,19 @@
+{
+  "profile": "fa_two_tile_pingpong_random_seed301",
+  "test": "fa_two_tile_pingpong_test",
+  "seed": 301,
+  "rtl_hash": "8392ddeaee48cbb71a0c852aabc17546caf6ad98f6aed6d97c69ace8fdfa9868",
+  "git_commit": "2b00f6ac0350391ec4781ce4fdac6629473765ba",
+  "git_status_hash": "0973652e57e3164418078fd80632129203325b3a74d041ceb4bbc6241f87f540",
+  "simulator": "vcs",
+  "clock_period_ns": 1.6,
+  "strip_path": "tb_top/dut",
+  "start_cycle": 41,
+  "stop_cycle": 4321,
+  "sampled_cycles": 4280,
+  "sequence": {"seq_q": 64, "seq_kv": 64, "num_q_heads": 1, "num_kv_heads": 1, "head_dim": 64, "tile_q": 32, "tile_k": 32},
+  "ready_low_pct": 0,
+  "window": "two_tile_load+pingpong_refill+compute+normalization+axi_writeback_no_stall",
+  "tensor_log_checksum": "1c4d7477f72f33eba9f1f55d7fc29bc8963d04bb3ba9de0ea803db594b1d0da4",
+  "status": "pass"
+}

@@ -1,0 +1,19 @@
+{
+  "profile": "fa_two_tile_random_backpressure_seed302",
+  "test": "fa_two_tile_random_backpressure_test",
+  "seed": 302,
+  "rtl_hash": "8392ddeaee48cbb71a0c852aabc17546caf6ad98f6aed6d97c69ace8fdfa9868",
+  "git_commit": "2b00f6ac0350391ec4781ce4fdac6629473765ba",
+  "git_status_hash": "0973652e57e3164418078fd80632129203325b3a74d041ceb4bbc6241f87f540",
+  "simulator": "vcs",
+  "clock_period_ns": 1.9,
+  "strip_path": "tb_top/dut",
+  "start_cycle": 41,
+  "stop_cycle": 4565,
+  "sampled_cycles": 4524,
+  "sequence": {"seq_q": 64, "seq_kv": 64, "num_q_heads": 1, "num_kv_heads": 1, "head_dim": 64, "tile_q": 32, "tile_k": 32},
+  "ready_low_pct": 50,
+  "window": "two_tile_load+pingpong_refill+compute+normalization+axi_writeback",
+  "tensor_log_checksum": "e885b41c756f5be62497f2427777ac74c5f0db41e86792189cb89a1d4d954309",
+  "status": "pass"
+}

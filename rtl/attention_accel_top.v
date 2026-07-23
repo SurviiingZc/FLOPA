@@ -144,6 +144,9 @@ module attention_accel_top #(
   wire [15:0] kv_tile_base_w;
   wire tile_last_w;
   wire run_last_w;
+  wire scheduler_decode_active_w;
+  wire [15:0] array_q_base_w;
+  wire [15:0] array_seq_q_w;
 
   wire [63:0] perf_cycles_w;
   wire [63:0] perf_stall_w;
@@ -238,6 +241,8 @@ module attention_accel_top #(
   wire axi_write_start_w;
   wire axi_write_busy_w;
   wire axi_write_done_w;
+  reg axi_write_done_d_q;
+  wire axi_write_done_pulse_w = axi_write_done_w && !axi_write_done_d_q;
   wire axi_write_error_w;
   reg [31:0] writeback_addr_q;
   reg [31:0] head_base_addr_q;
@@ -321,23 +326,35 @@ module attention_accel_top #(
   accel_scheduler u_scheduler (
     .clk(clk), .rst_n(rst_n), .start_i(cfg_start_w), .soft_reset_i(cfg_soft_reset_w),
     .clear_done_i(cfg_clear_done_w), .clear_error_i(cfg_clear_error_w), .fatal_error_i(fatal_error_w),
-    .prefill_en_i(cfg_prefill_en_w), .decode_en_i(cfg_decode_en_w),
+    .mode_sel_i(cfg_mode_sel_w), .prefill_en_i(cfg_prefill_en_w), .decode_en_i(cfg_decode_en_w),
     .seq_q_i(cfg_seq_q_w), .seq_kv_i(cfg_seq_kv_w), .num_q_heads_i(cfg_num_q_heads_w),
+    .num_kv_heads_i(cfg_num_kv_heads_w),
     .tile_q_i(cfg_tile_q_w), .tile_k_i(cfg_tile_k_w),
     .load_q_done_i(q_active_valid_w), .load_kv_done_i(kv_active_valid_w),
     .qk_done_i(qk_done_w), .softmax_pv_ready_i(softmax_pv_ready_w),
-    .pv_done_i(pv_complete_q), .wb_done_i(axi_write_done_w),
+    .pv_done_i(pv_complete_q), .wb_done_i(axi_write_done_pulse_w),
     .state_o(debug_state_reg_w), .busy_o(scheduler_busy_w), .done_o(scheduler_done_w),
     .error_o(scheduler_error_w), .error_code_o(scheduler_error_code_w), .idle_o(scheduler_idle_w),
     .load_active_o(load_active_w), .compute_active_o(compute_active_w), .writeback_active_o(writeback_active_w),
     .load_q_en_o(load_q_en_w), .load_kv_en_o(load_kv_en_w), .qk_en_o(qk_en_w),
     .softmax_en_o(softmax_en_w), .pv_en_o(pv_en_w), .wb_en_o(wb_en_w),
     .head_index_o(head_index_w), .q_tile_index_o(q_tile_index_w), .kv_tile_index_o(kv_tile_index_w),
-    .q_tile_base_o(q_tile_base_w), .kv_tile_base_o(kv_tile_base_w), .tile_last_o(tile_last_w), .run_last_o(run_last_w)
+    .q_tile_base_o(q_tile_base_w), .kv_tile_base_o(kv_tile_base_w), .tile_last_o(tile_last_w), .run_last_o(run_last_w),
+    .decode_active_o(scheduler_decode_active_w)
   );
 
+  // Decode has one new query at absolute position seq_kv-1. Present that
+  // position to the existing causal-mask builder while keeping q_tile_base at
+  // zero for scheduler/writeback accounting. With array_seq_q=seq_kv only row
+  // zero is valid; all remaining physical rows are masked in the fused array.
+  assign array_q_base_w = scheduler_decode_active_w ?
+                          (cfg_seq_kv_w - 16'd1) : q_tile_base_w;
+  assign array_seq_q_w = scheduler_decode_active_w ? cfg_seq_kv_w : cfg_seq_q_w;
+
   // Q persists across all KV tiles for a Q tile; K/V are consumed after each PV.
-  assign q_consume_w = axi_write_done_w;
+  // axi4_master_write holds done through ST_DONE, so consumers use its rising
+  // edge to avoid two Q consumes or two output-address increments per writeback.
+  assign q_consume_w = axi_write_done_pulse_w;
   assign q_switch_w = load_q_en_w && !q_active_valid_w && q_next_valid_w;
   assign kv_consume_w = pv_complete_q;
   assign kv_switch_w = load_kv_en_w && !kv_active_valid_w && kv_next_valid_w;
@@ -432,8 +449,8 @@ module attention_accel_top #(
     .qk_last_i(qk_array_last_w), .qk_rows_i(qk_array_rows_w),
     .qk_cols_i(qk_array_cols_w), .qk_last_o(fused_qk_last_w),
     .softmax_start_i(softmax_start_w), .score_scale_i(cfg_score_scale_w),
-    .q_base_i(q_tile_base_w), .k_base_i(kv_tile_base_w),
-    .seq_q_i(cfg_seq_q_w), .seq_kv_i(cfg_seq_kv_w),
+    .q_base_i(array_q_base_w), .k_base_i(kv_tile_base_w),
+    .seq_q_i(array_seq_q_w), .seq_kv_i(cfg_seq_kv_w),
     .causal_en_i(cfg_causal_en_w),
     .softmax_pv_ready_o(softmax_pv_ready_w),
     .softmax_done_o(softmax_done_w),
@@ -487,7 +504,11 @@ module attention_accel_top #(
 
   // Tail Q tiles write only valid rows; convert the byte count to 128-bit AXI beats.
   always @(*) begin
-    if ({1'b0, cfg_seq_q_w} <= {1'b0, q_tile_base_w})
+    // A decode invocation has exactly one meaningful output row. The existing
+    // output buffer therefore streams only row zero although the array remains 32x32.
+    if (scheduler_decode_active_w)
+      valid_q_rows_w = 16'd1;
+    else if ({1'b0, cfg_seq_q_w} <= {1'b0, q_tile_base_w})
       valid_q_rows_w = 16'd0;
     else if ({1'b0, cfg_seq_q_w} >=
              ({1'b0, q_tile_base_w} + ARRAY_ROWS_17))
@@ -536,6 +557,7 @@ module attention_accel_top #(
       pv_en_d_q <= 1'b0;
       wb_en_d_q <= 1'b0;
       load_q_en_d_q <= 1'b0;
+      axi_write_done_d_q <= 1'b0;
       pv_flow_state_q <= PV_FLOW_IDLE;
       pv_complete_q <= 1'b0;
       l_update_done_q <= 1'b0;
@@ -550,6 +572,7 @@ module attention_accel_top #(
       pv_en_d_q <= 1'b0;
       wb_en_d_q <= 1'b0;
       load_q_en_d_q <= 1'b0;
+      axi_write_done_d_q <= 1'b0;
       pv_flow_state_q <= PV_FLOW_IDLE;
       pv_complete_q <= 1'b0;
       l_update_done_q <= 1'b0;
@@ -564,6 +587,7 @@ module attention_accel_top #(
       pv_en_d_q <= pv_en_w;
       wb_en_d_q <= wb_en_w;
       load_q_en_d_q <= load_q_en_w;
+      axi_write_done_d_q <= axi_write_done_w;
       pv_complete_q <= 1'b0;
       // Maintain writeback addresses incrementally to avoid runtime address
       // multipliers on every Q-tile transition.
@@ -571,7 +595,7 @@ module attention_accel_top #(
         writeback_addr_q <= cfg_o_base_w[31:0];
         head_base_addr_q <= cfg_o_base_w[31:0];
         head_stride_bytes_q <= {16'd0, head_stride_product_w};
-      end else if (axi_write_done_w) begin
+      end else if (axi_write_done_pulse_w) begin
         if ({1'b0, q_tile_base_w} + ARRAY_ROWS_17 >= {1'b0, cfg_seq_q_w}) begin
           head_base_addr_q <= head_base_addr_q + head_stride_bytes_q[31:0];
           writeback_addr_q <= head_base_addr_q + head_stride_bytes_q[31:0];

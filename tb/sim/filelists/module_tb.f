@@ -19,6 +19,7 @@
 ../../tb/module_tb/compute/tb_fsa_fused_pe.sv
 ../../tb/module_tb/compute/tb_fsa_stripe.sv
 ../../tb/module_tb/compute/tb_fsa_controller.sv
+../../tb/module_tb/compute/tb_fsa_pv_engine.sv
 ../../tb/module_tb/compute/tb_score_scale_pipe.sv
 ../../tb/module_tb/memory/tb_banked_sram.sv
 ../../tb/module_tb/memory/tb_output_buffer.sv

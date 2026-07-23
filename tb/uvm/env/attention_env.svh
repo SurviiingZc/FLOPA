@@ -5,6 +5,7 @@ class fa_virtual_sequencer extends uvm_sequencer #(uvm_sequence_item);
   `uvm_component_utils(fa_virtual_sequencer)
   fa_axil_sequencer axil_sqr;
   fa_tile_sequencer tile_sqr;
+  virtual fa_status_if status_vif;
 
   function new(string name = "fa_virtual_sequencer", uvm_component parent = null);
     super.new(name, parent);
@@ -34,6 +35,8 @@ class attention_env extends uvm_env;
     tile_agent = fa_tile_agent::type_id::create("tile_agent", this);
     write_agent = fa_axi_write_agent::type_id::create("write_agent", this);
     vseqr = fa_virtual_sequencer::type_id::create("vseqr", this);
+    if (!uvm_config_db#(virtual fa_status_if)::get(this, "vseqr", "status_vif", vseqr.status_vif))
+      `uvm_fatal("NOSTATUS", "attention_env requires status_vif for vseqr")
     scoreboard = attention_scoreboard::type_id::create("scoreboard", this);
     axil_cov = fa_axil_coverage::type_id::create("axil_cov", this);
     tile_cov = fa_tile_coverage::type_id::create("tile_cov", this);

@@ -7,7 +7,9 @@ This document defines the system-level UVM environment for the current
 `docs/rtl.md`, `docs/verification.md`, all `docs/impl/*.md` contracts, and the
 active RTL under `rtl/`.
 
-The first UVM milestone verifies the implemented 32x32 prefill-MHA datapath:
+The current UVM scope verifies the implemented 32x32 prefill-MHA datapath,
+the full 2x2-tile prefill schedule (`seq_q=64`, `seq_kv=64`), and the
+single-token MHA decode datapath (`seq_q=1`, `seq_kv<=32`):
 
 1. AXI-Lite configuration, status polling, start, clear-done, and error flow.
 2. External Q/K/V cache loading through `tile_load_*` and `tile_commit_*`.
@@ -16,14 +18,17 @@ The first UVM milestone verifies the implemented 32x32 prefill-MHA datapath:
 4. 128-bit incrementing AXI writeback, including response and ready/valid
    backpressure.
 5. The existing canonical identity-V flow: zero Q/K and constant V produces
-   the same constant output after the documented scale setting.
+    the same constant output after the documented scale setting.
+6. Q and K/V ping-pong lifetime: both banks are preloaded; K/V bank0 is
+   refilled after its consume/switch and bank1 is refilled during writeback.
 
 The following are intentionally **not** accepted as current DUT capabilities:
 
 | Item | Current RTL status | UVM treatment |
 | --- | --- | --- |
 | AXI read DMA for Q/K/V | No top-level read master; base/stride are not consumed for loading | Model Q/K/V through `tile_load_*`; no read-DMA coverage claim |
-| Decode | START validation rejects decode | Negative configuration test only |
+| MHA decode | `prefill=0/decode=1`, `seq_q=1`, and one KV tile are implemented | Legal smoke, random, and backpressure tests; invalid decode shape remains a negative test |
+| Two-tile prefill writeback | Q/K/V bank scheduling and contiguous two-tile writeback complete for `seq_q=seq_kv=64`; the second tile starts at `0x0800` | Passing exact-data/address regression with bank-switch and refill coverage |
 | GQA | START validation rejects GQA / unequal Q and KV head counts | Negative configuration test only |
 | `VALUE_SCALE` and `MASK_CFG` datapath effect | Registers are latched but current datapath does not consume them | Readback coverage only; no numerical claim |
 | Arbitrary numerical golden output | PWL exp, online LSE, reciprocal, saturation, and rounding must be mirrored bit-for-bit | Planned reference-model milestone before random numerical sign-off |
@@ -84,11 +89,11 @@ tb/uvm/
     fa_axi_write_agent.svh     AXI write responder and monitor
   env/attention_env.svh        Environment, virtual sequencer, TLM connections
   sequences/attention_sequences.svh
-                               Supported-prefill, smoke, and illegal-config flows
+                               Prefill/decode, smoke, backpressure, and illegal-config flows
   scoreboard/attention_scoreboard.svh
                                Protocol checker and byte-accurate output comparison
   ref_model/attention_ref_model.svh
-                               Bit-accurate one-tile QK/PWL/PV/normalization oracle
+                                Bit-accurate online two-tile prefill and single-token decode oracle
   coverage/attention_coverage.svh
                                AXI-Lite, tile, writeback, scheduler, and math coverage
   tests/attention_tests.svh    smoke, random-QKV, arithmetic-corner, and negative tests
@@ -103,7 +108,7 @@ tb/uvm/
 | `fa_axi_write_agent` | Randomizes DUT-side ready, returns OKAY B responses, captures individual output beats | `fa_axi_write_item` analysis port |
 | `fa_virtual_sequencer` | Coordinates AXI-Lite programming and tile population | Owns AXI-Lite/tile sequencer handles |
 | `attention_scoreboard` | Reconstructs Q/K/V words, invokes golden calculation at START, checks every output byte; records input/output counts | Analysis FIFOs from all three monitors |
-| `attention_ref_model` | Bit-accurate first-tile fixed-point golden model | Used only by scoreboard |
+| `attention_ref_model` | Bit-accurate fixed-point model, including per-KV-tile online `m/L/O` recurrence | Used only by scoreboard |
 | coverage subscribers | Sample transactions and debug phases without affecting checking | Analysis connections from monitors |
 
 No component reaches into DUT hierarchy. This preserves the black-box
@@ -119,8 +124,8 @@ whose oracle is implemented for its data class.
 | --- | --- | --- |
 | R0 | AXI protocol, cache load reconstruction, write byte count/order | Implemented in monitors and scoreboard |
 | R1 | Zero Q/K plus constant V canonical flow | Implemented; enabled by `fa_smoke_test` and `fa_axi_backpressure_test` |
-| R2 | Exact integer QK, score-scale shift, causal mask, and PWL-exp table | Implemented for one 32x32x64 tile |
-| R3 | Bit-exact one-tile `(m,l,O)`, reciprocal LUT, final normalization, saturation and rounding | Implemented for one 32x32x64 tile; gates random numerical output comparison |
+| R2 | Exact integer QK, score-scale shift, causal mask, and PWL-exp table | Implemented for up to two 32x32x64 prefill tiles and one-token decode over one KV tile |
+| R3 | Bit-exact online `(m,l,O)` recurrence, reciprocal LUT, final normalization, saturation and rounding | Implemented for 2x2 full tiles and single-token decode; gates random numerical output comparison |
 | R4 | External vector replay and tolerance metrics (`max_abs_error`, MAE, cosine similarity) | Optional integration/regression layer after R3 |
 
 R2/R3 must use the same constants, arithmetic widths, signedness, shifts, PWL
@@ -143,6 +148,12 @@ golden model and cannot replace R3.
 | Positive saturation | `fa_positive_saturation_test` | Q=K=0, V=127 | Final INT8 positive saturation and writeback check |
 | Negative saturation | `fa_negative_saturation_test` | Q=K=0, V=-128 | Final INT8 negative saturation and writeback check |
 | Causal random | `fa_causal_random_test` | Random Q/K/V with causal mask and output backpressure | Causal lane count (528), mask, and exact byte comparison |
+| Two-tile ping-pong | `fa_two_tile_pingpong_test` | Random signed Q/K/V, `seq_q=seq_kv=64`; Q0/Q1 in bank0/1; K/V bank0/1 preload then phase-aware refill; no output backpressure | Exact 2x2 online numerical oracle, Q/K/V load counts `128/256/256`, temporal bank coverage, contiguous 4096-byte writeback address map |
+| Two-tile random/backpressure | `fa_two_tile_random_backpressure_test` | Same 2x2 flow with signed random Q/K/V and 50% output stalls | Online-LSE byte comparison, AXI stability, bank refill phase coverage, address-hole/duplicate detection |
+| Decode smoke | `fa_decode_smoke_test` | MHA decode, `prefill=0/decode=1/seq_q=1/seq_kv=32`, causal enabled | Row-0-only mask, 64-byte writeback, exact output comparison |
+| Decode backpressure | `fa_decode_backpressure_test` | MHA decode with independent AXI write stalls | Four-beat writeback and handshake stability |
+| Decode random | `fa_decode_random_test` | Random Q/K/V MHA decode with full 32-token context | Exact fixed-point output comparison; detects feature/tag ordering defects |
+| Decode invalid | `fa_decode_illegal_config_test` | Decode request with `seq_q=2` | `SLVERR`, BAD_CFG status, clear-error recovery |
 
 Run with a recorded seed, for example:
 
@@ -162,21 +173,22 @@ directed-module filelist.
 | ID | Test | Scenario | Scoreboard / coverage gate | Entry criterion |
 | --- | --- | --- | --- | --- |
 | UVM-01 | `config_readback` | Every RW/RO register, byte strobe, W1C, start while busy | Exact register model and illegal-write coverage | R0 |
-| UVM-02 | `tile_pingpong` | Q lifetime across KV tiles; K/V bank switch after consume | Tile bank/action cross; phase ordering | R0, two-tile loader sequence |
+| UVM-02 | `tile_pingpong` | Q0/Q1 lifetime across KV tiles; K/V bank switch after consume and inactive-bank refill | Tile bank/action cross plus preload/refill phase bins | Delivered and passing for two full tiles |
 | UVM-03 | `writeback_tail` | 1, 15, 16, 17, 31, 32 valid Q rows | Address, strobe, byte-count checker | RTL must expose / support tail contract |
 | UVM-04 | `causal_mask` | diagonal, first/last query rows, masked positions | R2 exact QK/mask/softmax checking | R2 and causal path review |
 | UVM-05 | `softmax_extreme` | maximum change, exp clamp, near-zero sum, saturation | R2/R3 exact model, softmax bins | R3 |
-| UVM-06 | `multi_kv_tile` | 32x64 and 32x96 KV sequences | Online state and WS-PV/l-update ordering | R3 and loader data model |
+| UVM-06 | `multi_kv_tile` | 32x64, 64x64, and later 32x96 KV sequences | Online state and WS-PV/l-update ordering | R3; 2x2 full-tile sequence delivered, tail/96-key support pending |
 | UVM-07 | `random_prefill` | Supported MHA dimensions/data/scales/backpressure | Bit-exact output and planned crosses | R3 |
 | UVM-08 | `perf_counter` | idle/load/compute/stall/writeback counters | Exact counter equations | Counter specification freeze |
-| UVM-09 | `decode_reject` | Decode bit set | Error-code coverage | Current RTL only |
+| UVM-09 | `decode_mha` | MHA decode: `seq_q=1`, `seq_kv=1..32`, causal on/off, write back one 64-byte vector | Exact one-token decode output, mode x causal x valid-context coverage | R3, single-KV-tile scope |
 | UVM-10 | `gqa_reject` | unequal Q/KV heads or GQA selected | Error-code coverage | Current RTL only |
-| UVM-11 | `read_dma` | Q/K/V read transactions | Not applicable yet | Add only with AXI read master RTL |
+| UVM-11 | `decode_invalid` | Decode with `seq_q!=1`, unsupported head/mode, or malformed dimensions | Error-code and clear-error recovery coverage | Current RTL validation path |
+| UVM-12 | `read_dma` | Q/K/V read transactions | Not applicable yet | Add only with AXI read master RTL |
 
-The current `tile_boundary` and multi-KV `random_regression` concepts from
-`docs/verification.md` remain plan items. The numerical oracle is intentionally
-limited to the active 32x32x64 single-KV-tile prefill path; multi-KV online-LSE
-state is not claimed as covered.
+The 2x2-tile `tile_boundary` and multi-KV random flows are now active tests.
+The reference model follows the same blockwise alpha, LSE, and O-rescale
+recurrence as the RTL. Tail tiles and contexts beyond two full tiles remain
+planned work.
 
 ### 5.3 Module-to-System Test Allocation
 
@@ -196,10 +208,10 @@ regression while ensuring integrated control and data movement are exercised.
 | Covergroup | Current coverpoints | Current crosses |
 | --- | --- | --- |
 | `fa_axil_coverage` | read/write, control/dimension/scale/perf address classes, response | direction x address class |
-| `fa_tile_coverage` | Q/K/V kind, bank 0/1, load/commit, first/middle/last cache address | kind x bank x action |
+| `fa_tile_coverage` | Q/K/V kind, bank 0/1, load/commit, first/middle/last cache address, K/V bank-vs-phase refill window | kind x bank x action |
 | `fa_axi_write_coverage` | burst length, size, burst type, WLAST, strobe | burst length x WLAST |
 | `fa_phase_coverage` | all scheduler states, IRQ level | state x IRQ |
-| `fa_math_coverage` | stimulus class, causal enable, PWL segment bitmap, exp zero/one, score/output saturation, score/final-normalizer rounding, valid-lane count | stimulus x causal; stimulus x output saturation; stimulus x score rounding |
+| `fa_math_coverage` | prefill/decode mode, stimulus class, causal enable, PWL segment bitmap, exp zero/one, score/output saturation, score/final-normalizer rounding, valid-lane count | mode x causal; stimulus x causal; stimulus x output saturation; stimulus x score rounding |
 
 ### 6.2 Required Additions Before Sign-off
 
@@ -210,11 +222,11 @@ regression while ensuring integrated control and data movement are exercised.
 | Softmax | causal mask, row max unchanged/updated, alpha range, PWL segment, exp zero/saturation, rowsum/LSE update, normalizer saturation; tile type x softmax class |
 | AXI write | aligned base, burst 1/16/tail, gaps, AW/W independent stalls, B response; ready-backpressure x burst length |
 | Scheduler | every legal transition, DONE and ERROR recovery, Q/KV tile last/run last; phase x ping-pong state |
-| Errors | zero length, unsupported head dim, decode, GQA, alignment, repeated start; illegal request x returned error code |
+| Errors | zero length, unsupported head dim, invalid decode shape, GQA, alignment, repeated start; illegal request x returned error code |
 
-Coverage is only meaningful after tests drive legal values. Unsupported decode,
-GQA, and AXI read-DMA bins are error/absence coverage for the current design,
-not feature coverage.
+Coverage is only meaningful after tests drive legal values. Invalid decode
+shapes, GQA, and AXI read-DMA bins are error/absence coverage for the current
+design, not feature coverage.
 
 ### 6.3 Collection and Current Result
 
@@ -225,20 +237,21 @@ cd tb/sim
 scripts/run_uvm_regression.sh
 ```
 
-The script compiles with the VCS-supported `-cm line+cond+tgl+branch` database
-options, uses fixed seeds, emits a per-test UVM coverage summary, creates
-`build/uvm_regression/coverage.vdb`, and merges it with `urg` into
-`build/uvm_regression/urg`. It deliberately returns nonzero if
-the UVM report contains an error or fatal; simulator process status alone is
-not used as a pass criterion.
+The script enables `-cm line+cond+tgl+branch` at both VCS compile and `simv`
+runtime, assigns a unique `-cm_name` to every seed, creates one VDB, and merges
+all code and covergroup data with `urg`. It deliberately returns nonzero if the
+UVM report contains an error or fatal; simulator process status alone is not
+used as a pass criterion.
 
-The first merged nine-test database reports 76.85% total functional coverage:
-AXI-Lite 67.50%, tile-loader 80.00%, AXI write 83.33%, scheduler phase 77.78%,
-and numerical/softmax coverage 75.64%. The captured report is available on the
-server under `tb/sim/build/uvm_regression_rounding/urg/`; a normal script run
-uses the default `tb/sim/build/uvm_regression/urg/` output directory.
+The current passing merged baseline is the 15-test 2x2 regression at
+`tb/sim/build/uvm_two_tile_random_pingpong/urg/`. All tests have zero UVM error/fatal
+counts and exact scoreboard agreement. It includes the two full-tile tests,
+which verify the online-LSE result, Q/K/V ping-pong scheduling, and the
+contiguous `0..4095` byte writeback map. The detailed code and
+functional-coverage scope and closure actions are maintained in
+[`docs/coverage.md`](coverage.md).
 
-The initial fixed-seed execution establishes the following baseline:
+The fixed-seed execution establishes the following passing baseline:
 
 | Test | Seed | Result | Math coverage in isolated run |
 | --- | ---: | --- | ---: |
@@ -248,17 +261,22 @@ The initial fixed-seed execution establishes the following baseline:
 | `fa_positive_saturation_test` | 103 | PASS | 28.50% |
 | `fa_negative_saturation_test` | 104 | PASS | 28.50% |
 | `fa_illegal_config_test` | 7 | PASS | 0.00% (no numerical model event) |
-| `fa_random_qkv_test` | 101 | FAIL: byte-exact mismatch | 31.00% |
-| `fa_pwl_corner_test` | 102 | FAIL: byte-exact mismatch | 37.25% |
-| `fa_causal_random_test` | 105 | FAIL: byte-exact mismatch | 31.00% |
+| `fa_decode_smoke_test` | 201 | PASS | 29.72% |
+| `fa_decode_backpressure_test` | 202 | PASS | 29.72% |
+| `fa_decode_illegal_config_test` | 204 | PASS | 0.00% (no numerical model event) |
+| `fa_random_qkv_test` | 101 | PASS | 31.00% |
+| `fa_pwl_corner_test` | 102 | PASS | 37.25% |
+| `fa_causal_random_test` | 105 | PASS | 31.00% |
+| `fa_decode_random_test` | 203 | PASS | 30.56% |
+| `fa_two_tile_pingpong_test` | 301 | PASS | 31.70% |
+| `fa_two_tile_random_backpressure_test` | 302 | PASS | 31.70% |
 
-The three failing tests are not waived: their first row shows the DUT output
-byte for feature `d` matching the mathematical result for `d+1`, with the
-final feature uncomputed. Constant-V tests cannot expose this permutation. The
-scoreboard intentionally retains the mathematical feature ordering so that the
-failure remains visible to RTL owners. The likely inspection area is the
-WS-PV `pv_rescale_cols_*` data pipeline and its feature/tag alignment in
-`rtl/compute/fsa_fused_array.v`.
+The PV cache-return and normalizer O-bank read-return boundaries are guarded by
+feature tags. `fsa_fused_array.v` registers O/l payload with its valid/tag at
+the response boundary, while `tb_fsa_fused_array.sv` continuously checks the
+feature-major normalizer reads and `tb_fsa_pv_engine.sv` checks the upstream
+cache/PV contract. The 15-test run reports byte-exact agreement; coverage
+closure remains separate from numerical correctness sign-off.
 
 ## 7. Code Coverage and Closure
 
@@ -306,10 +324,13 @@ debug scheduler state. Waveforms are diagnostic artifacts, not pass criteria.
 3. Backpressure currently randomizes output AWREADY and WREADY. AXI-Lite and
    tile-loader response-side randomization should be added after their DUT-side
    ready behavior is exposed/controlled in the testbench.
-4. The bit-accurate data checker supports exactly one full 32x32x64 KV tile.
-   Extend the reference model with the online-LSE recurrence before enabling
-   multi-KV or tail-tile data comparison.
-5. Random Q/K/V tests expose a feature-ordering RTL bug; resolve it before
-   numerical sign-off or using their coverage as closure evidence.
+4. The bit-accurate data checker supports two full Q/K/V tiles and models the
+   per-tile online-LSE/O-rescale recurrence. Tail tiles and contexts beyond 64
+   rows still require model and loader extension.
+5. The two-Q-tile address defect is resolved by deriving a one-cycle
+   `axi_write_done_pulse_w` from the level-held AXI completion. The pulse is
+   shared by scheduler completion, Q-bank consume, and writeback/head address
+   advancement, so the second tile advances once to byte 2048. The address-map
+   checker remains mandatory for every two-tile regression.
 6. Add assertion coverage and liveness bounds once the expected per-tile latency
    envelope is frozen; no timeout value should be used as a performance claim.

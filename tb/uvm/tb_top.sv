@@ -13,6 +13,13 @@ module tb_top;
   fa_tile_loader_if #(.ADDR_W(`ATTN_CACHE_ADDR_W)) tile_if(.clk(clk), .rst_n(rst_n));
   fa_axi_write_if write_if(.clk(clk), .rst_n(rst_n));
   fa_status_if status_if(.clk(clk), .rst_n(rst_n));
+  fa_saif_control_if saif_if(.clk(clk));
+
+  bit saif_enabled;
+  bit saif_active;
+  string saif_file;
+  realtime clk_period_ns;
+  longint unsigned saif_cycle_q;
 
   attention_accel_top dut (
     .clk(clk),
@@ -64,7 +71,11 @@ module tb_top;
 
   initial begin
     clk = 1'b0;
-    forever #5 clk = ~clk;
+    clk_period_ns = 10.0;
+    if ($value$plusargs("CLK_PERIOD_NS=%f", clk_period_ns) &&
+        clk_period_ns <= 0.0)
+      $fatal(1, "+CLK_PERIOD_NS must be greater than zero");
+    forever #(clk_period_ns / 2.0) clk = ~clk;
   end
 
   initial begin
@@ -73,11 +84,63 @@ module tb_top;
     rst_n = 1'b1;
   end
 
+  // Toggle capture is opt-in so ordinary UVM runs have no SAIF side effect.
+  // Restricting the region to dut excludes UVM, clocks, and testbench drivers.
+  initial begin
+    saif_enabled = $test$plusargs("SAIF_ENABLE");
+    saif_active = 1'b0;
+    saif_cycle_q = '0;
+    saif_if.enabled = saif_enabled;
+    if (saif_enabled) begin
+      if (!$value$plusargs("SAIF_FILE=%s", saif_file))
+        $fatal(1, "+SAIF_ENABLE requires +SAIF_FILE=<absolute-path>");
+      $set_toggle_region(dut);
+      $display("[SAIF_CAPTURE] ARMED strip_path=tb_top/dut clock_period_ns=%0.3f file=%s",
+               clk_period_ns, saif_file);
+    end
+  end
+
+  // Start after register programming and stop after completion/writeback.
+  // $toggle_report writes only after the stop marker has crossed this boundary.
+  always @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      saif_cycle_q <= '0;
+      saif_active <= 1'b0;
+      saif_if.capture_active <= 1'b0;
+      saif_if.start_cycle <= '0;
+      saif_if.stop_cycle <= '0;
+    end else begin
+      saif_cycle_q <= saif_cycle_q + 1'b1;
+      if (saif_enabled && saif_if.start_req) begin
+        if (saif_active)
+          $fatal(1, "SAIF capture received a duplicate start request");
+        $toggle_start();
+        saif_active <= 1'b1;
+        saif_if.capture_active <= 1'b1;
+        saif_if.start_cycle <= saif_cycle_q;
+        $display("[SAIF_CAPTURE] START cycle=%0d", saif_cycle_q);
+      end
+      if (saif_enabled && saif_if.stop_req) begin
+        if (!saif_active)
+          $fatal(1, "SAIF capture received stop without an active window");
+        $toggle_stop();
+        $toggle_report(saif_file, 1.0e-9, dut);
+        saif_active <= 1'b0;
+        saif_if.capture_active <= 1'b0;
+        saif_if.stop_cycle <= saif_cycle_q;
+        $display("[SAIF_CAPTURE] STOP cycle=%0d file=%s", saif_cycle_q, saif_file);
+      end
+    end
+  end
+
   initial begin
     uvm_config_db#(virtual fa_axil_if)::set(null, "uvm_test_top.env.axil_agent.*", "vif", axil_if);
     uvm_config_db#(virtual fa_tile_loader_if)::set(null, "uvm_test_top.env.tile_agent.*", "vif", tile_if);
     uvm_config_db#(virtual fa_axi_write_if)::set(null, "uvm_test_top.env.write_agent.*", "vif", write_if);
     uvm_config_db#(virtual fa_status_if)::set(null, "uvm_test_top.env.phase_cov", "vif", status_if);
+    uvm_config_db#(virtual fa_status_if)::set(null, "uvm_test_top.env.tile_cov", "status_vif", status_if);
+    uvm_config_db#(virtual fa_status_if)::set(null, "uvm_test_top.env.vseqr", "status_vif", status_if);
+    uvm_config_db#(virtual fa_saif_control_if)::set(null, "*", "saif_vif", saif_if);
     run_test();
   end
 endmodule

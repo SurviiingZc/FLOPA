@@ -98,4 +98,43 @@ interface fa_status_if(input logic clk, input logic rst_n);
   logic [3:0] debug_state;
 endinterface
 
+// A test-owned, clock-synchronous request channel for DUT-only SAIF capture.
+// The test raises requests on a falling edge; tb_top consumes them on the
+// following rising edge, so toggle-system tasks never race AXI transactions.
+interface fa_saif_control_if(input logic clk);
+  logic            enabled;
+  logic            capture_active;
+  logic            start_req;
+  logic            stop_req;
+  longint unsigned start_cycle;
+  longint unsigned stop_cycle;
+
+  initial begin
+    enabled = 1'b0;
+    capture_active = 1'b0;
+    start_req = 1'b0;
+    stop_req = 1'b0;
+    start_cycle = '0;
+    stop_cycle = '0;
+  end
+
+  task automatic start_capture();
+    if (enabled) begin
+      @(negedge clk);
+      start_req <= 1'b1;
+      @(negedge clk);
+      start_req <= 1'b0;
+    end
+  endtask
+
+  task automatic stop_capture();
+    if (enabled) begin
+      @(negedge clk);
+      stop_req <= 1'b1;
+      @(negedge clk);
+      stop_req <= 1'b0;
+    end
+  endtask
+endinterface
+
 `endif

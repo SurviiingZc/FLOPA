@@ -1,7 +1,7 @@
 SHELL := /bin/bash
 
 CORNER ?= tt
-CLOCK_PERIOD ?= 1.7
+CLOCK_PERIOD ?= 1.6
 SETUP_UNCERTAINTY ?= 0.100
 HOLD_UNCERTAINTY ?= 0.020
 CLOCK_TRANSITION ?= 0.050
@@ -17,8 +17,25 @@ EXPECTED_TOP_SRAM_MACROS ?= 480
 FREQ_SWEEP_PERIODS ?= 3.2 2.8 2.5 2.3 2.1 1.9
 FANOUT_SWEEP_LIMITS ?= 16 24 32
 POSTCTS_TOP ?= attention_accel_top
+SAIF_SEED ?= 301
+SAIF_PROFILE ?= fa_two_tile_pingpong_random_seed$(SAIF_SEED)
+SAIF_SIM_CLOCK_PERIOD ?= 1.6
+SAIF_POWER_CLOCK_PERIOD ?= $(SAIF_SIM_CLOCK_PERIOD)
+SAIF_SIM_OUT_DIR ?= tb/sim/build/saif_$(SAIF_PROFILE)
+SAIF_FILE ?=
+SAIF_DDC_FILE ?=
+SAIF_SYNTH_GROUP ?= system
+# Single-test UVM runner. The output directory is relative to tb/sim because
+# VCS is launched from that directory to resolve the RTL and UVM filelists.
+UVM_TEST ?= fa_two_tile_pingpong_test
+UVM_SEED ?= 301
+UVM_SIM_CLOCK_PERIOD ?= 1.6
+UVM_SIM_OUT_DIR ?= build/uvm_$(UVM_TEST)_seed$(UVM_SEED)
 
 SYNTH_SCRIPT := asic/scripts/run_synth.sh
+SAIF_SIM_SCRIPT := tb/sim/scripts/run_saif_random_qkv.sh
+SAIF_POWER_SCRIPT := asic/scripts/run_saif_power.sh
+SAIF_DDC_ARG = $(if $(strip $(SAIF_DDC_FILE)),DDC_FILE=$(SAIF_DDC_FILE),)
 
 AXI_TOPS := axi4_slave_if axi4_master_write
 CONTROL_TOPS := accel_regfile accel_scheduler perf_counter
@@ -46,7 +63,7 @@ SYNTH_ENV = CORNER=$(CORNER) CLOCK_PERIOD=$(CLOCK_PERIOD) \
 	synth-system-tt synth-system-ss synth-all-tt synth-all-ss \
 	synth-frequency-sweep synth-physical physical-config \
 	synth-system-hold synth-fanout-sweep \
-	synth-hold-ff hold-signoff \
+	synth-hold-ff hold-signoff uvm-test saif-random-qkv saif-two-tile-pingpong saif-two-tile-random saif-power \
 	clean-synth clean-asic
 
 .NOTPARALLEL: synth-modules synth-all synth-all-tt synth-all-ss
@@ -74,6 +91,10 @@ help:
 	@echo "  make sram-lib        - compile the SRAM Liberty file for CORNER"
 	@echo "  make rtl-check       - analyze/elaborate/link ASIC RTL without compile_ultra"
 	@echo "  make pe-timing       - focused shared PE MAC timing synthesis"
+	@echo "  make uvm-test [UVM_TEST=fa_two_tile_pingpong_test] [UVM_SEED=301] - compile and run one UVM test"
+	@echo "  make saif-two-tile-pingpong [SAIF_SEED=301] [SAIF_SIM_CLOCK_PERIOD=1.6] - simulate random-Q/K/V fa_two_tile_pingpong_test without AXI write backpressure"
+	@echo "  make saif-two-tile-random / saif-random-qkv - compatibility aliases for saif-two-tile-pingpong"
+	@echo "  make saif-power SAIF_FILE=/abs/profile.saif [SAIF_POWER_CLOCK_PERIOD=1.6] - back-annotate SAIF to matching mapped DDC"
 	@echo "  make synth-config    - print active libraries/constraint variables"
 	@echo "  make synth-list      - print module groups"
 
@@ -185,6 +206,38 @@ physical-config:
 	echo "SRAM_LEF=$$FA_SRAM_LEF_DEFAULT"; \
 	echo "SRAM_GDS=$$FA_SRAM_GDS_DEFAULT"; \
 	echo "RC_ROOT=$$FA_RC_ROOT_DEFAULT"
+
+# Compile one fresh UVM simulator and run the requested factory test. VCS may
+# return success even when UVM reports an error, so the report summary is the
+# authoritative pass/fail check. Override UVM_SIM_OUT_DIR for an isolated run.
+uvm-test:
+	@case "$(UVM_TEST)" in ''|*[!A-Za-z0-9_]*) echo "UVM_TEST must contain only letters, digits, and underscores" >&2; exit 2;; esac
+	@case "$(UVM_SEED)" in ''|*[!0-9]*) echo "UVM_SEED must be a non-negative integer" >&2; exit 2;; esac
+	@mkdir -p tb/sim/$(UVM_SIM_OUT_DIR)/csrc
+	cd tb/sim && vcs -full64 -sverilog -ntb_opts uvm -timescale=1ns/1ps \
+		-debug_access+all -kdb -lca -Mdir="$(UVM_SIM_OUT_DIR)/csrc" \
+		-f filelists/rtl.f -f filelists/uvm.f -top tb_top \
+		-l "$(UVM_SIM_OUT_DIR)/compile.log" -o "$(UVM_SIM_OUT_DIR)/simv"
+	cd tb/sim && "$(UVM_SIM_OUT_DIR)/simv" +UVM_TESTNAME="$(UVM_TEST)" \
+		+ntb_random_seed="$(UVM_SEED)" +CLK_PERIOD_NS="$(UVM_SIM_CLOCK_PERIOD)" \
+		-l "$(UVM_SIM_OUT_DIR)/$(UVM_TEST).log"
+	@grep -Eq 'UVM_ERROR :[[:space:]]*0' tb/sim/$(UVM_SIM_OUT_DIR)/$(UVM_TEST).log && \
+		grep -Eq 'UVM_FATAL :[[:space:]]*0' tb/sim/$(UVM_SIM_OUT_DIR)/$(UVM_TEST).log || \
+		{ echo "UVM test failed; see tb/sim/$(UVM_SIM_OUT_DIR)/$(UVM_TEST).log" >&2; exit 1; }
+	@echo "PASS $(UVM_TEST) seed=$(UVM_SEED); log: tb/sim/$(UVM_SIM_OUT_DIR)/$(UVM_TEST).log"
+
+# The capture script publishes only when the UVM test has zero errors/fatals.
+# Its 1.6 ns default must match saif-power to preserve time-based toggle rates.
+saif-random-qkv saif-two-tile-pingpong saif-two-tile-random:
+	SEED=$(SAIF_SEED) PROFILE=$(SAIF_PROFILE) \
+	SIM_CLOCK_PERIOD_NS=$(SAIF_SIM_CLOCK_PERIOD) OUT_DIR=$(SAIF_SIM_OUT_DIR) \
+	$(SAIF_SIM_SCRIPT)
+
+saif-power:
+	@test -n "$(SAIF_FILE)" || { echo "SAIF_FILE=/absolute/path/to/profile.saif is required" >&2; exit 2; }
+	SAIF_FILE=$(SAIF_FILE) PROFILE=$(SAIF_PROFILE) CORNER=$(CORNER) \
+	CLOCK_PERIOD=$(SAIF_POWER_CLOCK_PERIOD) SYNTH_GROUP=$(SAIF_SYNTH_GROUP) \
+	$(SAIF_DDC_ARG) $(SAIF_POWER_SCRIPT)
 
 clean-synth:
 	rm -rf asic/dc/work/synth

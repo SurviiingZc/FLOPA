@@ -211,11 +211,13 @@ START 当前要求：
 
 - `seq_q`, `seq_kv`, head counts 非零；
 - `HEAD_DIM=64`, `TILE_Q=TILE_K=32`；
-- prefill=1、decode=0、MHA mode；
-- `num_q_heads == num_kv_heads`；
+- MHA mode，且 `num_q_heads == num_kv_heads`；
+- prefill：`prefill=1, decode=0`；
+- 单 token decode：`prefill=0, decode=1, seq_q=1, seq_kv>=1`；
 - Q/K/V/O base 16-byte aligned。
 
-也就是说 decode 和 GQA 位虽已存在于寄存器表，当前 START validation 会拒绝它们。
+decode 保持物理 32x32 阵列：逻辑 query 位置是 `seq_kv-1`，数组掩码只保留
+row 0，最终只写回一个 `HEAD_DIM` 输出。GQA 仍会被 START validation 拒绝。
 
 ### 6.3 `accel_scheduler`
 
@@ -481,6 +483,10 @@ feature tag = d
 ```
 
 所以 64 维一次连续加载，II=1，不拆成两个 feature halves。
+`fsa_pv_engine` 不再从“第几个 response”推断 `d`：每个 `v_rd_en_o` 的物理
+cache address 都进入 `V_RD_LATENCY=2` 的 tag pipeline，并与 `v_rd_valid_i`/
+`v_rd_data_i` 同拍输出。只有 data 和 tag 同时 valid 才会发出 `array_valid_o`；
+最后 feature 也由返回 tag `HEAD_DIM-1` 判定，而非计数器边界。
 
 ### 14.2 Align O seed with V
 
@@ -494,9 +500,20 @@ seed[row,d] = alpha[row] * O_old[row,d] >> 15
 
 首 KV tile 的 `pv_seed_zero_i=1`，绕过未初始化 O memory，以 zero seed 开始。
 V 数据经过 `pv_issue_cols_q -> pv_rescale_cols_q -> s1 -> s2` 延迟，与 O-rescale
-输出严格对齐。之后 O seed 做 row skew，V 做 column skew。
+输出严格对齐；`pv_rescale_feature_q -> s1 -> s2` 与 V payload 同步推进，并在
+simulation 下检查它与所有 stripe O-seed tag 一致。之后 O seed 做 row skew，V 做
+column skew。这一检查会在任何 feature `d`/`d+1` 错位或末 feature 遗失前停止仿真。
 
-### 14.3 Probability-stationary horizontal accumulation
+### 14.3 Registered O-bank Read Return
+
+最终 normalizer 同样按 feature-major 顺序连续读取 O-bank。`norm_request_q` 保存
+请求的 `{stripe,d}`，但 O-bank 在每个后续 read 时都会更新其输出。因此
+`fsa_fused_array` 在 response valid 的同一拍把 `O[:,d]`、对应 `l` slice 和该 tag
+寄存到 `norm_rd_*_o`；normalizer 只能消费这些寄存后的 payload。不能直接组合选择
+O-bank 输出，否则连续扫描会形成 `tag=d, payload=O[:,d+1]`，将整条最终输出左移并
+丢失最后 feature。
+
+### 14.4 Probability-stationary horizontal accumulation
 
 每个 PE 已保存 `prob_q=P[row,k]`。V[k,d] 从顶部向下广播，partial sum 从左向右：
 
@@ -657,7 +674,8 @@ filelist 和 module-TB 清单删除。当前文件树只保留现有加速器数
 
 ## 22. Current Implementation Boundaries
 
-1. 当前硬件实现固定 32x32 prefill MHA；decode 和 GQA 会被 START validation 拒绝。
+1. 当前硬件实现固定 32x32 MHA prefill，以及单 token MHA decode。decode 仅使用
+   physical row 0，另外 31 行由既有 array mask 屏蔽；GQA 仍会被 START validation 拒绝。
 2. Q/K/V base 和 stride 已有寄存器，但没有 AXI read DMA；tile loader 位于顶层外部。
 3. `cfg_value_scale_w` 和 `cfg_mask_cfg_w` 已锁存但当前 datapath 未消费。
 4. `cfg_q_base_w`, `cfg_k_base_w`, `cfg_v_base_w` 不参与当前 cache 地址生成；

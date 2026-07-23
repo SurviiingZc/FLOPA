@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Compile once, retain one log per seed, and merge UVM covergroups with VCS.
+# Compile once, retain one log per seed, and merge RTL code plus UVM functional
+# coverage with VCS.
 # A VCS simulation may return zero even when UVM reports an error, so the
 # post-run summary check is the regression pass/fail criterion.
 SIM_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
@@ -18,6 +19,12 @@ tests=(
   "fa_positive_saturation_test:103"
   "fa_negative_saturation_test:104"
   "fa_causal_random_test:105"
+  "fa_two_tile_pingpong_test:301"
+  "fa_two_tile_random_backpressure_test:302"
+  "fa_decode_smoke_test:201"
+  "fa_decode_backpressure_test:202"
+  "fa_decode_random_test:203"
+  "fa_decode_illegal_config_test:204"
   "fa_illegal_config_test:7"
 )
 
@@ -45,7 +52,8 @@ for entry in "${tests[@]}"; do
   log="$OUT_DIR/${test_name}.log"
 
   "$OUT_DIR/simv" +UVM_TESTNAME="$test_name" +ntb_random_seed="$seed" \
-    -cm_name "$test_name" -l "$log" || failures=$((failures + 1))
+    -cm line+cond+tgl+branch -cm_dir "$COV_DIR" -cm_name "$test_name" \
+    -l "$log" || failures=$((failures + 1))
 
   if ! grep -Eq 'UVM_ERROR :[[:space:]]*0' "$log" || \
      ! grep -Eq 'UVM_FATAL :[[:space:]]*0' "$log"; then

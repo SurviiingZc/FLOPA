@@ -10,7 +10,10 @@ module fsa_pv_engine #(
   parameter integer ARRAY_COLS = `ATTN_ARRAY_COLS,
   parameter integer ARRAY_DATA_W = `ATTN_ARRAY_DATA_W,
   parameter integer HEAD_DIM = `ATTN_HEAD_DIM,
-  parameter integer FEATURE_IDX_W = (HEAD_DIM < 2) ? 1 : $clog2(HEAD_DIM)
+  parameter integer FEATURE_IDX_W = (HEAD_DIM < 2) ? 1 : $clog2(HEAD_DIM),
+  // qkv_tile_cache registers the request and returns its payload on the
+  // following registered memory cycle. Keep the feature tag on that same path.
+  parameter integer V_RD_LATENCY = 2
 )(
   input                              clk,
   input                              rst_n,
@@ -42,11 +45,17 @@ module fsa_pv_engine #(
   localparam integer CACHE_LANES = CACHE_WORD_W / CACHE_ELEM_W;
   localparam [FEATURE_IDX_W:0] FEATURE_LIMIT = HEAD_DIM;
   localparam [FEATURE_IDX_W:0] FEATURE_LAST = HEAD_DIM - 1;
+  localparam integer V_TAG_STAGES = (V_RD_LATENCY < 1) ? 1 : V_RD_LATENCY;
 
   reg [2:0] state_q;
   reg [FEATURE_IDX_W:0] issue_count_q;
-  reg [FEATURE_IDX_W:0] receive_count_q;
+  reg [V_TAG_STAGES-1:0] v_rd_tag_valid_q;
+  reg [V_TAG_STAGES*FEATURE_IDX_W-1:0] v_rd_feature_tag_q;
+  wire v_rd_response_tag_valid_w = v_rd_tag_valid_q[V_TAG_STAGES-1];
+  wire [FEATURE_IDX_W-1:0] v_rd_response_feature_w =
+      v_rd_feature_tag_q[(V_TAG_STAGES-1)*FEATURE_IDX_W +: FEATURE_IDX_W];
   integer col;
+  integer tag_stage;
 
 `ifndef SYNTHESIS
   initial begin
@@ -59,17 +68,20 @@ module fsa_pv_engine #(
   end
 `endif
 
-  // receive_count_q is the feature ID of v_rd_data_i because cache responses are
-  // ordered. array_feature_o and array_cols_o therefore describe the same V[:,d].
+  // A returned V word never derives its feature ID from a response count. The
+  // request address traverses the same fixed-latency pipeline as the cache data,
+  // so bubbles or a later cache latency change cannot silently write O[:,d] as
+  // O[:,d+1].
   always @(*) begin
     v_rd_en_o = (state_q == ST_ISSUE && issue_count_q < FEATURE_LIMIT);
     v_rd_addr_o = issue_count_q[CACHE_ADDR_W-1:0];
     array_start_o = (state_q == ST_ARRAY_START);
     array_seed_zero_o = first_kv_tile_i;
     array_valid_o = 1'b0;
-    array_feature_o = receive_count_q[FEATURE_IDX_W-1:0];
+    array_feature_o = v_rd_response_feature_w;
     array_cols_o = {ARRAY_COLS*ARRAY_DATA_W{1'b0}};
-    if ((state_q == ST_ISSUE || state_q == ST_DRAIN) && v_rd_valid_i) begin
+    if ((state_q == ST_ISSUE || state_q == ST_DRAIN) && v_rd_valid_i &&
+        v_rd_response_tag_valid_w) begin
       array_valid_o = 1'b1;
       // V remains signed INT8 on the same 32 vertical lanes used by K.
       for (col = 0; col < ARRAY_COLS; col = col + 1) begin
@@ -85,19 +97,32 @@ module fsa_pv_engine #(
     if (!rst_n) begin
       state_q <= ST_IDLE;
       issue_count_q <= {(FEATURE_IDX_W+1){1'b0}};
-      receive_count_q <= {(FEATURE_IDX_W+1){1'b0}};
+      v_rd_tag_valid_q <= {V_TAG_STAGES{1'b0}};
       done_o <= 1'b0;
       busy_o <= 1'b0;
       error_o <= 1'b0;
     end else if (clear_i) begin
       state_q <= ST_IDLE;
       issue_count_q <= {(FEATURE_IDX_W+1){1'b0}};
-      receive_count_q <= {(FEATURE_IDX_W+1){1'b0}};
+      v_rd_tag_valid_q <= {V_TAG_STAGES{1'b0}};
       done_o <= 1'b0;
       busy_o <= 1'b0;
       error_o <= 1'b0;
     end else begin
       done_o <= 1'b0;
+      // Carry the physical cache address alongside the request. qkv_tile_cache
+      // keeps data and rd_valid aligned to this two-stage transaction pipeline.
+      v_rd_tag_valid_q[0] <= v_rd_en_o;
+      if (v_rd_en_o)
+        v_rd_feature_tag_q[0 +: FEATURE_IDX_W] <=
+            v_rd_addr_o[FEATURE_IDX_W-1:0];
+      for (tag_stage = 1; tag_stage < V_TAG_STAGES;
+           tag_stage = tag_stage + 1) begin
+        v_rd_tag_valid_q[tag_stage] <= v_rd_tag_valid_q[tag_stage-1];
+        if (v_rd_tag_valid_q[tag_stage-1])
+          v_rd_feature_tag_q[tag_stage*FEATURE_IDX_W +: FEATURE_IDX_W] <=
+              v_rd_feature_tag_q[(tag_stage-1)*FEATURE_IDX_W +: FEATURE_IDX_W];
+      end
       case (state_q)
         ST_IDLE: begin
           busy_o <= 1'b0;
@@ -110,16 +135,15 @@ module fsa_pv_engine #(
         ST_ARRAY_READY: begin
           if (array_ready_i) begin
             issue_count_q <= {(FEATURE_IDX_W+1){1'b0}};
-            receive_count_q <= {(FEATURE_IDX_W+1){1'b0}};
+            v_rd_tag_valid_q <= {V_TAG_STAGES{1'b0}};
             state_q <= ST_ISSUE;
           end
         end
         ST_ISSUE: begin
           if (issue_count_q < FEATURE_LIMIT)
             issue_count_q <= issue_count_q + 1'b1;
-          if (v_rd_valid_i) begin
-            receive_count_q <= receive_count_q + 1'b1;
-            if (receive_count_q == FEATURE_LAST) state_q <= ST_DRAIN;
+          if (v_rd_valid_i && v_rd_response_tag_valid_w) begin
+            if (v_rd_response_feature_w == FEATURE_LAST) state_q <= ST_DRAIN;
           end
         end
         ST_DRAIN: if (array_done_i) state_q <= ST_DONE;

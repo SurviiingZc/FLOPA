@@ -111,7 +111,9 @@ module accel_regfile #(
   wire start_cfg_valid_w;
   wire start_alignment_valid_w;
 
-  // START validation covers the Stage-1 prefill contract and 16-byte DMA alignment.
+  // START accepts fixed-tile MHA prefill or single-token MHA decode. Decode
+  // retains the physical 32-row tile but requires seq_q=1; row masking happens
+  // inside the fused array after this configuration snapshot is taken.
   assign control_write_w = wr_fire_w && wr_addr_w[11:0] == `ATTN_REG_CONTROL && wr_strb_w[0];
   assign requested_start_w = control_write_w && wr_data_w[`ATTN_CTRL_START_BIT];
   assign start_mode_sel_w = control_write_w ? wr_data_w[`ATTN_CTRL_MODE_SEL_BIT] : prog_mode_sel_q;
@@ -123,8 +125,10 @@ module accel_regfile #(
   assign start_cfg_valid_w = prog_seq_q_q != 0 && prog_seq_kv_q != 0 &&
       prog_num_q_heads_q != 0 && prog_num_kv_heads_q != 0 &&
       prog_head_dim_q == HEAD_DIM_CFG && prog_tile_q_q == `ATTN_TILE_Q &&
-      prog_tile_k_q == `ATTN_TILE_K && start_prefill_en_w && !start_decode_en_w &&
-      !start_mode_sel_w && prog_num_q_heads_q == prog_num_kv_heads_q && start_alignment_valid_w;
+      prog_tile_k_q == `ATTN_TILE_K && !start_mode_sel_w &&
+      prog_num_q_heads_q == prog_num_kv_heads_q && start_alignment_valid_w &&
+      ((start_prefill_en_w && !start_decode_en_w) ||
+       (!start_prefill_en_w && start_decode_en_w && prog_seq_q_q == 16'd1));
 
   axi4_slave_if #(.ADDR_W(ADDR_W)) u_axi_lite_if (
     .clk(clk), .rst_n(rst_n), .wr_block_i(s_axi_bvalid), .rd_block_i(s_axi_rvalid),
