@@ -5,6 +5,7 @@ class fa_axi_write_responder extends uvm_component;
   `uvm_component_utils(fa_axi_write_responder)
   virtual fa_axi_write_if vif;
   fa_test_cfg cfg;
+  bit bresp_error_sent;
 
   function new(string name = "fa_axi_write_responder", uvm_component parent = null);
     super.new(name, parent);
@@ -27,6 +28,7 @@ class fa_axi_write_responder extends uvm_component;
     vif.wready <= 1'b0;
     vif.bvalid <= 1'b0;
     vif.bresp <= 2'b00;
+    bresp_error_sent = 0;
     forever begin
       @(posedge vif.clk);
       if (!vif.rst_n) begin
@@ -34,6 +36,7 @@ class fa_axi_write_responder extends uvm_component;
         vif.wready <= 1'b0;
         vif.bvalid <= 1'b0;
         vif.bresp <= 2'b00;
+        bresp_error_sent = 0;
       end else begin
         vif.awready <= ready_now();
         vif.wready <= ready_now();
@@ -41,7 +44,12 @@ class fa_axi_write_responder extends uvm_component;
           vif.bvalid <= 1'b0;
         if (vif.wvalid && vif.wready && vif.wlast && !vif.bvalid) begin
           vif.bvalid <= 1'b1;
-          vif.bresp <= 2'b00;
+          if (cfg.inject_axi_bresp_error && !bresp_error_sent) begin
+            vif.bresp <= 2'b10;
+            bresp_error_sent = 1;
+          end else begin
+            vif.bresp <= 2'b00;
+          end
         end
       end
     end

@@ -14,6 +14,7 @@ module tb_top;
   fa_axi_write_if write_if(.clk(clk), .rst_n(rst_n));
   fa_status_if status_if(.clk(clk), .rst_n(rst_n));
   fa_saif_control_if saif_if(.clk(clk));
+  wire [21:0] debug_tile_indices_w;
 
   bit saif_enabled;
   bit saif_active;
@@ -66,14 +67,15 @@ module tb_top;
     .m_axi_bvalid(write_if.bvalid),
     .m_axi_bready(write_if.bready),
     .irq_o(status_if.irq),
-    .debug_state_o(status_if.debug_state)
+    .debug_state_o(status_if.debug_state),
+    .debug_tile_indices_o(debug_tile_indices_w)
   );
 
-  // Tile indices are testbench-only observability.  The virtual sequence uses
-  // them to refill a released ping-pong bank with the correct long-context
-  // tile; no DUT control signal is driven through this interface.
-  assign status_if.q_tile_index = dut.u_scheduler.q_tile_index_o;
-  assign status_if.kv_tile_index = dut.u_scheduler.kv_tile_index_o;
+  // Tile indices are testbench-only observability. The virtual sequence uses
+  // them to refill a released ping-pong bank; the public status port remains
+  // valid after synthesis flattens or renames the scheduler hierarchy.
+  assign status_if.q_tile_index = debug_tile_indices_w[21:11];
+  assign status_if.kv_tile_index = debug_tile_indices_w[10:0];
 
   initial begin
     clk = 1'b0;

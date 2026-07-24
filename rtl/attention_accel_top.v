@@ -64,7 +64,10 @@ module attention_accel_top #(
   output                  m_axi_bready,
 
   output                  irq_o,
-  output [3:0]            debug_state_o
+  output [3:0]            debug_state_o,
+  // Stable verification observability boundary. Keep scheduler progress out
+  // of testbench cross-module references so gate netlists may be flattened.
+  output [21:0]           debug_tile_indices_o
 );
 
   localparam integer ARRAY_ROW_W = ARRAY_ROWS * ARRAY_DATA_W;
@@ -293,9 +296,15 @@ module attention_accel_top #(
   );
 
   assign debug_state_o = debug_state_reg_w;
+  // Packed as {Q tile index, KV tile index}; this is a passive status port and
+  // is intentionally independent of all accelerator control/data paths.
+  assign debug_tile_indices_o = {q_tile_index_w, kv_tile_index_w};
   assign irq_o = scheduler_done_w | scheduler_error_w;
+  // clear_error acknowledges a completed AXI write fault. The master clears
+  // on the same command, so suppress its registered error for that cycle.
   assign fatal_error_w = cache_protocol_error_w | array_controller_error_w | qk_error_w |
-                         pv_engine_error_w | softmax_error_w | axi_write_error_w;
+                         pv_engine_error_w | softmax_error_w |
+                         (axi_write_error_w && !cfg_clear_error_w);
 
   // Control plane: software-visible shadow registers feed the job scheduler.
   accel_regfile #(.HEAD_DIM(HEAD_DIM)) u_regfile (
@@ -526,7 +535,8 @@ module attention_accel_top #(
   assign output_stream_ready_w = output_stream_valid_w && axi_data_ready_w;
 
   axi4_master_write u_axi_write (
-    .clk(clk), .rst_n(rst_n), .start_i(axi_write_start_w), .base_addr_i(writeback_addr_q),
+    .clk(clk), .rst_n(rst_n), .start_i(axi_write_start_w),
+    .clear_error_i(cfg_clear_error_w | cfg_soft_reset_w), .base_addr_i(writeback_addr_q),
     .beat_count_i(writeback_beats_w), .burst_len_i(8'd16),
     .data_i(output_stream_data_w), .data_valid_i(output_stream_valid_w), .data_ready_o(axi_data_ready_w),
     .busy_o(axi_write_busy_w), .done_o(axi_write_done_w), .error_o(axi_write_error_w),

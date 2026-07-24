@@ -55,6 +55,17 @@ for input in "$NETLIST" "$SDF_FILE" "$DDC_FILE" "$STD_CELL_V" "$SRAM_V"; do
   fi
 done
 
+# Gate simulation must observe scheduler progress only through preserved top
+# ports. Internal RTL hierarchy is intentionally not stable after mapping.
+if ! grep -Eq '(^|[^[:alnum:]_])debug_tile_indices_o([^[:alnum:]_]|$)' "$NETLIST"; then
+  echo "Gate netlist lacks debug_tile_indices_o; rerun make synth before gate-saif" >&2
+  exit 2
+fi
+if rg -n 'dut[.]' "$SIM_ROOT/../uvm"; then
+  echo "Gate UVM must not reference DUT internal hierarchy; use status_if ports" >&2
+  exit 2
+fi
+
 NETLIST=$(readlink -f "$NETLIST")
 SDF_FILE=$(readlink -f "$SDF_FILE")
 DDC_FILE=$(readlink -f "$DDC_FILE")

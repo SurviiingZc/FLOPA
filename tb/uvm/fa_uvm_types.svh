@@ -92,6 +92,17 @@ class fa_qkv_tensor extends uvm_object;
       end
   endfunction
 
+  function void fill_score_spread(byte signed value_value);
+    // score_scale_pipe consumes score - max.  Drive a positive maximum and a
+    // strongly negative lane so the reachable negative clamp is exercised.
+    for (int unsigned row = 0; row < FA_MAX_SEQ; row++)
+      for (int unsigned dim = 0; dim < `ATTN_HEAD_DIM; dim++) begin
+        q[row][dim] = 8'sd127;
+        k[row][dim] = (row == 0) ? 8'sd127 : -8'sd128;
+        v[row][dim] = value_value;
+      end
+  endfunction
+
   function void fill_pattern(fa_stimulus_e stimulus,
                              int unsigned active_q_rows = FA_MAX_SEQ,
                              int unsigned active_kv_rows = FA_MAX_SEQ);
@@ -100,8 +111,8 @@ class fa_qkv_tensor extends uvm_object;
       FA_STIM_RANDOM_FULL_RANGE: fill_random_full_range(active_q_rows, active_kv_rows);
       FA_STIM_PWL_SEGMENTS: fill_pwl_segments();
       FA_STIM_ARITH_ROUNDING: fill_arith_rounding();
-      FA_STIM_POSITIVE_SAT: fill_constant(8'sd0, 8'sd0, 8'sd127);
-      FA_STIM_NEGATIVE_SAT: fill_constant(8'sd0, 8'sd0, -8'sd128);
+      FA_STIM_POSITIVE_SAT: fill_score_spread(8'sd127);
+      FA_STIM_NEGATIVE_SAT: fill_score_spread(-8'sd128);
       default: fill_constant(8'sd0, 8'sd0, 8'sd0);
     endcase
   endfunction
@@ -253,7 +264,9 @@ class fa_test_cfg extends uvm_object;
   rand int unsigned tile_k;
   rand int unsigned ready_low_pct;
   bit [31:0]       score_scale;
+  bit [31:0]       value_scale;
   bit [31:0]       out_scale;
+  bit [31:0]       o_base;
   bit              decode_en;
   bit              causal_en;
   bit              enable_reference_model;
@@ -263,6 +276,7 @@ class fa_test_cfg extends uvm_object;
   byte signed      canonical_value;
   bit              enable_data_check;
   bit              allow_axil_error_response;
+  bit              inject_axi_bresp_error;
   bit              saif_capture;
 
   constraint c_supported_mode {
@@ -287,7 +301,9 @@ class fa_test_cfg extends uvm_object;
     `uvm_field_int(tile_k, UVM_DEFAULT)
     `uvm_field_int(ready_low_pct, UVM_DEFAULT)
     `uvm_field_int(score_scale, UVM_DEFAULT)
+    `uvm_field_int(value_scale, UVM_DEFAULT)
     `uvm_field_int(out_scale, UVM_DEFAULT)
+    `uvm_field_int(o_base, UVM_DEFAULT)
     `uvm_field_int(decode_en, UVM_DEFAULT)
     `uvm_field_int(causal_en, UVM_DEFAULT)
     `uvm_field_enum(fa_stimulus_e, stimulus, UVM_DEFAULT)
@@ -296,6 +312,7 @@ class fa_test_cfg extends uvm_object;
     `uvm_field_int(canonical_value, UVM_DEFAULT)
     `uvm_field_int(enable_data_check, UVM_DEFAULT)
     `uvm_field_int(allow_axil_error_response, UVM_DEFAULT)
+    `uvm_field_int(inject_axi_bresp_error, UVM_DEFAULT)
     `uvm_field_int(saif_capture, UVM_DEFAULT)
   `uvm_object_utils_end
 
@@ -310,7 +327,9 @@ class fa_test_cfg extends uvm_object;
     tile_k = `ATTN_TILE_K;
     ready_low_pct = 0;
     score_scale = 32'h0000_0001;
+    value_scale = 32'h0000_0001;
     out_scale = 32'h000f_0001;
+    o_base = 32'd0;
     decode_en = 0;
     causal_en = 0;
     enable_reference_model = 1;
@@ -320,6 +339,7 @@ class fa_test_cfg extends uvm_object;
     canonical_value = 1;
     enable_data_check = 1;
     allow_axil_error_response = 0;
+    inject_axi_bresp_error = 0;
     saif_capture = 0;
   endfunction
 endclass

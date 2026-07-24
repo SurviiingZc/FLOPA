@@ -130,7 +130,16 @@ class attention_scoreboard extends uvm_component;
     int signed matching_feature;
     for (int unsigned lane = 0; lane < 16; lane++) begin
       if (tr.strb[lane]) begin
-        byte_address = tr.addr + lane;
+        if (tr.addr < cfg.o_base) begin
+          invalid_output_bytes++;
+          if (!address_error_reported) begin
+            `uvm_error("SB_ADDR", $sformatf("write address %08h precedes O base %08h",
+              tr.addr, cfg.o_base))
+            address_error_reported = 1;
+          end
+          continue;
+        end
+        byte_address = tr.addr - cfg.o_base + lane;
         if (byte_address >= (cfg.decode_en ? `ATTN_HEAD_DIM : cfg.seq_q * `ATTN_HEAD_DIM)) begin
           invalid_output_bytes++;
           if (!address_error_reported) begin

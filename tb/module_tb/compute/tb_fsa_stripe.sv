@@ -20,6 +20,7 @@ module tb_fsa_stripe;
   reg [STRIPE_ROWS*SUM_W-1:0] pv_sum_data_i=0; reg [STRIPE_ROWS*TAG_W-1:0] pv_sum_tag_i=0;
   reg pv_seed_operand_valid_i=0,pv_seed_zero_i=0;
   reg [STRIPE_ROWS*PROB_W-1:0] pv_seed_alpha_i=0;
+  reg [STRIPE_ROWS-1:0] pv_seed_bypass_i=0;
   reg [TAG_W-1:0] pv_seed_feature_i=0;
   wire pv_seed_valid_o; wire [STRIPE_ROWS*SUM_W-1:0] pv_seed_data_o;
   wire [TAG_W-1:0] pv_seed_feature_o;
@@ -66,6 +67,19 @@ module tb_fsa_stripe;
       errors=errors+1;
     end
     `TB_CHECK(pv_seed_feature_o==2,"registered O-seed feature")
+    @(negedge clk); o_rd_en_i=1; o_rd_feature_i=3;
+    @(negedge clk); o_rd_en_i=0; pv_seed_operand_valid_i=1;
+    pv_seed_alpha_i=0; pv_seed_alpha_i[PROB_W-1:0]=16'd16384;
+    pv_seed_bypass_i=2'b01;
+    pv_seed_feature_i=3;
+    @(negedge clk); pv_seed_operand_valid_i=0; pv_seed_bypass_i=0;
+    wait(pv_seed_valid_o); #1;
+    if ($signed(pv_seed_data_o[SUM_W-1:0])!==32'sd52) begin
+      $error("[FAIL] O-seed bypass got=%0d expected=52",
+             $signed(pv_seed_data_o[SUM_W-1:0]));
+      errors=errors+1;
+    end
+    `TB_CHECK(pv_seed_feature_o==3,"bypassed O-seed feature")
     `TB_FINISH("tb_fsa_stripe")
   end
 endmodule

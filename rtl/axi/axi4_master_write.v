@@ -10,6 +10,7 @@ module axi4_master_write #(
   input                  clk,
   input                  rst_n,
   input                  start_i,
+  input                  clear_error_i,
   input  [ADDR_W-1:0]    base_addr_i,
   input  [15:0]          beat_count_i,
   input  [7:0]           burst_len_i,
@@ -174,7 +175,7 @@ module axi4_master_write #(
           error_o <= 1'b1;
           m_axi_awvalid <= 1'b0;
           m_axi_bready <= 1'b0;
-          if (start_i) begin
+          if (clear_error_i || start_i) begin
             error_o <= 1'b0;
             state_q <= ST_IDLE;
           end

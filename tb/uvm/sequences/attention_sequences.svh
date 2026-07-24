@@ -75,6 +75,21 @@ class fa_attention_base_vseq extends uvm_sequence #(uvm_sequence_item);
     seq.start(p_sequencer.axil_sqr);
   endtask
 
+  task axil_write_with_resp(input bit [31:0] addr, input bit [31:0] data,
+                            output bit [1:0] resp, input bit [3:0] strb = 4'hf);
+    fa_axil_item tr;
+    fa_axil_single_seq seq;
+    tr = fa_axil_item::type_id::create($sformatf("wr_rsp_%03h", addr));
+    tr.is_read = 0;
+    tr.addr = addr;
+    tr.data = data;
+    tr.strb = strb;
+    seq = fa_axil_single_seq::type_id::create($sformatf("wr_rsp_seq_%03h", addr));
+    seq.tr = tr;
+    seq.start(p_sequencer.axil_sqr);
+    resp = tr.resp;
+  endtask
+
   task axil_read(bit [31:0] addr, output bit [31:0] data, output bit [1:0] resp);
     fa_axil_item tr;
     fa_axil_single_seq seq;
@@ -167,6 +182,8 @@ class fa_attention_base_vseq extends uvm_sequence #(uvm_sequence_item);
   endtask
 
   task program_supported_job();
+    axil_write(`ATTN_REG_O_BASE_LO, cfg.o_base);
+    axil_write(`ATTN_REG_O_BASE_HI, 32'd0);
     axil_write(`ATTN_REG_SEQ_Q, cfg.seq_q);
     axil_write(`ATTN_REG_SEQ_KV, cfg.seq_kv);
     axil_write(`ATTN_REG_NUM_Q_HEADS, cfg.num_q_heads);
@@ -176,7 +193,9 @@ class fa_attention_base_vseq extends uvm_sequence #(uvm_sequence_item);
     axil_write(`ATTN_REG_TILE_K, cfg.tile_k);
     axil_write(`ATTN_REG_O_STRIDE, cfg.head_dim);
     axil_write(`ATTN_REG_SCORE_SCALE, cfg.score_scale);
+    axil_write(`ATTN_REG_VALUE_SCALE, cfg.value_scale);
     axil_write(`ATTN_REG_OUT_SCALE, cfg.out_scale);
+    axil_write(`ATTN_REG_PERF_CTRL, 32'd0);
   endtask
 
   task start_supported_job();
@@ -357,6 +376,7 @@ class fa_illegal_config_vseq extends fa_attention_base_vseq;
     axil_write(`ATTN_REG_TILE_Q, `ATTN_TILE_Q);
     axil_write(`ATTN_REG_TILE_K, `ATTN_TILE_K);
     start_supported_job();
+    repeat (2) @(posedge p_sequencer.status_vif.clk);
     axil_read(`ATTN_REG_STATUS, status, resp);
     if (resp != 2'b00 || !status[2])
       `uvm_error("NEGATIVE", $sformatf("illegal config did not set error status=%08h resp=%0h", status, resp))
@@ -381,10 +401,137 @@ class fa_decode_illegal_config_vseq extends fa_attention_base_vseq;
     axil_write(`ATTN_REG_TILE_Q, `ATTN_TILE_Q);
     axil_write(`ATTN_REG_TILE_K, `ATTN_TILE_K);
     axil_write(`ATTN_REG_CONTROL, 32'h0000_0081);
+    repeat (2) @(posedge p_sequencer.status_vif.clk);
     axil_read(`ATTN_REG_STATUS, status, resp);
     if (resp != 2'b00 || !status[2])
       `uvm_error("DECODE_NEGATIVE", $sformatf("decode seq_q=2 did not set error status=%08h resp=%0h", status, resp))
     axil_write(`ATTN_REG_CONTROL, 32'h0000_0008);
+  endtask
+endclass
+
+class fa_register_access_vseq extends fa_attention_base_vseq;
+  `uvm_object_utils(fa_register_access_vseq)
+  function new(string name = "fa_register_access_vseq");
+    super.new(name);
+  endfunction
+
+  task check_read(bit [31:0] addr, bit [31:0] expected, bit check_data = 1'b1);
+    bit [31:0] data;
+    bit [1:0] resp;
+    axil_read(addr, data, resp);
+    if (resp != 2'b00)
+      `uvm_error("REG_READ", $sformatf("read %03h returned resp=%0h", addr, resp))
+    else if (check_data && data !== expected)
+      `uvm_error("REG_READ", $sformatf("read %03h expected=%08h actual=%08h", addr, expected, data))
+  endtask
+
+  task check_write(bit [31:0] addr, bit [31:0] data, bit [3:0] strb = 4'hf);
+    bit [1:0] resp;
+    axil_write_with_resp(addr, data, resp, strb);
+    if (resp != 2'b00)
+      `uvm_error("REG_WRITE", $sformatf("write %03h returned resp=%0h", addr, resp))
+  endtask
+
+  task body();
+    bit [1:0] resp;
+    bit [31:0] data;
+    check_read(`ATTN_REG_VERSION, 32'h0002_0000);
+    check_write(`ATTN_REG_Q_BASE_LO, 32'h0000_1000);
+    check_write(`ATTN_REG_Q_BASE_HI, 32'h0000_0000);
+    check_write(`ATTN_REG_K_BASE_LO, 32'h0000_2000);
+    check_write(`ATTN_REG_K_BASE_HI, 32'h0000_0000);
+    check_write(`ATTN_REG_V_BASE_LO, 32'h0000_3000);
+    check_write(`ATTN_REG_V_BASE_HI, 32'h0000_0000);
+    check_write(`ATTN_REG_O_BASE_LO, 32'h0000_0ff0);
+    check_write(`ATTN_REG_O_BASE_HI, 32'h0000_0000);
+    check_write(`ATTN_REG_Q_STRIDE, 32'h0000_0040);
+    check_write(`ATTN_REG_K_STRIDE, 32'h0000_0040);
+    check_write(`ATTN_REG_V_STRIDE, 32'h0000_0040);
+    check_write(`ATTN_REG_O_STRIDE, 32'h0000_0040);
+    check_write(`ATTN_REG_SEQ_Q, 32'd32);
+    check_write(`ATTN_REG_SEQ_KV, 32'd32);
+    check_write(`ATTN_REG_NUM_Q_HEADS, 32'd1);
+    check_write(`ATTN_REG_NUM_KV_HEADS, 32'd1);
+    check_write(`ATTN_REG_HEAD_DIM, `ATTN_HEAD_DIM);
+    check_write(`ATTN_REG_TILE_Q, `ATTN_TILE_Q);
+    check_write(`ATTN_REG_TILE_K, `ATTN_TILE_K);
+    check_write(`ATTN_REG_MODE, 32'h0000_0004);
+    check_write(`ATTN_REG_SCORE_SCALE, 32'h1122_3344);
+    check_write(`ATTN_REG_SCORE_SCALE, 32'h0000_aa00, 4'b0010);
+    check_read(`ATTN_REG_SCORE_SCALE, 32'h1122_aa44);
+    check_write(`ATTN_REG_VALUE_SCALE, 32'h0001_0001);
+    check_write(`ATTN_REG_OUT_SCALE, 32'h000f_0001);
+    check_write(`ATTN_REG_MASK_CFG, 32'h0000_0001);
+    check_write(`ATTN_REG_PERF_CTRL, 32'h0000_0001);
+    check_write(`ATTN_REG_PERF_CTRL, 32'h0000_0000);
+
+    check_read(`ATTN_REG_CONTROL, 32'h0000_0040);
+    check_read(`ATTN_REG_STATUS, 32'd0, 1'b0);
+    check_read(`ATTN_REG_ERROR_CODE, 32'd0);
+    check_read(`ATTN_REG_Q_BASE_LO, 32'h0000_1000);
+    check_read(`ATTN_REG_Q_BASE_HI, 32'd0);
+    check_read(`ATTN_REG_K_BASE_LO, 32'h0000_2000);
+    check_read(`ATTN_REG_K_BASE_HI, 32'd0);
+    check_read(`ATTN_REG_V_BASE_LO, 32'h0000_3000);
+    check_read(`ATTN_REG_V_BASE_HI, 32'd0);
+    check_read(`ATTN_REG_O_BASE_LO, 32'h0000_0ff0);
+    check_read(`ATTN_REG_O_BASE_HI, 32'd0);
+    check_read(`ATTN_REG_Q_STRIDE, 32'h0000_0040);
+    check_read(`ATTN_REG_K_STRIDE, 32'h0000_0040);
+    check_read(`ATTN_REG_V_STRIDE, 32'h0000_0040);
+    check_read(`ATTN_REG_O_STRIDE, 32'h0000_0040);
+    check_read(`ATTN_REG_SEQ_Q, 32'd32);
+    check_read(`ATTN_REG_SEQ_KV, 32'd32);
+    check_read(`ATTN_REG_NUM_Q_HEADS, 32'd1);
+    check_read(`ATTN_REG_NUM_KV_HEADS, 32'd1);
+    check_read(`ATTN_REG_HEAD_DIM, `ATTN_HEAD_DIM);
+    check_read(`ATTN_REG_TILE_Q, `ATTN_TILE_Q);
+    check_read(`ATTN_REG_TILE_K, `ATTN_TILE_K);
+    check_read(`ATTN_REG_MODE, 32'h0000_0004);
+    check_read(`ATTN_REG_VALUE_SCALE, 32'h0001_0001);
+    check_read(`ATTN_REG_OUT_SCALE, 32'h000f_0001);
+    check_read(`ATTN_REG_MASK_CFG, 32'h0000_0001);
+    check_read(`ATTN_REG_PERF_CTRL, 32'd0);
+    check_read(`ATTN_REG_PERF_CYCLES_LO, 32'd0, 1'b0);
+    check_read(`ATTN_REG_PERF_CYCLES_HI, 32'd0, 1'b0);
+    check_read(`ATTN_REG_PERF_STALL_LO, 32'd0, 1'b0);
+    check_read(`ATTN_REG_PERF_STALL_HI, 32'd0, 1'b0);
+    check_read(`ATTN_REG_PERF_MAC_LO, 32'd0, 1'b0);
+    check_read(`ATTN_REG_PERF_MAC_HI, 32'd0, 1'b0);
+    check_read(`ATTN_REG_PERF_TILES, 32'd0, 1'b0);
+
+    axil_write_with_resp(`ATTN_REG_STATUS, 32'd0, resp);
+    if (resp != 2'b10)
+      `uvm_error("REG_WRITE", $sformatf("read-only write resp=%0h expected=2", resp))
+    axil_read(12'h0fc, data, resp);
+    if (resp != 2'b10)
+      `uvm_error("REG_READ", $sformatf("unknown read resp=%0h expected=2", resp))
+    axil_write_with_resp(12'h0fc, 32'd0, resp);
+    if (resp != 2'b10)
+      `uvm_error("REG_WRITE", $sformatf("unknown write resp=%0h expected=2", resp))
+  endtask
+endclass
+
+class fa_axi_bresp_error_vseq extends fa_attention_base_vseq;
+  `uvm_object_utils(fa_axi_bresp_error_vseq)
+  function new(string name = "fa_axi_bresp_error_vseq");
+    super.new(name);
+  endfunction
+
+  task body();
+    bit [31:0] status;
+    bit [1:0] resp;
+    prepare_tensor();
+    load_tensor_tiles();
+    program_supported_job();
+    start_supported_job();
+    wait_for_state(`ATTN_STATE_ERROR, 200000);
+    repeat (2) @(posedge p_sequencer.status_vif.clk);
+    axil_read(`ATTN_REG_STATUS, status, resp);
+    if (resp != 2'b00 || !status[2])
+      `uvm_error("AXI_BRESP", $sformatf("BRESP error did not reach scheduler status=%08h resp=%0h", status, resp))
+    axil_write(`ATTN_REG_CONTROL, 32'h0000_0008);
+    wait_for_state(`ATTN_STATE_IDLE, 200000);
   endtask
 endclass
 

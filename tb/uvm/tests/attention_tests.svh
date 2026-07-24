@@ -85,13 +85,15 @@ class fa_random_qkv_test extends fa_base_test;
       if (cfg.decode_en && !seq_q_overridden)
         cfg.seq_q = 1;
     end
+    if ($value$plusargs("FA_O_BASE=%h", value))
+      cfg.o_base = value;
     if (cfg.seq_q == 0 || cfg.seq_q > FA_MAX_SEQ ||
         cfg.seq_kv == 0 || cfg.seq_kv > FA_MAX_SEQ ||
         cfg.ready_low_pct > 75 || (cfg.decode_en && cfg.seq_q != 1) ||
-        (!cfg.decode_en && cfg.seq_q > cfg.seq_kv))
+        (!cfg.decode_en && cfg.seq_q > cfg.seq_kv) || cfg.o_base[3:0] != 0)
       `uvm_fatal("RANDOM_CFG", $sformatf(
-        "unsupported random configuration q=%0d kv=%0d decode=%0d ready_low_pct=%0d; prefill requires q <= kv",
-        cfg.seq_q, cfg.seq_kv, cfg.decode_en, cfg.ready_low_pct))
+        "unsupported random configuration q=%0d kv=%0d decode=%0d ready_low_pct=%0d o_base=%08h; prefill requires q <= kv and O base must be 16-byte aligned",
+        cfg.seq_q, cfg.seq_kv, cfg.decode_en, cfg.ready_low_pct, cfg.o_base))
     // Only this workload is an SAIF profile; directed tests retain their
     // ordinary transaction order even when compiled with SAIF code.
     cfg.saif_capture = $test$plusargs("SAIF_ENABLE");
@@ -219,6 +221,40 @@ class fa_illegal_config_test extends fa_base_test;
   virtual task run_sequence();
     fa_illegal_config_vseq seq;
     seq = fa_illegal_config_vseq::type_id::create("illegal_config_seq");
+    seq.start(env.vseqr);
+  endtask
+endclass
+
+class fa_register_access_test extends fa_base_test;
+  `uvm_component_utils(fa_register_access_test)
+  function new(string name = "fa_register_access_test", uvm_component parent = null);
+    super.new(name, parent);
+  endfunction
+  virtual function void configure();
+    super.configure();
+    cfg.enable_data_check = 0;
+    cfg.allow_axil_error_response = 1;
+  endfunction
+  virtual task run_sequence();
+    fa_register_access_vseq seq;
+    seq = fa_register_access_vseq::type_id::create("register_access_seq");
+    seq.start(env.vseqr);
+  endtask
+endclass
+
+class fa_axi_bresp_error_test extends fa_base_test;
+  `uvm_component_utils(fa_axi_bresp_error_test)
+  function new(string name = "fa_axi_bresp_error_test", uvm_component parent = null);
+    super.new(name, parent);
+  endfunction
+  virtual function void configure();
+    super.configure();
+    cfg.inject_axi_bresp_error = 1;
+    cfg.enable_data_check = 0;
+  endfunction
+  virtual task run_sequence();
+    fa_axi_bresp_error_vseq seq;
+    seq = fa_axi_bresp_error_vseq::type_id::create("axi_bresp_error_seq");
     seq.start(env.vseqr);
   endtask
 endclass

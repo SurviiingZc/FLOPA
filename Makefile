@@ -111,6 +111,9 @@ uvm-test:
 		{ echo "UVM test failed; see tb/sim/$(UVM_SIM_OUT_DIR)/$(UVM_TEST).log" >&2; exit 1; }
 	@echo "PASS $(UVM_TEST) seed=$(UVM_SEED); log: tb/sim/$(UVM_SIM_OUT_DIR)/$(UVM_TEST).log"
 
+uvm-regresssion:
+	bash tb/sim/scripts/run_uvm_regression.sh
+
 gate-saif:
 	SEED=$(GATE_SAIF_SEED) PROFILE=$(GATE_SAIF_PROFILE) \
 	SEQ_Q=$(GATE_SEQ_Q) SEQ_KV=$(GATE_SEQ_KV) READY_LOW_PCT=$(GATE_READY_LOW_PCT) \

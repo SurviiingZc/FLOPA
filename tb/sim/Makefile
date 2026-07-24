@@ -17,12 +17,13 @@ TOP_TOPS := tb_attention_accel_top
 MODULE_TOPS := $(COMMON_TOPS) $(CONTROL_TOPS) $(AXI_TOPS) $(COMPUTE_TOPS) \
 	$(MEMORY_TOPS) $(SOFTMAX_TOPS) $(TOP_TOPS)
 
-.PHONY: help syntax run common control axi compute memory softmax top asic-sram lint-rtl clean
+.PHONY: help syntax run module-cov common control axi compute memory softmax top asic-sram lint-rtl clean
 
 help:
 	@echo "Targets:"
 	@echo "  make syntax    - compile all module testbenches"
 	@echo "  make run       - run all module testbenches"
+	@echo "  make module-cov - collect independent RTL code-coverage reports from module TBs"
 	@echo "  make common|control|axi|compute|memory|softmax|top - run one TB group"
 	@echo "  make asic-sram - run ASIC SRAM integration test"
 	@echo "  make lint-rtl  - lint synthesizable RTL"
@@ -37,6 +38,13 @@ run:
 	@set -e; for top in $(MODULE_TOPS); do \
 		$(SCRIPTS_DIR)/run_vcs.sh $$top $(BUILD_DIR)/$$top $(FILELISTS); \
 	done
+
+# Optional TOPS limits the module TB set, e.g.
+# make module-cov TOPS="tb_axi4_master_write tb_accel_regfile". Each report is
+# kept separate because reduced-parameter module TBs cannot be blindly merged
+# into the full integration hierarchy.
+module-cov:
+	@bash $(SCRIPTS_DIR)/run_module_coverage.sh $(TOPS)
 
 define run_tops
 	@set -e; for top in $(1); do \

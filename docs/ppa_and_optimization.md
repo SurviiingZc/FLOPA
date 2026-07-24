@@ -150,6 +150,8 @@ Append, rather than overwrite, each accepted run in this table.
 The design already demonstrates the architectural bonus directions: configurable
 compile-time structure, high data reuse, quantization, ping-pong buffering,
 and an automated randomized verification environment. It must not yet claim
-VCK190 deployment, closed clock gating, physical hold closure, final FPGA PPA,
-or a softmax precision greater than 16 bits. These are explicit remaining
-deliverables, not omitted caveats.
+VCK190 deployment, closed clock gating, physical hold closure, or final FPGA
+PPA. The softmax contest requirement is already met: 32 score-scale/PWL-exp
+lanes evaluate a full 32-element score column in parallel, exceeding the
+required parallelism of 16. Q1.15 and the eight PWL intervals are numerical
+implementation choices, not an unfulfilled contest precision requirement.

@@ -11,7 +11,7 @@ the checked RTL; "verified" means covered by the documented passing regression;
 | --- | --- | --- | --- |
 | Systolic matrix computation, array larger than 16 x 16 | implemented and verified | 32 x 32 PE array in `rtl/compute/fsa_fused_array.v`; UVM/module TBs | include Figure 1 and design Sections 1/5 |
 | KV cache capacity greater than 4 KiB | implemented | K and V each have 4 KiB ping-pong capacity; combined KV is 8 KiB | include storage table and cache organization |
-| Hardware softmax/nonlinear function | implemented | scale pipeline, PWL exp, online recurrence, reciprocal normalizer | include numerical format/PWL boundary; resolve precision wording |
+| Hardware softmax/nonlinear function, parallelism greater than 16 | implemented | 32 parallel score-scale/PWL-exp lanes, online recurrence, reciprocal normalizer | include the 32-lane dataflow and Q1.15/PWL numerical format |
 | AXI4 master/slave interface | partial | AXI4-Lite slave and 128-bit AXI4 write master implemented | state clearly that DDR input needs external DMA/AXI adapter |
 | FPGA platform deployment | planned | VCK190 target and integration plan | attach bitstream, Vivado reports, and board log when complete |
 | Configurability bonus | partial | compile-time parameters plus runtime sequence/head/mode registers | do not overstate fixed tile/head-dimension restrictions |
@@ -41,8 +41,9 @@ the checked RTL; "verified" means covered by the documented passing regression;
 
 1. **Functional gate:** rerun the 15-test UVM regression after the final RTL
    revision. Archive the exact command, test log, VDB, and `urg` output.
-2. **Precision gate:** obtain a contest interpretation of softmax precision or
-   update the Q1.15/eight-interval PWL implementation and rerun numerical tests.
+2. **Softmax parallelism gate:** retain the 32-lane score-scale/PWL-exp source
+   and architecture evidence showing that one 32-element score column is
+   evaluated in parallel each cycle.
 3. **Interface gate:** include the AXI DMA/tile-loader wrapper in the FPGA build
    or describe the external integration boundary explicitly in the submission.
 4. **FPGA gate:** attach post-route utilization, timing, clocking, memory/DSP

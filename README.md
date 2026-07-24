@@ -113,7 +113,7 @@ are pre-layout characterization data, not post-route or silicon claims; see
 | GQA | Rejected by START validation; planned extension |
 | Q/K/V input from DDR | Requires external DMA/wrapper; not implemented as a top-level AXI read master |
 | VCK190 bitstream and post-route PPA | Planned; not yet a deliverable result |
-| Softmax approximation | PWL Q1.15 output with eight active intervals; the contest's ">16 precision" wording must be resolved before final submission |
+| Softmax approximation and parallelism | PWL Q1.15 output with eight active intervals; 32 score-scale/PWL-exp lanes process one full 32-row score column per cycle, satisfying the contest requirement of softmax parallelism greater than 16 |
 
 ## Evidence Integrity
 

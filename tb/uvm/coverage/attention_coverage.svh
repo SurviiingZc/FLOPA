@@ -16,8 +16,16 @@ class fa_axil_coverage extends uvm_subscriber #(fa_axil_item);
       bins perf_cfg = {`ATTN_REG_PERF_CTRL};
       bins other = default;
     }
-    cp_resp: coverpoint tr.resp { bins okay = {2'b00}; bins error[] = {[2'b01:2'b11]}; }
-    direction_x_addr: cross cp_direction, cp_addr;
+    cp_resp: coverpoint tr.resp {
+      bins okay = {2'b00};
+      bins slverr = {2'b10};
+      // AXI4-Lite has no EXOKAY response and accel_regfile only emits OKAY/SLVERR.
+      illegal_bins reserved = {2'b01, 2'b11};
+    }
+    direction_x_addr: cross cp_direction, cp_addr {
+      // cp_addr is intentionally sampled only for writes.
+      ignore_bins read_unsampled = binsof(cp_direction.read);
+    }
   endgroup
 
   function new(string name = "fa_axil_coverage", uvm_component parent = null);
@@ -86,7 +94,11 @@ class fa_axi_write_coverage extends uvm_subscriber #(fa_axi_write_item);
     cp_burst: coverpoint tr.burst { bins incr = {2'b01}; bins other = default; }
     cp_last: coverpoint tr.last { bins middle = {0}; bins last = {1}; }
     cp_strobe: coverpoint tr.strb { bins full = {16'hffff}; bins partial = default; }
-    length_x_last: cross cp_burst_len, cp_last;
+    length_x_last: cross cp_burst_len, cp_last {
+      // AWLEN=0 denotes a one-beat AXI burst, whose only W beat is WLAST.
+      ignore_bins one_beat_middle = binsof(cp_burst_len.one_beat) &&
+                                    binsof(cp_last.middle);
+    }
   endgroup
 
   function new(string name = "fa_axi_write_coverage", uvm_component parent = null);
@@ -120,7 +132,17 @@ class fa_phase_coverage extends uvm_component;
       bins error = {`ATTN_STATE_ERROR};
     }
     cp_irq: coverpoint irq { bins low = {0}; bins high = {1}; }
-    state_x_irq: cross cp_state, cp_irq;
+    state_x_irq: cross cp_state, cp_irq {
+      // irq_o is registered from scheduler done/error; only terminal states
+      // can be high, and terminal states cannot retain a low IRQ.
+      ignore_bins done_low = binsof(cp_state.done) && binsof(cp_irq.low);
+      ignore_bins error_low = binsof(cp_state.error) && binsof(cp_irq.low);
+      ignore_bins nonterminal_high = binsof(cp_irq.high) &&
+        (binsof(cp_state.idle) || binsof(cp_state.load_q) ||
+         binsof(cp_state.load_kv) || binsof(cp_state.qk) ||
+         binsof(cp_state.softmax) || binsof(cp_state.pv) ||
+         binsof(cp_state.writeback));
+    }
   endgroup
 
   function new(string name = "fa_phase_coverage", uvm_component parent = null);
@@ -164,7 +186,9 @@ class fa_math_coverage extends uvm_subscriber #(fa_model_event);
     cp_tile_shape: coverpoint {tr.multi_q_tile, tr.multi_kv_tile} {
       bins one_by_one = {2'b00};
       bins one_by_many = {2'b01};
-      bins many_by_one = {2'b10};
+      // Prefill Q > KV is rejected by fa_random_qkv_test and is outside the
+      // supported workload contract.
+      ignore_bins many_by_one = {2'b10};
       bins two_by_two = {2'b11};
     }
     cp_q_tile_count: coverpoint tr.q_tile_count {
@@ -207,9 +231,16 @@ class fa_math_coverage extends uvm_subscriber #(fa_model_event);
       wildcard bins seg7 = {8'b1???????};
     }
     cp_exp_zero: coverpoint tr.saw_exp_zero { bins no = {0}; bins yes = {1}; }
-    cp_exp_one: coverpoint tr.saw_exp_one { bins no = {0}; bins yes = {1}; }
+    cp_exp_one: coverpoint tr.saw_exp_one {
+      bins yes = {1};
+      // Every valid softmax row contains a max lane, so exp(score-max)=exp(0).
+      ignore_bins no = {0};
+    }
     cp_score_sat: coverpoint {tr.saw_score_pos_sat, tr.saw_score_neg_sat} {
-      bins none = {2'b00}; bins positive = {2'b10}; bins negative = {2'b01}; bins both = {2'b11};
+      bins none = {2'b00};
+      bins negative = {2'b01};
+      // score_scale_pipe receives score-max or m_old-m_new, both <= 0.
+      ignore_bins positive_or_both = {2'b10, 2'b11};
     }
     cp_score_round: coverpoint tr.saw_score_round_increment { bins no = {0}; bins yes = {1}; }
     cp_normalizer_round: coverpoint tr.saw_normalizer_round_increment { bins no = {0}; bins yes = {1}; }
@@ -222,7 +253,7 @@ class fa_math_coverage extends uvm_subscriber #(fa_model_event);
       bins decode_full_context = {32};
       bins two_tile_full = {4096};
       bins decode_long_context = {256};
-      bins long_prefill = {131072};
+      bins long_prefill_causal = {131328}; // 512 * 513 / 2
       bins other = default;
     }
     mode_x_causal: cross cp_mode, cp_causal;
