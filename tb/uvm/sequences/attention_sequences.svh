@@ -123,14 +123,17 @@ class fa_attention_base_vseq extends uvm_sequence #(uvm_sequence_item);
   endtask
 
   task prepare_tensor();
-    cfg.tensor.fill_pattern(cfg.stimulus);
+    cfg.tensor.fill_pattern(cfg.stimulus, cfg.seq_q, cfg.seq_kv);
   endtask
 
   task load_tensor_tile(fa_tile_kind_e kind, bit bank, int unsigned tile_index);
     bit [255:0] word;
     int unsigned logical_lane;
-    if (tile_index >= 2)
-      `uvm_fatal("TILE_INDEX", $sformatf("unsupported logical tile %0d", tile_index))
+    if (tile_index >= ((kind == FA_TILE_Q ? cfg.seq_q : cfg.seq_kv) +
+                       (kind == FA_TILE_Q ? `ATTN_TILE_Q : `ATTN_TILE_K) - 1) /
+                      (kind == FA_TILE_Q ? `ATTN_TILE_Q : `ATTN_TILE_K))
+      `uvm_fatal("TILE_INDEX", $sformatf("logical tile %0d exceeds configured %s length",
+                 tile_index, kind == FA_TILE_Q ? "Q" : "KV"))
     for (int unsigned addr = 0; addr < cfg.head_dim; addr++) begin
       word = '0;
       for (int unsigned lane = 0; lane < `ATTN_ARRAY_ROWS; lane++) begin
@@ -153,8 +156,14 @@ class fa_attention_base_vseq extends uvm_sequence #(uvm_sequence_item);
   endtask
 
   task load_tensor_tiles();
-    load_tensor_tile(FA_TILE_Q, 0, 0);
-    load_kv_tile(0, 0);
+    int unsigned q_tile_count;
+    int unsigned kv_tile_count;
+    q_tile_count = (cfg.seq_q + `ATTN_TILE_Q - 1) / `ATTN_TILE_Q;
+    kv_tile_count = (cfg.seq_kv + `ATTN_TILE_K - 1) / `ATTN_TILE_K;
+    for (int unsigned tile = 0; tile < q_tile_count && tile < 2; tile++)
+      load_tensor_tile(FA_TILE_Q, tile % 2, tile);
+    for (int unsigned tile = 0; tile < kv_tile_count && tile < 2; tile++)
+      load_kv_tile(tile % 2, tile);
   endtask
 
   task program_supported_job();
@@ -201,6 +210,48 @@ class fa_attention_base_vseq extends uvm_sequence #(uvm_sequence_item);
     end
     `uvm_fatal("PHASE_TIMEOUT", $sformatf("timed out waiting for scheduler state %0d", target_state))
   endtask
+
+  task wait_for_tile_state(bit [3:0] target_state, int unsigned q_tile,
+                           int unsigned kv_tile, int unsigned max_cycles = 500000);
+    for (int unsigned cycle = 0; cycle < max_cycles; cycle++) begin
+      if (p_sequencer.status_vif.debug_state == target_state &&
+          p_sequencer.status_vif.q_tile_index == q_tile &&
+          p_sequencer.status_vif.kv_tile_index == kv_tile)
+        return;
+      @(posedge p_sequencer.status_vif.clk);
+    end
+    `uvm_fatal("TILE_PHASE_TIMEOUT", $sformatf(
+      "timed out waiting for state=%0d q_tile=%0d kv_tile=%0d",
+      target_state, q_tile, kv_tile))
+  endtask
+
+  task wait_for_kv_tile_index(int unsigned q_tile, int unsigned kv_tile,
+                              int unsigned max_cycles = 500000);
+    for (int unsigned cycle = 0; cycle < max_cycles; cycle++) begin
+      // kv_tile_index advances only after PV has consumed the prior tile, so
+      // the opposite bank is safe to refill even if LOAD_KV lasted one cycle.
+      if (p_sequencer.status_vif.q_tile_index == q_tile &&
+          p_sequencer.status_vif.kv_tile_index == kv_tile)
+        return;
+      @(posedge p_sequencer.status_vif.clk);
+    end
+    `uvm_fatal("KV_INDEX_TIMEOUT", $sformatf(
+      "timed out waiting for q_tile=%0d kv_tile=%0d; current state=%0d q_tile=%0d kv_tile=%0d",
+      q_tile, kv_tile, p_sequencer.status_vif.debug_state,
+      p_sequencer.status_vif.q_tile_index, p_sequencer.status_vif.kv_tile_index))
+  endtask
+
+  task wait_for_q_tile_index(int unsigned q_tile, int unsigned max_cycles = 500000);
+    for (int unsigned cycle = 0; cycle < max_cycles; cycle++) begin
+      if (p_sequencer.status_vif.q_tile_index == q_tile)
+        return;
+      @(posedge p_sequencer.status_vif.clk);
+    end
+    `uvm_fatal("Q_INDEX_TIMEOUT", $sformatf(
+      "timed out waiting for q_tile=%0d; current state=%0d q_tile=%0d kv_tile=%0d",
+      q_tile, p_sequencer.status_vif.debug_state,
+      p_sequencer.status_vif.q_tile_index, p_sequencer.status_vif.kv_tile_index))
+  endtask
 endclass
 
 class fa_smoke_vseq extends fa_attention_base_vseq;
@@ -225,7 +276,13 @@ class fa_random_qkv_vseq extends fa_attention_base_vseq;
   endfunction
 
   task body();
+    int unsigned q_tile_count;
+    int unsigned kv_tile_count;
+    int unsigned prefetch_tile;
+    int unsigned missing_tile;
     prepare_tensor();
+    q_tile_count = (cfg.seq_q + `ATTN_TILE_Q - 1) / `ATTN_TILE_Q;
+    kv_tile_count = (cfg.seq_kv + `ATTN_TILE_K - 1) / `ATTN_TILE_K;
     if (cfg.saif_capture) begin
       // Program registers before the measured window; capture the tile loads,
       // accelerator execution, output AXI transactions, and backpressure.
@@ -233,52 +290,52 @@ class fa_random_qkv_vseq extends fa_attention_base_vseq;
       start_saif_capture();
       load_tensor_tiles();
       start_supported_job();
-      wait_done_or_error();
-      stop_saif_capture();
     end else begin
       load_tensor_tiles();
       program_supported_job();
       start_supported_job();
-      wait_done_or_error();
     end
-  endtask
-endclass
 
-class fa_two_tile_pingpong_vseq extends fa_attention_base_vseq;
-  `uvm_object_utils(fa_two_tile_pingpong_vseq)
-  function new(string name = "fa_two_tile_pingpong_vseq");
-    super.new(name);
-  endfunction
+    // At most two tiles can live in the cache.  Keep tile 0/1 resident before
+    // the job starts; every later tile is loaded into the bank released by the
+    // scheduler.  This covers arbitrary 32-row chunks up to FA_MAX_SEQ.
+    for (int unsigned q_tile = 0; q_tile < q_tile_count; q_tile++) begin
+      for (int unsigned kv_tile = 1; kv_tile < kv_tile_count; kv_tile++) begin
+        wait_for_kv_tile_index(q_tile, kv_tile);
+        if (kv_tile + 1 < kv_tile_count) begin
+          load_kv_tile((kv_tile + 1) % 2, kv_tile + 1);
+        end else if (!cfg.decode_en && q_tile + 1 < q_tile_count && kv_tile[0]) begin
+          // An odd final KV tile consumes bank 1 and releases bank 0, so KV0
+          // for the next Q tile can be prefetched immediately.  For an even
+          // final tile bank 0 is still active; loading KV1 into bank 1 would
+          // let the next Q tile start at KV1 before KV0 is available.
+          prefetch_tile = 0;
+          load_kv_tile(prefetch_tile[0], prefetch_tile);
+        end
+      end
 
-  task body();
-    if (cfg.decode_en || cfg.seq_q != 2 * `ATTN_TILE_Q ||
-        cfg.seq_kv != 2 * `ATTN_TILE_K)
-      `uvm_fatal("TWO_TILE_CFG", "two-tile sequence requires prefill seq_q=64 and seq_kv=64")
-
-    prepare_tensor();
-    // Exclude one-time AXI-Lite setup but retain every two-tile data movement
-    // phase, including the bank refills that exercise the ping-pong control.
-    if (cfg.saif_capture) begin
-      program_supported_job();
-      start_saif_capture();
+      if (!cfg.decode_en && q_tile + 1 < q_tile_count) begin
+        wait_for_tile_state(`ATTN_STATE_WRITEBACK, q_tile, kv_tile_count - 1);
+        if (kv_tile_count == 1) begin
+          load_kv_tile(0, 0);
+        end else if ((kv_tile_count - 1) % 2) begin
+          // KV0 was prefetched into bank 0 on the final LOAD_KV transition.
+          load_kv_tile(1, 1);
+        end else begin
+          // The final active bank was bank 0.  Keep bank 1 empty until KV0
+          // has been committed to bank 0, then restore KV1 for the next loop.
+          load_kv_tile(0, 0);
+          load_kv_tile(1, 1);
+        end
+        // q_tile_index is stable after the writeback edge, unlike the
+        // single-cycle LOAD_Q state.  At this point the old Q bank is free.
+        if (q_tile + 2 < q_tile_count) begin
+          wait_for_q_tile_index(q_tile + 1);
+          load_tensor_tile(FA_TILE_Q, (q_tile + 2) % 2, q_tile + 2);
+        end
+      end
     end
-    // Q0/Q1 occupy separate banks. K/V is consumed per Q tile, so refill a
-    // bank only after the first pass has released it.
-    load_tensor_tile(FA_TILE_Q, 0, 0);
-    load_tensor_tile(FA_TILE_Q, 1, 1);
-    load_kv_tile(0, 0);
-    load_kv_tile(1, 1);
-    if (!cfg.saif_capture)
-      program_supported_job();
-    start_supported_job();
-
-    wait_for_state(`ATTN_STATE_PV);
-    wait_for_state(`ATTN_STATE_LOAD_KV);
-    load_kv_tile(0, 0);
-
-    wait_for_state(`ATTN_STATE_WRITEBACK);
-    load_kv_tile(1, 1);
-    wait_done_or_error(100000);
+    wait_done_or_error(500000);
     stop_saif_capture();
   endtask
 endclass
@@ -304,23 +361,6 @@ class fa_illegal_config_vseq extends fa_attention_base_vseq;
     if (resp != 2'b00 || !status[2])
       `uvm_error("NEGATIVE", $sformatf("illegal config did not set error status=%08h resp=%0h", status, resp))
     axil_write(`ATTN_REG_CONTROL, 32'h0000_0008);
-  endtask
-endclass
-
-class fa_decode_vseq extends fa_attention_base_vseq;
-  `uvm_object_utils(fa_decode_vseq)
-  function new(string name = "fa_decode_vseq");
-    super.new(name);
-  endfunction
-
-  task body();
-    if (!cfg.decode_en || cfg.seq_q != 1)
-      `uvm_fatal("DECODE_CFG", "fa_decode_vseq requires decode_en=1 and seq_q=1")
-    prepare_tensor();
-    load_tensor_tiles();
-    program_supported_job();
-    start_supported_job();
-    wait_done_or_error();
   endtask
 endclass
 

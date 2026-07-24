@@ -179,10 +179,15 @@ module online_normalizer #(
         if (mult_metadata_valid_s1_q)
           result_shift_q <= scale_shift_s2_q;
         if (scale_product_valid_w[lane]) begin
-          if (shifted_w > 64'sd127 || rounded_narrow_w > 9'sd127)
-            result_q <= 8'sd127;
-          else if (shifted_w < -64'sd128 || rounded_narrow_w < -9'sd128)
+          // Classify a full-width negative overflow before inspecting the
+          // narrowed rounding candidate. For shifted=-129 and increment=1,
+          // the low-byte candidate is +128 even though the correct rounded
+          // result is -128; positive-first priority would flip the saturation
+          // sign and emit +127.
+          if (shifted_w < -64'sd128)
             result_q <= -8'sd128;
+          else if (shifted_w > 64'sd127 || rounded_narrow_w > 9'sd127)
+            result_q <= 8'sd127;
           else
             result_q <= $signed(rounded_narrow_w[OUT_W-1:0]);
         end

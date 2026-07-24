@@ -11,21 +11,19 @@ VCS_BIN="${VCS:-vcs}"
 COV_DIR="$OUT_DIR/coverage.vdb"
 
 tests=(
-  "fa_smoke_test:1"
-  "fa_axi_backpressure_test:19"
-  "fa_random_qkv_test:101"
-  "fa_pwl_corner_test:102"
-  "fa_arith_rounding_test:106"
-  "fa_positive_saturation_test:103"
-  "fa_negative_saturation_test:104"
-  "fa_causal_random_test:105"
-  "fa_two_tile_pingpong_test:301"
-  "fa_two_tile_random_backpressure_test:302"
-  "fa_decode_smoke_test:201"
-  "fa_decode_backpressure_test:202"
-  "fa_decode_random_test:203"
-  "fa_decode_illegal_config_test:204"
-  "fa_illegal_config_test:7"
+  "smoke|fa_smoke_test|1|"
+  "axi_backpressure|fa_axi_backpressure_test|19|"
+  "random_1x1|fa_random_qkv_test|101|+FA_SEQ_Q=32 +FA_SEQ_KV=32"
+  "prefill_long|fa_random_qkv_test|401|+FA_SEQ_Q=512 +FA_SEQ_KV=512 +FA_CAUSAL_EN=1 +FA_READY_LOW_PCT=25"
+  "prefill_tail_causal|fa_random_qkv_test|105|+FA_SEQ_Q=65 +FA_SEQ_KV=65 +FA_CAUSAL_EN=1 +FA_READY_LOW_PCT=50"
+  "random_decode_long|fa_random_qkv_test|203|+FA_DECODE_EN=1 +FA_SEQ_KV=256 +FA_CAUSAL_EN=1 +FA_READY_LOW_PCT=25"
+  "pwl_corner|fa_pwl_corner_test|106|"
+  "arith_rounding|fa_arith_rounding_test|107|"
+  "positive_saturation|fa_positive_saturation_test|108|"
+  "negative_saturation|fa_negative_saturation_test|109|"
+  "decode_smoke|fa_decode_smoke_test|201|"
+  "decode_illegal|fa_decode_illegal_config_test|204|"
+  "illegal_config|fa_illegal_config_test|7|"
 )
 
 mkdir -p "$OUT_DIR" "$OUT_DIR/csrc" "$COV_DIR"
@@ -35,6 +33,7 @@ cd "$SIM_ROOT"
 
 cleanup_transients() {
   rm -f "$SIM_ROOT"/flex*.log "$SIM_ROOT"/ucli.key
+  rm -f "$OUT_DIR"/flex*.log "$OUT_DIR"/ucli.key
   rm -rf "$SIM_ROOT/csrc"
 }
 trap cleanup_transients EXIT
@@ -47,20 +46,20 @@ trap cleanup_transients EXIT
 
 failures=0
 for entry in "${tests[@]}"; do
-  test_name=${entry%%:*}
-  seed=${entry##*:}
-  log="$OUT_DIR/${test_name}.log"
+  IFS='|' read -r run_name test_name seed plusargs <<< "$entry"
+  read -r -a plusarg_array <<< "$plusargs"
+  log="$OUT_DIR/${run_name}.log"
 
-  "$OUT_DIR/simv" +UVM_TESTNAME="$test_name" +ntb_random_seed="$seed" \
-    -cm line+cond+tgl+branch -cm_dir "$COV_DIR" -cm_name "$test_name" \
+  "$OUT_DIR/simv" +UVM_TESTNAME="$test_name" +ntb_random_seed="$seed" "${plusarg_array[@]}" \
+    -cm line+cond+tgl+branch -cm_dir "$COV_DIR" -cm_name "$run_name" \
     -l "$log" || failures=$((failures + 1))
 
   if ! grep -Eq 'UVM_ERROR :[[:space:]]*0' "$log" || \
      ! grep -Eq 'UVM_FATAL :[[:space:]]*0' "$log"; then
-    echo "FAIL $test_name seed=$seed (see $log)" >&2
+    echo "FAIL $run_name test=$test_name seed=$seed (see $log)" >&2
     failures=$((failures + 1))
   else
-    echo "PASS $test_name seed=$seed"
+    echo "PASS $run_name test=$test_name seed=$seed"
   fi
   grep -E '\[FCOV_MATH\]|\[FCOV_SUMMARY\]' "$log" || true
 done

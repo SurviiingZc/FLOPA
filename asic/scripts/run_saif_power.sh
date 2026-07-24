@@ -5,7 +5,7 @@ set -euo pipefail
 # same RTL hash. This never overwrites timing/area results or re-synthesizes.
 ROOT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
 CORNER="${CORNER:-tt}"
-CLOCK_PERIOD="${CLOCK_PERIOD:-1.9}"
+CLOCK_PERIOD="${CLOCK_PERIOD:-1.6}"
 SYNTH_GROUP="${SYNTH_GROUP:-system}"
 TOP="${TOP:-attention_accel_top}"
 SAIF_FILE="${SAIF_FILE:-}"
@@ -78,7 +78,7 @@ fi
 test -s "$FA_STD_DB"
 test -s "$FA_SRAM_DB"
 
-REPORT_DIR="$ROOT_DIR/asic/power/reports/$rtl_hash/$PROFILE/$CORNER"
+REPORT_DIR="$ROOT_DIR/asic/dc/work/power/reports/$rtl_hash/$PROFILE/$CORNER"
 WORK_DIR="$ROOT_DIR/asic/dc/work/saif_power/$CORNER/$PROFILE"
 LOG_DIR="$ROOT_DIR/asic/dc/logs"
 mkdir -p "$REPORT_DIR" "$WORK_DIR" "$LOG_DIR"

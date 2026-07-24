@@ -25,6 +25,17 @@ set logical_hold_repair [expr {
   [info exists env(FA_LOGICAL_HOLD_REPAIR)] &&
   $env(FA_LOGICAL_HOLD_REPAIR) eq "1"
 }]
+set clock_gating [expr {
+  ![info exists env(FA_CLOCK_GATING)] || $env(FA_CLOCK_GATING) eq "1"
+}]
+set clock_gating_min_bitwidth [expr {
+  [info exists env(FA_CLOCK_GATING_MIN_BITWIDTH)] ?
+  $env(FA_CLOCK_GATING_MIN_BITWIDTH) : 8
+}]
+set clock_gating_max_fanout [expr {
+  [info exists env(FA_CLOCK_GATING_MAX_FANOUT)] ?
+  $env(FA_CLOCK_GATING_MAX_FANOUT) : 256
+}]
 
 source [file join $root_dir asic scripts library_setup.tcl]
 source [file join $root_dir asic scripts rtl_sources.tcl]
@@ -136,15 +147,29 @@ foreach top_name $top_list {
   fa_apply_sram_hold_constraints $macro_cells
   set_fix_multiple_port_nets -all -buffer_constants
 
+  if {$clock_gating} {
+    set_app_var power_cg_derive_related_clock true
+    set_clock_gating_style -minimum_bitwidth $clock_gating_min_bitwidth \
+      -max_fanout $clock_gating_max_fanout -num_stages 1
+  }
+
   if {$physical_aware && [info exists env(FA_FLOORPLAN_FILE)]} {
     read_floorplan $env(FA_FLOORPLAN_FILE)
   }
 
   set_svf [file join $result_dir ${top_name}.svf]
   if {$physical_aware} {
-    compile_ultra -spg
+    if {$clock_gating} {
+      compile_ultra -spg -gate_clock
+    } else {
+      compile_ultra -spg
+    }
   } else {
-    compile_ultra
+    if {$clock_gating} {
+      compile_ultra -gate_clock
+    } else {
+      compile_ultra
+    }
   }
 
   # Preserve the setup-optimized checkpoint before an optional logical hold
@@ -202,6 +227,12 @@ foreach top_name $top_list {
   redirect -file [file join $report_dir qor.rpt] {report_qor}
   redirect -file [file join $report_dir area.rpt] {report_area -hierarchy}
   redirect -file [file join $report_dir power.rpt] {report_power}
+  if {$clock_gating} {
+    identify_clock_gating
+  }
+  redirect -file [file join $report_dir clock_gating.rpt] {
+    report_clock_gating -multi_stage -verbose
+  }
   redirect -file [file join $report_dir references.rpt] {report_reference}
   set resource_report [file join $report_dir resources.rpt]
   redirect -file $resource_report {report_resources}
@@ -225,6 +256,9 @@ foreach top_name $top_list {
   puts $config_fp "multiplier_wrapper_count=$mult_wrapper_count"
   puts $config_fp "linked_dw02_mult_count=$dw_multiplier_count"
   puts $config_fp "logical_hold_repair=$logical_hold_repair"
+  puts $config_fp "clock_gating=$clock_gating"
+  puts $config_fp "clock_gating_min_bitwidth=$clock_gating_min_bitwidth"
+  puts $config_fp "clock_gating_max_fanout=$clock_gating_max_fanout"
   # Collections captured before compile_ultra are invalid after optimization;
   # write the stable integer recorded before compile instead of reusing _sel IDs.
   puts $config_fp "preserved_clear_replica_instances=$clear_replica_count"

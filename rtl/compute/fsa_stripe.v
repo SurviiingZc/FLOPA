@@ -52,6 +52,7 @@
   input                                  pv_seed_operand_valid_i,
   input                                  pv_seed_zero_i,
   input      [STRIPE_ROWS*PROB_W-1:0]    pv_seed_alpha_i,
+  input      [STRIPE_ROWS-1:0]           pv_seed_bypass_i,
   input      [TAG_W-1:0]                 pv_seed_feature_i,
   output                                 pv_seed_valid_o,
   output     [STRIPE_ROWS*SUM_W-1:0]     pv_seed_data_o,
@@ -101,7 +102,12 @@
   wire [STRIPE_ROWS*TAG_W-1:0] o_wr_feature_w;
   wire [STRIPE_ROWS*SUM_W-1:0] o_wr_data_w;
   reg [STRIPE_ROWS*SUM_W-1:0] pv_seed_o_q;
+  reg [STRIPE_ROWS*SUM_W-1:0] pv_seed_o_s1_q;
+  reg [STRIPE_ROWS*SUM_W-1:0] pv_seed_o_s2_q;
   reg [STRIPE_ROWS*PROB_W-1:0] pv_seed_alpha_q;
+  reg [STRIPE_ROWS-1:0] pv_seed_bypass_q;
+  reg [STRIPE_ROWS-1:0] pv_seed_bypass_s1_q;
+  reg [STRIPE_ROWS-1:0] pv_seed_bypass_s2_q;
   reg pv_seed_operand_valid_q;
   reg pv_seed_metadata_valid_s1_q;
   reg [TAG_W-1:0] pv_seed_feature_operand_q;
@@ -315,12 +321,19 @@
       pv_seed_o_q <= pv_seed_zero_i ?
           {STRIPE_ROWS*SUM_W{1'b0}} : o_rd_data_o;
       pv_seed_alpha_q <= pv_seed_alpha_i;
+      pv_seed_bypass_q <= pv_seed_bypass_i;
       pv_seed_feature_operand_q <= pv_seed_feature_i;
     end
-    if (rst_n && !clear_i && pv_seed_operand_valid_q)
+    if (rst_n && !clear_i && pv_seed_operand_valid_q) begin
+      pv_seed_o_s1_q <= pv_seed_o_q;
+      pv_seed_bypass_s1_q <= pv_seed_bypass_q;
       pv_seed_feature_s1_q <= pv_seed_feature_operand_q;
-    if (rst_n && !clear_i && pv_seed_metadata_valid_s1_q)
+    end
+    if (rst_n && !clear_i && pv_seed_metadata_valid_s1_q) begin
+      pv_seed_o_s2_q <= pv_seed_o_s1_q;
+      pv_seed_bypass_s2_q <= pv_seed_bypass_s1_q;
       pv_seed_feature_s2_q <= pv_seed_feature_s1_q;
+    end
   end
 
   assign pv_seed_valid_o = &pv_rescale_valid_w;
@@ -344,7 +357,12 @@
           pv_rescale_product_w[seed_row] >>> `ATTN_BETA_FRAC;
       assign pv_rescale_shifted_unsigned_w[seed_row] =
           $unsigned(pv_rescale_shifted_w[seed_row]);
+      // A causal row can have no valid key in a later KV tile. Such a tile is
+      // an exact online-softmax no-op: bypass O_old rather than approximating
+      // unity as Q1.15 16'h7fff and slowly attenuating the persistent state.
       assign pv_seed_data_o[seed_row*SUM_W +: SUM_W] =
+          pv_seed_bypass_s2_q[seed_row] ?
+          pv_seed_o_s2_q[seed_row*SUM_W +: SUM_W] :
           pv_rescale_shifted_unsigned_w[seed_row][SUM_W-1:0];
     end
   endgenerate

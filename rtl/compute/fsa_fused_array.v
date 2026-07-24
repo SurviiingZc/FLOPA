@@ -104,6 +104,7 @@ module fsa_fused_array #(
   reg [ROWS*LSE_W-1:0] sum_rows_q;
   reg [ROWS*PROB_W-1:0] alpha_rows_q;
   reg [ROWS*PROB_W-1:0] alpha_update_stream_q;
+  reg [ROWS-1:0] lse_bypass_stream_q;
   reg [ROWS-1:0] row_state_valid_q;
   reg [ROWS-1:0] old_row_state_valid_q;
   reg [ROWS-1:0] max_ready_rows_q;
@@ -182,6 +183,10 @@ module fsa_fused_array #(
   reg signed [SCORE_W-1:0] next_m_w;
   reg [LSE_W-1:0] lse_sum_s0_q;
   reg [LSE_W-1:0] lse_sum_s1_q;
+  reg [LSE_W-1:0] lse_old_l_s0_q;
+  reg [LSE_W-1:0] lse_old_l_s1_q;
+  reg lse_bypass_s0_q;
+  reg lse_bypass_s1_q;
   reg [ROW_IDX_W-1:0] lse_row_s0_q;
   reg [ROW_IDX_W-1:0] lse_row_s1_q;
   reg lse_metadata_valid_s0_q;
@@ -205,14 +210,21 @@ module fsa_fused_array #(
   reg [FEATURE_IDX_W-1:0] norm_request_feature_q;
 
   wire lse_issue_valid_w = (softmax_state_q == SM_L_UPDATE);
+  // Preserve initialized row state when this physical KV tile contains no
+  // unmasked key for the row. Q1.15 cannot encode exact 1.0, so exp(0)=0x7fff
+  // must not be used for what is mathematically an identity update.
+  wire [ROWS-1:0] row_tile_bypass_w =
+      old_row_state_valid_q & ~row_has_valid_w;
   wire lse_product_valid_w;
   wire [L_PRODUCT_W-1:0] lse_product_w;
   wire [L_PRODUCT_W:0] lse_total_w =
       {1'b0, (lse_product_w >> `ATTN_BETA_FRAC)} +
       {{(L_PRODUCT_W+1-LSE_W){1'b0}}, lse_sum_s1_q};
-  wire [LSE_W-1:0] lse_new_l_w =
+  wire [LSE_W-1:0] lse_new_l_math_w =
       (|lse_total_w[L_PRODUCT_W:LSE_W]) ?
       {LSE_W{1'b1}} : lse_total_w[LSE_W-1:0];
+  wire [LSE_W-1:0] lse_new_l_w =
+      lse_bypass_s1_q ? lse_old_l_s1_q : lse_new_l_math_w;
   wire lse_result_valid_w = lse_product_valid_w &&
                             lse_metadata_valid_s1_q;
   wire [ROWS*LSE_W-1:0] lse_new_l_extended_w =
@@ -246,10 +258,14 @@ module fsa_fused_array #(
       lse_metadata_valid_s1_q <= lse_metadata_valid_s0_q;
       if (lse_issue_valid_w) begin
         lse_sum_s0_q <= sum_rows_q[LSE_W-1:0];
+        lse_old_l_s0_q <= old_l_q[LSE_W-1:0];
+        lse_bypass_s0_q <= lse_bypass_stream_q[0];
         lse_row_s0_q <= lse_update_row_q;
       end
       if (lse_metadata_valid_s0_q) begin
         lse_sum_s1_q <= lse_sum_s0_q;
+        lse_old_l_s1_q <= lse_old_l_s0_q;
+        lse_bypass_s1_q <= lse_bypass_s0_q;
         lse_row_s1_q <= lse_row_s0_q;
       end
     end
@@ -442,7 +458,10 @@ module fsa_fused_array #(
         .HEAD_DIM(HEAD_DIM), .TAG_W(FEATURE_IDX_W),
         .LOCAL_ROW_IDX_W(LOCAL_ROW_IDX_W)
       ) u_stripe (
-        .clk(stripe_clk_w), .rst_n(rst_n), .clear_i(clear_i),
+        // A new Q tile starts a fresh online-attention recurrence.  Propagate
+        // clear_rows_i into every stripe so its persistent O bank cannot leak
+        // the same physical row from the preceding Q tile.
+        .clk(stripe_clk_w), .rst_n(rst_n), .clear_i(clear_i || clear_rows_i),
         .clear_score_i(qk_clear_i), .ws_pv_i(source_is_pv_w),
         .q_rows_i(q_boundary_data_w[ROW_BASE*DATA_W +: STRIPE_ROWS*DATA_W]),
         .q_valid_i(q_boundary_valid_w[ROW_BASE +: STRIPE_ROWS]),
@@ -477,6 +496,8 @@ module fsa_fused_array #(
         .pv_seed_zero_i(pv_issue_seed_zero_q),
         .pv_seed_alpha_i(alpha_rows_q[
             ROW_BASE*PROB_W +: STRIPE_ROWS*PROB_W]),
+        .pv_seed_bypass_i(row_tile_bypass_w[
+            ROW_BASE +: STRIPE_ROWS]),
         .pv_seed_feature_i(pv_issue_feature_q),
         .pv_seed_valid_o(stripe_pv_seed_valid_w[stripe]),
         .pv_seed_data_o(stripe_pv_seed_data_w[stripe]),
@@ -718,6 +739,7 @@ module fsa_fused_array #(
           if (&sum_right_valid_w) begin
             sum_rows_q <= sum_right_data_w;
             alpha_update_stream_q <= alpha_rows_q;
+            lse_bypass_stream_q <= row_tile_bypass_w;
             lse_update_row_q <= {ROW_IDX_W{1'b0}};
             softmax_pv_ready_o <= 1'b1;
             softmax_state_q <= SM_L_UPDATE;
@@ -729,6 +751,7 @@ module fsa_fused_array #(
           old_l_q <= old_l_q >> LSE_W;
           sum_rows_q <= sum_rows_q >> LSE_W;
           alpha_update_stream_q <= alpha_update_stream_q >> PROB_W;
+          lse_bypass_stream_q <= lse_bypass_stream_q >> 1;
           if (lse_update_row_q == ROW_LAST)
             softmax_state_q <= SM_L_DRAIN;
           else

@@ -17,9 +17,11 @@
 - 定点误差是否改变模型输出；
 - VCK190 板上频率、带宽、功耗和资源是否满足设计假设。
 
-本计划只要求第一阶段完成 **batch=1、prefill、MHA-compatible** 流程。当前
-RTL 的启动检查要求 `num_q_heads == num_kv_heads`，并明确拒绝 decode/GQA
-配置；原生 GQA 和 decode 属于后续扩展，不应在首轮结果中伪装成已支持功能。
+本计划第一阶段只要求完成 **batch=1、prefill、MHA-compatible** 板级流程。
+当前 RTL 的启动检查要求 `num_q_heads == num_kv_heads`，因此明确拒绝原生
+GQA。RTL 已实现 `seq_q=1`、单个 32-token KV tile 的 MHA decode，并有 UVM
+smoke、随机和回压验证；但 DMA/PS 集成、多 KV tile decode 和板级性能尚未
+完成，首轮板级结果仍必须标为 prefill-only。
 
 ## 2. 推荐工作负载
 
@@ -252,7 +254,7 @@ valid/mask 标记，不允许用未初始化字节填充有效计算。
 | full-layer | 128、512、1024 | 全 30 层 | 1 固定 seed | 完整模型 prefill |
 | prompt-real | 16 个固定 prompt | layer 0、15、29 | 3 runs | 真实 token 分布 |
 | re10k-real | 8192 | 既定 `up/down_blocks_2_*` 层 | 1 | 真实 Re10K 板级结果 |
-| decode reference | 1 query + KV cache | PS only | 3 runs | 记录待支持项，不纳入 PL 首轮加速比 |
+| decode reference | 1 query + KV cache | PS only; optional single-tile PL smoke | 3 runs | 不纳入 PL 首轮 prefill 加速比 |
 
 `prompt-real` 使用 16 个固定 prompt：8 个英文技术问答、4 个中文短问题、
 4 个代码补全样本。每个 prompt 保存 tokenizer 版本、token id、长度和 SHA256。
@@ -330,7 +332,8 @@ T_e2e = T_extract + T_pack + T_dma_in + T_pl + T_dma_out + T_unpack
 1. PS native：完整 SmolLM2 prefill，Attention 不接 PL。
 2. PS+PL：只替换 Attention，embedding、QKV projection、RoPE、MLP、norm、
    lm_head 仍由 PS 运行。
-3. 首轮只测 batch=1 和 prefill；decode 只跑 PS reference，并标记为 `PL_NOT_SUPPORTED`。
+3. 首轮只测 batch=1 和 prefill；RTL 单 tile MHA decode 可作为独立 smoke，
+   但在 DMA、多 KV tile 和板级性能闭环前不纳入 PL E2E 加速比。
 4. 对 layer 0/15/29 先做逐层替换，再做全 30 层替换。
 5. 比较 token ids、logits top-1/top-k 和生成文本，避免“性能变快但模型不等价”。
 
@@ -443,7 +446,7 @@ temperature_c, max_abs_error, cosine, top1_match, status
 
 - RTL 支持 `num_q_heads=9, num_kv_heads=3` 原生 GQA；
 - 比较 KV 读流量、tile 数、stall 和 tokens/s；
-- 增加 decode 的 `seq_q=1、seq_kv=128/512/2048`；
+- 扩展并验证 decode 的 `seq_q=1、seq_kv=128/512/2048` 多 KV-tile 流程；
 - 逐步将 Attention 替换扩展到完整 30 层。
 
 ## 10. 风险、降级和禁止事项
@@ -455,7 +458,7 @@ temperature_c, max_abs_error, cosine, top1_match, status
 | tile-loader wrapper 尚未集成 | 只能做 RTL 仿真 | 先做 PS memory-to-stream DMA smoke，再做 PL kernel benchmark |
 | AXI 搬运成为瓶颈 | E2E 加速比不明显 | 分开报告 kernel-only、DMA-only、E2E，增大 burst 和 staging buffer |
 | INT8 误差过大 | LLM logits 漂移 | 保存 FP16/INT8 双 golden，调整 per-head scale/round，不能只放宽阈值 |
-| decode 尚未实现 | 不能宣称完整 LLM 加速 | 首轮明确标为 prefill-only，decode 只做 PS baseline |
+| decode 仅完成单 tile RTL 验证 | 不能宣称完整 LLM decode 加速 | 首轮明确标为 prefill-only；decode 先做 PS baseline 和单 tile PL smoke |
 | 模型/量化版本漂移 | 结果不可复现 | manifest 固定 commit、tokenizer、权重 SHA256 和 bitstream revision |
 
 禁止以下结果写入最终性能表：

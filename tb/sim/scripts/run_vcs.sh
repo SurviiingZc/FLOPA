@@ -18,6 +18,7 @@ cd "$SIM_ROOT"
 
 cleanup_transients() {
   rm -f "$SIM_ROOT"/flex*.log "$SIM_ROOT/ucli.key"
+  rm -f "$OUTDIR"/flex*.log "$OUTDIR/ucli.key"
   rm -rf "$SIM_ROOT/csrc"
 }
 trap cleanup_transients EXIT

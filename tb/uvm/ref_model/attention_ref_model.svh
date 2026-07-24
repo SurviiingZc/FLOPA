@@ -1,9 +1,9 @@
 `ifndef ATTENTION_REF_MODEL_SVH
 `define ATTENTION_REF_MODEL_SVH
 
-// Bit-accurate model for up to two 32-row Q/K/V tiles and single-token MHA
-// decode. It mirrors score_scale_pipe, pwl_exp_unit, reciprocal_lut, and the
-// final normalizer result across the complete configured KV context.
+// Bit-accurate model for up to 512 Q/K/V tokens and single-token MHA decode.
+// It mirrors score_scale_pipe, pwl_exp_unit, reciprocal_lut, and the final
+// normalizer result across the complete configured KV context.
 class attention_ref_model extends uvm_object;
   `uvm_object_utils(attention_ref_model)
 
@@ -233,6 +233,11 @@ class attention_ref_model extends uvm_object;
     last_event.causal_en = cfg.causal_en;
     last_event.multi_q_tile = (cfg.seq_q > `ATTN_ARRAY_ROWS);
     last_event.multi_kv_tile = (cfg.seq_kv > `ATTN_ARRAY_COLS);
+    last_event.q_tile_count = (cfg.seq_q + `ATTN_TILE_Q - 1) / `ATTN_TILE_Q;
+    last_event.kv_tile_count = (cfg.seq_kv + `ATTN_TILE_K - 1) / `ATTN_TILE_K;
+    last_event.q_tail_tile = (cfg.seq_q % `ATTN_TILE_Q) != 0;
+    last_event.kv_tail_tile = (cfg.seq_kv % `ATTN_TILE_K) != 0;
+    last_event.write_backpressured = cfg.ready_low_pct != 0;
     if (!(q_loaded && k_loaded && v_loaded)) begin
       `uvm_error("REF_INPUT", "Reference model started before all Q/K/V words were observed")
       return;
@@ -240,9 +245,24 @@ class attention_ref_model extends uvm_object;
     if (cfg.head_dim != `ATTN_HEAD_DIM || cfg.seq_kv == 0 ||
         cfg.seq_kv > FA_MAX_SEQ || cfg.seq_q == 0 ||
         cfg.seq_q > FA_MAX_SEQ || (cfg.decode_en && cfg.seq_q != 1)) begin
-      `uvm_error("REF_SCOPE", "Bit-exact model supports up to two 32x32x64 tiles or single-token decode")
+      `uvm_error("REF_SCOPE", "Bit-exact model supports up to 512 tokens or single-token decode")
       return;
     end
+    for (int unsigned row = 0; row < cfg.seq_q; row++)
+      for (int unsigned dim = 0; dim < `ATTN_HEAD_DIM; dim++) begin
+        if (cfg.tensor.q[row][dim] < 0) last_event.saw_q_negative = 1;
+        else if (cfg.tensor.q[row][dim] == 0) last_event.saw_q_zero = 1;
+        else last_event.saw_q_positive = 1;
+      end
+    for (int unsigned row = 0; row < cfg.seq_kv; row++)
+      for (int unsigned dim = 0; dim < `ATTN_HEAD_DIM; dim++) begin
+        if (cfg.tensor.k[row][dim] < 0) last_event.saw_k_negative = 1;
+        else if (cfg.tensor.k[row][dim] == 0) last_event.saw_k_zero = 1;
+        else last_event.saw_k_positive = 1;
+        if (cfg.tensor.v[row][dim] < 0) last_event.saw_v_negative = 1;
+        else if (cfg.tensor.v[row][dim] == 0) last_event.saw_v_zero = 1;
+        else last_event.saw_v_positive = 1;
+      end
     for (int unsigned row = 0; row < cfg.seq_q; row++)
       for (int unsigned dim = 0; dim < `ATTN_HEAD_DIM; dim++)
         q_mem[row][dim] = cfg.tensor.q[row][dim];

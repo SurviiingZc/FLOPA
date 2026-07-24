@@ -96,6 +96,8 @@ endinterface
 interface fa_status_if(input logic clk, input logic rst_n);
   logic       irq;
   logic [3:0] debug_state;
+  logic [10:0] q_tile_index;
+  logic [10:0] kv_tile_index;
 endinterface
 
 // A test-owned, clock-synchronous request channel for DUT-only SAIF capture.

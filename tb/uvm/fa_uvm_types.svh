@@ -9,15 +9,17 @@ typedef enum bit [1:0] {
 
 typedef enum int unsigned {
   FA_STIM_CANONICAL,
-  FA_STIM_RANDOM_SMALL,
+  FA_STIM_RANDOM_FULL_RANGE,
   FA_STIM_PWL_SEGMENTS,
   FA_STIM_ARITH_ROUNDING,
   FA_STIM_POSITIVE_SAT,
-  FA_STIM_NEGATIVE_SAT,
-  FA_STIM_TWO_TILE_PINGPONG
+  FA_STIM_NEGATIVE_SAT
 } fa_stimulus_e;
 
-localparam int unsigned FA_MAX_SEQ = 2 * `ATTN_ARRAY_ROWS;
+// UVM uses the architectural 16-bit sequence registers, but caps the
+// reference model at 512 tokens so the regression exercises long streaming
+// ping-pong traffic without making every smoke test prohibitively expensive.
+localparam int unsigned FA_MAX_SEQ = 512;
 
 class fa_qkv_tensor extends uvm_object;
   `uvm_object_utils(fa_qkv_tensor)
@@ -39,17 +41,30 @@ class fa_qkv_tensor extends uvm_object;
       end
   endfunction
 
-  function void fill_random_small();
-    int signed value;
+  function void fill_random_full_range(int unsigned active_q_rows,
+                                       int unsigned active_kv_rows);
+    int signed anchor_values [0:5];
     for (int unsigned row = 0; row < FA_MAX_SEQ; row++)
       for (int unsigned dim = 0; dim < `ATTN_HEAD_DIM; dim++) begin
-        value = -4 + $urandom_range(8);
-        q[row][dim] = value;
-        value = -4 + $urandom_range(8);
-        k[row][dim] = value;
-        value = -96 + $urandom_range(192);
-        v[row][dim] = value;
+        q[row][dim] = $urandom_range(0, 255) - 128;
+        k[row][dim] = $urandom_range(0, 255) - 128;
+        v[row][dim] = $urandom_range(0, 255) - 128;
       end
+
+    // Every remaining lane is independently uniform across INT8.  Place six
+    // values covering the sign classes and rails on random active rows so
+    // every random job also proves that the full input domain reached the DUT.
+    anchor_values[0] = -128;
+    anchor_values[1] = -64;
+    anchor_values[2] = -1;
+    anchor_values[3] = 0;
+    anchor_values[4] = 1;
+    anchor_values[5] = 127;
+    for (int unsigned anchor = 0; anchor < 6; anchor++) begin
+      q[$urandom_range(0, active_q_rows - 1)][anchor] = anchor_values[anchor];
+      k[$urandom_range(0, active_kv_rows - 1)][anchor] = anchor_values[anchor];
+      v[$urandom_range(0, active_kv_rows - 1)][anchor] = anchor_values[anchor];
+    end
   endfunction
 
   function void fill_pwl_segments();
@@ -77,26 +92,16 @@ class fa_qkv_tensor extends uvm_object;
       end
   endfunction
 
-  function void fill_two_tile_pingpong();
-    for (int unsigned row = 0; row < FA_MAX_SEQ; row++)
-      for (int unsigned dim = 0; dim < `ATTN_HEAD_DIM; dim++) begin
-        q[row][dim] = (row < `ATTN_ARRAY_ROWS) ? 8'sd0 :
-                      ((dim == 0) ? 8'sd1 : 8'sd0);
-        k[row][dim] = (row < `ATTN_ARRAY_COLS) ? 8'sd0 :
-                      ((dim == 0) ? 8'sd1 : 8'sd0);
-        v[row][dim] = (row < `ATTN_ARRAY_COLS) ? 8'sd1 : 8'sd5;
-      end
-  endfunction
-
-  function void fill_pattern(fa_stimulus_e stimulus);
+  function void fill_pattern(fa_stimulus_e stimulus,
+                             int unsigned active_q_rows = FA_MAX_SEQ,
+                             int unsigned active_kv_rows = FA_MAX_SEQ);
     case (stimulus)
       FA_STIM_CANONICAL: fill_constant(8'sd0, 8'sd0, 8'sd1);
-      FA_STIM_RANDOM_SMALL: fill_random_small();
+      FA_STIM_RANDOM_FULL_RANGE: fill_random_full_range(active_q_rows, active_kv_rows);
       FA_STIM_PWL_SEGMENTS: fill_pwl_segments();
       FA_STIM_ARITH_ROUNDING: fill_arith_rounding();
       FA_STIM_POSITIVE_SAT: fill_constant(8'sd0, 8'sd0, 8'sd127);
       FA_STIM_NEGATIVE_SAT: fill_constant(8'sd0, 8'sd0, -8'sd128);
-      FA_STIM_TWO_TILE_PINGPONG: fill_two_tile_pingpong();
       default: fill_constant(8'sd0, 8'sd0, 8'sd0);
     endcase
   endfunction
@@ -117,6 +122,20 @@ class fa_model_event extends uvm_sequence_item;
   bit saw_normalizer_round_increment;
   bit saw_output_pos_sat;
   bit saw_output_neg_sat;
+  bit saw_q_negative;
+  bit saw_q_zero;
+  bit saw_q_positive;
+  bit saw_k_negative;
+  bit saw_k_zero;
+  bit saw_k_positive;
+  bit saw_v_negative;
+  bit saw_v_zero;
+  bit saw_v_positive;
+  bit q_tail_tile;
+  bit kv_tail_tile;
+  bit write_backpressured;
+  int unsigned q_tile_count;
+  int unsigned kv_tile_count;
   int unsigned valid_lanes;
 
   `uvm_object_utils_begin(fa_model_event)
@@ -134,6 +153,20 @@ class fa_model_event extends uvm_sequence_item;
     `uvm_field_int(saw_normalizer_round_increment, UVM_DEFAULT)
     `uvm_field_int(saw_output_pos_sat, UVM_DEFAULT)
     `uvm_field_int(saw_output_neg_sat, UVM_DEFAULT)
+    `uvm_field_int(saw_q_negative, UVM_DEFAULT)
+    `uvm_field_int(saw_q_zero, UVM_DEFAULT)
+    `uvm_field_int(saw_q_positive, UVM_DEFAULT)
+    `uvm_field_int(saw_k_negative, UVM_DEFAULT)
+    `uvm_field_int(saw_k_zero, UVM_DEFAULT)
+    `uvm_field_int(saw_k_positive, UVM_DEFAULT)
+    `uvm_field_int(saw_v_negative, UVM_DEFAULT)
+    `uvm_field_int(saw_v_zero, UVM_DEFAULT)
+    `uvm_field_int(saw_v_positive, UVM_DEFAULT)
+    `uvm_field_int(q_tail_tile, UVM_DEFAULT)
+    `uvm_field_int(kv_tail_tile, UVM_DEFAULT)
+    `uvm_field_int(write_backpressured, UVM_DEFAULT)
+    `uvm_field_int(q_tile_count, UVM_DEFAULT)
+    `uvm_field_int(kv_tile_count, UVM_DEFAULT)
     `uvm_field_int(valid_lanes, UVM_DEFAULT)
   `uvm_object_utils_end
 

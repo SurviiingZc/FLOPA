@@ -6,10 +6,12 @@ OUT_DIR="$SIM_ROOT/build/asic_sram"
 SRAM_MODEL="/data/public/SRAM/uhdsp_256x8m4s/VERILOG/uhdsp_256x8m4s_tt0p9v25c.v"
 
 mkdir -p "$OUT_DIR" "$OUT_DIR/csrc"
+OUT_DIR=$(cd "$OUT_DIR" && pwd)
 cd "$SIM_ROOT"
 
 cleanup_transients() {
   rm -f "$SIM_ROOT"/flex*.log "$SIM_ROOT/ucli.key"
+  rm -f "$OUT_DIR"/flex*.log "$OUT_DIR/ucli.key"
   rm -rf "$SIM_ROOT/csrc"
 }
 trap cleanup_transients EXIT

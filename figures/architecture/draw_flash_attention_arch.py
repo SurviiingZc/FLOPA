@@ -104,7 +104,7 @@ def mini_box(ax, x, y, w, h, text, edge, fill=WHITE, size=5.0,
 
 def draw_system_band(ax):
     box(ax, 0.018, 0.830, 0.135, 0.145, "Host / PS",
-        "AXI4-Lite control\n128-bit AXI data", fill=CONTROL_FILL,
+        "AXI4-Lite control\n128b loader | 128b WB", fill=CONTROL_FILL,
         edge=CONTROL, title_color=CONTROL, title_size=6.5)
 
     box(ax, 0.166, 0.830, 0.292, 0.145, "Q / K / V Ping-Pong Cache", "",
@@ -124,11 +124,11 @@ def draw_system_band(ax):
             fontsize=5.0, color=STATE, fontweight="bold", zorder=8)
 
     box(ax, 0.471, 0.830, 0.235, 0.145, "Top Controller",
-        "tile scheduler | phase control | counters", fill=CONTROL_FILL,
+        "tile scheduler | prefill / 1-query MHA decode", fill=CONTROL_FILL,
         edge=CONTROL, title_color=CONTROL, title_size=6.5)
-    states = ["LOAD", "QK", "SMX", "WS-PV", "NORM"]
-    widths = [0.034, 0.034, 0.034, 0.046, 0.042]
-    sx = 0.487
+    states = ["LOAD", "QK", "SMX", "PV", "NORM", "WB"]
+    widths = [0.032, 0.030, 0.032, 0.030, 0.038, 0.030]
+    sx = 0.480
     for idx, (state, sw) in enumerate(zip(states, widths)):
         mini_box(ax, sx, 0.866, sw, 0.035, state, CONTROL, WHITE,
                  size=5.0, weight="bold")
@@ -141,9 +141,9 @@ def draw_system_band(ax):
         fill=STATE_FILL, edge=STATE, title_color=STATE, title_size=6.5)
     mini_box(ax, 0.735, 0.865, 0.066, 0.047, "persistent\nO banks",
              STATE, WHITE, size=5.0, weight="bold")
-    mini_box(ax, 0.813, 0.865, 0.071, 0.047, "8-lane recip.\n+ requantize",
+    mini_box(ax, 0.813, 0.865, 0.071, 0.047, "8-lane norm\nL=7, II=1",
              STATE, WHITE, size=5.0, weight="bold")
-    mini_box(ax, 0.898, 0.865, 0.068, 0.047, "256b pack\n+ AXI WB",
+    mini_box(ax, 0.898, 0.865, 0.068, 0.047, "32-ftr pack\n8-row flush",
              STATE, WHITE, size=5.0, weight="bold")
     arrow(ax, 0.801, 0.889, 0.813, 0.889, color=STATE, lw=0.75, mutation=4.8)
     arrow(ax, 0.884, 0.889, 0.898, 0.889, color=STATE, lw=0.75, mutation=4.8)
@@ -154,7 +154,7 @@ def draw_system_band(ax):
     ax.add_patch(Rectangle((0.018, 0.787), 0.964, 0.026,
                            facecolor=WHITE, edgecolor=INK,
                            linewidth=0.72, zorder=5))
-    ax.text(0.500, 0.800, "REGISTERED LOCAL INTERCONNECT / PHASE CONTROL",
+    ax.text(0.500, 0.800, "REGISTERED LOCAL INTERCONNECT | PHASE-LOCAL ICG / FPGA CE",
             ha="center", va="center", fontsize=5.25, fontweight="bold",
             color=INK, zorder=7)
     arrow(ax, 0.085, 0.830, 0.085, 0.813, color=CONTROL, lw=0.8,
@@ -170,13 +170,13 @@ def draw_front_end(ax):
         "bounded registered interfaces", fill=MEMORY_FILL, edge=MEMORY,
         title_color=MEMORY, title_size=6.3)
     box(ax, 0.037, 0.635, 0.150, 0.075, "FSA QK Engine",
-        "Q rows + K columns", fill=WHITE, edge=COMPUTE,
+        "INT8 Q/K | fixed completion token", fill=WHITE, edge=COMPUTE,
         title_color=COMPUTE, title_size=5.55, subtitle_size=5.0)
     box(ax, 0.037, 0.533, 0.150, 0.075, "Registered Skew",
-        "Q row | K/V column | O seed", fill=WHITE, edge=MEMORY,
+        "Q row | K/V column | d tag", fill=WHITE, edge=MEMORY,
         title_color=MEMORY, title_size=5.55, subtitle_size=5.0)
     box(ax, 0.037, 0.431, 0.150, 0.075, "FSA PV Engine",
-        "V[:,d] + feature tag issue", fill=WHITE, edge=STATE,
+        "V read L=2 | tagged II=1", fill=WHITE, edge=STATE,
         title_color=STATE, title_size=5.55, subtitle_size=5.0)
     arrow(ax, 0.187, 0.469, 0.222, 0.469, color=STATE, lw=1.15,
           mutation=6.0)
@@ -272,13 +272,13 @@ def draw_array(ax):
 
 def draw_side_units(ax):
     box(ax, 0.768, 0.365, 0.214, 0.382, "Array-Side Units",
-        "no score / probability tile buffer", fill=PALE, edge=INK,
+        "stripe-local control and bounded gathers", fill=PALE, edge=INK,
         title_size=6.3)
     box(ax, 0.786, 0.638, 0.178, 0.071, "32-Lane Scale + PWL Exp",
-        "only nonlinear datapath", fill=NONLINEAR_FILL, edge=NONLINEAR,
+        "scale L=5 + exp L=3 | II=1", fill=NONLINEAR_FILL, edge=NONLINEAR,
         title_color=NONLINEAR, title_size=5.45, subtitle_size=5.0)
     box(ax, 0.786, 0.537, 0.178, 0.071, "Row State (m, l, alpha)",
-        "online update | 32 rows", fill=STATE_FILL, edge=STATE,
+        "l update: 32 issue + 2 drain", fill=STATE_FILL, edge=STATE,
         title_color=STATE, title_size=5.45, subtitle_size=5.0)
     box(ax, 0.786, 0.436, 0.178, 0.071, "Feature-Tagged O Write",
         "right edge -> row bank[feature]", fill=GOLD_FILL, edge=GOLD,
@@ -287,7 +287,7 @@ def draw_side_units(ax):
     # Delta leaves the array; probability returns to its originating PE.
     arrow(ax, 0.752, 0.677, 0.786, 0.677, color=NONLINEAR, lw=1.1)
     arrow(ax, 0.786, 0.660, 0.752, 0.660, color=NONLINEAR, lw=1.1)
-    tag(ax, 0.768, 0.698, "32 rows / column", color=NONLINEAR, size=5.0)
+    tag(ax, 0.768, 0.698, "2-stage gather | 4 x 8-col", color=NONLINEAR, size=5.0)
     arrow(ax, 0.752, 0.574, 0.786, 0.574, color=STATE, lw=1.0)
     arrow(ax, 0.786, 0.557, 0.752, 0.557, color=STATE, lw=1.0)
     arrow(ax, 0.752, 0.472, 0.786, 0.472, color=GOLD, lw=1.0)
@@ -311,7 +311,7 @@ def draw_pe_panel(ax):
         "Q ->\nK / V down\nvalid + last", fill=MEMORY_FILL, edge=MEMORY,
         title_color=MEMORY, title_size=5.15, subtitle_size=5.0)
 
-    box(ax, 0.158, 0.073, 0.206, 0.179, "Shared Multiplier + ALU", "",
+    box(ax, 0.158, 0.073, 0.206, 0.179, "Shared 17x9 Multiplier + 33b ALU", "",
         fill=COMPUTE_FILL, edge=COMPUTE, title_color=COMPUTE,
         title_size=5.35)
     ops = [
@@ -365,9 +365,9 @@ def draw_online_o_panel(ax):
     mini_box(ax, 0.627, 0.174, 0.074, 0.073,
              "O BANKS\ng0: d=0..31\ng1: d=32..63", STATE,
              STATE_FILL, size=5.0, weight="bold")
-    mini_box(ax, 0.718, 0.185, 0.061, 0.051, "32-lane\nalpha x O[d]", STATE,
+    mini_box(ax, 0.718, 0.185, 0.061, 0.051, "4x8-lane\nalpha x O[d]", STATE,
              WHITE, size=5.0, weight="bold")
-    mini_box(ax, 0.797, 0.185, 0.075, 0.051, "seed[d]\n+ feature tag", GOLD,
+    mini_box(ax, 0.797, 0.185, 0.075, 0.051, "seed[d] L=3\nV-aligned tag", GOLD,
              GOLD_FILL, size=5.0, weight="bold")
     mini_box(ax, 0.890, 0.185, 0.068, 0.051, "PE row\nsum + P x V",
              COMPUTE, COMPUTE_FILL, size=5.0, weight="bold")

@@ -61,6 +61,29 @@ class attention_scoreboard extends uvm_component;
     return q_tiles * kv_tiles * cfg.head_dim;
   endfunction
 
+  function void check_q_load_payload(fa_tile_item tr);
+    int unsigned logical_tile;
+    int unsigned logical_row;
+    byte signed expected_value;
+    byte signed actual_value;
+    // Q tiles are issued in logical order.  This check guards the UVM-side
+    // bank-reuse schedule independently of end-to-end output comparison.
+    logical_tile = q_load_words / cfg.head_dim;
+    if (logical_tile >= expected_q_load_words() / cfg.head_dim)
+      return;
+    for (int unsigned lane = 0; lane < `ATTN_ARRAY_ROWS; lane++) begin
+      logical_row = logical_tile * `ATTN_ARRAY_ROWS + lane;
+      expected_value = cfg.tensor.q[logical_row][tr.addr];
+      actual_value = $signed(tr.data[lane*8 +: 8]);
+      if (actual_value !== expected_value) begin
+        `uvm_error("SB_Q_LOAD", $sformatf(
+          "Q cache payload mismatch tile=%0d row=%0d dim=%0d expected=%0d actual=%0d",
+          logical_tile, logical_row, tr.addr, expected_value, actual_value))
+        return;
+      end
+    end
+  endfunction
+
   task consume_axil();
     fa_axil_item tr;
     forever begin
@@ -82,7 +105,10 @@ class attention_scoreboard extends uvm_component;
       tile_fifo.get(tr);
       if (!tr.is_commit) begin
         case (tr.kind)
-          FA_TILE_Q: q_load_words++;
+          FA_TILE_Q: begin
+            check_q_load_payload(tr);
+            q_load_words++;
+          end
           FA_TILE_K: k_load_words++;
           FA_TILE_V: v_load_words++;
         endcase
@@ -95,7 +121,13 @@ class attention_scoreboard extends uvm_component;
   task compare_write_beat(fa_axi_write_item tr);
     bit [7:0] expected;
     bit [7:0] actual;
+    bit [7:0] previous_expected;
+    bit [7:0] next_expected;
+    bit [7:0] previous_q_tile_expected;
     int unsigned byte_address;
+    int unsigned row;
+    int unsigned dim;
+    int signed matching_feature;
     for (int unsigned lane = 0; lane < 16; lane++) begin
       if (tr.strb[lane]) begin
         byte_address = tr.addr + lane;
@@ -107,15 +139,28 @@ class attention_scoreboard extends uvm_component;
             address_error_reported = 1;
           end
         end else begin
+          row = byte_address / `ATTN_HEAD_DIM;
+          dim = byte_address % `ATTN_HEAD_DIM;
           if (output_seen.exists(byte_address))
             `uvm_error("SB_DUP", $sformatf("duplicate write byte address %0d", byte_address))
           output_seen[byte_address] = 1;
           expected = ref_model.expected_byte(byte_address);
           actual = tr.data[lane*8 +: 8];
-          if (actual !== expected)
-            `uvm_error("SB_DATA", $sformatf("mismatch addr=%04h row=%0d dim=%0d expected=%0d(0x%02h) actual=%0d(0x%02h)",
+          if (actual !== expected) begin
+            matching_feature = -1;
+            for (int unsigned feature = 0; feature < `ATTN_HEAD_DIM; feature++)
+              if (ref_model.expected[row][feature] === actual && matching_feature == -1)
+                matching_feature = feature;
+            previous_expected = (dim == 0) ? '0 : ref_model.expected[row][dim - 1];
+            next_expected = (dim + 1 == `ATTN_HEAD_DIM) ? '0 : ref_model.expected[row][dim + 1];
+            previous_q_tile_expected = (row < `ATTN_TILE_Q) ? '0 :
+                                       ref_model.expected[row - `ATTN_TILE_Q][dim];
+            `uvm_error("SB_DATA", $sformatf("mismatch addr=%04h row=%0d dim=%0d expected=%0d(0x%02h) actual=%0d(0x%02h) prev_dim=%0d next_dim=%0d prev_q_tile=%0d matching_feature=%0d",
               byte_address, byte_address / `ATTN_HEAD_DIM, byte_address % `ATTN_HEAD_DIM,
-              $signed(expected), expected, $signed(actual), actual))
+              $signed(expected), expected, $signed(actual), actual,
+              $signed(previous_expected), $signed(next_expected),
+              $signed(previous_q_tile_expected), matching_feature))
+          end
         end
         output_bytes++;
       end

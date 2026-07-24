@@ -34,17 +34,28 @@ module tb_online_normalizer;
     tag_i=8'h7e; valid_i=1;
     @(negedge clk); valid_i=0;
 
+    // Regression for negative saturation after rounding. The reciprocal path
+    // preserves -513 for l=32768; scale=1 and shift=2 produce shifted=-129
+    // with increment=1, whose mathematically rounded result is exactly -128.
+    @(negedge clk);
+    for(lane=0;lane<LANES;lane=lane+1)
+      acc_rows_i[lane*ACC_W +: ACC_W]=-32'sd513;
+    out_scale_i=32'h0002_0001; tag_i=8'hd1; valid_i=1;
+    @(negedge clk); valid_i=0;
+
     seen=0;
-    while(seen<3) begin
+    while(seen<4) begin
       @(negedge clk);
       if(valid_o) begin
         case(seen)
           0: `TB_CHECK(tag_o==8'ha5,"normalizer first tag alignment")
           1: `TB_CHECK(tag_o==8'h3c,"normalizer adjacent tag alignment")
-          default: `TB_CHECK(tag_o==8'h7e,"normalizer bubble tag alignment")
+          2: `TB_CHECK(tag_o==8'h7e,"normalizer bubble tag alignment")
+          default: `TB_CHECK(tag_o==8'hd1,"normalizer saturation tag alignment")
         endcase
         for(lane=0;lane<LANES;lane=lane+1) begin
-          negative_expected = (seen==1) ? !lane[0] : lane[0];
+          negative_expected = (seen==3) ? 1 :
+                              ((seen==1) ? !lane[0] : lane[0]);
           if(negative_expected) begin
             `TB_CHECK($signed(out_rows_o[lane*OUT_W +: OUT_W])==-128,
                       "negative lane")

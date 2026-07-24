@@ -3,53 +3,30 @@ SHELL := /bin/bash
 SIM_ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 BUILD_DIR ?= $(SIM_ROOT)/build
 SCRIPTS_DIR := $(SIM_ROOT)/scripts
-FILELIST_DIR := $(SIM_ROOT)/filelists
-FILELISTS := $(FILELIST_DIR)/rtl.f $(FILELIST_DIR)/module_tb.f
-
-TOP_COMMON := tb_fixed_defs_smoke
-TOP_REGFILE := tb_accel_regfile
-TOP_SCHEDULER := tb_accel_scheduler
-TOP_PERF := tb_perf_counter
-TOP_AXI_IF := tb_axi4_slave_if
-TOP_AXI_WR := tb_axi4_master_write
-TOP_PE := tb_fsa_fused_array
-TOP_ACCEL := tb_attention_accel_top
+FILELISTS := $(SIM_ROOT)/filelists/rtl.f $(SIM_ROOT)/filelists/module_tb.f
 
 COMMON_TOPS := tb_fixed_defs_smoke tb_fa_clear_replica
 CONTROL_TOPS := tb_accel_regfile tb_accel_scheduler tb_perf_counter
 AXI_TOPS := tb_axi4_slave_if tb_axi4_master_write
-COMPUTE_TOPS := tb_fsa_fused_array tb_fa_signed_mult_pipe2 tb_fa_unsigned_mult_pipe2 tb_fsa_fused_pe tb_fsa_stripe tb_fsa_controller tb_score_scale_pipe tb_fsa_pv_engine
-MEMORY_TOPS := tb_banked_sram tb_output_buffer \
-	tb_o_accumulator_bank tb_pingpong_buffer tb_qkv_tile_cache
+COMPUTE_TOPS := tb_fsa_fused_array tb_fa_signed_mult_pipe2 tb_fa_unsigned_mult_pipe2 \
+	tb_fsa_fused_pe tb_fsa_stripe tb_fsa_controller tb_score_scale_pipe tb_fsa_pv_engine
+MEMORY_TOPS := tb_banked_sram tb_output_buffer tb_o_accumulator_bank \
+	tb_pingpong_buffer tb_qkv_tile_cache
 SOFTMAX_TOPS := tb_online_normalizer tb_pwl_exp_unit tb_reciprocal_lut
 TOP_TOPS := tb_attention_accel_top
 MODULE_TOPS := $(COMMON_TOPS) $(CONTROL_TOPS) $(AXI_TOPS) $(COMPUTE_TOPS) \
 	$(MEMORY_TOPS) $(SOFTMAX_TOPS) $(TOP_TOPS)
 
-.PHONY: help syntax run common control axi compute memory softmax top asic-sram lint-rtl \
-        syntax-common run-common \
-        syntax-regfile run-regfile \
-        syntax-scheduler run-scheduler \
-        syntax-perf run-perf \
-        syntax-axi-if run-axi-if \
-        syntax-axi-wr run-axi-wr \
-        syntax-pe run-pe syntax-top run-top \
-        clean
+.PHONY: help syntax run common control axi compute memory softmax top asic-sram lint-rtl clean
 
 help:
 	@echo "Targets:"
-	@echo "  make syntax      - compile all module TBs with VCS"
-	@echo "  make run         - run all module TBs with VCS"
-	@echo "  make common      - run common smoke TB"
-	@echo "  make control     - run control TBs"
-	@echo "  make axi         - run AXI TBs"
-	@echo "  make compute     - run all compute module TBs"
-	@echo "  make memory      - run all generic memory module TBs"
-	@echo "  make softmax     - run all softmax module TBs"
-	@echo "  make top         - run one-tile end-to-end test"
-	@echo "  make asic-sram   - run ASIC SRAM macro composition test"
-	@echo "  make lint-rtl    - lint RTL as Verilog-2001"
-	@echo "  make clean       - remove build output"
+	@echo "  make syntax    - compile all module testbenches"
+	@echo "  make run       - run all module testbenches"
+	@echo "  make common|control|axi|compute|memory|softmax|top - run one TB group"
+	@echo "  make asic-sram - run ASIC SRAM integration test"
+	@echo "  make lint-rtl  - lint synthesizable RTL"
+	@echo "  make clean     - remove simulation build output"
 
 syntax:
 	@set -e; for top in $(MODULE_TOPS); do \
@@ -87,54 +64,6 @@ asic-sram:
 
 lint-rtl:
 	$(SCRIPTS_DIR)/lint_rtl_vcs.sh
-
-syntax-common:
-	$(SCRIPTS_DIR)/syntax_vcs.sh $(TOP_COMMON) $(BUILD_DIR)/common $(FILELISTS)
-
-run-common:
-	$(SCRIPTS_DIR)/run_vcs.sh $(TOP_COMMON) $(BUILD_DIR)/common $(FILELISTS)
-
-syntax-regfile:
-	$(SCRIPTS_DIR)/syntax_vcs.sh $(TOP_REGFILE) $(BUILD_DIR)/regfile $(FILELISTS)
-
-run-regfile:
-	$(SCRIPTS_DIR)/run_vcs.sh $(TOP_REGFILE) $(BUILD_DIR)/regfile $(FILELISTS)
-
-syntax-scheduler:
-	$(SCRIPTS_DIR)/syntax_vcs.sh $(TOP_SCHEDULER) $(BUILD_DIR)/scheduler $(FILELISTS)
-
-run-scheduler:
-	$(SCRIPTS_DIR)/run_vcs.sh $(TOP_SCHEDULER) $(BUILD_DIR)/scheduler $(FILELISTS)
-
-syntax-perf:
-	$(SCRIPTS_DIR)/syntax_vcs.sh $(TOP_PERF) $(BUILD_DIR)/perf $(FILELISTS)
-
-run-perf:
-	$(SCRIPTS_DIR)/run_vcs.sh $(TOP_PERF) $(BUILD_DIR)/perf $(FILELISTS)
-
-syntax-axi-if:
-	$(SCRIPTS_DIR)/syntax_vcs.sh $(TOP_AXI_IF) $(BUILD_DIR)/axi_if $(FILELISTS)
-
-run-axi-if:
-	$(SCRIPTS_DIR)/run_vcs.sh $(TOP_AXI_IF) $(BUILD_DIR)/axi_if $(FILELISTS)
-
-syntax-axi-wr:
-	$(SCRIPTS_DIR)/syntax_vcs.sh $(TOP_AXI_WR) $(BUILD_DIR)/axi_wr $(FILELISTS)
-
-run-axi-wr:
-	$(SCRIPTS_DIR)/run_vcs.sh $(TOP_AXI_WR) $(BUILD_DIR)/axi_wr $(FILELISTS)
-
-syntax-pe:
-	$(SCRIPTS_DIR)/syntax_vcs.sh $(TOP_PE) $(BUILD_DIR)/pe $(FILELISTS)
-
-run-pe:
-	$(SCRIPTS_DIR)/run_vcs.sh $(TOP_PE) $(BUILD_DIR)/pe $(FILELISTS)
-
-syntax-top:
-	$(SCRIPTS_DIR)/syntax_vcs.sh $(TOP_ACCEL) $(BUILD_DIR)/top $(FILELISTS)
-
-run-top:
-	$(SCRIPTS_DIR)/run_vcs.sh $(TOP_ACCEL) $(BUILD_DIR)/top $(FILELISTS)
 
 clean:
 	rm -rf $(BUILD_DIR) $(SIM_ROOT)/csrc

@@ -103,13 +103,13 @@ def draw_qk_softmax(ax):
     ax.text(0.018, 0.930, "Dominant cycles:", ha="left", va="center",
             fontsize=5.2, fontstyle="italic", color=INK)
     ax.text(0.982, 0.965,
-            "R=C=32, H=64, L_SE=7; SUB, exp, and rowsum form one column wave",
+            "R=C=32, H=64; L_delta=2, L_SE=5+3=8, L_l=2; all pipelines II=1",
             ha="right", va="center", fontsize=5.0, color=MID)
 
     # Compressed parameterized time axis. Widths encode stage order, not scale.
     xs = [0.220, 0.405, 0.545, 0.602, 0.835, 0.950, 0.982]
-    labels = ["H", "R+C-1", "L_SE(alpha)",
-              "C+L_SE (3-way overlap)", "R"]
+    labels = ["H", "R+C-1", "L_SE=8 (alpha)",
+              "C+L_delta+L_SE (overlap)", "R+L_l"]
     for idx, text in enumerate(labels):
         duration(ax, xs[idx], xs[idx + 1], 0.925, text)
     for x in xs:
@@ -146,27 +146,27 @@ def draw_qk_softmax(ax):
 
     row_label(ax, ys["delta"], "N = S - new_m", STATE)
     stage_bar(ax, ys["delta"], xs[3], 0.770,
-              "columns C-1 -> 0: reverse m + PE-local SUB", STATE_FILL, STATE,
+              "reverse m + PE SUB + 2-stage stripe gather", STATE_FILL, STATE,
               size=5.0, weight="bold")
 
     row_label(ax, ys["prob"], "P = exp2(scale x N)", EXP)
     stage_bar(ax, ys["prob"], 0.635, 0.802,
-              "32-row column / cycle -> prob_q", EXP_FILL, EXP,
+              "scale L=5 -> PWL L=3 -> tagged prob_q", EXP_FILL, EXP,
               size=5.0, weight="bold")
 
     row_label(ax, ys["sum"], "local_l = rowsum(P)", EXP)
     stage_bar(ax, ys["sum"], 0.670, xs[4],
-              "reverse rowsum trails prob wave", EXP_FILL, EXP,
+              "first P -> reverse rowsum", EXP_FILL, EXP,
               size=5.0, weight="bold")
 
     row_label(ax, ys["l"], "new_l = old_l x alpha + local_l", EXP)
     stage_bar(ax, ys["l"], xs[4], xs[5],
-              "1 row / cycle; overlaps PV", EXP_FILL, EXP, size=5.0)
+              "32 issue + 2 drain", EXP_FILL, EXP, size=5.0)
 
-    arrow(ax, xs[4], ys["l"] + 0.055, xs[4] + 0.075, ys["l"] + 0.055,
+    arrow(ax, xs[4], 0.414, xs[4] + 0.075, 0.414,
           color=PV, lw=1.0, mutation=6.0)
-    ax.text(xs[4] + 0.006, ys["l"] + 0.070, "PV start",
-            ha="left", va="bottom", fontsize=5.0, fontweight="bold",
+    ax.text(xs[4] + 0.037, 0.417, "PV starts",
+            ha="center", va="bottom", fontsize=5.0, fontweight="bold",
             color=PV)
 
 def draw_ws_pv(ax):
@@ -174,14 +174,15 @@ def draw_ws_pv(ax):
     ax.text(0.018, 0.346, "Dominant cycles per KV tile:", ha="left",
             va="center", fontsize=5.2, fontstyle="italic", color=INK)
 
-    x0, xgroup, xissue, xdrain, xend = 0.220, 0.415, 0.610, 0.790, 0.980
-    duration(ax, x0, xissue, 0.341, "H = 64: O-read + V issue")
+    x0, xfill, xgroup, xissue, xdrain, xend = 0.220, 0.285, 0.430, 0.610, 0.790, 0.980
+    duration(ax, x0, xfill, 0.341, "fill=3", size=5.0)
+    duration(ax, xfill, xissue, 0.341, "H=64 issue, II=1")
     duration(ax, xissue, xdrain, 0.341, "C+R-1 drain")
-    duration(ax, xdrain, xend, 0.341, "last KV: 8-lane NORM + pack/WB")
-    for x in (x0, xgroup, xissue, xdrain, xend):
+    duration(ax, xdrain, xend, 0.341, "last KV: grouped NORM + WB")
+    for x in (x0, xfill, xgroup, xissue, xdrain, xend):
         boundary(ax, x, 0.085, 0.329)
 
-    ax.text((x0 + xgroup) / 2, 0.309, "g0: features 0--31",
+    ax.text((xfill + xgroup) / 2, 0.309, "g0: d=0--31",
             ha="center", va="center", fontsize=5.2, fontweight="bold",
             color=PV)
     ax.text((xgroup + xissue) / 2, 0.309, "g1: features 32--63",
@@ -196,16 +197,16 @@ def draw_ws_pv(ax):
 
     row_label(ax, y_seed, "persistent O-bank seed", PV)
     stage_bar(ax, y_seed, x0, xissue,
-              "read O_old[:,d] -> alpha x O[d] (first tile selects zero)",
+              "sync O read + operand reg + pipe2 rescale: L_seed=3",
               PV_FILL, PV, size=5.0, weight="bold")
 
     row_label(ax, y_v, "V[:,d] + seed issue", QK)
     stage_bar(ax, y_v, x0, xissue,
-              "64 feature vectors + full feature ID, one per cycle", QK_FILL, QK,
+              "V cache L=2 + one-cycle seed/tag alignment; 64 d at II=1", QK_FILL, QK,
               size=5.0, weight="bold")
 
     row_label(ax, y_mac, "sum = seed + P x V", PV)
-    stage_bar(ax, y_mac, x0 + 0.010, xdrain,
+    stage_bar(ax, y_mac, xfill, xdrain,
               "one continuous WS column wavefront", PV_FILL, PV,
               size=5.0, weight="bold")
 
@@ -214,12 +215,12 @@ def draw_ws_pv(ax):
               "right edge writes O_new[row,d] directly to bank[d]", PV_FILL, PV,
               size=5.0, weight="bold")
     stage_bar(ax, y_out, xdrain, xend,
-              "8-lane norm + 256b writeback", STATE_FILL, STATE,
+              "8x (32 + L7 + 8-row flush)", STATE_FILL, STATE,
               size=5.0, weight="bold")
 
     ax.text(0.220, 0.012,
-            "No row/group preload: g0/g1 are physical SRAM banks only.  "
-            "For j>0, O_old[:,d] is read just in time and overlaps V[:,d] issue.",
+            "No row/group preload: g0/g1 are physical O-bank groups only.  "
+            "O rescale and V return fill once, then sustain one feature/cycle.",
             ha="left", va="bottom", fontsize=5.0, color=MID)
 
 

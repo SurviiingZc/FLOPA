@@ -154,18 +154,46 @@ class fa_math_coverage extends uvm_subscriber #(fa_model_event);
     option.per_instance = 1;
     cp_stimulus: coverpoint tr.stimulus {
       bins canonical = {FA_STIM_CANONICAL};
-      bins random_small = {FA_STIM_RANDOM_SMALL};
+      bins random_full_range = {FA_STIM_RANDOM_FULL_RANGE};
       bins pwl_segments = {FA_STIM_PWL_SEGMENTS};
       bins arith_rounding = {FA_STIM_ARITH_ROUNDING};
       bins positive_sat = {FA_STIM_POSITIVE_SAT};
       bins negative_sat = {FA_STIM_NEGATIVE_SAT};
-      bins two_tile_pingpong = {FA_STIM_TWO_TILE_PINGPONG};
     }
     cp_mode: coverpoint tr.decode_en { bins prefill = {0}; bins decode = {1}; }
     cp_tile_shape: coverpoint {tr.multi_q_tile, tr.multi_kv_tile} {
       bins one_by_one = {2'b00};
+      bins one_by_many = {2'b01};
+      bins many_by_one = {2'b10};
       bins two_by_two = {2'b11};
-      illegal_bins asymmetric = {2'b01, 2'b10};
+    }
+    cp_q_tile_count: coverpoint tr.q_tile_count {
+      bins one = {1};
+      bins two = {2};
+      bins mid_tiles = {[3:8]};
+      bins long = {[9:16]};
+    }
+    cp_kv_tile_count: coverpoint tr.kv_tile_count {
+      bins one = {1};
+      bins two = {2};
+      bins mid_tiles = {[3:8]};
+      bins long = {[9:16]};
+    }
+    cp_tail_shape: coverpoint {tr.q_tail_tile, tr.kv_tail_tile} {
+      bins aligned = {2'b00};
+      bins q_tail = {2'b10};
+      bins kv_tail = {2'b01};
+      bins both_tail = {2'b11};
+    }
+    cp_write_backpressure: coverpoint tr.write_backpressured {
+      bins unstalled = {0};
+      bins stalled = {1};
+    }
+    cp_input_domain: coverpoint {tr.saw_q_negative, tr.saw_q_zero, tr.saw_q_positive,
+                                 tr.saw_k_negative, tr.saw_k_zero, tr.saw_k_positive,
+                                 tr.saw_v_negative, tr.saw_v_zero, tr.saw_v_positive} {
+      bins full_int8_sign_domain = {9'b111_111_111};
+      bins directed_or_degenerate = default;
     }
     cp_causal: coverpoint tr.causal_en { bins disabled = {0}; bins enabled = {1}; }
     cp_pwl_segment: coverpoint tr.pwl_segment_mask {
@@ -193,12 +221,11 @@ class fa_math_coverage extends uvm_subscriber #(fa_model_event);
       bins causal = {528};
       bins decode_full_context = {32};
       bins two_tile_full = {4096};
+      bins decode_long_context = {256};
+      bins long_prefill = {131072};
       bins other = default;
     }
     mode_x_causal: cross cp_mode, cp_causal;
-    stimulus_x_causal: cross cp_stimulus, cp_causal;
-    stimulus_x_output_sat: cross cp_stimulus, cp_output_sat;
-    stimulus_x_score_round: cross cp_stimulus, cp_score_round;
   endgroup
 
   function new(string name = "fa_math_coverage", uvm_component parent = null);

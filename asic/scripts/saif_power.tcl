@@ -38,8 +38,19 @@ if {![link]} {
 redirect -file [file join $report_dir check_design.rpt] {check_design}
 redirect -file [file join $report_dir clocks.rpt] {report_clocks}
 
-# DUT SAIF hierarchy starts at tb_top/dut and maps to the DDC top instance.
-read_saif -input $saif_file -strip_path $strip_path -instance $top_name
+# Rebuild clock-gating attributes after DDC readback so explicit RTL ICGs and
+# compile_ultra-inserted ICGs are both included in clock power reporting.
+identify_clock_gating
+
+# Power Compiler V-2023.12 does not accept -strip_path. The DDC top is the
+# simulated DUT instance at tb_top/dut, so select that source hierarchy with
+# the supported -instance_name option. Automatic name mapping reconciles
+# compatible RTL-to-gate renaming; optimized logic still requires gate-level
+# SAIF for sign-off coverage. read_saif returns 0 if nothing matched, which is
+# always a fatal power-flow error.
+if {![read_saif -input $saif_file -instance_name $strip_path -auto_map_names]} {
+  error "SAIF annotation matched no objects under $strip_path"
+}
 redirect -file [file join $report_dir saif_coverage.rpt] {report_saif -hierarchy}
 redirect -file [file join $report_dir clock_gating.rpt] {
   report_clock_gating -multi_stage -verbose

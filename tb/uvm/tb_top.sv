@@ -69,6 +69,12 @@ module tb_top;
     .debug_state_o(status_if.debug_state)
   );
 
+  // Tile indices are testbench-only observability.  The virtual sequence uses
+  // them to refill a released ping-pong bank with the correct long-context
+  // tile; no DUT control signal is driven through this interface.
+  assign status_if.q_tile_index = dut.u_scheduler.q_tile_index_o;
+  assign status_if.kv_tile_index = dut.u_scheduler.kv_tile_index_o;
+
   initial begin
     clk = 1'b0;
     clk_period_ns = 10.0;
