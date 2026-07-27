@@ -10,18 +10,27 @@ SEED="${SEED:-301}"
 PROFILE="${PROFILE:-gate_clock_gated_random_qkv_512x512_seed${SEED}}"
 OUT_DIR="${OUT_DIR:-$SIM_ROOT/build/saif_${PROFILE}}"
 SIM_CLOCK_PERIOD_NS="${SIM_CLOCK_PERIOD_NS:-1.6}"
-NETLIST="${NETLIST:-$ROOT_DIR/asic/dc/work/synth/tt/system_clock_gated/attention_accel_top/results/attention_accel_top_mapped.v}"
-SDF_FILE="${SDF_FILE:-$ROOT_DIR/asic/dc/work/synth/tt/system_clock_gated/attention_accel_top/results/attention_accel_top.sdf}"
-DDC_FILE="${DDC_FILE:-$ROOT_DIR/asic/dc/work/synth/tt/system_clock_gated/attention_accel_top/results/attention_accel_top.ddc}"
+NETLIST="${NETLIST:-$ROOT_DIR/asic/dc/work/synth/tt/system/attention_accel_top/results/attention_accel_top_mapped.v}"
+SDF_FILE="${SDF_FILE:-$ROOT_DIR/asic/dc/work/synth/tt/system/attention_accel_top/results/attention_accel_top.sdf}"
+DDC_FILE="${DDC_FILE:-$ROOT_DIR/asic/dc/work/synth/tt/system/attention_accel_top/results/attention_accel_top.ddc}"
+SYNTH_CONFIG="${SYNTH_CONFIG:-$(dirname "$NETLIST")/../reports/run_config.rpt}"
 STD_CELL_V="${STD_CELL_V:-/data/public/STD/tcbn28hpcplusbwp12t30p140_190a/tcbn28hpcplusbwp12t30p140_170a_vlg/TSMCHOME/digital/Front_End/verilog/tcbn28hpcplusbwp12t30p140_170a/tcbn28hpcplusbwp12t30p140.v}"
 SRAM_V="${SRAM_V:-/data/public/SRAM/uhdsp_256x8m4s/VERILOG/uhdsp_256x8m4s_tt0p9v25c.v}"
 POWER_READBACK="${POWER_READBACK:-0}"
+TIMING_CHECKS="${TIMING_CHECKS:-0}"
+ANNOTATE_SDF="${ANNOTATE_SDF:-$TIMING_CHECKS}"
+CAPTURE_SAIF="${CAPTURE_SAIF:-1}"
 SEQ_Q="${SEQ_Q:-512}"
 SEQ_KV="${SEQ_KV:-512}"
 READY_LOW_PCT="${READY_LOW_PCT:-0}"
+EXPECTED_RTL_ICGS="${EXPECTED_RTL_ICGS:-22}"
 
 if [[ ! "$SEED" =~ ^[0-9]+$ ]]; then
   echo "SEED must be a non-negative integer" >&2
+  exit 2
+fi
+if [[ ! "$EXPECTED_RTL_ICGS" =~ ^[1-9][0-9]*$ ]]; then
+  echo "EXPECTED_RTL_ICGS must be a positive integer" >&2
   exit 2
 fi
 if [[ ! "$PROFILE" =~ ^[A-Za-z0-9_.-]+$ ]]; then
@@ -37,6 +46,22 @@ if [[ "$POWER_READBACK" != "0" && "$POWER_READBACK" != "1" ]]; then
   echo "POWER_READBACK must be 0 or 1" >&2
   exit 2
 fi
+if [[ "$TIMING_CHECKS" != "0" && "$TIMING_CHECKS" != "1" ]]; then
+  echo "TIMING_CHECKS must be 0 or 1" >&2
+  exit 2
+fi
+if [[ "$CAPTURE_SAIF" != "0" && "$CAPTURE_SAIF" != "1" ]]; then
+  echo "CAPTURE_SAIF must be 0 or 1" >&2
+  exit 2
+fi
+if [[ "$ANNOTATE_SDF" != "0" && "$ANNOTATE_SDF" != "1" ]]; then
+  echo "ANNOTATE_SDF must be 0 or 1" >&2
+  exit 2
+fi
+if [[ "$TIMING_CHECKS" == "1" && "$ANNOTATE_SDF" != "1" ]]; then
+  echo "TIMING_CHECKS=1 requires ANNOTATE_SDF=1" >&2
+  exit 2
+fi
 for value in "$SEQ_Q" "$SEQ_KV" "$READY_LOW_PCT"; do
   if [[ ! "$value" =~ ^[0-9]+$ ]]; then
     echo "SEQ_Q, SEQ_KV, and READY_LOW_PCT must be non-negative integers" >&2
@@ -48,12 +73,34 @@ if (( SEQ_Q == 0 || SEQ_Q > 512 || SEQ_KV == 0 || SEQ_KV > 512 ||
   echo "Require 1 <= SEQ_Q <= SEQ_KV <= 512 and 0 <= READY_LOW_PCT <= 75" >&2
   exit 2
 fi
-for input in "$NETLIST" "$SDF_FILE" "$DDC_FILE" "$STD_CELL_V" "$SRAM_V"; do
+for input in "$NETLIST" "$SDF_FILE" "$DDC_FILE" "$SYNTH_CONFIG" "$STD_CELL_V" "$SRAM_V"; do
   if [[ ! -f "$input" ]]; then
     echo "Required gate-level input is missing: $input" >&2
     exit 2
   fi
 done
+
+# Refuse the known-bad second-level gating policy and the logical hold-repair
+# netlist that produced floating SRAM inputs before starting a long simulation.
+for required_setting in \
+  'logical_hold_repair=0' \
+  'clock_gating=rtl_explicit' \
+  "expected_top_rtl_icgs=$EXPECTED_RTL_ICGS" \
+  "rtl_icg_count=$EXPECTED_RTL_ICGS" \
+  'automatic_clock_gating=0' \
+  'automatic_clock_gating_whitelist_count=0'; do
+  if ! grep -qx "$required_setting" "$SYNTH_CONFIG"; then
+    echo "Gate netlist is stale or was built with an unsafe policy: missing $required_setting" >&2
+    echo "Rerun make synth, then make formality, before gate simulation" >&2
+    exit 2
+  fi
+done
+snps_gate_defs=$(rg -c '^module SNPS_CLOCK_GATE_HIGH_' "$NETLIST" || true)
+snps_gate_defs=${snps_gate_defs:-0}
+if [ "$snps_gate_defs" -ne 0 ]; then
+  echo "Gate netlist contains rejected SNPS automatic clock-gate wrappers" >&2
+  exit 2
+fi
 
 # Gate simulation must observe scheduler progress only through preserved top
 # ports. Internal RTL hierarchy is intentionally not stable after mapping.
@@ -69,16 +116,44 @@ fi
 NETLIST=$(readlink -f "$NETLIST")
 SDF_FILE=$(readlink -f "$SDF_FILE")
 DDC_FILE=$(readlink -f "$DDC_FILE")
+SYNTH_CONFIG=$(readlink -f "$SYNTH_CONFIG")
 STD_CELL_V=$(readlink -f "$STD_CELL_V")
 SRAM_V=$(readlink -f "$SRAM_V")
+
+OUT_DIR=$(readlink -m "$OUT_DIR")
+case "$OUT_DIR" in
+  "$SIM_ROOT"/build/*) ;;
+  *) echo "OUT_DIR must be below $SIM_ROOT/build: $OUT_DIR" >&2; exit 2 ;;
+esac
+mkdir -p "$(dirname "$OUT_DIR")"
+lock_dir="${OUT_DIR}.lock"
+if ! mkdir "$lock_dir" 2>/dev/null; then
+  echo "Another gate simulation owns $OUT_DIR" >&2
+  [[ -f "$lock_dir/owner" ]] && sed 's/^/  /' "$lock_dir/owner" >&2
+  exit 2
+fi
+{
+  printf 'pid=%s\n' "$$"
+  printf 'host=%s\n' "$(hostname)"
+  printf 'started=%s\n' "$(date -Is)"
+} > "$lock_dir/owner"
+trap 'rm -rf "$lock_dir"' EXIT
+
+# The lock makes these exact generated paths safe to refresh. Failed-run logs
+# remain available until the next explicitly requested run.
+mkdir -p "$OUT_DIR"
+rm -rf "$OUT_DIR/csrc" "$OUT_DIR/simv.daidir"
+rm -f "$OUT_DIR/simv" "$OUT_DIR/compile.log" \
+  "$OUT_DIR/fa_random_qkv_test.log" "$OUT_DIR/$PROFILE.partial.saif"
+mkdir -p "$OUT_DIR/csrc"
+
 rtl_hash=$(find "$ROOT_DIR/rtl" -type f -print0 | sort -z | \
   xargs -0 sha256sum | sha256sum | awk '{print $1}')
 saif_dir="$ROOT_DIR/asic/dc/work/power/saif/$rtl_hash"
 saif_file="$saif_dir/$PROFILE.saif"
 metadata_file="$saif_dir/$PROFILE.json"
 
-mkdir -p "$OUT_DIR/csrc" "$saif_dir"
-OUT_DIR=$(cd "$OUT_DIR" && pwd)
+mkdir -p "$saif_dir"
 saif_dir=$(cd "$saif_dir" && pwd)
 saif_file="$saif_dir/$PROFILE.saif"
 metadata_file="$saif_dir/$PROFILE.json"
@@ -89,26 +164,51 @@ cleanup_transients() {
   rm -f "$SIM_ROOT"/flex*.log "$SIM_ROOT"/ucli.key
   rm -f "$OUT_DIR"/flex*.log "$OUT_DIR"/ucli.key
   rm -rf "$SIM_ROOT/csrc"
+  rm -rf "$lock_dir"
 }
 trap cleanup_transients EXIT
 
+compile_sdf_args=()
+if [[ "$ANNOTATE_SDF" == "1" ]]; then
+  compile_sdf_args=(-sdf max:tb_top.dut:"$SDF_FILE")
+fi
 "$VCS_BIN" -full64 -sverilog -ntb_opts uvm -timescale=1ns/1ps \
   -debug_access+all -kdb -lca -Mdir="$OUT_DIR/csrc" \
+  "${compile_sdf_args[@]}" \
   -f filelists/uvm.f "$NETLIST" "$STD_CELL_V" "$SRAM_V" -top tb_top \
   -l "$OUT_DIR/compile.log" -o "$OUT_DIR/simv"
 
 # Never replace an earlier passing artifact with a failed or incomplete run.
 rm -f "$partial_saif"
 log="$OUT_DIR/fa_random_qkv_test.log"
-"$OUT_DIR/simv" +UVM_TESTNAME=fa_random_qkv_test +ntb_random_seed="$SEED" \
-  +FA_SEQ_Q="$SEQ_Q" +FA_SEQ_KV="$SEQ_KV" +FA_READY_LOW_PCT="$READY_LOW_PCT" \
-  +CLK_PERIOD_NS="$SIM_CLOCK_PERIOD_NS" +SAIF_ENABLE +SAIF_FILE="$partial_saif" \
-  -sdf max:tb_top.dut:"$SDF_FILE" +no_notifier -l "$log"
+timing_args=(+no_notifier +notimingcheck)
+if [[ "$TIMING_CHECKS" == "1" ]]; then
+  timing_args=(+no_notifier)
+fi
+runtime_args=(
+  +UVM_TESTNAME=fa_random_qkv_test +ntb_random_seed="$SEED"
+  +FA_SEQ_Q="$SEQ_Q" +FA_SEQ_KV="$SEQ_KV" +FA_READY_LOW_PCT="$READY_LOW_PCT"
+  +CLK_PERIOD_NS="$SIM_CLOCK_PERIOD_NS"
+)
+if [[ "$CAPTURE_SAIF" == "1" ]]; then
+  runtime_args+=(+SAIF_ENABLE +SAIF_FILE="$partial_saif")
+fi
+"$OUT_DIR/simv" "${runtime_args[@]}" \
+  "${timing_args[@]}" -l "$log"
 
 if ! grep -Eq 'UVM_ERROR :[[:space:]]*0' "$log" || \
    ! grep -Eq 'UVM_FATAL :[[:space:]]*0' "$log"; then
-  echo "Gate UVM failed; partial SAIF is retained at $partial_saif and was not published" >&2
+  echo "Gate UVM failed; see $log" >&2
   exit 1
+fi
+timing_violation_count=$(grep -c 'Timing violation' "$log" || true)
+if [[ "$TIMING_CHECKS" == "1" && "$timing_violation_count" != "0" ]]; then
+  echo "Gate timing failed: $timing_violation_count timing violation(s); partial SAIF is retained at $partial_saif" >&2
+  exit 1
+fi
+if [[ "$CAPTURE_SAIF" == "0" ]]; then
+  echo "Gate timing PASS: no timing violations; log: $log"
+  exit 0
 fi
 if [[ ! -s "$partial_saif" ]]; then
   echo "Gate SAIF capture completed without producing $partial_saif" >&2
@@ -137,6 +237,9 @@ tensor_checksum=$({ grep -E '\[FCOV_MATH\]|\[FCOV_SUMMARY\]' "$log" || true; } |
   printf '  "test": "fa_random_qkv_test",\n'
   printf '  "seed": %s,\n' "$SEED"
   printf '  "gate_level": true,\n'
+  printf '  "timing_checks": %s,\n' "$TIMING_CHECKS"
+  printf '  "sdf_annotated": %s,\n' "$ANNOTATE_SDF"
+  printf '  "timing_violation_count": %s,\n' "$timing_violation_count"
   printf '  "rtl_hash": "%s",\n' "$rtl_hash"
   printf '  "git_commit": "%s",\n' "$git_commit"
   printf '  "git_status_hash": "%s",\n' "$git_status_hash"

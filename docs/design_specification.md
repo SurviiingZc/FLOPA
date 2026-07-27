@@ -15,7 +15,7 @@ rowsum, and PV accumulation occur in or immediately adjacent to the PE stripes.
 Only feature-addressed O-bank reads and final normalized results cross the
 array boundary.
 
-![FLOPA fused architecture](../figures/architecture/flash_attention_accelerator_architecture.png)
+![FLOPA fused architecture](../figures/architecture/flopa_overall_architecture.png)
 
 *Figure 1. FLOPA architecture. Use
 `figures/architecture/flash_attention_accelerator_architecture.pdf` or `.svg`
@@ -232,12 +232,15 @@ The scheduler phases are `LOAD_Q`, `LOAD_KV`, `QK`, `SOFTMAX`, `PV`,
 `WRITEBACK`, `DONE`, and `ERROR`. Handshakes, rather than a fixed delay, drive
 phase transitions. The array controller enforces QK/PV mutual exclusion.
 
-`fa_clock_gate` abstracts the low-power clock policy. FPGA builds preserve a
-single root clock and use CE/EN behavior. ASIC builds are intended to map the
-wrapper to a glitch-free ICG. The latest nominal synthesis report still found
-zero mapped ICG cells in the sampled gate netlist; therefore measured clock
-power reduction is **not** claimed. See the PPA document for the required
-closure action.
+`fa_clock_gate` defines the low-power clock policy. FPGA builds preserve a
+single root clock and use CE/EN behavior. ASIC builds map 22 phase-local RTL
+wrappers to glitch-free ICGs: four array/control/skew domains, four complete
+domains per stripe, normalizer, and output. DC automatic insertion is disabled.
+Each PE keeps payload, tag, valid, and phase state on one clock boundary; skew
+domains use maximum-depth occupancy and PE domains use a root-clock worst-case
+drain counter before closing. The 7,789-ICG automatic experiment violated
+that rule and was rejected by both Formality and gate UVM. See
+`docs/clock_gating.md` for the power target and signoff flow.
 
 The current ASIC memory macros are capacity-inefficient for some O-bank
 organizations. SRAM reshaping is intentionally deferred until after FPGA

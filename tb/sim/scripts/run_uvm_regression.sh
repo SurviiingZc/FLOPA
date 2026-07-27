@@ -1,8 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Compile once, retain one log per seed, and merge RTL code plus UVM functional
-# coverage with VCS.
+# Compile once against the ASIC implementation, retain one log per seed, and
+# merge RTL code plus UVM functional coverage with VCS.  The characterized SRAM
+# model is always linked so RTL regression exercises the same storage backend as
+# synthesis.  Its specify checks are disabled at runtime because this is a
+# zero-delay RTL functional run, not an SRAM timing-signoff run.
 # A VCS simulation may return zero even when UVM reports an error, so the
 # post-run summary check is the regression pass/fail criterion.
 SIM_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
@@ -33,6 +36,10 @@ tests=(
   "axi_bresp_error|fa_axi_bresp_error_test|9|"
 )
 
+# A regression VDB is authoritative only when it contains this invocation's
+# tests. Remove this script-owned output tree before compiling so re-used
+# -cm_name directories cannot retain historical coverage.
+rm -rf "$OUT_DIR"
 mkdir -p "$OUT_DIR" "$OUT_DIR/csrc" "$COV_DIR"
 OUT_DIR=$(cd "$OUT_DIR" && pwd)
 COV_DIR=$(cd "$COV_DIR" && pwd)
@@ -48,7 +55,8 @@ trap cleanup_transients EXIT
 "$VCS_BIN" -full64 -sverilog -ntb_opts uvm -timescale=1ns/1ps \
   -debug_access+all -kdb -lca -Mdir="$OUT_DIR/csrc" \
   -cm line+cond+tgl+branch -cm_dir "$COV_DIR" \
-  -f filelists/rtl.f -f filelists/uvm.f -top tb_top \
+  +define+ATTN_ASIC -f filelists/asic_models.f -f filelists/rtl.f \
+  -f filelists/uvm.f -top tb_top \
   -l "$OUT_DIR/compile.log" -o "$OUT_DIR/simv"
 
 failures=0
@@ -58,6 +66,7 @@ for entry in "${tests[@]}"; do
   log="$OUT_DIR/${run_name}.log"
 
   "$OUT_DIR/simv" +UVM_TESTNAME="$test_name" +ntb_random_seed="$seed" "${plusarg_array[@]}" \
+    +no_notifier +notimingcheck \
     -cm line+cond+tgl+branch -cm_dir "$COV_DIR" -cm_name "$run_name" \
     -l "$log" || failures=$((failures + 1))
 

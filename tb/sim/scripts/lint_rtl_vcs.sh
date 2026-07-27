@@ -15,9 +15,10 @@ cleanup_transients() {
 }
 trap cleanup_transients EXIT
 
-vcs -full64 +v2k +lint=all -timescale=1ns/1ps \
+vcs -full64 +v2k +lint=all -timescale=1ns/1ps +define+ATTN_ASIC \
   -Mdir="$OUT_DIR/csrc" \
   -top attention_accel_top \
   -l "$OUT_DIR/compile.log" \
   -o "$OUT_DIR/simv" \
+  -f "$SIM_ROOT/filelists/asic_models.f" \
   -f "$SIM_ROOT/filelists/rtl.f"

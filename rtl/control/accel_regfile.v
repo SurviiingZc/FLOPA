@@ -209,52 +209,52 @@ module accel_regfile #(
     end
   endfunction
 
-  // Combinational read mux includes live status/performance counters.
-  function [31:0] read_reg_value;
-    input [ADDR_W-1:0] addr;
-    begin
-      case (addr[11:0])
-        `ATTN_REG_CONTROL: read_reg_value = {24'd0, prog_decode_en_q, prog_prefill_en_q, prog_causal_en_q, prog_mode_sel_q, 4'd0};
-        `ATTN_REG_STATUS: read_reg_value = {25'd0, writeback_active_i, compute_active_i, load_active_i, idle_i,
+  // Combinational read mux includes live status/performance counters. Keep it
+  // as an explicit mux so formal tools do not treat module state referenced
+  // from inside a function as a simulation/synthesis mismatch.
+  reg [31:0] read_reg_value_w;
+  always @* begin
+      case (rd_addr_w[11:0])
+        `ATTN_REG_CONTROL: read_reg_value_w = {24'd0, prog_decode_en_q, prog_prefill_en_q, prog_causal_en_q, prog_mode_sel_q, 4'd0};
+        `ATTN_REG_STATUS: read_reg_value_w = {25'd0, writeback_active_i, compute_active_i, load_active_i, idle_i,
                                             (error_i | (sticky_error_q != `ATTN_ERR_NONE)), done_i, busy_i};
-        `ATTN_REG_ERROR_CODE: read_reg_value = {28'd0, sticky_error_q};
-        `ATTN_REG_VERSION: read_reg_value = 32'h0002_0000;
-        `ATTN_REG_Q_BASE_LO: read_reg_value = prog_q_base_q[31:0];
-        `ATTN_REG_Q_BASE_HI: read_reg_value = prog_q_base_q[63:32];
-        `ATTN_REG_K_BASE_LO: read_reg_value = prog_k_base_q[31:0];
-        `ATTN_REG_K_BASE_HI: read_reg_value = prog_k_base_q[63:32];
-        `ATTN_REG_V_BASE_LO: read_reg_value = prog_v_base_q[31:0];
-        `ATTN_REG_V_BASE_HI: read_reg_value = prog_v_base_q[63:32];
-        `ATTN_REG_O_BASE_LO: read_reg_value = prog_o_base_q[31:0];
-        `ATTN_REG_O_BASE_HI: read_reg_value = prog_o_base_q[63:32];
-        `ATTN_REG_Q_STRIDE: read_reg_value = prog_q_stride_q;
-        `ATTN_REG_K_STRIDE: read_reg_value = prog_k_stride_q;
-        `ATTN_REG_V_STRIDE: read_reg_value = prog_v_stride_q;
-        `ATTN_REG_O_STRIDE: read_reg_value = prog_o_stride_q;
-        `ATTN_REG_SEQ_Q: read_reg_value = {16'd0, prog_seq_q_q};
-        `ATTN_REG_SEQ_KV: read_reg_value = {16'd0, prog_seq_kv_q};
-        `ATTN_REG_NUM_Q_HEADS: read_reg_value = {24'd0, prog_num_q_heads_q};
-        `ATTN_REG_NUM_KV_HEADS: read_reg_value = {24'd0, prog_num_kv_heads_q};
-        `ATTN_REG_HEAD_DIM: read_reg_value = {24'd0, prog_head_dim_q};
-        `ATTN_REG_TILE_Q: read_reg_value = {24'd0, prog_tile_q_q};
-        `ATTN_REG_TILE_K: read_reg_value = {24'd0, prog_tile_k_q};
-        `ATTN_REG_MODE: read_reg_value = {28'd0, prog_decode_en_q, prog_prefill_en_q, prog_causal_en_q, prog_mode_sel_q};
-        `ATTN_REG_SCORE_SCALE: read_reg_value = prog_score_scale_q;
-        `ATTN_REG_VALUE_SCALE: read_reg_value = prog_value_scale_q;
-        `ATTN_REG_OUT_SCALE: read_reg_value = prog_out_scale_q;
-        `ATTN_REG_MASK_CFG: read_reg_value = prog_mask_cfg_q;
-        `ATTN_REG_PERF_CTRL: read_reg_value = prog_perf_ctrl_q;
-        `ATTN_REG_PERF_CYCLES_LO: read_reg_value = perf_cycles_i[31:0];
-        `ATTN_REG_PERF_CYCLES_HI: read_reg_value = perf_cycles_i[63:32];
-        `ATTN_REG_PERF_STALL_LO: read_reg_value = perf_stall_i[31:0];
-        `ATTN_REG_PERF_STALL_HI: read_reg_value = perf_stall_i[63:32];
-        `ATTN_REG_PERF_MAC_LO: read_reg_value = perf_mac_i[31:0];
-        `ATTN_REG_PERF_MAC_HI: read_reg_value = perf_mac_i[63:32];
-        `ATTN_REG_PERF_TILES: read_reg_value = perf_tiles_i;
-        default: read_reg_value = 32'd0;
+        `ATTN_REG_ERROR_CODE: read_reg_value_w = {28'd0, sticky_error_q};
+        `ATTN_REG_VERSION: read_reg_value_w = 32'h0002_0000;
+        `ATTN_REG_Q_BASE_LO: read_reg_value_w = prog_q_base_q[31:0];
+        `ATTN_REG_Q_BASE_HI: read_reg_value_w = prog_q_base_q[63:32];
+        `ATTN_REG_K_BASE_LO: read_reg_value_w = prog_k_base_q[31:0];
+        `ATTN_REG_K_BASE_HI: read_reg_value_w = prog_k_base_q[63:32];
+        `ATTN_REG_V_BASE_LO: read_reg_value_w = prog_v_base_q[31:0];
+        `ATTN_REG_V_BASE_HI: read_reg_value_w = prog_v_base_q[63:32];
+        `ATTN_REG_O_BASE_LO: read_reg_value_w = prog_o_base_q[31:0];
+        `ATTN_REG_O_BASE_HI: read_reg_value_w = prog_o_base_q[63:32];
+        `ATTN_REG_Q_STRIDE: read_reg_value_w = prog_q_stride_q;
+        `ATTN_REG_K_STRIDE: read_reg_value_w = prog_k_stride_q;
+        `ATTN_REG_V_STRIDE: read_reg_value_w = prog_v_stride_q;
+        `ATTN_REG_O_STRIDE: read_reg_value_w = prog_o_stride_q;
+        `ATTN_REG_SEQ_Q: read_reg_value_w = {16'd0, prog_seq_q_q};
+        `ATTN_REG_SEQ_KV: read_reg_value_w = {16'd0, prog_seq_kv_q};
+        `ATTN_REG_NUM_Q_HEADS: read_reg_value_w = {24'd0, prog_num_q_heads_q};
+        `ATTN_REG_NUM_KV_HEADS: read_reg_value_w = {24'd0, prog_num_kv_heads_q};
+        `ATTN_REG_HEAD_DIM: read_reg_value_w = {24'd0, prog_head_dim_q};
+        `ATTN_REG_TILE_Q: read_reg_value_w = {24'd0, prog_tile_q_q};
+        `ATTN_REG_TILE_K: read_reg_value_w = {24'd0, prog_tile_k_q};
+        `ATTN_REG_MODE: read_reg_value_w = {28'd0, prog_decode_en_q, prog_prefill_en_q, prog_causal_en_q, prog_mode_sel_q};
+        `ATTN_REG_SCORE_SCALE: read_reg_value_w = prog_score_scale_q;
+        `ATTN_REG_VALUE_SCALE: read_reg_value_w = prog_value_scale_q;
+        `ATTN_REG_OUT_SCALE: read_reg_value_w = prog_out_scale_q;
+        `ATTN_REG_MASK_CFG: read_reg_value_w = prog_mask_cfg_q;
+        `ATTN_REG_PERF_CTRL: read_reg_value_w = prog_perf_ctrl_q;
+        `ATTN_REG_PERF_CYCLES_LO: read_reg_value_w = perf_cycles_i[31:0];
+        `ATTN_REG_PERF_CYCLES_HI: read_reg_value_w = perf_cycles_i[63:32];
+        `ATTN_REG_PERF_STALL_LO: read_reg_value_w = perf_stall_i[31:0];
+        `ATTN_REG_PERF_STALL_HI: read_reg_value_w = perf_stall_i[63:32];
+        `ATTN_REG_PERF_MAC_LO: read_reg_value_w = perf_mac_i[31:0];
+        `ATTN_REG_PERF_MAC_HI: read_reg_value_w = perf_mac_i[63:32];
+        `ATTN_REG_PERF_TILES: read_reg_value_w = perf_tiles_i;
+        default: read_reg_value_w = 32'd0;
       endcase
-    end
-  endfunction
+  end
 
   // Serialize AXI responses, update shadow registers, and create one-cycle command
   // pulses. Only CONTROL/PERF writes are accepted while a job is busy.
@@ -385,7 +385,7 @@ module accel_regfile #(
       end
 
       if (rd_fire_w) begin
-        s_axi_rdata <= read_reg_value(rd_addr_w);
+        s_axi_rdata <= read_reg_value_w;
         s_axi_rresp <= is_known_addr(rd_addr_w) ? 2'b00 : 2'b10;
         if (!is_known_addr(rd_addr_w)) sticky_error_q <= `ATTN_ERR_BUS;
         s_axi_rvalid <= 1'b1;

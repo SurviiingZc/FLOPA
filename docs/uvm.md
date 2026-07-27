@@ -30,6 +30,42 @@ For example:
 make uvm-test UVM_TEST=fa_random_qkv_test UVM_SEQ_Q=512 UVM_SEQ_KV=512 UVM_CAUSAL_EN=1 UVM_READY_LOW_PCT=25
 ```
 
+## ASIC SRAM Model
+
+All VCS RTL flows now compile with `ATTN_ASIC` and
+`tb/sim/filelists/asic_models.f`.  The common filelist contains the target
+standard-cell model, the DesignWare multiplier model, and the characterized
+`uhdsp_256x8m4s` SRAM model.  Consequently, `make uvm-test`,
+`make uvm-regression`, module tests, module coverage, and RTL lint all
+elaborate the same RTL SRAM implementation used by synthesis.
+
+The RTL functional flows run the macro model with `+no_notifier` and
+`+notimingcheck`.  This does not replace STA or a deliberately configured gate
+timing run; it prevents an artificial zero-delay RTL scheduling failure.  In a
+zero-delay simulation, `CEB`, `WEB`, and address can change in the same
+timestamp as the SRAM clock edge, while the characterized model requires about
+70 ps of hold time.  The resulting specify-check notifier corrupts the memory
+model to X, after which the vendor diagnostic reports `input D/DM
+unknown/high-Z` and the scoreboard sees invalid output data.
+
+That diagnostic is not proof that a SRAM data pin is electrically floating:
+the macro uses the same message for unknown X and high-Z values. RTL UVM with
+timing checks disabled passes, but the rejected 7,789-ICG mapped netlist fails
+even without SDF: its PE payload/state clocks were automatically gated below
+the stripe clock while corresponding valid/tag state was not. The resulting
+X payload writes and feature-delayed output produced 4,078 scoreboard errors in
+the 64x64 seed-301 test. Formality independently reported 20 initial failing
+`u_fused_array/alpha_rows_q` points. The corrected synthesis policy excludes the
+whole fused array from second-level automatic gating.
+
+`make gate-saif` runs the 512x512 functional mapped-netlist workload with SDF,
+disables timing notifiers, and publishes SAIF only after zero UVM errors.
+`make gate-timing` uses a separate 64x64 output directory, keeps macro timing
+checks enabled, and does not spend runtime generating SAIF. The synthesis
+default reserves 0.20 ns minimum delay to SRAM non-clock inputs; post-CTS
+min-RC hold closure is still required. Both scripts reject concurrent ownership
+of the same output directory.
+
 ## Stimulus and Checkers
 
 Q, K, and V values are independently generated over the signed INT8 domain.
@@ -77,8 +113,13 @@ The authoritative integration coverage database is
 directory by `tb/sim/scripts/run_uvm_regression.sh`; individual test coverage
 databases are named with `-cm_name` and merged by VCS in that location.
 
-The 2026-07-24 clean regression completed all 20 tests with `UVM_ERROR=0` and
-`UVM_FATAL=0`:
+The 2026-07-24 ASIC-SRAM regression completed all 20 tests with `UVM_ERROR=0`
+and `UVM_FATAL=0`. Its VCS compile command included `+define+ATTN_ASIC` and
+`filelists/asic_models.f`; the run therefore exercised the RTL wrappers with
+the characterized `uhdsp_256x8m4s` model rather than behavioral memories. No
+`input D/DM unknown/high-Z` diagnostic was present in the 20 RTL functional
+logs. These runs use `+no_notifier +notimingcheck`, so their lack of timing
+violations is not SRAM timing proof; signoff remains a separate SDF/STA gate.
 
 | Area | Test or configuration | Verification intent |
 | --- | --- | --- |
@@ -139,22 +180,38 @@ covered and is not a waiver.
 
 ## Code Coverage Status and Closure Plan
 
-The same clean integration VDB reports the following code coverage on the
-`tb_top` DUT hierarchy:
+The ASIC-SRAM VDB was regenerated with VCS `-cm line+cond+tgl+branch` and
+merged by URG from exactly 20 named tests. Its code coverage is:
 
-| Metric | Coverage |
-| --- | ---: |
-| Line | 92.03% |
-| Condition | 71.71% |
-| Toggle | 92.22% |
-| Branch | 87.67% |
-| Combined DUT score | **85.91%** |
+| Scope | Score | Line | Condition | Toggle | Branch |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Full URG report | **88.06%** | 91.58% | 69.57% | 91.84% | 87.32% |
+| `tb_top` / DUT hierarchy | **85.28%** | 92.00% | 69.68% | 91.84% | 87.61% |
+| Module definitions | 77.86% | 72.33% | 67.84% | 82.25% | 89.03% |
 
 The 95% code-coverage target is **not yet met**.  The 100% functional result
-must not be used as a substitute for that target.  The report-wide score
-(88.56%) also includes testbench instrumentation, while the module-definition
-summary (77.28%) contains uninstantiated or parameter-generic definition
-artifacts; neither is the DUT signoff scope.
+must not be used as a substitute for that target. The report-wide score
+includes testbench instrumentation, while the module-definition summary also
+includes parameter-generic DesignWare and library artifacts; neither is the
+DUT code-signoff scope.
+
+The principal DUT coverage gaps are not in the SRAM wrappers: the current
+ASIC instances of `o_accumulator_bank` and `qkv_tile_cache` score 93.41% and
+89.74% respectively. The next tests should target the following executable
+RTL behavior:
+
+| Instance | Evidence from integration URG | Required directed stimulus |
+| --- | --- | --- |
+| `u_normalizer` | 56.25% condition coverage; 72.69% score | Empty/seed-bypass, max-update, rescale, rounding and output-clamp phase combinations. |
+| `u_array_controller` | 65.12% line, 61.54% branch | Restart/abort/error exits and QK-to-PV phase boundary permutations. |
+| `u_scheduler` | 28.45% toggle | Tile release/refill, error-clear/restart, and terminal transition combinations. |
+| `u_regfile` | 15.95% toggle | Independent byte-strobe, read-only, unknown-address and clear-pulse bit transitions. |
+| `u_axi_write` | 68.95% toggle | AW/W ready permutations, split bursts, response-error recovery, and idle re-entry. |
+
+The Verdi UVM recorder and parameter-specialized `DW02_mult` definitions are
+tool/library coverage artifacts. They may be excluded from the report-wide
+metric with an approved hierarchy exclusion; they must not be used to waive
+any reachable DUT RTL branch, condition, or toggle.
 
 ### Direct Module Coverage Collection
 

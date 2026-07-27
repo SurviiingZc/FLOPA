@@ -45,12 +45,18 @@ for top in "${tops[@]}"; do
   mkdir -p "$test_dir/csrc" "$cov_dir"
 
   "$VCS_BIN" -full64 -sverilog -timescale=1ns/1ps -debug_access+all -kdb \
+    +define+ATTN_ASIC -f filelists/asic_models.f \
     -Mdir="$test_dir/csrc" -cm line+cond+tgl+branch -cm_dir "$cov_dir" \
     -top "$top" -f filelists/rtl.f -f filelists/module_tb.f \
     -l "$test_dir/compile.log" -o "$test_dir/simv"
 
-  "$test_dir/simv" +fsdb+autoflush -cm line+cond+tgl+branch \
-    -cm_dir "$cov_dir" -cm_name "$top" -l "$test_dir/run.log"
+  (
+    cd "$test_dir"
+    ./simv +fsdb+autoflush +no_notifier +notimingcheck \
+      "+FSDB_FILE=$test_dir/$top.fsdb" \
+      -cm line+cond+tgl+branch -cm_dir "$cov_dir" -cm_name "$top" \
+      -l "$test_dir/run.log"
+  )
 
   if grep -Eq '\[FAIL\]|\[TIMEOUT\]' "$test_dir/run.log" || \
      ! grep -Fq "[PASS] $top" "$test_dir/run.log"; then

@@ -97,7 +97,7 @@ MHz, before pipeline, memory, and control overhead.
 | Mixed precision | INT8 Q/K/V, Q1.15 P/alpha, INT32 score/L/O, INT8 output | reduces storage and MAC/link width | implemented; numerical behavior checked against bit-exact SV model |
 | Pipeline partitioning | scale/PWL, O-rescale, normalizer multiplier stages | shortens long multiply/control cones while preserving II=1 | implemented; nominal setup is still at zero margin |
 | Parameterized implementation | width/geometry parameters and runtime sequence/head registers | supports controlled elaboration variants | fixed 32 x 32 x 64 remains the verified physical point |
-| ASIC clock-gate abstraction | `fa_clock_gate` wrappers in array, normalizer, output buffer | intended clock-power reduction | RTL present, but latest mapped report shows zero ICG cells; **open** |
+| ASIC clock gating | 22 phase-local RTL `fa_clock_gate` domains; DC automatic gating disabled | gates stripe control, PE, O-bank, O-seed and skew loads while each payload/tag/valid bundle remains on one boundary | the 7,789-ICG automatic netlist was rejected by Formality (20 initial `alpha_rows_q` failures) and 64x64 gate UVM (4,078 mismatches); the new netlist must pass Formality and gate UVM before power measurement |
 
 ## 5. PPA Closure Plan
 
@@ -115,14 +115,23 @@ MHz, before pipeline, memory, and control overhead.
 
 ### 5.2 Clock Power
 
-1. Determine why the current mapped netlist contains no clock-gating elements
-   despite the RTL clock-gate abstraction and enabled synthesis setting.
-2. Constrain and preserve legal ICG inference, including test-enable behavior,
-   then verify `report_clock_gating` on the mapped design.
-3. Compare idle, random prefill, and decode SAIF workloads. Report gated-clock
-   activity and functional behavior under reset, drain, and backpressure.
-4. Do not claim clock-power savings until a matched ungated/gated comparison
-   uses identical workload, PVT, netlist stage, and power settings.
+1. Treat the previous two-tile gate SAIF result as the baseline: 1.8932 W total
+   dynamic, of which the clock network is 1.8325 W (96.29%); the fused array is
+   84.6% of hierarchical power. More peripheral-only ICGs cannot solve this.
+2. Use exactly 22 phase-local RTL ICGs: array control, three skew bundles,
+   four complete domains per stripe, normalizer, and output. DC automatic
+   insertion is prohibited; mapped netlists containing tool-inserted ICGs or
+   `SNPS_CLOCK_GATE_HIGH_*` wrappers are rejected.
+3. Keep every PE payload/tag/valid/state bundle on one `pe_clk_w`. Use a
+   root-clock worst-case drain counter for PE waves and maximum-depth occupancy
+   for skew; SRAM gating covers request, response, and write.
+4. Require `make formality` and a 64x64 functional gate test before the 512x512
+   SAIF run. Timing gate simulation is run only on a physical netlist/SDF with
+   matching cell/SRAM timing models after propagated-clock hold closure.
+5. Require clock-network dynamic <= 0.18325 W on the fixed 512x512 workload,
+   and report total dynamic, clock-network dynamic, `u_fused_array` dynamic, ICG
+   count, gated-register percentage, area, setup slack, and hold slack together.
+   Do not claim savings from the vectorless synthesis estimate.
 
 ### 5.3 FPGA PPA Placeholder
 

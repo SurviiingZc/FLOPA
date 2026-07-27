@@ -11,19 +11,28 @@ INPUT_TRANSITION ?= 0.050
 OUTPUT_LOAD ?= 0.020
 MAX_TRANSITION ?= 0.300
 MAX_FANOUT ?= 24
-CLOCK_GATING ?= 1
-CLOCK_GATING_MIN_BITWIDTH ?= 8
-CLOCK_GATING_MAX_FANOUT ?= 256
-SRAM_INPUT_MIN_DELAY ?= 0.000
-DC_CORES ?= 4
+# The default implementation uses 22 phase-local RTL ATTN_ASIC ICGs. DC
+# automatic insertion is intentionally unavailable in this flow.
+DC_CORES ?= 32
 EXPECTED_TOP_SRAM_MACROS ?= 480
+EXPECTED_TOP_RTL_ICGS ?= 22
+
+# Physical timing inputs. They deliberately have no repository defaults: these
+# views are technology-installation specific and must be provided by the run.
+PHYSICAL_MW_LIB ?=
+PHYSICAL_TLUPLUS_MAX ?=
+PHYSICAL_TLUPLUS_MIN ?=
+PHYSICAL_TLUPLUS_MAP ?=
+PHYSICAL_FLOORPLAN_FILE ?=
+POSTCTS_TOP ?= attention_accel_top
+POSTCTS_NETLIST ?=
+POSTCTS_SDC ?=
+POSTCTS_SPEF ?=
 
 SYSTEM_TOP := attention_accel_top
-# The default synthesis result is clock-gated and is consumed directly by the
-# gate-level SAIF flow. Set SYNTH_GROUP only when intentionally comparing a
-# separate synthesis implementation.
-SYNTH_GROUP ?= system_clock_gated
-SYNTH_RESULT_DIR = asic/dc/work/synth/$(CORNER)/$(SYNTH_GROUP)/$(SYSTEM_TOP)/results
+# The default result contains only the validated coarse RTL clock gates and is
+# consumed directly by the gate-level SAIF flow.
+SYNTH_RESULT_DIR = asic/dc/work/synth/$(CORNER)/system/$(SYSTEM_TOP)/results
 
 GATE_SAIF_SEED ?= 301
 GATE_SEQ_Q ?= 512
@@ -32,11 +41,25 @@ GATE_READY_LOW_PCT ?= 0
 GATE_SAIF_PROFILE ?= gate_clock_gated_random_qkv_$(GATE_SEQ_Q)x$(GATE_SEQ_KV)_seed$(GATE_SAIF_SEED)
 GATE_SIM_CLOCK_PERIOD ?= 1.6
 GATE_SIM_OUT_DIR ?= tb/sim/build/saif_$(GATE_SAIF_PROFILE)
+GATE_ANNOTATE_SDF ?= 0
 GATE_NETLIST ?= $(SYNTH_RESULT_DIR)/$(SYSTEM_TOP)_mapped.v
 GATE_SDF ?= $(SYNTH_RESULT_DIR)/$(SYSTEM_TOP).sdf
 GATE_DDC ?= $(SYNTH_RESULT_DIR)/$(SYSTEM_TOP).ddc
+GATE_SYNTH_CONFIG ?= $(SYNTH_RESULT_DIR)/../reports/run_config.rpt
 GATE_STD_CELL_V ?= /data/public/STD/tcbn28hpcplusbwp12t30p140_190a/tcbn28hpcplusbwp12t30p140_170a_vlg/TSMCHOME/digital/Front_End/verilog/tcbn28hpcplusbwp12t30p140_170a/tcbn28hpcplusbwp12t30p140.v
 GATE_SRAM_V ?= /data/public/SRAM/uhdsp_256x8m4s/VERILOG/uhdsp_256x8m4s_tt0p9v25c.v
+GATE_TIMING_SEQ_Q ?= 64
+GATE_TIMING_SEQ_KV ?= 64
+GATE_TIMING_PROFILE ?= gate_timing_random_qkv_$(GATE_TIMING_SEQ_Q)x$(GATE_TIMING_SEQ_KV)_seed$(GATE_SAIF_SEED)
+GATE_TIMING_OUT_DIR ?= tb/sim/build/timing_$(GATE_TIMING_PROFILE)
+
+# Formality checks the exact mapped netlist/SVF emitted by the selected synth
+# group. Override these only when checking an intentionally archived result.
+FORMAL_TOP ?= $(SYSTEM_TOP)
+FORMAL_NETLIST ?= $(SYNTH_RESULT_DIR)/$(FORMAL_TOP)_mapped.v
+FORMAL_SVF ?= $(SYNTH_RESULT_DIR)/$(FORMAL_TOP).svf
+FORMAL_SYNTH_CONFIG ?= $(SYNTH_RESULT_DIR)/../reports/run_config.rpt
+FORMAL_OUT_DIR ?= asic/dc/work/formality/$(CORNER)/system/$(FORMAL_TOP)
 
 UVM_TEST ?= fa_random_qkv_test
 UVM_SEED ?= 301
@@ -48,9 +71,15 @@ UVM_CAUSAL_EN ?= 0
 UVM_DECODE_EN ?= 0
 UVM_PLUSARGS ?=
 UVM_SIM_OUT_DIR ?= build/uvm_$(UVM_TEST)_seed$(UVM_SEED)
+UVM_ASIC_MODEL_FILELIST ?= filelists/asic_models.f
+UVM_ASIC_RUNTIME_ARGS ?= +no_notifier +notimingcheck
 
 SYNTH_SCRIPT := asic/scripts/run_synth.sh
+SYNTH_PHYSICAL_SCRIPT := asic/scripts/run_synth_physical.sh
+PRECTS_HOLD_SCRIPT := asic/scripts/run_prects_hold.sh
+POSTCTS_HOLD_SCRIPT := asic/scripts/run_postcts_hold.sh
 GATE_SAIF_SCRIPT := tb/sim/scripts/run_gate_saif.sh
+FORMALITY_SCRIPT := asic/scripts/run_formality.sh
 
 SYNTH_ENV = CORNER=$(CORNER) CLOCK_PERIOD=$(CLOCK_PERIOD) \
 	FA_SETUP_UNCERTAINTY=$(SETUP_UNCERTAINTY) \
@@ -59,35 +88,78 @@ SYNTH_ENV = CORNER=$(CORNER) CLOCK_PERIOD=$(CLOCK_PERIOD) \
 	FA_OUTPUT_DELAY=$(OUTPUT_DELAY) FA_INPUT_TRANSITION=$(INPUT_TRANSITION) \
 	FA_OUTPUT_LOAD=$(OUTPUT_LOAD) FA_MAX_TRANSITION=$(MAX_TRANSITION) \
 	FA_MAX_FANOUT=$(MAX_FANOUT) DC_CORES=$(DC_CORES) \
-	FA_CLOCK_GATING=$(CLOCK_GATING) \
-	FA_CLOCK_GATING_MIN_BITWIDTH=$(CLOCK_GATING_MIN_BITWIDTH) \
-	FA_CLOCK_GATING_MAX_FANOUT=$(CLOCK_GATING_MAX_FANOUT) \
-	FA_SRAM_INPUT_MIN_DELAY=$(SRAM_INPUT_MIN_DELAY) \
-	EXPECTED_TOP_SRAM_MACROS=$(EXPECTED_TOP_SRAM_MACROS)
+	EXPECTED_TOP_SRAM_MACROS=$(EXPECTED_TOP_SRAM_MACROS) \
+	EXPECTED_TOP_RTL_ICGS=$(EXPECTED_TOP_RTL_ICGS)
 
-.PHONY: help synth synth-system synth-config uvm-test gate-saif gate-saif-power clean-synth
+PHYSICAL_OPTIONAL_ENV = $(if $(PHYSICAL_TLUPLUS_MAP),FA_TLUPLUS_MAP="$(PHYSICAL_TLUPLUS_MAP)") \
+	$(if $(PHYSICAL_FLOORPLAN_FILE),FA_FLOORPLAN_FILE="$(PHYSICAL_FLOORPLAN_FILE)")
+
+.PHONY: help synth synth-config synth-physical prects-hold postcts-hold \
+	formality uvm-test uvm-regression gate-saif gate-saif-power gate-timing clean-synth
 
 help:
 	@echo "Targets:"
-	@echo "  make synth [CORNER=tt] [CLOCK_PERIOD=1.6] - clock-gated top synthesis"
+	@echo "  make synth [CORNER=tt] [CLOCK_PERIOD=1.6] - mapped top with 22 phase-local RTL ICGs"
 	@echo "  make synth-config - show the active top-synthesis configuration"
-	@echo "  make uvm-test [UVM_SEQ_Q=512] [UVM_SEQ_KV=512] - run one UVM test"
+	@echo "  make formality - prove RTL equivalence of the selected mapped netlist/SVF"
+	@echo "  make synth-physical PHYSICAL_MW_LIB=<dir> PHYSICAL_TLUPLUS_MAX=<file> PHYSICAL_TLUPLUS_MIN=<file> - physical-aware synthesis"
+	@echo "  make prects-hold PHYSICAL_MW_LIB=<dir> PHYSICAL_TLUPLUS_MIN=<file> - FF/min-RC logical hold repair"
+	@echo "  make postcts-hold POSTCTS_NETLIST=<v> POSTCTS_SDC=<sdc> POSTCTS_SPEF=<spef> - propagated-clock FF hold signoff"
+	@echo "  make uvm-test [UVM_SEQ_Q=512] [UVM_SEQ_KV=512] - run one UVM test with ASIC SRAM models"
+	@echo "  make uvm-regression - run the UVM regression"
 	@echo "  make gate-saif - run 512x512 mapped-netlist SAIF simulation"
 	@echo "  make gate-saif-power - run gate-saif and mapped-DDC power readback"
+	@echo "  make gate-timing GATE_NETLIST=<physical.v> GATE_SDF=<physical.sdf> - timing gate after physical hold closure"
 	@echo "  make clean-synth - remove synthesis results and synthesis logs"
 
-synth: synth-system
+synth:
+	$(SYNTH_ENV) $(SYNTH_SCRIPT) system $(SYSTEM_TOP)
 
-synth-system:
-	$(SYNTH_ENV) $(SYNTH_SCRIPT) $(SYNTH_GROUP) $(SYSTEM_TOP)
+# Run this after every synthesis that will be used by gate simulation or power
+# analysis, including a synthesis with logical hold repair. A failing or aborted
+# proof returns nonzero and leaves reports below FORMAL_OUT_DIR.
+formality:
+	CORNER=$(CORNER) FORMAL_TOP=$(FORMAL_TOP) \
+		FORMAL_NETLIST="$(FORMAL_NETLIST)" FORMAL_SVF="$(FORMAL_SVF)" \
+		FORMAL_SYNTH_CONFIG="$(FORMAL_SYNTH_CONFIG)" \
+		FORMAL_EXPECTED_RTL_ICGS="$(EXPECTED_TOP_RTL_ICGS)" \
+		FORMAL_OUT_DIR="$(FORMAL_OUT_DIR)" $(FORMALITY_SCRIPT)
+
+# The physical flow consumes real macro abstracts and RC tables. It is a
+# placement-aware implementation step, not a substitute for post-CTS signoff.
+synth-physical:
+	@test -n "$(PHYSICAL_MW_LIB)" && test -d "$(PHYSICAL_MW_LIB)" || { echo "PHYSICAL_MW_LIB must name a combined standard-cell/SRAM Milkyway library" >&2; exit 2; }
+	@test -n "$(PHYSICAL_TLUPLUS_MAX)" && test -s "$(PHYSICAL_TLUPLUS_MAX)" || { echo "PHYSICAL_TLUPLUS_MAX must name a max-RC TLU+ file" >&2; exit 2; }
+	@test -n "$(PHYSICAL_TLUPLUS_MIN)" && test -s "$(PHYSICAL_TLUPLUS_MIN)" || { echo "PHYSICAL_TLUPLUS_MIN must name a min-RC TLU+ file" >&2; exit 2; }
+	$(SYNTH_ENV) FA_MW_LIB="$(PHYSICAL_MW_LIB)" FA_TLUPLUS_MAX="$(PHYSICAL_TLUPLUS_MAX)" \
+		FA_TLUPLUS_MIN="$(PHYSICAL_TLUPLUS_MIN)" $(PHYSICAL_OPTIONAL_ENV) \
+		$(SYNTH_PHYSICAL_SCRIPT)
+
+# This pre-CTS run uses the FF Liberty and min RC, enables DC logical hold
+# repair, and produces an implementation guide before clock-tree insertion.
+prects-hold:
+	@test -n "$(PHYSICAL_MW_LIB)" && test -d "$(PHYSICAL_MW_LIB)" || { echo "PHYSICAL_MW_LIB must name a combined standard-cell/SRAM Milkyway library" >&2; exit 2; }
+	@test -n "$(PHYSICAL_TLUPLUS_MIN)" && test -s "$(PHYSICAL_TLUPLUS_MIN)" || { echo "PHYSICAL_TLUPLUS_MIN must name a min-RC TLU+ file" >&2; exit 2; }
+	$(SYNTH_ENV) FA_MW_LIB="$(PHYSICAL_MW_LIB)" FA_TLUPLUS_MIN="$(PHYSICAL_TLUPLUS_MIN)" \
+		$(if $(PHYSICAL_TLUPLUS_MAP),FA_TLUPLUS_MAP="$(PHYSICAL_TLUPLUS_MAP)") \
+		$(PRECTS_HOLD_SCRIPT)
+
+# This is the hold signoff gate after CTS and routed SPEF are available. The
+# underlying PrimeTime script exits nonzero for any setup or hold violation.
+postcts-hold:
+	@test -n "$(POSTCTS_NETLIST)" && test -s "$(POSTCTS_NETLIST)" || { echo "POSTCTS_NETLIST must name a routed gate netlist" >&2; exit 2; }
+	@test -n "$(POSTCTS_SDC)" && test -s "$(POSTCTS_SDC)" || { echo "POSTCTS_SDC must name the propagated-clock SDC" >&2; exit 2; }
+	@test -n "$(POSTCTS_SPEF)" && test -s "$(POSTCTS_SPEF)" || { echo "POSTCTS_SPEF must name the routed SPEF" >&2; exit 2; }
+	POSTCTS_TOP="$(POSTCTS_TOP)" POSTCTS_NETLIST="$(POSTCTS_NETLIST)" \
+		POSTCTS_SDC="$(POSTCTS_SDC)" POSTCTS_SPEF="$(POSTCTS_SPEF)" \
+		$(POSTCTS_HOLD_SCRIPT)
 
 synth-config:
 	@echo "CORNER=$(CORNER)"
 	@echo "CLOCK_PERIOD=$(CLOCK_PERIOD) ns"
-	@echo "SYNTH_GROUP=$(SYNTH_GROUP)"
-	@echo "CLOCK_GATING=$(CLOCK_GATING)"
-	@echo "CLOCK_GATING_MIN_BITWIDTH=$(CLOCK_GATING_MIN_BITWIDTH)"
-	@echo "CLOCK_GATING_MAX_FANOUT=$(CLOCK_GATING_MAX_FANOUT)"
+	@echo "SYNTH_GROUP=system"
+	@echo "CLOCK_GATING=22 phase-local RTL ICGs; DC automatic gating disabled"
+	@echo "EXPECTED_TOP_RTL_ICGS=$(EXPECTED_TOP_RTL_ICGS)"
 	@echo "DC_CORES=$(DC_CORES)"
 
 uvm-test:
@@ -98,38 +170,52 @@ uvm-test:
 	@mkdir -p tb/sim/$(UVM_SIM_OUT_DIR)/csrc
 	cd tb/sim && vcs -full64 -sverilog -ntb_opts uvm -timescale=1ns/1ps \
 		-debug_access+all -kdb -lca -Mdir="$(UVM_SIM_OUT_DIR)/csrc" \
+		+define+ATTN_ASIC -f "$(UVM_ASIC_MODEL_FILELIST)" \
 		-f filelists/rtl.f -f filelists/uvm.f -top tb_top \
 		-l "$(UVM_SIM_OUT_DIR)/compile.log" -o "$(UVM_SIM_OUT_DIR)/simv"
 	cd tb/sim && "$(UVM_SIM_OUT_DIR)/simv" +UVM_TESTNAME="$(UVM_TEST)" \
 		+ntb_random_seed="$(UVM_SEED)" +CLK_PERIOD_NS="$(UVM_SIM_CLOCK_PERIOD)" \
 		+FA_SEQ_Q="$(UVM_SEQ_Q)" +FA_SEQ_KV="$(UVM_SEQ_KV)" \
 		+FA_READY_LOW_PCT="$(UVM_READY_LOW_PCT)" +FA_CAUSAL_EN="$(UVM_CAUSAL_EN)" \
-		+FA_DECODE_EN="$(UVM_DECODE_EN)" $(UVM_PLUSARGS) \
+		+FA_DECODE_EN="$(UVM_DECODE_EN)" $(UVM_ASIC_RUNTIME_ARGS) $(UVM_PLUSARGS) \
 		-l "$(UVM_SIM_OUT_DIR)/$(UVM_TEST).log"
 	@grep -Eq 'UVM_ERROR :[[:space:]]*0' tb/sim/$(UVM_SIM_OUT_DIR)/$(UVM_TEST).log && \
 		grep -Eq 'UVM_FATAL :[[:space:]]*0' tb/sim/$(UVM_SIM_OUT_DIR)/$(UVM_TEST).log || \
 		{ echo "UVM test failed; see tb/sim/$(UVM_SIM_OUT_DIR)/$(UVM_TEST).log" >&2; exit 1; }
 	@echo "PASS $(UVM_TEST) seed=$(UVM_SEED); log: tb/sim/$(UVM_SIM_OUT_DIR)/$(UVM_TEST).log"
 
-uvm-regresssion:
+uvm-regression:
 	bash tb/sim/scripts/run_uvm_regression.sh
 
+GATE_SAIF_ENV = SEED=$(GATE_SAIF_SEED) READY_LOW_PCT=$(GATE_READY_LOW_PCT) \
+	SIM_CLOCK_PERIOD_NS=$(GATE_SIM_CLOCK_PERIOD) NETLIST=$(GATE_NETLIST) \
+	SDF_FILE=$(GATE_SDF) DDC_FILE=$(GATE_DDC) SYNTH_CONFIG=$(GATE_SYNTH_CONFIG) \
+	STD_CELL_V=$(GATE_STD_CELL_V) \
+	SRAM_V=$(GATE_SRAM_V) EXPECTED_RTL_ICGS=$(EXPECTED_TOP_RTL_ICGS)
+
 gate-saif:
-	SEED=$(GATE_SAIF_SEED) PROFILE=$(GATE_SAIF_PROFILE) \
-	SEQ_Q=$(GATE_SEQ_Q) SEQ_KV=$(GATE_SEQ_KV) READY_LOW_PCT=$(GATE_READY_LOW_PCT) \
-	SIM_CLOCK_PERIOD_NS=$(GATE_SIM_CLOCK_PERIOD) OUT_DIR=$(GATE_SIM_OUT_DIR) \
-	NETLIST=$(GATE_NETLIST) SDF_FILE=$(GATE_SDF) DDC_FILE=$(GATE_DDC) \
-	STD_CELL_V=$(GATE_STD_CELL_V) SRAM_V=$(GATE_SRAM_V) POWER_READBACK=0 \
+	$(GATE_SAIF_ENV) PROFILE=$(GATE_SAIF_PROFILE) SEQ_Q=$(GATE_SEQ_Q) \
+	SEQ_KV=$(GATE_SEQ_KV) OUT_DIR=$(GATE_SIM_OUT_DIR) POWER_READBACK=0 \
+	TIMING_CHECKS=0 ANNOTATE_SDF=$(GATE_ANNOTATE_SDF) CAPTURE_SAIF=1 \
 	$(GATE_SAIF_SCRIPT)
 
 gate-saif-power:
-	SEED=$(GATE_SAIF_SEED) PROFILE=$(GATE_SAIF_PROFILE) \
-	SEQ_Q=$(GATE_SEQ_Q) SEQ_KV=$(GATE_SEQ_KV) READY_LOW_PCT=$(GATE_READY_LOW_PCT) \
-	SIM_CLOCK_PERIOD_NS=$(GATE_SIM_CLOCK_PERIOD) OUT_DIR=$(GATE_SIM_OUT_DIR) \
-	NETLIST=$(GATE_NETLIST) SDF_FILE=$(GATE_SDF) DDC_FILE=$(GATE_DDC) \
-	STD_CELL_V=$(GATE_STD_CELL_V) SRAM_V=$(GATE_SRAM_V) POWER_READBACK=1 \
+	$(GATE_SAIF_ENV) PROFILE=$(GATE_SAIF_PROFILE) SEQ_Q=$(GATE_SEQ_Q) \
+	SEQ_KV=$(GATE_SEQ_KV) OUT_DIR=$(GATE_SIM_OUT_DIR) POWER_READBACK=1 \
+	TIMING_CHECKS=0 ANNOTATE_SDF=$(GATE_ANNOTATE_SDF) CAPTURE_SAIF=1 \
+	$(GATE_SAIF_SCRIPT)
+
+# Timing validation uses the same UVM workload and SDF as gate-SAIF, but keeps
+# SRAM timing checks enabled and fails if VCS reports any violation.
+gate-timing:
+	$(GATE_SAIF_ENV) PROFILE=$(GATE_TIMING_PROFILE) SEQ_Q=$(GATE_TIMING_SEQ_Q) \
+	SEQ_KV=$(GATE_TIMING_SEQ_KV) OUT_DIR=$(GATE_TIMING_OUT_DIR) POWER_READBACK=0 \
+	TIMING_CHECKS=1 ANNOTATE_SDF=1 CAPTURE_SAIF=0 \
 	$(GATE_SAIF_SCRIPT)
 
 clean-synth:
 	rm -rf asic/dc/work/synth
+	rm -rf asic/dc/work/power
+	rm -rf asic/dc/work/formality
+	rm -rf asic/dc/work/saif_power
 	rm -f asic/dc/logs/synth_*.log

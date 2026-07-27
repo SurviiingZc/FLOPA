@@ -166,6 +166,15 @@ module fsa_fused_array #(
   wire [NUM_STRIPES*STRIPE_ROWS*ACC_W-1:0] stripe_o_rd_flat_w;
   wire array_gate_enable_w;
   wire array_clk_w;
+  wire q_skew_clk_w;
+  wire pv_seed_skew_clk_w;
+  wire k_skew_clk_w;
+  wire q_skew_gate_enable_w;
+  wire pv_seed_skew_gate_enable_w;
+  wire k_skew_gate_enable_w;
+  reg [ROWS:0] q_skew_occupancy_q;
+  reg [ROWS:0] pv_seed_skew_occupancy_q;
+  reg [COLS:0] k_skew_occupancy_q;
 
   integer row_idx;
   integer tag_stage;
@@ -303,9 +312,10 @@ module fsa_fused_array #(
   end
 `endif
 
-  // One control/exp clock branch plus one branch per physical stripe bounds the
-  // ASIC clock-tree load. FPGA builds of fa_clock_gate preserve the root clock.
-  assign array_gate_enable_w = clock_en_i || clear_i || clear_rows_i || qk_clear_i;
+  // The control/exp branch remains active for a complete array transaction.
+  // Skew and stripe datapaths use narrower phase-local branches below.
+  assign array_gate_enable_w = !rst_n || clock_en_i || clear_i ||
+      clear_rows_i || qk_clear_i;
   fa_clock_gate u_array_clock_gate (
     .clk_i(clk), .enable_i(array_gate_enable_w), .test_enable_i(1'b0),
     .clk_o(array_clk_w)
@@ -320,6 +330,50 @@ module fsa_fused_array #(
   assign source_valid_w = source_is_pv_w ?
                           all_stripe_pv_seed_valid_w : qk_valid_i;
   assign source_cols_w = source_is_pv_w ? pv_rescale_cols_s2_q : qk_cols_i;
+
+  // Each skew network is a complete payload/valid bundle. A root-clock
+  // occupancy tail keeps its ICG open until the deepest delay line has shifted
+  // the final token and then cleared its last valid bit.
+  always @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      q_skew_occupancy_q <= {(ROWS+1){1'b0}};
+      pv_seed_skew_occupancy_q <= {(ROWS+1){1'b0}};
+      k_skew_occupancy_q <= {(COLS+1){1'b0}};
+    end else if (pipeline_clear_w) begin
+      q_skew_occupancy_q <= {(ROWS+1){1'b0}};
+      pv_seed_skew_occupancy_q <= {(ROWS+1){1'b0}};
+      k_skew_occupancy_q <= {(COLS+1){1'b0}};
+    end else begin
+      q_skew_occupancy_q <=
+          {q_skew_occupancy_q[ROWS-1:0], qk_valid_i};
+      pv_seed_skew_occupancy_q <=
+          {pv_seed_skew_occupancy_q[ROWS-1:0],
+           all_stripe_pv_seed_valid_w};
+      k_skew_occupancy_q <=
+          {k_skew_occupancy_q[COLS-1:0], source_valid_w};
+    end
+  end
+
+  assign q_skew_gate_enable_w = !rst_n || pipeline_clear_w || qk_valid_i ||
+      (|q_skew_occupancy_q) || (|q_boundary_valid_w);
+  assign pv_seed_skew_gate_enable_w = !rst_n || pipeline_clear_w ||
+      all_stripe_pv_seed_valid_w || (|pv_seed_skew_occupancy_q) ||
+      (|pv_seed_boundary_valid_w);
+  assign k_skew_gate_enable_w = !rst_n || pipeline_clear_w || source_valid_w ||
+      (|k_skew_occupancy_q) || (|k_boundary_valid_w);
+
+  fa_clock_gate u_q_skew_clock_gate (
+    .clk_i(clk), .enable_i(q_skew_gate_enable_w),
+    .test_enable_i(1'b0), .clk_o(q_skew_clk_w)
+  );
+  fa_clock_gate u_pv_seed_skew_clock_gate (
+    .clk_i(clk), .enable_i(pv_seed_skew_gate_enable_w),
+    .test_enable_i(1'b0), .clk_o(pv_seed_skew_clk_w)
+  );
+  fa_clock_gate u_k_skew_clock_gate (
+    .clk_i(clk), .enable_i(k_skew_gate_enable_w),
+    .test_enable_i(1'b0), .clk_o(k_skew_clk_w)
+  );
 
   // One diagonal completion shift register replaces q_last/k_last/mac_last in
   // every PE. Tap row+1 launches that row's column-0 max after its final MAC;
@@ -381,7 +435,7 @@ module fsa_fused_array #(
     genvar skew_row;
     for (skew_row = 0; skew_row < ROWS; skew_row = skew_row + 1) begin : g_q_skew
       fsa_delay_line #(.WIDTH(DATA_W), .DEPTH(skew_row+1)) u_q_skew (
-        .clk(array_clk_w), .rst_n(rst_n), .clear_i(pipeline_clear_w),
+        .clk(q_skew_clk_w), .rst_n(rst_n), .clear_i(pipeline_clear_w),
         .valid_i(qk_valid_i), .last_i(1'b0),
         .data_i(qk_rows_i[skew_row*DATA_W +: DATA_W]),
         .valid_o(q_boundary_valid_w[skew_row]),
@@ -391,7 +445,8 @@ module fsa_fused_array #(
 
       fsa_delay_line #(.WIDTH(ACC_W+FEATURE_IDX_W), .DEPTH(skew_row+1))
       u_pv_seed_skew (
-        .clk(array_clk_w), .rst_n(rst_n), .clear_i(pipeline_clear_w),
+        .clk(pv_seed_skew_clk_w), .rst_n(rst_n),
+        .clear_i(pipeline_clear_w),
         .valid_i(stripe_pv_seed_valid_w[skew_row/STRIPE_ROWS]),
         .last_i(1'b0),
         .data_i({stripe_pv_seed_feature_w[skew_row/STRIPE_ROWS],
@@ -414,7 +469,7 @@ module fsa_fused_array #(
     genvar skew_col;
     for (skew_col = 0; skew_col < COLS; skew_col = skew_col + 1) begin : g_k_skew
       fsa_delay_line #(.WIDTH(DATA_W), .DEPTH(skew_col+1)) u_k_skew (
-        .clk(array_clk_w), .rst_n(rst_n), .clear_i(pipeline_clear_w),
+        .clk(k_skew_clk_w), .rst_n(rst_n), .clear_i(pipeline_clear_w),
         .valid_i(source_valid_w), .last_i(1'b0),
         .data_i(source_cols_w[skew_col*DATA_W +: DATA_W]),
         .valid_o(k_boundary_valid_w[skew_col]),
@@ -436,11 +491,6 @@ module fsa_fused_array #(
     genvar stripe;
     for (stripe = 0; stripe < NUM_STRIPES; stripe = stripe + 1) begin : g_stripe
       localparam integer ROW_BASE = stripe * STRIPE_ROWS;
-      wire stripe_clk_w;
-      fa_clock_gate u_stripe_clock_gate (
-        .clk_i(clk), .enable_i(array_gate_enable_w), .test_enable_i(1'b0),
-        .clk_o(stripe_clk_w)
-      );
       assign delta_col_data_w[ROW_BASE*SCORE_W +: STRIPE_ROWS*SCORE_W] =
           stripe_delta_col_data_w[stripe];
       // Every stripe reads the same feature for a WS-PV seed; normalization reads
@@ -461,7 +511,8 @@ module fsa_fused_array #(
         // A new Q tile starts a fresh online-attention recurrence.  Propagate
         // clear_rows_i into every stripe so its persistent O bank cannot leak
         // the same physical row from the preceding Q tile.
-        .clk(stripe_clk_w), .rst_n(rst_n), .clear_i(clear_i || clear_rows_i),
+        .clk(clk), .rst_n(rst_n), .clock_en_i(array_gate_enable_w),
+        .clear_i(clear_i || clear_rows_i),
         .clear_score_i(qk_clear_i), .ws_pv_i(source_is_pv_w),
         .q_rows_i(q_boundary_data_w[ROW_BASE*DATA_W +: STRIPE_ROWS*DATA_W]),
         .q_valid_i(q_boundary_valid_w[ROW_BASE +: STRIPE_ROWS]),

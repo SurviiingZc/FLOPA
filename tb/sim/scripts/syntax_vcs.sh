@@ -24,6 +24,7 @@ cleanup_transients() {
 trap cleanup_transients EXIT
 
 cmd=("$VCS_BIN" -full64 -sverilog -timescale=1ns/1ps -debug_access+all -kdb \
+  +define+ATTN_ASIC -f filelists/asic_models.f \
   -Mdir="$OUTDIR/csrc" -top "$TOP" -l "$OUTDIR/compile.log" -o "$OUTDIR/simv")
 for f in "$@"; do
   cmd+=(-f "$f")
