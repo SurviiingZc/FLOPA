@@ -14,8 +14,8 @@
 6. 在线 softmax 的 `(m,l,O)` 如何跨 KV tile 递推，最终如何归一化和写回。
 7. 每个 valid、tag、状态寄存器和流水边界为何存在。
 
-本文只描述当前代码已经实现的行为。decode、GQA、AXI 读 DMA 等预留接口会在
-“当前实现边界”中明确标出，不把计划功能当成现有功能。
+本文只描述当前代码已经实现的行为。MHA decode 已实现；GQA、AXI 读 DMA
+等预留接口会在“当前实现边界”中明确标出，不把计划功能当成现有功能。
 
 ## 2. Default Configuration and Numeric Formats
 
@@ -211,11 +211,12 @@ START 当前要求：
 
 - `seq_q`, `seq_kv`, head counts 非零；
 - `HEAD_DIM=64`, `TILE_Q=TILE_K=32`；
-- prefill=1、decode=0、MHA mode；
+- MHA mode，且 prefill/decode 恰好选择一个；
 - `num_q_heads == num_kv_heads`；
 - Q/K/V/O base 16-byte aligned。
 
-也就是说 decode 和 GQA 位虽已存在于寄存器表，当前 START validation 会拒绝它们。
+decode 还要求 `seq_q=1`，但 `seq_kv` 可通过既有 KV-tile 循环跨越多个
+32-token tile；当前回归已覆盖到 256 keys。GQA 位仍会被 START validation 拒绝。
 
 ### 6.3 `accel_scheduler`
 
@@ -597,18 +598,10 @@ burst size 是以下三者最小值：剩余 beats、配置 burst length（当�
 
 ## 18. Clock Gating, Reset and Power Intent
 
-`fa_clock_gate` 是 backend-portable wrapper：
-
-- ASIC：实例化 characterized `CKLNQD4BWP12T30P140` ICG。
-- FPGA：保持 root clock，依靠 FF/BRAM/DSP clock-enable inference。
-
-顶层保留 array control/exp、normalizer、output 三类 enable domain。阵列 skew
-被拆成 Q、PV seed、K/V 三个完整 bundle 域；每个 8-row stripe 内再把完整 PE、
-O-bank/SRAM 和 O-seed multiplier pipeline 分成三个显式大负载域，并保留一个
-轻量 control/delta 域。32x32 top 展开后共 22 个 RTL ICG，DC 自动门控固定关闭。
-skew enable 覆盖最大深度 occupancy，PE enable 使用最坏波前 drain counter，
-不能在最后一个 input valid 后立即关钟。详细失败
-经验、功耗门槛和签核流程见 [clock_gating.md](clock_gating.md)。
+`fa_clock_gate` 当前在 ASIC/FPGA 下都直接透传 root clock。模块层 enable 与
+drain 状态暂时保留作为接口和历史结构，但不会映射为 `CKLNQD*`。32x32 top 的
+综合契约是 RTL ICG=0、tool-inserted ICG=0，DC 自动门控固定关闭。当前功耗
+报告因此是可复现的无门控比较基线，而不是门控节能结果。
 
 Reset policy：
 
@@ -661,7 +654,8 @@ filelist 和 module-TB 清单删除。当前文件树只保留现有加速器数
 
 ## 22. Current Implementation Boundaries
 
-1. 当前硬件实现固定 32x32 prefill MHA；decode 和 GQA 会被 START validation 拒绝。
+1. 当前硬件实现固定 32x32 MHA 阵列，支持 tiled prefill 和 `seq_q=1` 的
+   multi-KV-tile decode；GQA 会被 START validation 拒绝。
 2. Q/K/V base 和 stride 已有寄存器，但没有 AXI read DMA；tile loader 位于顶层外部。
 3. `cfg_value_scale_w` 和 `cfg_mask_cfg_w` 已锁存但当前 datapath 未消费。
 4. `cfg_q_base_w`, `cfg_k_base_w`, `cfg_v_base_w` 不参与当前 cache 地址生成；

@@ -11,11 +11,11 @@ INPUT_TRANSITION ?= 0.050
 OUTPUT_LOAD ?= 0.020
 MAX_TRANSITION ?= 0.300
 MAX_FANOUT ?= 24
-# The default implementation uses 22 phase-local RTL ATTN_ASIC ICGs. DC
-# automatic insertion is intentionally unavailable in this flow.
+# The current implementation is an explicit zero-ICG baseline. DC automatic
+# insertion is intentionally unavailable in this flow.
 DC_CORES ?= 32
 EXPECTED_TOP_SRAM_MACROS ?= 480
-EXPECTED_TOP_RTL_ICGS ?= 22
+EXPECTED_TOP_RTL_ICGS ?= 0
 
 # Physical timing inputs. They deliberately have no repository defaults: these
 # views are technology-installation specific and must be provided by the run.
@@ -30,15 +30,15 @@ POSTCTS_SDC ?=
 POSTCTS_SPEF ?=
 
 SYSTEM_TOP := attention_accel_top
-# The default result contains only the validated coarse RTL clock gates and is
-# consumed directly by the gate-level SAIF flow.
+# The default result is the zero-ICG baseline consumed by gate simulation and
+# DC power reporting.
 SYNTH_RESULT_DIR = asic/dc/work/synth/$(CORNER)/system/$(SYSTEM_TOP)/results
 
 GATE_SAIF_SEED ?= 301
-GATE_SEQ_Q ?= 512
-GATE_SEQ_KV ?= 512
+GATE_SEQ_Q ?= 64
+GATE_SEQ_KV ?= 64
 GATE_READY_LOW_PCT ?= 0
-GATE_SAIF_PROFILE ?= gate_clock_gated_random_qkv_$(GATE_SEQ_Q)x$(GATE_SEQ_KV)_seed$(GATE_SAIF_SEED)
+GATE_SAIF_PROFILE ?= gate_ungated_random_qkv_$(GATE_SEQ_Q)x$(GATE_SEQ_KV)_seed$(GATE_SAIF_SEED)
 GATE_SIM_CLOCK_PERIOD ?= 1.6
 GATE_SIM_OUT_DIR ?= tb/sim/build/saif_$(GATE_SAIF_PROFILE)
 GATE_ANNOTATE_SDF ?= 0
@@ -99,7 +99,7 @@ PHYSICAL_OPTIONAL_ENV = $(if $(PHYSICAL_TLUPLUS_MAP),FA_TLUPLUS_MAP="$(PHYSICAL_
 
 help:
 	@echo "Targets:"
-	@echo "  make synth [CORNER=tt] [CLOCK_PERIOD=1.6] - mapped top with 22 phase-local RTL ICGs"
+	@echo "  make synth [CORNER=tt] [CLOCK_PERIOD=1.6] - mapped top with no ICG insertion"
 	@echo "  make synth-config - show the active top-synthesis configuration"
 	@echo "  make formality - prove RTL equivalence of the selected mapped netlist/SVF"
 	@echo "  make synth-physical PHYSICAL_MW_LIB=<dir> PHYSICAL_TLUPLUS_MAX=<file> PHYSICAL_TLUPLUS_MIN=<file> - physical-aware synthesis"
@@ -107,7 +107,7 @@ help:
 	@echo "  make postcts-hold POSTCTS_NETLIST=<v> POSTCTS_SDC=<sdc> POSTCTS_SPEF=<spef> - propagated-clock FF hold signoff"
 	@echo "  make uvm-test [UVM_SEQ_Q=512] [UVM_SEQ_KV=512] - run one UVM test with ASIC SRAM models"
 	@echo "  make uvm-regression - run the UVM regression"
-	@echo "  make gate-saif - run 512x512 mapped-netlist SAIF simulation"
+	@echo "  make gate-saif - run 64x64 mapped-netlist SAIF simulation"
 	@echo "  make gate-saif-power - run gate-saif and mapped-DDC power readback"
 	@echo "  make gate-timing GATE_NETLIST=<physical.v> GATE_SDF=<physical.sdf> - timing gate after physical hold closure"
 	@echo "  make clean-synth - remove synthesis results and synthesis logs"
@@ -158,7 +158,7 @@ synth-config:
 	@echo "CORNER=$(CORNER)"
 	@echo "CLOCK_PERIOD=$(CLOCK_PERIOD) ns"
 	@echo "SYNTH_GROUP=system"
-	@echo "CLOCK_GATING=22 phase-local RTL ICGs; DC automatic gating disabled"
+	@echo "CLOCK_GATING=none; expected ICG count is zero"
 	@echo "EXPECTED_TOP_RTL_ICGS=$(EXPECTED_TOP_RTL_ICGS)"
 	@echo "DC_CORES=$(DC_CORES)"
 

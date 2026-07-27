@@ -7,7 +7,7 @@ FORMAL_TOP="${FORMAL_TOP:-attention_accel_top}"
 FORMAL_NETLIST="${FORMAL_NETLIST:-}"
 FORMAL_SVF="${FORMAL_SVF:-}"
 FORMAL_SYNTH_CONFIG="${FORMAL_SYNTH_CONFIG:-}"
-FORMAL_EXPECTED_RTL_ICGS="${FORMAL_EXPECTED_RTL_ICGS:-22}"
+FORMAL_EXPECTED_RTL_ICGS="${FORMAL_EXPECTED_RTL_ICGS:-0}"
 FORMAL_OUT_DIR="${FORMAL_OUT_DIR:-$ROOT_DIR/asic/dc/work/formality/$CORNER/$FORMAL_TOP}"
 FM_BIN="${FM_SHELL:-fm_shell}"
 DC_BIN="${DC_SHELL:-dc_shell}"
@@ -16,8 +16,8 @@ if [[ ! "$FORMAL_TOP" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]]; then
   echo "FORMAL_TOP must be a Verilog identifier" >&2
   exit 2
 fi
-if [[ ! "$FORMAL_EXPECTED_RTL_ICGS" =~ ^[1-9][0-9]*$ ]]; then
-  echo "FORMAL_EXPECTED_RTL_ICGS must be a positive integer" >&2
+if [[ ! "$FORMAL_EXPECTED_RTL_ICGS" =~ ^[0-9]+$ ]]; then
+  echo "FORMAL_EXPECTED_RTL_ICGS must be a non-negative integer" >&2
   exit 2
 fi
 if [ -z "$FORMAL_NETLIST" ] || [ ! -s "$FORMAL_NETLIST" ]; then
@@ -39,7 +39,7 @@ if [ "$snps_gate_defs" -ne 0 ]; then
   exit 2
 fi
 for required_setting in \
-  'clock_gating=rtl_explicit' \
+  'clock_gating=none' \
   "expected_top_rtl_icgs=$FORMAL_EXPECTED_RTL_ICGS" \
   "rtl_icg_count=$FORMAL_EXPECTED_RTL_ICGS" \
   'automatic_clock_gating=0' \

@@ -17,9 +17,8 @@ array boundary.
 
 ![FLOPA fused architecture](../figures/architecture/flopa_overall_architecture.png)
 
-*Figure 1. FLOPA architecture. Use
-`figures/architecture/flash_attention_accelerator_architecture.pdf` or `.svg`
-for the final paper; this raster form is included for Markdown viewing.*
+*Figure 1. FLOPA architecture overview. The maintained source asset is
+`figures/architecture/flopa_overall_architecture.png`.*
 
 ## 2. Algorithm and Fixed-Point Contract
 
@@ -155,15 +154,14 @@ register table and command values.
 
 | Mode | Legal configuration | Verification status |
 | --- | --- | --- |
-| MHA prefill | `prefill=1`, `decode=0`, 32-token tile geometry, MHA head mapping | 15-test suite includes up to two Q and two KV tiles |
-| MHA decode | `prefill=0`, `decode=1`, `seq_q=1`, one 32-token KV tile | smoke, random, and AXI-backpressure tests pass |
+| MHA prefill | `prefill=1`, `decode=0`, 32-token tile geometry, MHA head mapping | 20-run suite includes one/two-tile, tail, and 512 x 512 cases |
+| MHA decode | `prefill=0`, `decode=1`, `seq_q=1` | smoke plus causal/non-causal 256-token multi-KV-tile tests pass |
 | causal masking | prefill or decode configuration with causal enable | tested |
 | GQA | unequal Q/KV head counts | explicitly rejected at START; future work |
 
-The sequence registers are wider than a tile, but only the 64 x 64 two-tile
-prefill case and the one-query/32-key decode case have completed bit-exact
-system regression. Larger sequences require the same external loader/refill
-contract and fresh verification evidence.
+The bit-exact system regression covers prefill through 512 x 512 and decode
+through one query by 256 keys. Larger decode contexts use the same KV-tile loop
+but require fresh regression and external-loader bandwidth evidence.
 
 ## 5. Fused Compute Dataflow
 
@@ -232,20 +230,15 @@ The scheduler phases are `LOAD_Q`, `LOAD_KV`, `QK`, `SOFTMAX`, `PV`,
 `WRITEBACK`, `DONE`, and `ERROR`. Handshakes, rather than a fixed delay, drive
 phase transitions. The array controller enforces QK/PV mutual exclusion.
 
-`fa_clock_gate` defines the low-power clock policy. FPGA builds preserve a
-single root clock and use CE/EN behavior. ASIC builds map 22 phase-local RTL
-wrappers to glitch-free ICGs: four array/control/skew domains, four complete
-domains per stripe, normalizer, and output. DC automatic insertion is disabled.
-Each PE keeps payload, tag, valid, and phase state on one clock boundary; skew
-domains use maximum-depth occupancy and PE domains use a root-clock worst-case
-drain counter before closing. The 7,789-ICG automatic experiment violated
-that rule and was rejected by both Formality and gate UVM. See
-`docs/clock_gating.md` for the power target and signoff flow.
+`fa_clock_gate` is currently a root-clock passthrough in both ASIC and FPGA
+builds. The mapped comparison baseline contains zero RTL ICGs and zero
+tool-inserted ICGs. Module enables remain part of the control protocol and are
+available for a future measured low-power comparison.
 
 The current ASIC memory macros are capacity-inefficient for some O-bank
 organizations. SRAM reshaping is intentionally deferred until after FPGA
 bring-up; it must be evaluated with port conflicts, placement, macro aspect
-ratio, and min-delay constraints, not just bit utilization.
+ratio, and access latency, not just bit utilization.
 
 ## 7. Known Limits and Next Steps
 
@@ -254,9 +247,10 @@ ratio, and min-delay constraints, not just bit utilization.
 2. Retain the 32-lane score-scale/PWL-exp source and architecture evidence in
    the final submission to demonstrate the required greater-than-16 softmax
    parallelism.
-3. Close coverage beyond the current 80.79% DUT code and 81.44% functional
-   coverage baseline.
+3. Raise DUT code coverage beyond the current 85.28% while preserving the
+   completed 100.00% functional coverage result.
 4. Complete VCK190 implementation and report post-route Fmax, resource use,
    external-memory bandwidth, and measured board power.
-5. Add native GQA and multi-tile decode/KV-cache support; current GQA is
-   intentionally rejected rather than silently remapped.
+5. Add native GQA and extend decode verification beyond the current 256-token
+   KV context; current GQA is intentionally rejected rather than silently
+   remapped.

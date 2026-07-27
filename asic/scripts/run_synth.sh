@@ -26,7 +26,7 @@ CORNER="${CORNER:-tt}"
 CLOCK_PERIOD="${CLOCK_PERIOD:-3.2}"
 DC_CORES="${DC_CORES:-4}"
 EXPECTED_TOP_SRAM_MACROS="${EXPECTED_TOP_SRAM_MACROS:-480}"
-EXPECTED_TOP_RTL_ICGS="${EXPECTED_TOP_RTL_ICGS:-22}"
+EXPECTED_TOP_RTL_ICGS="${EXPECTED_TOP_RTL_ICGS:-0}"
 if [[ ! "$CLOCK_PERIOD" =~ ^[0-9]+([.][0-9]+)?$ ]]; then
   echo "CLOCK_PERIOD must be a positive number" >&2
   exit 2
@@ -39,8 +39,8 @@ if [[ ! "$EXPECTED_TOP_SRAM_MACROS" =~ ^[0-9]+$ ]]; then
   echo "EXPECTED_TOP_SRAM_MACROS must be a non-negative integer" >&2
   exit 2
 fi
-if [[ ! "$EXPECTED_TOP_RTL_ICGS" =~ ^[1-9][0-9]*$ ]]; then
-  echo "EXPECTED_TOP_RTL_ICGS must be a positive integer" >&2
+if [[ ! "$EXPECTED_TOP_RTL_ICGS" =~ ^[0-9]+$ ]]; then
+  echo "EXPECTED_TOP_RTL_ICGS must be a non-negative integer" >&2
   exit 2
 fi
 
@@ -171,8 +171,12 @@ for top in "${TOPS[@]}"; do
     gating_count=$(awk -F'|' '/Number of Clock gating elements/ {
       value=$3; gsub(/[[:space:]]/, "", value); print value; exit
     }' "$REPORT_DIR/clock_gating.rpt")
-    if [[ ! "$gating_count" =~ ^[1-9][0-9]*$ ]]; then
-      echo "$top contains no recognized ICG elements" >&2
+    if [[ ! "$gating_count" =~ ^[0-9]+$ ]]; then
+      echo "$top clock-gating count is missing from clock_gating.rpt" >&2
+      exit 1
+    fi
+    if [ "$gating_count" -ne "$EXPECTED_TOP_RTL_ICGS" ]; then
+      echo "$top expected $EXPECTED_TOP_RTL_ICGS total ICGs, report has $gating_count" >&2
       exit 1
     fi
     rtl_gating_count=$(awk -F'|' '/Number of pre-existing clock gating elements/ {
@@ -193,7 +197,7 @@ for top in "${TOPS[@]}"; do
       exit 1
     fi
     if [ "$automatic_gating_count" -ne 0 ]; then
-      echo "$top contains $automatic_gating_count tool-inserted ICGs; only explicit RTL domains are allowed" >&2
+      echo "$top contains $automatic_gating_count tool-inserted ICGs; insertion is disabled" >&2
       exit 1
     fi
     snps_gate_defs=$(rg -c '^module SNPS_CLOCK_GATE_HIGH_' \

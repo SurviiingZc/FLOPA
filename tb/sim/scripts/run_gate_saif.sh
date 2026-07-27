@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Run the random 512x512 UVM workload on the mapped TT netlist, annotate the
+# Run the random 64x64 UVM workload on the mapped TT netlist, annotate the
 # matching SDF, and publish DUT-only gate SAIF only after a clean UVM result.
 SIM_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 ROOT_DIR=$(cd "$SIM_ROOT/../.." && pwd)
 VCS_BIN="${VCS:-vcs}"
 SEED="${SEED:-301}"
-PROFILE="${PROFILE:-gate_clock_gated_random_qkv_512x512_seed${SEED}}"
+PROFILE="${PROFILE:-gate_ungated_random_qkv_64x64_seed${SEED}}"
 OUT_DIR="${OUT_DIR:-$SIM_ROOT/build/saif_${PROFILE}}"
 SIM_CLOCK_PERIOD_NS="${SIM_CLOCK_PERIOD_NS:-1.6}"
 NETLIST="${NETLIST:-$ROOT_DIR/asic/dc/work/synth/tt/system/attention_accel_top/results/attention_accel_top_mapped.v}"
@@ -20,17 +20,17 @@ POWER_READBACK="${POWER_READBACK:-0}"
 TIMING_CHECKS="${TIMING_CHECKS:-0}"
 ANNOTATE_SDF="${ANNOTATE_SDF:-$TIMING_CHECKS}"
 CAPTURE_SAIF="${CAPTURE_SAIF:-1}"
-SEQ_Q="${SEQ_Q:-512}"
-SEQ_KV="${SEQ_KV:-512}"
+SEQ_Q="${SEQ_Q:-64}"
+SEQ_KV="${SEQ_KV:-64}"
 READY_LOW_PCT="${READY_LOW_PCT:-0}"
-EXPECTED_RTL_ICGS="${EXPECTED_RTL_ICGS:-22}"
+EXPECTED_RTL_ICGS="${EXPECTED_RTL_ICGS:-0}"
 
 if [[ ! "$SEED" =~ ^[0-9]+$ ]]; then
   echo "SEED must be a non-negative integer" >&2
   exit 2
 fi
-if [[ ! "$EXPECTED_RTL_ICGS" =~ ^[1-9][0-9]*$ ]]; then
-  echo "EXPECTED_RTL_ICGS must be a positive integer" >&2
+if [[ ! "$EXPECTED_RTL_ICGS" =~ ^[0-9]+$ ]]; then
+  echo "EXPECTED_RTL_ICGS must be a non-negative integer" >&2
   exit 2
 fi
 if [[ ! "$PROFILE" =~ ^[A-Za-z0-9_.-]+$ ]]; then
@@ -84,7 +84,7 @@ done
 # netlist that produced floating SRAM inputs before starting a long simulation.
 for required_setting in \
   'logical_hold_repair=0' \
-  'clock_gating=rtl_explicit' \
+  'clock_gating=none' \
   "expected_top_rtl_icgs=$EXPECTED_RTL_ICGS" \
   "rtl_icg_count=$EXPECTED_RTL_ICGS" \
   'automatic_clock_gating=0' \

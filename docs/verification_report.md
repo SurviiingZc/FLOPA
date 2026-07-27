@@ -1,29 +1,29 @@
 # Verification Plan, Test Cases, and Coverage Report
 
-## 1. Verification Objective and Scope
+## 1. Objective and Verified Scope
 
-Verification uses plain Verilog RTL with SystemVerilog/UVM test infrastructure.
-The scoreboard calls a bit-accurate SystemVerilog reference model that mirrors
-the fixed-point score scaling, PWL exponential, online `m/l/O` recurrence,
-reciprocal, rounding, saturation, causal masking, and output-byte packing.
+The verification environment checks the current fixed-point RTL against a
+bit-accurate SystemVerilog reference model. The model reproduces score scaling,
+PWL exponential, the online `m/l/O` recurrence, reciprocal normalization,
+rounding, saturation, masking, and output-byte packing.
 
-The verified system scope is:
+The verified scope includes:
 
-- 32 x 32 INT8 MHA prefill, including two Q tiles and two KV tiles;
-- single-query MHA decode with a 32-token KV tile;
-- AXI4-Lite programming, 128-bit tile-loader ingress, and 128-bit AXI4 write;
-- cache bank transitions, output backpressure, legal and illegal configuration;
-- PWL boundaries, rounding, positive/negative saturation, and causal masking.
+- 32 x 32 signed-INT8 MHA prefill from one tile through 512 x 512 tokens;
+- single-query MHA decode with KV contexts through 256 tokens;
+- causal and non-causal modes, sequence tails, ping-pong refill, and AXI stalls;
+- AXI4-Lite programming, the 128-bit tile loader, and 128-bit AXI writeback;
+- PWL boundaries, rounding, positive/negative saturation, error reporting, and
+  recovery after an AXI write response error.
 
-The following are outside current sign-off scope: native GQA, an AXI4 read DMA,
-VCK190 hardware, more-than-two-tile numerical regression, post-route timing,
-and a proof that the current PWL precision meets the contest requirement.
+Native GQA, an integrated AXI read DMA, VCK190 hardware execution, and
+post-route PPA remain outside the current verification claim.
 
-## 2. Verification Environment
+## 2. Environment
 
 ```text
-AXI-Lite UVM agent ----+                         +---- AXI4 write agent/monitor
-Tile-loader UVM agent -+--> attention_accel_top -+---- status/IRQ monitor
+AXI-Lite agent --------+                         +---- AXI4 write agent
+Tile-loader agent -----+--> attention_accel_top -+---- status/IRQ monitor
                        |                         |
                        +--> scoreboard <---------+
                               |          |
@@ -33,187 +33,171 @@ Tile-loader UVM agent -+--> attention_accel_top -+---- status/IRQ monitor
 
 | Component | Location | Responsibility |
 | --- | --- | --- |
-| module TBs | `tb/module_tb/` | directed self-checking tests and default FSDB generation |
-| UVM top/environment | `tb/uvm/tb_top.sv`, `tb/uvm/env/` | virtual interfaces, agents, test coordination |
-| sequences/tests | `tb/uvm/sequences/`, `tb/uvm/tests/` | fixed-seed directed/random, backpressure, invalid configuration, two-tile flows |
-| reference model | `tb/uvm/ref_model/attention_ref_model.svh` | bit-accurate expected bytes and numerical events |
-| scoreboard | `tb/uvm/scoreboard/` | loader accounting, output address/data comparison, end-of-test checks |
-| assertions | `tb/uvm/protocol_assertions.sv` | AXI ready/valid stability and protocol properties |
-| coverage | `tb/uvm/coverage/` | AXI-Lite, tile loading, AXI write, scheduler, math and ping-pong coverage |
+| module testbenches | `tb/module_tb/` | directed self-checking tests and default FSDB generation |
+| UVM top/environment | `tb/uvm/tb_top.sv`, `tb/uvm/env/` | agents, virtual interfaces, sequencing, and run control |
+| tests/sequences | `tb/uvm/tests/`, `tb/uvm/sequences/` | random, directed, backpressure, tail, decode, and error stimulus |
+| reference model | `tb/uvm/ref_model/attention_ref_model.svh` | byte-exact fixed-point expected output |
+| scoreboard | `tb/uvm/scoreboard/attention_scoreboard.svh` | payload, address, count, and loader-accounting checks |
+| assertions | `tb/uvm/protocol_assertions.sv` | AXI ready/valid and protocol stability |
+| coverage | `tb/uvm/coverage/attention_coverage.svh` | register, tile, AXI, phase, arithmetic, and shape coverage |
 
-The SystemVerilog environment is a verification-only wrapper. The synthesizable
-DUT remains Verilog and does not import UVM packages or SV interfaces.
+The synthesizable DUT remains Verilog. UVM packages and interfaces are confined
+to the verification hierarchy.
 
-## 3. Module-Level Verification Plan
+## 3. Module-Level Verification
 
-All retained module testbenches are self-checking and run from `tb/sim`. Each
-uses reset, directed legal traffic, boundary conditions, and a timeout. Where
-the interface contains handshakes, the test includes stalls or backpressure.
-
-| RTL function | Primary testbench | Key checks |
+| RTL area | Primary tests | Main checks |
 | --- | --- | --- |
-| AXI control/write | `tb_axi4_slave_if`, `tb_axi4_master_write` | read/write responses, burst sequence, WLAST, backpressure |
-| scheduler/regfile/performance | `tb_accel_regfile`, `tb_accel_scheduler`, `tb_perf_counter` | START snapshot, status/error behavior, state transitions, counters |
-| cache/memory | `tb_qkv_tile_cache`, `tb_pingpong_buffer`, `tb_banked_sram`, `tb_asic_sram_backend` | bank validity, consume/switch, read-after-write, ASIC macro composition |
-| fused compute | `tb_fsa_fused_array`, `tb_fsa_stripe`, `tb_fsa_fused_pe`, `tb_fsa_pv_engine` | QK, rowmax, reverse delta, P writeback, rowsum, WS-PV, feature tags |
-| fixed-point pipes | `tb_score_scale_pipe`, `tb_pwl_exp_unit`, `tb_online_normalizer`, `tb_reciprocal_lut` | PWL corners, pipeline tag alignment, rounding, reciprocal/normalization saturation |
-| integrated RTL | `tb_attention_accel_top` | one-tile load/compute/normalization/writeback protocol |
+| AXI | `tb_axi4_slave_if`, `tb_axi4_master_write` | independent AW/W, responses, burst splitting, WLAST, backpressure, recovery |
+| control | `tb_accel_regfile`, `tb_accel_scheduler`, `tb_perf_counter` | configuration snapshot, prefill/decode legality, state transitions, counters |
+| memory | `tb_qkv_tile_cache`, `tb_pingpong_buffer`, `tb_banked_sram`, `tb_asic_sram_backend` | bank ownership, half-word assembly, macro composition, read/write behavior |
+| compute | `tb_fsa_fused_array`, `tb_fsa_stripe`, `tb_fsa_fused_pe` | QK, rowmax, delta, P writeback, rowsum, WS-PV, O-bank feature tags |
+| nonlinear path | `tb_score_scale_pipe`, `tb_pwl_exp_unit`, `tb_online_normalizer`, `tb_reciprocal_lut` | boundaries, latency, tag alignment, rounding, saturation |
+| integration | `tb_attention_accel_top` | complete load-to-writeback transaction |
 
-Run the directed suite as follows:
-
-```bash
-cd tb/sim
-make syntax
-make run
-make asic-sram
-make lint-rtl
-```
-
-## 4. UVM System Test Plan
-
-The fixed-seed regression script is `tb/sim/scripts/run_uvm_regression.sh`.
-The following 15 test cases are compiled with code coverage and merged into
-one coverage database.
-
-| Test | Seed | Stimulus and checker focus |
-| --- | ---: | --- |
-| `fa_smoke_test` | 1 | legal prefill/configuration, basic byte-exact output |
-| `fa_axi_backpressure_test` | 19 | AXI write stalls and ready/valid stability |
-| `fa_random_qkv_test` | 101 | randomized signed Q/K/V and bit-exact oracle |
-| `fa_pwl_corner_test` | 102 | PWL segment/boundary and exp clamp behavior |
-| `fa_arith_rounding_test` | 106 | guard/sticky rounding path and exact output bytes |
-| `fa_positive_saturation_test` | 103 | positive INT8 saturation |
-| `fa_negative_saturation_test` | 104 | negative INT8 saturation |
-| `fa_causal_random_test` | 105 | causal mask plus random data and output stalls |
-| `fa_two_tile_pingpong_test` | 301 | two Q/two KV tiles, bank preload/refill, exact online recurrence, contiguous writes |
-| `fa_two_tile_random_backpressure_test` | 302 | two-tile random data with output stalls and address-hole/duplicate detection |
-| `fa_decode_smoke_test` | 201 | one-query MHA decode and row-zero validity |
-| `fa_decode_backpressure_test` | 202 | decode AXI write stalls and four-beat writeback |
-| `fa_decode_random_test` | 203 | random decode, full 32-token context, feature/tag ordering |
-| `fa_decode_illegal_config_test` | 204 | reject decode with `seq_q=2` and recover error state |
-| `fa_illegal_config_test` | 7 | generic invalid configuration/error response |
-
-Run and reproduce the merged report:
+Run the directed suite with:
 
 ```bash
-cd tb/sim
-OUT_DIR=build/uvm_two_tile_random_pingpong scripts/run_uvm_regression.sh
+make -C tb/sim syntax
+make -C tb/sim run
+make -C tb/sim asic-sram
+make -C tb/sim lint-rtl
+make -C tb/sim module-cov
 ```
 
-## 5. Latest Passing Regression Record
+Each retained module testbench generates an FSDB by default.
+
+## 4. UVM Regression Matrix
+
+The authoritative script is `tb/sim/scripts/run_uvm_regression.sh`. It compiles
+once with the ASIC SRAM model and executes 20 fixed-seed runs.
+
+| Group | Runs | Verification purpose |
+| --- | --- | --- |
+| basic traffic | `smoke`, `axi_backpressure` | legal end-to-end execution and AXI ready throttling |
+| prefill shapes | `random_1x1`, `prefill_causal_1x1`, `prefill_2x2`, `prefill_kv_tail` | one/two tiles, causal behavior, random INT8 data, KV tail |
+| long/tail prefill | `prefill_long`, `prefill_tail_causal` | 512 x 512 ping-pong schedule, dual tail, random stalls |
+| decode | `random_decode_long`, `random_decode_noncausal`, `decode_smoke` | one-query decode, 256-token multi-KV context, causal/non-causal execution |
+| write addressing | `axi_4k_boundary` | one-beat boundary burst and 4-KiB split behavior |
+| arithmetic | `pwl_corner`, `arith_rounding`, `positive_saturation`, `negative_saturation` | PWL segments, rounding increment, signed output rails |
+| configuration/error | `decode_illegal`, `illegal_config`, `register_access`, `axi_bresp_error` | START rejection, byte strobes, RO/unknown access, write-fault recovery |
+
+Reproduce it from the repository root:
+
+```bash
+make uvm-regression
+```
+
+The output is written below `tb/sim/build/uvm_regression/` with one log per run,
+`coverage.vdb`, and the merged `urg/` report.
+
+## 5. Latest Regression Result
 
 | Item | Recorded result |
 | --- | --- |
-| Date | 2026-07-23 |
+| Date | 2026-07-24 |
 | Simulator | VCS V-2023.12-SP2_Full64 |
-| Database | `tb/sim/build/uvm_two_tile_random_pingpong/coverage.vdb` |
-| HTML/text report | `tb/sim/build/uvm_two_tile_random_pingpong/urg/` |
-| Result | 15/15 fixed-seed tests pass; UVM error and fatal counts are zero |
-| Numerical checking | prefill, decode, and two-tile random results compare against the bit-accurate SV model |
-| Ping-pong result | Q/K/V loads are 128/256/256 words; bank coverage is 100% in `fa_tile_coverage` |
-| Writeback result | second Q tile starts at byte 2048; `0..4095` has no holes, duplicates, or invalid bytes |
+| Backend model | `ATTN_ASIC` RTL with characterized `uhdsp_256x8m4s` model |
+| Result | **20/20 tests pass** |
+| UVM severity | every run reports `UVM_ERROR=0`, `UVM_FATAL=0` |
+| Numerical checking | every active output byte is compared with the bit-accurate model |
+| Module coverage runs | 23/23 directed coverage jobs pass |
 
-The address check specifically guards the former failure mode in which a
-level-held AXI completion was consumed twice, advancing the second Q-tile
-writeback base from 2048 to 4096. The RTL now uses one shared rising-edge
-completion pulse.
+The long prefill test covers 16 Q tiles and 16 KV tiles with causal masking and
+25% write backpressure. Decode tests cover a single query across eight KV tiles
+for `SEQ_KV=256`. Tail, 4-KiB split, register-access, and error-recovery cases
+exercise the principal control boundaries beyond numerical datapath testing.
 
 ## 6. Coverage Analysis
 
-| Scope | Score | Line | Condition | Toggle | Branch | Functional group |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| Composite report | 80.75% | 85.49% | 68.08% | 83.41% | 85.36% | 81.44% |
-| `tb_top.dut` hierarchy | 80.79% | 85.90% | 68.19% | 83.42% | 85.65% | N/A |
-| Module definitions | 73.65% | 68.03% | 64.57% | 75.94% | 86.08% | N/A |
-| UVM functional covergroups | 81.44% | N/A | N/A | N/A | N/A | 81.44% |
+### 6.1 Functional Coverage
 
-The composite score includes a low-covered Verdi UVM recorder instance. The
-`tb_top.dut` row is therefore the appropriate current DUT code-coverage
-baseline. No coverage waiver is applied.
+| Covergroup | Result |
+| --- | ---: |
+| AXI-Lite register access | 100.00% |
+| tile load/commit/ping-pong | 100.00% |
+| AXI write burst/strobe behavior | 100.00% |
+| scheduler phase/IRQ behavior | 100.00% |
+| arithmetic and configuration shapes | 100.00% |
+| **total functional coverage** | **100.00%** |
 
-| Functional area | Current result | Coverage debt |
-| --- | --- | --- |
-| Tile loader | 100% | none in the current covergroup |
-| AXI-Lite | 67.50% | scale 1.00, DECERR, additional response/cross bins |
-| AXI write | 83.33% | legal short-burst/last-beat model and cross coverage |
-| Scheduler phase | 77.78% | ERROR and phase/IRQ combinations |
-| Math / softmax | 78.57% | non-unity exp, score saturation, output saturation, rounding/saturation crosses |
-| high-value RTL instances | 47.87-90.14% | regfile, scheduler, and perf counter are the weakest code-coverage blocks |
+The ignored bins document architectural invariants: unsupported AXI response
+encodings, impossible phase/IRQ pairs, illegal one-beat/non-last combinations,
+unsupported prefill `SEQ_Q > SEQ_KV`, and mathematically unreachable positive
+score-delta saturation. They are not stimulus gaps in the declared interface.
 
-The project does **not** claim the stated 95% RTL code-coverage or 100%
-functional-coverage target. Closure requires new tests for error, busy/restart,
-perf counter, legal tail/short burst, saturation, and relevant crosses, followed
-by a new merged VDB. Numerical correctness for the documented 15 fixed seeds is
-closed; coverage sign-off is not.
+### 6.2 Code Coverage
 
-## 7. Figure and Waveform Placeholders
+| Scope | Score | Line | Condition | Toggle | Branch |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Full merged URG report | **88.06%** | 91.58% | 69.57% | 91.84% | 87.32% |
+| `tb_top` / DUT hierarchy | **85.28%** | 92.00% | 69.68% | 91.84% | 87.61% |
+| Module definitions | 77.86% | 72.33% | 67.84% | 82.25% | 89.03% |
 
-The final submission should include wave screenshots. Existing module TBs dump
-FSDB by default into their build directory. The UVM top currently captures SAIF
-on request, not FSDB; use a TB-only dump hook or Verdi capture for the UVM
-placeholder below. Do not add waveform code to synthesizable RTL.
+Functional coverage is closed for the declared workload. The 95% code-coverage
+target is not yet met. Remaining work is concentrated in condition/toggle
+combinations in the normalizer, array controller, scheduler, register file, and
+AXI write engine; no higher code-coverage claim is made.
 
-### W1. Top-Level Control and AXI Writeback
+## 7. Current Gate-Level Power Workload Check
 
-**Placeholder caption:** "Configuration, Q/K/V tile loading, fused execution,
-and AXI4 writeback for one attention tile."
+The 2026-07-27 power workload independently validates the exact mapped netlist
+used for the current power number:
 
-- Generate: `cd tb/sim && make top`
+| Field | Result |
+| --- | --- |
+| Test | `fa_random_qkv_test`, seed 301, `SEQ_Q=64`, `SEQ_KV=64` |
+| Gate result | `UVM_ERROR=0`, `UVM_FATAL=0` |
+| SAIF capture | cycles 57 to 4336, 4,279 sampled cycles |
+| Loader accounting | Q/K/V words = 128/256/256 |
+| Output accounting | 256 beats / 4,096 bytes |
+| SAIF annotation | 100% nets, ports, and pins |
+
+Log: `tb/sim/build/saif_gate_ungated_random_qkv_64x64_seed301/fa_random_qkv_test.log`.
+
+## 8. Required Waveform Figures
+
+The final presentation should capture the following four panels. Waveforms are
+verification evidence, not substitutes for scoreboard results.
+
+### W1. Top-Level Load, Execution, and AXI Writeback
+
+- Generate: `make -C tb/sim top`
 - File: `tb/sim/build/tb_attention_accel_top/tb_attention_accel_top.fsdb`
-- Capture: clock/reset; `debug_state_o`; tile-loader valid/ready/kind/bank/
-  address/half; `m_axi_awaddr`, `m_axi_awvalid`, `m_axi_awready`,
-  `m_axi_wvalid`, `m_axi_wready`, `m_axi_wlast`, `m_axi_bvalid`, and `irq_o`.
-- Intended visual proof: legal state order, two 128-bit halves per cache word,
-  contiguous output burst, and completion only after the write response.
+- Signals: `debug_state_o`, tile-loader valid/ready/kind/bank/address/half,
+  `m_axi_awaddr`, AW/W valid-ready, `m_axi_wlast`, B valid-ready, and `irq_o`.
+- Show: two 128-bit halves per cache word, legal scheduler order, continuous
+  output addressing, and completion after the write response.
 
 ### W2. PE-Local Softmax and WS-PV
 
-**Placeholder caption:** "Column-overlapped rowmax, reverse delta, P writeback,
-rowsum, and continuous feature-major WS-PV in the fused array."
-
-- Generate: `cd tb/sim && make compute`
+- Generate: `make -C tb/sim compute`
 - File: `tb/sim/build/tb_fsa_fused_array/tb_fsa_fused_array.fsdb`
-- Capture: `qk_valid_i`, `qk_last_i`, `qk_last_o`, `softmax_start_i`,
-  `softmax_pv_ready_o`, `softmax_done_o`, `pv_start_i`, `pv_ready_o`,
-  `pv_valid_i`, `pv_feature_i`, `pv_done_o`, `norm_rd_en_i`,
-  `norm_rd_feature_i`, `norm_rd_valid_o`, `norm_rd_feature_o`, and
-  `norm_rd_acc_o`.
-- Intended visual proof: PV starts before the serial L-update drain completes,
-  and an O-bank normalizer read returns the same feature tag that was requested.
+- Signals: `qk_valid_i`, `qk_last_o`, `softmax_start_i`,
+  `softmax_pv_ready_o`, `softmax_done_o`, `pv_start_i`, `pv_valid_i`,
+  `pv_feature_i`, `pv_done_o`, `norm_rd_en_i`, `norm_rd_feature_i`,
+  `norm_rd_valid_o`, `norm_rd_feature_o`, and `norm_rd_acc_o`.
+- Show: column-overlapped softmax, WS-PV launch, and matching O-bank feature tags.
 
 ### W3. Normalizer Tag and Rounding Pipeline
 
-**Placeholder caption:** "Eight-lane normalization preserves payload/tag
-alignment through reciprocal and two multiply stages."
-
-- Generate: `cd tb/sim && make softmax`
+- Generate: `make -C tb/sim softmax`
 - File: `tb/sim/build/tb_online_normalizer/tb_online_normalizer.fsdb`
-- Capture: `valid_i`, `acc_rows_i`, `l_rows_i`, `out_scale_i`, `tag_i`,
-  `dut.reciprocal_valid_w`, `dut.norm_product_valid_w`,
-  `dut.scale_product_valid_w`, `valid_o`, `tag_o`, and `out_rows_o`.
-- Intended visual proof: adjacent transactions and a bubble retain their
-  corresponding tags, including signed positive/negative saturation outputs.
+- Signals: `valid_i`, `acc_rows_i`, `l_rows_i`, `out_scale_i`, `tag_i`,
+  reciprocal/multiply valid stages, `valid_o`, `tag_o`, and `out_rows_o`.
+- Show: payload/tag alignment through bubbles, rounding, and both saturation rails.
 
-### W4. Two-Tile Ping-Pong under UVM
+### W4. Long Ping-Pong Refill
 
-**Placeholder caption:** "Bank0/bank1 transition, refill overlap, and the
-single AXI-write completion pulse in the two-Q/two-KV regression."
+- Generate the UVM regression with an FSDB hook enabled for `prefill_long`.
+- Suggested file: `tb/sim/build/uvm_regression/prefill_long.fsdb`.
+- Signals: scheduler state/tile indices, tile load/commit, active bank IDs,
+  Q/KV consume pulses, AXI write completion pulse, and writeback address.
+- Show: inactive-bank refill, active-bank compute, ordered consume, and
+  continuous multi-Q-tile writeback.
 
-- Reproduce the 15-test UVM database with the command in Section 4. Add a
-  verification-only `$fsdbDumpfile/$fsdbDumpvars` hook in `tb/uvm/tb_top.sv`
-  or use a Verdi capture session; save as
-  `tb/sim/build/uvm_two_tile_random_pingpong/fa_two_tile_pingpong_test.fsdb`.
-- Capture: `status_if.debug_state`, `tile_if.load_*`, `tile_if.commit_*`,
-  `write_if.aw*`, `write_if.w*`, `write_if.b*`, and DUT internals
-  `q_active_bank_w`, `kv_active_bank_w`, `q_consume_w`, `kv_consume_w`,
-  `axi_write_done_w`, `axi_write_done_pulse_w`, and `writeback_addr_q`.
-- Intended visual proof: inactive-bank refill while active-bank computation or
-  writeback proceeds; exactly one Q consume and one address increment per B
-  response; second Q-tile writeback begins at byte 2048.
+## 9. Update Rule
 
-## 8. Regression Update Rule
-
-When RTL changes, rerun at least the affected module testbench, its UVM test,
-and then the 15-test regression before updating this document. Add the new
-date/tool/seed/VDB path, exact pass/fail count, and revised coverage metrics.
-Never treat an FSDB screenshot as a replacement for a scoreboard result.
+After an RTL change, rerun the affected module test, the relevant UVM case, and
+the complete 20-run regression before changing a verified claim. Record the
+date, RTL revision, command, seeds, pass/fail count, and new coverage report.

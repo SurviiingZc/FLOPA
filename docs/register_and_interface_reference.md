@@ -172,7 +172,7 @@ START is accepted only when all of the following are true:
 
 | Signal | Dir. | Width | Contract |
 | --- | :---: | ---: | --- |
-| `clk` | in | 1 | single RTL clock; FPGA clock enables and ASIC ICG wrappers preserve one logical clock domain |
+| `clk` | in | 1 | single root clock; the current `fa_clock_gate` wrapper is a passthrough in ASIC and FPGA builds |
 | `rst_n` | in | 1 | active-low asynchronous reset for control/valid state |
 | `irq_o` | out | 1 | level interrupt, asserted while scheduler DONE or ERROR is set |
 | `debug_state_o` | out | 4 | current scheduler state encoding shown below |
