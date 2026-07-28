@@ -1,0 +1,20 @@
+/vivado/build/
+/vitis/build/
+/vitis/.Xil/
+/vitis/.ipcache/
+/.Xil/
+/*.jou
+/*.log
+/*.str
+/vitis/*.log
+/vitis/*.jou
+
+# FPGA tool products written outside the build directories.
+*.dcp
+*.elf
+*.ko
+*.pdi
+*.wic
+*.xsa
+*.xo
+*.xclbin

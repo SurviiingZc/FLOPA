@@ -127,21 +127,21 @@ VCK190 使用 XCVC1902，PS 为双核 Arm Cortex-A72；板级设计通过 DDR/No
 
 ### 3.2 PS 软件栈
 
-推荐使用 Linux AArch64 运行完整模型，原因是模型文件、prompt、日志和 DMA
+推荐使用 Linux AArch64 运行完整模型，原因是模型文件、prompt、日志和 XRT BO
 buffer 管理更方便；PL 微基准可另外提供 bare-metal/UART 版本。PS 端至少
 包含：
 
 - AArch64 C/C++ 模型运行时（优先使用 llama.cpp 或同等 Llama/GGUF 运行时）；
-- `attention_accel` 用户态驱动或 UIO/Vitis driver；
-- AXI4-Lite 寄存器访问；
-- 128-bit tile packer/DMA；
+- XRT 用户态运行时以及 `dit_fa.xclbin`；
+- `xrt::ip` AXI4-Lite 寄存器访问；
+- XRT BO、128-bit tile packer 和 `dit_fa_tile_mover` kernel；
 - cycle counter、PMU counter 和温度/功耗采样接口。
 
 llama.cpp 的 CPU 路径使用纯 C/C++，并提供 ARM NEON 等 CPU 优化；实际板上
 仍需执行一次 native PS smoke test，不能只因模型可以在开发机加载就宣称
 VCK190 PS 可运行。
 
-### 3.3 必须补齐的 PL wrapper
+### 3.3 Vitis PL wrapper
 
 当前 `rtl/attention_accel_top.v` 的接口是：
 
@@ -150,21 +150,21 @@ VCK190 PS 可运行。
   侧带接口；
 - 128-bit AXI4 master writeback。
 
-它不是可直接连接 PS DDR 的 AXI read master。因此 Vivado block design 必须
-增加：
+它不是可直接连接 PS DDR 的 AXI read master。当前 Vitis 设计通过两个 kernel
+完成 common-platform 集成：
 
 ```text
-PS DDR/NoC
-   -> AXI DMA MM2S (or custom AXI4-to-tile-loader)
-   -> 128-bit tile_load_* wrapper
-   -> attention_accel_top
-attention_accel_top AXI4 master write
-   -> NoC/DDR output buffer
+XRT BO in DDR
+   -> dit_fa_tile_mover (AXI4 read)
+   -> 128-bit AXI Stream
+   -> dit_fa RTL kernel / axis_tile_loader
+dit_fa RTL kernel AXI4 write -> common-platform NoC -> XRT BO
 ```
 
-AXI4-Lite 只负责配置和状态，不把大块 Q/K/V 通过寄存器写入。驱动必须维护
-cache coherency：DMA 前 flush input buffers，DMA 完成后 invalidate output
-buffers，并使用物理地址或连续 DMA buffer。
+AXI4-Lite 只负责配置和状态，不把大块 Q/K/V 通过寄存器写入。host 使用 XRT
+BO `sync` 维护一致性，使用 `xrt::kernel` 启动 mover，并通过 `xrt::ip` 控制
+user-managed RTL kernel。该流程不需要 DTBO、外部内核模块或独立 PDI，但必须用
+与 xclbin 同一次 Vitis 构建生成的 `BOOT.BIN` 启动 PL。
 
 ## 4. 三种必须分开的基线
 
@@ -174,7 +174,7 @@ buffers，并使用物理地址或连续 DMA buffer。
 | --- | --- | --- |
 | `PS_NATIVE` | PS 上完整模型的原生 Attention/推理运行时 | 是，模型自身内存访问 |
 | `PS_INT8_REF` | PS 上与 PL 完全相同的 INT8 QK + online-softmax + PV 参考 kernel | 是，软件 pack/unpack 可单独计时 |
-| `PS_PL_E2E` | PS 调度 + DMA/tile-loader + PL Attention + writeback | 是，系统最终结果 |
+| `PS_PL_E2E` | PS 调度 + XRT mover/tile-loader + PL Attention + writeback | 是，系统最终结果 |
 | `PS_PL_KERNEL` | 只统计 PL 从 tile commit 到 writeback done 的周期 | 否，隔离硬件核心 |
 
 `PS_NATIVE` 用于回答“完整 LLM 是否更快”；`PS_INT8_REF` 用于回答“硬件和
@@ -254,7 +254,7 @@ valid/mask 标记，不允许用未初始化字节填充有效计算。
 | full-layer | 128、512、1024 | 全 30 层 | 1 固定 seed | 完整模型 prefill |
 | prompt-real | 16 个固定 prompt | layer 0、15、29 | 3 runs | 真实 token 分布 |
 | re10k-real | 8192 | 既定 `up/down_blocks_2_*` 层 | 1 | 真实 Re10K 板级结果 |
-| decode reference | 1 query + KV cache | PS only; optional single-tile PL smoke | 3 runs | 不纳入 PL 首轮 prefill 加速比 |
+| decode reference | 1 query + KV cache | PS + single-tile PL | 3 runs | 不纳入 E2E 加速比 |
 
 `prompt-real` 使用 16 个固定 prompt：8 个英文技术问答、4 个中文短问题、
 4 个代码补全样本。每个 prompt 保存 tokenizer 版本、token id、长度和 SHA256。
@@ -295,13 +295,13 @@ prefill，并输出 token ids、prefill latency 和 peak RSS。
 
 ### P3：Vivado/VCK190 bring-up
 
-1. 建立 PS、NoC/DDR、AXI4-Lite、AXI DMA/custom loader、PL clock/reset。
+1. 用 Vitis 将 AXI4-Lite、mover、tile loader 和写回接口连接到 common platform。
 2. 先加载一个 32x32x64 tile，检查寄存器读写、IRQ、tile commit 和 writeback。
 3. 逐步升至 `seq=64/128/512/1024`，再打开完整 Re10K `seq=8192` 和
    SmolLM2 样本。
 4. 每个配置先跑 10 次无计时 smoke，再进入计时区。
 
-**退出条件**：同一输入重复 30 次输出 hash 一致；无 DMA underrun/overrun、
+**退出条件**：同一输入重复 30 次输出 hash 一致；无 mover underrun/overrun、
 write response error、cache coherency 错误和温度异常。
 
 ### P4：Kernel-only 性能
@@ -318,7 +318,7 @@ write response error、cache coherency 错误和温度异常。
 
 ### P5：端到端 Attention
 
-将 Q/K/V extraction、MHA expansion、INT8 pack、DMA、PL、unpack 和后续 residual
+将 Q/K/V extraction、MHA expansion、INT8 pack、XRT mover、PL、unpack 和后续 residual
 连接起来，记录：
 
 ```text
@@ -455,10 +455,11 @@ temperature_c, max_abs_error, cosine, top1_match, status
 | --- | --- | --- |
 | PS 运行时无法直接加载 GGUF | 无法做完整 LLM | 先使用固定 token-id + 自研 C++ Attention harness；模型全链路作为后续项 |
 | 当前 RTL 不支持 GQA | SmolLM2 KV head 数不匹配 | PS 端复制 KV heads，报告复制开销；不要伪称原生 GQA |
-| tile-loader wrapper 尚未集成 | 只能做 RTL 仿真 | 先做 PS memory-to-stream DMA smoke，再做 PL kernel benchmark |
-| AXI 搬运成为瓶颈 | E2E 加速比不明显 | 分开报告 kernel-only、DMA-only、E2E，增大 burst 和 staging buffer |
+| XRT/平台版本不匹配 | xclbin 加载失败 | 保持 common image、XPFM 和 XRT 为 2023.1 同一版本 |
+| `BOOT.BIN` 与 xclbin 不匹配 | XRT 能枚举 CU，但控制的是旧 PL，kernel 不结束 | 两者必须来自同一次 `make runtime` |
+| AXI 搬运成为瓶颈 | E2E 加速比不明显 | 分开报告 kernel-only、mover-only、E2E，增大 burst 和 staging buffer |
 | INT8 误差过大 | LLM logits 漂移 | 保存 FP16/INT8 双 golden，调整 per-head scale/round，不能只放宽阈值 |
-| decode 仅完成单 tile RTL 验证 | 不能宣称完整 LLM decode 加速 | 首轮明确标为 prefill-only；decode 先做 PS baseline 和单 tile PL smoke |
+| decode 仅完成单 tile RTL 验证 | 不能宣称完整 decode 加速 | 标为 prefill-only；先测 PS 与 PL smoke |
 | 模型/量化版本漂移 | 结果不可复现 | manifest 固定 commit、tokenizer、权重 SHA256 和 bitstream revision |
 
 禁止以下结果写入最终性能表：
