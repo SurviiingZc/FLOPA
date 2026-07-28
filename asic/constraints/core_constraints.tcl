@@ -24,7 +24,17 @@ proc fa_apply_core_constraints {clock_period} {
   set_clock_uncertainty -setup $setup_uncertainty [get_clocks core_clk]
   set_clock_uncertainty -hold $hold_uncertainty [get_clocks core_clk]
   set_clock_transition $clock_transition [get_clocks core_clk]
-  set_fix_hold [get_clocks core_clk]
+  # Ideal-clock mapped synthesis reports min paths but does not repair them.
+  # Hold fixing is enabled only by the physical-aware FF/min-RC pre-CTS flow.
+  set physical_hold_repair [expr {
+    [info exists ::env(FA_PHYSICAL_AWARE)] &&
+    $::env(FA_PHYSICAL_AWARE) eq "1" &&
+    [info exists ::env(FA_LOGICAL_HOLD_REPAIR)] &&
+    $::env(FA_LOGICAL_HOLD_REPAIR) eq "1"
+  }]
+  if {$physical_hold_repair} {
+    set_fix_hold [get_clocks core_clk]
+  }
 
   set data_inputs [remove_from_collection [all_inputs] $clock_ports]
   set reset_ports [get_ports -quiet rst_n]

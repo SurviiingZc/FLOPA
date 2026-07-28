@@ -1,65 +1,77 @@
-# ASIC Synthesis
+# ASIC Synthesis and Power Flow
 
-The default synthesis corner is the 28 nm TT 0.9 V, 25 C CCS standard-cell
-library with the matching TT SRAM macro. The SS 0.9 V, 125 C corner remains
-available for timing stress checks.
+The current baseline targets the TSMC 28 nm TT 0.9 V, 25 C CCS standard-cell
+library and the matching `uhdsp_256x8m4s` SRAM library. The default design point
+is `attention_accel_top` at 1.60 ns with zero RTL and zero automatically inserted
+clock gates.
 
-Run all commands from the repository root. `make synth-list` prints the current
-module groups and `make help` prints the supported flows. The normal entry points
-are:
+Run all commands from the repository root.
 
-```text
-make rtl-check
-make synth-module TOP=fsa_fused_pe
-make synth-compute
-make synth-system
-make synth-all
-make synth-frequency-sweep
+```bash
+# Show the active configuration.
+make synth-config
+
+# Generate the mapped TT baseline and prove equivalence.
+make synth CORNER=tt CLOCK_PERIOD=1.6
+make formality CORNER=tt
+
+# Run the default 64 x 64 mapped-netlist activity workload.
+make gate-saif CORNER=tt GATE_SEQ_Q=64 GATE_SEQ_KV=64 GATE_SAIF_SEED=301
+
+# Repeat the workload and read SAIF into the matching mapped DDC.
+make gate-saif-power CORNER=tt GATE_SEQ_Q=64 GATE_SEQ_KV=64 GATE_SAIF_SEED=301
 ```
 
-Override constraints on the command line, for example:
+The synthesis script checks the current structural contract:
 
-```text
-make synth-system CORNER=tt CLOCK_PERIOD=2.5 DC_CORES=8
-```
+- exactly 480 `uhdsp_256x8m4s` SRAM macros;
+- 1,220 multiplier wrappers linked to 1,220 `DW02_mult` instances;
+- zero pre-existing and zero tool-inserted ICGs;
+- no generic `SNPS_CLOCK_GATE_HIGH_*` modules in the mapped netlist.
 
-The initial ASIC optimization target is 400 MHz (2.5 ns). Use
-`make synth-frequency-sweep` to generate `summary.csv` and `best_passing.csv`
-without writing a mapped netlist or multi-gigabyte SDF at every period. TT is a
-logic-limit estimate; SS and physical-aware results determine the usable target.
+Each synthesis run produces mapped Verilog, DDC, SDC, SDF, SVF, and reports
+under `asic/dc/work/synth/<corner>/system/attention_accel_top/`. Power Compiler
+reports are stored below `asic/dc/work/power/reports/<rtl-hash>/<profile>/<corner>/`.
 
-Setup and hold uncertainty are independent. The defaults are 0.100 ns and
-0.020 ns, and non-clock SRAM inputs receive a 0.200 ns minimum-path constraint.
-These constraints guide DC hold buffering but do not replace post-CTS hold
-analysis with propagated clocks.
+## Current Baseline
 
-Physical-aware synthesis uses DC Graphical SPG and requires a prepared Milkyway
-design library containing both standard-cell FRAM views and the SRAM abstract:
+| Metric | Value |
+| --- | ---: |
+| target clock | 1.60 ns / 625 MHz |
+| cell area | 2,438,964.94 library units |
+| SRAM macros | 480 |
+| mapped cells | 1,524,232 |
+| dynamic power | 648.6251 mW |
+| leakage power | 9.8584 mW |
+| total power | 658.4835 mW |
+| net switching power | 18.1893 mW |
 
-```text
-make physical-config
-make synth-physical CORNER=ss CLOCK_PERIOD=2.5 \
-  FA_MW_LIB=/path/to/combined_design_mw \
-  FA_TLUPLUS_MAX=/path/to/max.tluplus \
-  FA_TLUPLUS_MIN=/path/to/min.tluplus \
-  FA_TLUPLUS_MAP=/path/to/tech2itf.map
-```
+The power run is a 64 x 64 random MHA prefill with seed 301 and 100% SAIF
+annotation. Detailed conditions and paths are maintained in
+`docs/ppa_and_optimization.md`.
 
-The server has standard-cell Milkyway/LEF, SRAM LEF/GDS, and 28 nm RC source
-collateral, but those views must be assembled into the combined physical library
-before the SPG result is treated as placement-aware.
+## Libraries and Memory Mapping
 
-Generated data is isolated below `asic/dc/work/` and logs below
-`asic/dc/logs/`; both are ignored by Git. Each synthesized top produces timing,
-QoR, hierarchical area, power, constraint, resource, reference, and library
-reports plus mapped Verilog, DDC, SDC, and SDF results.
+Library selection is centralized in `asic/scripts/library_paths.sh`. The
+default 32 x 32 x 64 top instantiates 480 byte-wide SRAM macros:
 
-`asic/filelists/rtl.f` is a repository-root-relative source list for auxiliary
-lint/elaboration tools. DC uses the matching checked source list in
-`asic/scripts/rtl_sources.tcl`.
+| Owner | Macro count |
+| --- | ---: |
+| Q/K/V ping-pong cache | 192 |
+| persistent O banks | 256 |
+| output buffer | 32 |
+| total | 480 |
 
-The top-level macro-count guard expects 480 `uhdsp_256x8m4s` instances for the
-default 32x32, head-dimension-64 configuration: 192 in Q/K/V ping-pong caches,
-256 in persistent O banks, and 32 in the output buffer.
+The current macro composition prioritizes a working, characterized library
+binding. A later physical implementation should evaluate wider/deeper macros,
+especially for the persistent O banks.
 
-Synthesis findings and optimization status are maintained in `docs/synth.md`.
+## Physical Implementation Entry Point
+
+`make synth-physical` accepts an assembled Milkyway library and max/min TLU+
+files. It is a separate implementation stage and is not required to reproduce
+the current logical-synthesis and gate-SAIF baseline. Exact arguments are shown
+by `make help`.
+
+Internal chronological synthesis notes are retained in `docs/synth.md`; they
+are engineering history rather than the contest-facing result table.

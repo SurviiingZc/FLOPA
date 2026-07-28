@@ -9,8 +9,9 @@ module tb_qkv_tile_cache;
   reg [1:0] load_kind_i=0; reg load_bank_i=0; reg [2:0] load_addr_i=0; reg load_half_i=0;
   reg [127:0] load_data_i=0; reg load_valid_i=0; wire load_ready_o;
   reg [1:0] commit_kind_i=0; reg commit_bank_i=0,commit_valid_i=0;
-  reg q_consume_i=0,q_switch_i=0,kv_consume_i=0,kv_switch_i=0;
+  reg q_consume_i=0,q_switch_i=0,k_consume_i=0,k_switch_i=0,v_consume_i=0,v_switch_i=0;
   wire q_active_valid_o,kv_active_valid_o,q_next_valid_o,kv_next_valid_o,q_active_bank_o,kv_active_bank_o;
+  wire k_next_valid_o,v_next_valid_o;
   reg q_rd_en_i=0,k_rd_en_i=0,v_rd_en_i=0; reg [2:0] q_rd_addr_i=0,k_rd_addr_i=0,v_rd_addr_i=0;
   wire [255:0] q_rd_data_o,k_rd_data_o,v_rd_data_o; wire q_rd_valid_o,k_rd_valid_o,v_rd_valid_o;
   wire protocol_error_o; integer errors=0;
@@ -47,6 +48,24 @@ module tb_qkv_tile_cache;
     @(negedge clk); load_valid_i=0; clear_i=1;
     @(posedge clk); #1;
     `TB_CHECK(!q_active_valid_o && !protocol_error_o, "cache clear")
+    @(negedge clk); clear_i=0;
+
+    load_word(`ATTN_CACHE_K,0,0,256'h11); commit(`ATTN_CACHE_K,0);
+    load_word(`ATTN_CACHE_V,0,0,256'h22); commit(`ATTN_CACHE_V,0);
+    load_word(`ATTN_CACHE_K,1,0,256'h33); commit(`ATTN_CACHE_K,1);
+    load_word(`ATTN_CACHE_V,1,0,256'h44); commit(`ATTN_CACHE_V,1); #1;
+    `TB_CHECK(kv_active_valid_o && !kv_active_bank_o && k_next_valid_o && v_next_valid_o,
+              "initial KV pair and next pair valid")
+
+    @(negedge clk); k_consume_i=1; k_switch_i=1;
+    @(negedge clk); k_consume_i=0; k_switch_i=0; #1;
+    `TB_CHECK(!kv_active_valid_o && kv_active_bank_o,
+              "K switches after QK while V remains on prior bank")
+
+    @(negedge clk); v_consume_i=1; v_switch_i=1;
+    @(negedge clk); v_consume_i=0; v_switch_i=0; #1;
+    `TB_CHECK(kv_active_valid_o && kv_active_bank_o,
+              "V switches after PV and realigns active KV pair")
     `TB_FINISH("tb_qkv_tile_cache")
   end
 endmodule

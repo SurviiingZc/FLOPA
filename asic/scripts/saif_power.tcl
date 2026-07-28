@@ -38,8 +38,8 @@ if {![link]} {
 redirect -file [file join $report_dir check_design.rpt] {check_design}
 redirect -file [file join $report_dir clocks.rpt] {report_clocks}
 
-# Rebuild clock-gating attributes after DDC readback so explicit RTL ICGs and
-# compile_ultra-inserted ICGs are both included in clock power reporting.
+# Rebuild clock-gating attributes after DDC readback so all explicit phase-local
+# RTL ICGs are included in clock power reporting. Automatic ICGs are forbidden.
 identify_clock_gating
 
 # Power Compiler V-2023.12 does not accept -strip_path. The DDC top is the

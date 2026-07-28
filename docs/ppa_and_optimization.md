@@ -2,156 +2,161 @@
 
 ## 1. Reporting Policy
 
-This document reports the latest available implementation evidence without
-promoting pre-layout estimates to sign-off data. Every future PPA entry must
-record RTL revision, test workload, tool version, PVT, clock period,
-constraints, and report path. A new result replaces a baseline only after the
-associated functional test passes.
+This document uses the latest reproducible synthesis and gate-activity data for
+the current RTL. Every number is tied to a workload, tool version, PVT point,
+clock period, and report path. The ASIC results are pre-layout estimates; they
+are suitable for architectural comparison and contest reporting, but they are
+not post-route or silicon measurements.
 
-The current numbers are a **28 nm TT logical-synthesis and gate-SAIF baseline**.
-They are useful for design comparison and for showing optimization direction,
-but do not establish post-route Fmax, FPGA timing closure, board power, or ASIC
-sign-off.
+## 2. Current ASIC Baseline
 
-## 2. Current Implementation Baseline
-
-| Item | Value | Conditions / interpretation |
+| Item | Current result | Conditions |
 | --- | ---: | --- |
-| RTL top | `attention_accel_top` | 32 x 32 PEs, four 8 x 32 stripes, 64 features |
-| Standard-cell library | TSMC 28 nm `tcbn28hpcplus...tt0p9v25c_ccs` | 0.9 V, 25 C, typical corner |
-| SRAM model | `uhdsp_256x8m4s_tt0p9v25c` | 480 instantiated macros in this configuration |
-| Target period | 1.60 ns | 625 MHz target; logical-only result |
-| Setup WNS/TNS/failing paths | 0.000 ns / 0.000 ns / 0 | passes with no setup margin |
-| Worst hold / hold TNS / failing paths | -0.0953 ns / -403.35 ns / 5,923 | open issue; not timing clean |
-| Critical path | 58 levels, 1.4918 ns | normalizer accumulator-to-reciprocal multiplier cone |
-| Design area | 2,429,697.55 library area units | excludes routed interconnect/core utilization |
-| Fused array area | 2,038,750.40 (83.9%) | principal area optimization target |
-| SRAM macro area | 656,746.70 (27.0%) | logical macro area in the synthesis report |
-| Leaf cells | 1,515,587 | includes 240,584 sequential cells |
-| Buffer/inverter cells | 250,647 | indicates substantial physical/control distribution work remains |
-| DRCs | 1 max-fanout violation; zero max-transition/cap violations | report also identifies 16 high-fanout nets in timing analysis |
+| RTL top | `attention_accel_top` | 32 x 32 PEs, four 8 x 32 stripes, `HEAD_DIM=64` |
+| Standard-cell library | TSMC 28 nm TT CCS | 0.9 V, 25 C |
+| SRAM library | `uhdsp_256x8m4s_tt0p9v25c` | 480 instantiated macros |
+| Tool | Design Compiler V-2023.12-SP5 | logical synthesis, `physical_aware=0` |
+| Target clock | 1.60 ns | 625 MHz |
+| Setup WNS / TNS / failing paths | 0.000 ns / 0.000 ns / 0 | no positive setup margin |
+| Critical path | 1.49 ns, 60 logic levels | current mapped netlist |
+| Total cell area | 2,438,964.94 library units | interconnect area is not included |
+| Fused-array area | 2,048,222.41 (84.0%) | includes PE fabric and persistent O banks |
+| Total cells | 1,524,232 | 1,281,371 combinational and 242,335 sequential |
+| Buffer/inverter cells | 252,342 | pre-layout mapped count |
+| SRAM macros | 480 | 192 Q/K/V cache, 256 persistent O, 32 output buffer |
+| RTL/tool-inserted ICGs | 0 / 0 | current zero-ICG comparison baseline |
 
-Sources:
+Primary synthesis evidence:
 
 - `asic/dc/work/synth/tt/system/attention_accel_top/reports/qor.rpt`
 - `asic/dc/work/synth/tt/system/attention_accel_top/reports/area.rpt`
-- `asic/dc/work/synth/tt/system/attention_accel_top/reports/timing.rpt`
-- `asic/dc/work/synth/tt/system/attention_accel_top/reports/timing_min.rpt`
+- `asic/dc/work/synth/tt/system/attention_accel_top/reports/resources.rpt`
+- `asic/dc/work/synth/tt/system/attention_accel_top/reports/run_config.rpt`
 
-The run uses zero-wireload/pre-layout assumptions and `physical_aware=0`.
-Neither its zero setup slack nor its derived 625 MHz target may be used as a
-claim that the design can run at that frequency after placement and routing.
+The synthesis uses `ZeroWireload`, so the reported area excludes routed
+interconnect and the 625 MHz result must not be presented as post-route Fmax.
 
-## 3. Activity-Based Power Baseline
+## 3. Gate-SAIF Power Baseline
 
-The gate-level SAIF run uses `fa_two_tile_pingpong_test`, seed 301, with random
-Q/K/V data, two Q tiles, two KV tiles, no AXI writeback stalls, and max SDF.
-The capture window is cycles 41 to 4321, or 4,280 cycles / 6,848 ns at 1.6 ns.
-All nets, ports, and pins in the target hierarchy were user annotated.
+The accepted power run executes `fa_random_qkv_test` with seed 301 on the
+mapped 64 x 64 MHA prefill configuration. It loads two Q tiles and two K/V
+tiles, uses full-range signed INT8 random operands, applies no AXI write
+backpressure, and checks every output byte with the UVM reference model.
 
-| Power metric | Value | Qualification |
+| Run field | Value |
+| --- | --- |
+| Simulator | VCS V-2023.12-SP2_Full64 |
+| Power engine | Design Compiler Power Compiler V-2023.12-SP5 |
+| Netlist | TT mapped `attention_accel_top`, zero ICG |
+| Git / RTL identity | commit `89a6999`; RTL hash `9fa3552430ace318...` |
+| Clock | 1.60 ns / 625 MHz |
+| SAIF window | cycles 57 through 4336, 4,279 cycles / 6,846.4 ns |
+| Functional result | `UVM_ERROR=0`, `UVM_FATAL=0` |
+| Traffic result | Q/K/V load words 128/256/256; 256 output beats / 4,096 bytes |
+| SAIF coverage | nets, ports, and pins all 100% user annotated |
+| SDF mode | zero-delay mapped-cell activity run; no SDF annotation |
+
+### 3.1 Power Summary
+
+| Metric | Measured value | Share / interpretation |
 | --- | ---: | --- |
-| Total power | 1.9032 W | pre-route, gate-SAIF estimate |
-| Dynamic power | 1.8932 W | activity-derived, not board-measured |
-| Leakage power | 9.9848 mW | TT library estimate |
-| Clock network | 1.8325 W (96.29%) | dominates because mapped ICG count is zero |
-| Combinational | 37.7293 mW (1.98%) | includes active data paths |
-| Registers | 16.7061 mW (0.88%) | excludes clock contribution listed above |
-| Memories | 16.2513 mW (0.85%) | functional macro model/activity estimate |
-| Sampled job energy | 13.033 uJ | gross energy for the 2 x 2 prefill job |
+| Cell internal power | 630.4358 mW | includes register clock-pin internal power |
+| Net switching power | 18.1893 mW | activity-derived mapped-net switching |
+| Total dynamic power | **648.6251 mW** | internal plus switching |
+| Leakage power | **9.8584 mW** | TT library estimate |
+| Total power | **658.4835 mW** | dynamic plus leakage |
+| Clock-network internal power | 582.5795 mW | 88.51% of the grouped report |
+| Gross sampled-job energy | 4.508 uJ | total power multiplied by the SAIF window |
 
-The hierarchy report identifies `u_fused_array` as 1.61 W (84.6%),
-`u_output_buffer` as 164.435 mW (8.6%), and `u_normalizer` as 101.115 mW
-(5.3%). These values include the clock network below each block and must not
-be interpreted as data-path-only power.
+`clock_network` shows zero net-switching power because this is a pre-layout
+`ZeroWireload` model without a routed clock tree. Clock-pin activity is instead
+reported as cell-internal power. The total net-switching result is not zero:
+the top-level value is 18.1893 mW.
 
-Source: `asic/docs/gate_saif_power_report.md`, with detailed artifacts under
-`asic/dc/work/power/` and
-`tb/sim/build/saif_gate_fa_two_tile_pingpong_random_seed301/`.
+### 3.2 Hierarchical Power
 
-### 3.1 Derived Workload Metrics
+| Hierarchy | Total power | Share |
+| --- | ---: | ---: |
+| `u_fused_array` | 620.086 mW | 94.2% |
+| `u_tile_cache` | 13.983 mW | 2.1% |
+| `u_normalizer` | 12.470 mW | 1.9% |
+| `u_output_buffer` | 7.236 mW | 1.1% |
+| `u_regfile` | 2.227 mW | 0.3% |
 
-The two-Q-tile/two-KV-tile job executes four 32 x 32 QK tiles and four 32 x 32
-PV tiles. The arithmetic count is therefore:
+The fused-array number includes the clock load and persistent O-bank hierarchy;
+it must not be interpreted as arithmetic-only power.
+
+Power evidence:
+
+- `asic/dc/work/power/saif/9fa3552430ace318dcc4a079834e44a99449b44441795fe57298cf35f3b0841a/gate_ungated_random_qkv_64x64_seed301.saif`
+- `asic/dc/work/power/reports/9fa3552430ace318dcc4a079834e44a99449b44441795fe57298cf35f3b0841a/gate_ungated_random_qkv_64x64_seed301/tt/power_summary.rpt`
+- `asic/dc/work/power/reports/9fa3552430ace318dcc4a079834e44a99449b44441795fe57298cf35f3b0841a/gate_ungated_random_qkv_64x64_seed301/tt/power_hierarchy.rpt`
+- `asic/dc/work/power/reports/9fa3552430ace318dcc4a079834e44a99449b44441795fe57298cf35f3b0841a/gate_ungated_random_qkv_64x64_seed301/tt/saif_coverage.rpt`
+- `tb/sim/build/saif_gate_ungated_random_qkv_64x64_seed301/fa_random_qkv_test.log`
+
+## 4. Workload-Derived Performance
+
+The 64 x 64 run contains four 32 x 32 Q/KV tile pairs. QK and PV each perform
+one 64-term MAC for every output pair:
 
 ```text
-4 tile pairs x 2 phases x 32 x 32 x 64 = 524,288 INT8 MACs
+4 tile pairs x 2 phases x 32 x 32 x 64 = 524,288 MACs
 ```
 
-This derives a workload average of 122.5 MAC/cycle and 76.6 GMAC/s at the
-1.6 ns simulation clock. The gross energy corresponds to approximately
-24.9 pJ/MAC. These are workload-derived provisional values, not hardware
-performance-counter measurements and not a sustained DDR-backed throughput
-claim. The theoretical array bound is 1,024 MAC/cycle, or 640 GMAC/s at 625
-MHz, before pipeline, memory, and control overhead.
+| Metric | Derived value | Qualification |
+| --- | ---: | --- |
+| Workload-average MAC rate | 122.53 MAC/cycle | complete load/compute/normalize/write window |
+| Workload-average throughput | 76.58 GMAC/s | at the 625 MHz simulation clock |
+| Theoretical PE-array peak | 1,024 MAC/cycle, 640 GMAC/s | excludes pipeline and control overhead |
+| Gross energy efficiency | 8.60 pJ/MAC | 4.508 uJ / 524,288 MACs |
 
-## 4. Architecture-Level Optimization Evidence
+These are workload-derived metrics, not DDR-backed sustained throughput or
+on-board measurements.
 
-| Optimization | Implementation evidence | Expected benefit | Current evidence / status |
-| --- | --- | --- | --- |
-| Local fused QK-softmax-PV dataflow | `fsa_fused_array.v` retains score, delta, and P in PE-local state | removes full-tile score/P traffic and global wide buses | implemented; needs post-route congestion comparison |
-| Online row state | PE rowmax, reverse `m_new`, rowsum, streamed `l` update | no materialized score/P matrix; supports KV blocking | implemented and exercised in 2 x 2 UVM oracle |
-| Probability-stationary WS-PV | `prob_q` remains in each PE while `V[:,d]` streams vertically | reuses P without a reload; arrays pipeline by feature | implemented and tested with tag-alignment checks |
-| Persistent O bank | stripe-local `O_old` read, alpha rescale, direct tagged writeback | eliminates non-first-KV O preload | implemented; storage/timing still need physical closure |
-| Q/K/V ping-pong | two banks per tensor with phase-aware consume/refill | overlaps computation and tile refill | bank0/1 and writeback-refill covered by UVM |
-| Mixed precision | INT8 Q/K/V, Q1.15 P/alpha, INT32 score/L/O, INT8 output | reduces storage and MAC/link width | implemented; numerical behavior checked against bit-exact SV model |
-| Pipeline partitioning | scale/PWL, O-rescale, normalizer multiplier stages | shortens long multiply/control cones while preserving II=1 | implemented; nominal setup is still at zero margin |
-| Parameterized implementation | width/geometry parameters and runtime sequence/head registers | supports controlled elaboration variants | fixed 32 x 32 x 64 remains the verified physical point |
-| ASIC clock-gate abstraction | `fa_clock_gate` wrappers in array, normalizer, output buffer | intended clock-power reduction | RTL present, but latest mapped report shows zero ICG cells; **open** |
+## 5. Architecture-Level Optimization Evidence
 
-## 5. PPA Closure Plan
-
-### 5.1 Timing and Hold
-
-1. Run physical-aware synthesis, CTS, and routed min/max STA with fast cells,
-   fast SRAM Liberty, min RC, propagated clocks, OCV, and extracted parasitics.
-2. Repair the register-to-SRAM early paths using legal cell delay insertion,
-   useful skew, or local retiming based on physical min-delay analysis. Do not
-   insert arbitrary RTL delay chains merely to silence a logical hold report.
-3. Split or retime the normalizer critical cone only if the physical max path
-   remains limiting after real interconnect is available.
-4. Repeat gate simulation with timing checks enabled; `+no_notifier` is not a
-   hold-closure substitute.
-
-### 5.2 Clock Power
-
-1. Determine why the current mapped netlist contains no clock-gating elements
-   despite the RTL clock-gate abstraction and enabled synthesis setting.
-2. Constrain and preserve legal ICG inference, including test-enable behavior,
-   then verify `report_clock_gating` on the mapped design.
-3. Compare idle, random prefill, and decode SAIF workloads. Report gated-clock
-   activity and functional behavior under reset, drain, and backpressure.
-4. Do not claim clock-power savings until a matched ungated/gated comparison
-   uses identical workload, PVT, netlist stage, and power settings.
-
-### 5.3 FPGA PPA Placeholder
-
-| FPGA metric | Current value | Required final evidence |
+| Optimization | Implemented mechanism | Benefit |
 | --- | --- | --- |
-| Device | VCK190 / VC1902 target | Vivado project and exact part/speed grade |
-| PL Fmax | TBD | post-route timing summary, WNS/TNS, clock uncertainty |
-| LUT/FF/DSP/BRAM/URAM | TBD | post-route utilization report and RAM/DSP inference evidence |
-| Board power | TBD | measured rail or approved board-monitor method, workload and temperature |
-| Bandwidth | TBD | DMA/NoC counters for input, output, and sustained kernel operation |
-| End-to-end throughput | TBD | PS-only, PL-kernel-only, and PS+PL E2E results for the same model inputs |
+| Fused local dataflow | score, probability, row state, and partial O remain in or next to the PE stripes | avoids materializing full score/P tiles and removes global 32 x 32 result buses |
+| Column-overlapped softmax | rowmax, reverse subtraction, 32-lane scale/PWL exp, and rowsum overlap | one score column can enter exp every cycle after pipeline fill |
+| Probability-stationary WS-PV | P remains in each PE while feature-major V streams vertically | removes P reload and reuses the array for PV |
+| Persistent feature-addressed O banks | partial O survives across KV tiles and is read by feature | eliminates repeated O preload between KV tiles |
+| Ping-pong Q/K/V cache | inactive-bank refill overlaps active-bank execution | exposes external-loader latency for overlap |
+| Mixed precision | signed INT8 Q/K/V, Q1.15 P/alpha, INT32 score/O/l, INT8 output | reduces operand storage and PE interconnect width |
+| Pipelined nonlinear paths | score scaling, PWL exp, O rescale, reciprocal and output scaling carry valid/tag pipelines | sustains II=1 at the selected boundaries |
+| SRAM backend separation | ASIC uses characterized macros; FPGA uses BRAM/URAM-compatible wrappers | preserves one logical memory contract across targets |
 
-## 6. Result Update Template
+## 6. Remaining PPA Work
 
-Append, rather than overwrite, each accepted run in this table.
+1. Complete the VCK190 implementation and report post-route Fmax, LUT/FF/DSP,
+   BRAM/URAM use, DDR bandwidth, board power, and end-to-end model throughput.
+2. Use physical placement, CTS, extracted parasitics, and a routed power flow to
+   replace the pre-layout clock-network estimate.
+3. Evaluate larger and better-shaped SRAM macros for the persistent O banks;
+   the current 256 x 8 composition prioritizes availability over bit efficiency.
+4. Re-evaluate phase-local clock gating only with a matched ungated/gated
+   workload, mapped-netlist equivalence, and gate-level numerical regression.
+5. Preserve the current 64 x 64 gate-SAIF run as the immutable comparison
+   baseline for subsequent low-power experiments.
 
-| Revision/date | Platform and PVT | Workload | Frequency | Area/resources | Power | Timing | Functional status | Report paths |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 2026-07-23 baseline | 28 nm TT, 0.9 V, 25 C; pre-layout | gate 2 x 2 random prefill, seed 301 | 1.60 ns target | 2,429,697.55 library units; 480 SRAM macros | 1.9032 W | setup 0.000 ns; hold -0.0953 ns | UVM error/fatal = 0 | `asic/dc/work/...`, `asic/docs/gate_saif_power_report.md` |
-| Future FPGA run | VCK190 | specify layer/model/sequence | TBD | TBD | TBD | TBD | required | link report/log |
-| Future ASIC physical run | specify corner/RC/OCV | specify SAIF | TBD | TBD | TBD | required | required | link report/log |
+## 7. FPGA Result Template
 
-## 7. Submission Interpretation
+| Metric | VCK190 result |
+| --- | ---: |
+| Post-route Fmax | TBD |
+| LUT / FF | TBD |
+| DSP | TBD |
+| BRAM / URAM | TBD |
+| PS-to-PL and PL-to-DDR bandwidth | TBD |
+| Re10K attention throughput / speedup | TBD |
+| LLM prefill throughput / speedup | TBD |
+| Board dynamic power / energy per attention | TBD |
 
-The design already demonstrates the architectural bonus directions: configurable
-compile-time structure, high data reuse, quantization, ping-pong buffering,
-and an automated randomized verification environment. It must not yet claim
-VCK190 deployment, closed clock gating, physical hold closure, or final FPGA
-PPA. The softmax contest requirement is already met: 32 score-scale/PWL-exp
-lanes evaluate a full 32-element score column in parallel, exceeding the
-required parallelism of 16. Q1.15 and the eight PWL intervals are numerical
-implementation choices, not an unfulfilled contest precision requirement.
+The FPGA row remains intentionally incomplete until the generated bitstream and
+board measurements are available.
+
+## 8. Baseline Record
+
+| Date | RTL revision | Workload | Area | Dynamic / leakage / total power | Verification |
+| --- | --- | --- | ---: | ---: | --- |
+| 2026-07-27 | RTL hash `9fa3552430ace318...` | gate 64 x 64 random MHA prefill, seed 301 | 2,438,964.94 | 648.6251 / 9.8584 / 658.4835 mW | gate UVM error/fatal = 0; SAIF annotation = 100% |

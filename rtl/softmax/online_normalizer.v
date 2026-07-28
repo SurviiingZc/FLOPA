@@ -50,7 +50,7 @@ module online_normalizer #(
 
   wire gated_clk_w;
   fa_clock_gate u_clock_gate (
-    .clk_i(clk), .enable_i(clock_en_i), .test_enable_i(1'b0),
+    .clk_i(clk), .enable_i(!rst_n || clock_en_i), .test_enable_i(1'b0),
     .clk_o(gated_clk_w)
   );
 

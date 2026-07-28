@@ -5,7 +5,7 @@ module tb_fsa_stripe;
   `TB_FSDB_DUMP("tb_fsa_stripe.fsdb",tb_fsa_stripe)
   localparam STRIPE_ROWS=2,COLS=2,HEAD_DIM=4,DATA_W=8,SCORE_W=32;
   localparam PROB_W=16,SUM_W=32,TAG_W=2;
-  reg clk=0,rst_n=0,clear_i=0,clear_score_i=0,ws_pv_i=0;
+  reg clk=0,rst_n=0,clock_en_i=1,clear_i=0,clear_score_i=0,ws_pv_i=0;
   reg [STRIPE_ROWS*DATA_W-1:0] q_rows_i=0; reg [STRIPE_ROWS-1:0] q_valid_i=0,qk_row_done_i=0;
   reg [COLS*DATA_W-1:0] k_top_data_i=0; reg [COLS-1:0] k_top_valid_i=0;
   wire [COLS*DATA_W-1:0] k_bottom_data_o; wire [COLS-1:0] k_bottom_valid_o;

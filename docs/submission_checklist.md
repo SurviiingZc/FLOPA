@@ -1,68 +1,67 @@
 # Submission Checklist and Requirement Traceability
 
-This checklist prevents a design feature, a planned feature, and a measured
-result from being presented as the same thing. "Implemented" means present in
-the checked RTL; "verified" means covered by the documented passing regression;
-"measured" requires an implementation or board report.
-
 ## 1. Competition Requirement Map
 
-| Requirement | Current status | Evidence | Submission action |
-| --- | --- | --- | --- |
-| Systolic matrix computation, array larger than 16 x 16 | implemented and verified | 32 x 32 PE array in `rtl/compute/fsa_fused_array.v`; UVM/module TBs | include Figure 1 and design Sections 1/5 |
-| KV cache capacity greater than 4 KiB | implemented | K and V each have 4 KiB ping-pong capacity; combined KV is 8 KiB | include storage table and cache organization |
-| Hardware softmax/nonlinear function, parallelism greater than 16 | implemented | 32 parallel score-scale/PWL-exp lanes, online recurrence, reciprocal normalizer | include the 32-lane dataflow and Q1.15/PWL numerical format |
-| AXI4 master/slave interface | partial | AXI4-Lite slave and 128-bit AXI4 write master implemented | state clearly that DDR input needs external DMA/AXI adapter |
-| FPGA platform deployment | planned | VCK190 target and integration plan | attach bitstream, Vivado reports, and board log when complete |
-| Configurability bonus | partial | compile-time parameters plus runtime sequence/head/mode registers | do not overstate fixed tile/head-dimension restrictions |
-| Data-reuse bonus | implemented | P-stationary PE state, local row state, persistent O banks, ping-pong cache | include Figure 1/2 and PPA optimization table |
-| Quantization bonus | implemented | INT8 Q/K/V, Q1.15 P/alpha, INT32 accumulation, INT8 output | include exact fixed-point table and numerical test cases |
-| Robust test data bonus | partial/verified | random, corner, causal, saturation, decode, backpressure, two-tile UVM tests | attach the 15-test log and coverage report |
-| Real Transformer Attention and data | planned | Re10K and SmolLM2/VCK190 planning materials | include only after model inputs, outputs, and E2E measurements exist |
-
-## 2. Required Submission Artifacts
-
-| Artifact | Current file or source | Status |
+| Requirement | Status | Evidence / presentation action |
 | --- | --- | --- |
-| Synthesizable RTL | `rtl/` | ready for source submission |
-| Simulation/UVM environment | `tb/module_tb/`, `tb/uvm/`, `tb/sim/` | ready; retain VCS logs/VDB separately if allowed |
-| Register map and interface explanation | `docs/register_and_interface_reference.md` | ready |
-| Storage and architecture explanation | `docs/design_specification.md` | ready |
-| Algorithm, buffers, and detailed design | `docs/design_specification.md` | ready |
-| Resource/power/performance analysis | `docs/ppa_and_optimization.md` | baseline only; update after FPGA/post-layout results |
-| Optimization explanation | `docs/ppa_and_optimization.md` | ready with open items stated |
-| Verification plan/testcase/coverage report | `docs/verification_report.md` | ready; coverage closure still open |
-| Architecture/pipeline figures | `figures/architecture/`, `figures/pipeline/` | ready in PDF/SVG/PNG/TIFF |
-| Waveform figures | capture instructions in `docs/verification_report.md` Section 7 | pending screenshots |
-| Defense slide deck | `ppt/defense_outline.md` | pending; create the required presentation from this outline |
-| Root reproduction guide | `README.md` | ready |
+| systolic array larger than 16 x 16 | implemented and verified | 32 x 32 fused PE array; include the architecture and dataflow figures |
+| KV cache capacity greater than 4 KiB | implemented | K and V each provide 4 KiB ping-pong capacity; combined KV is 8 KiB |
+| hardware nonlinear softmax, parallelism greater than 16 | implemented and verified | 32 score-scale/PWL-exp lanes accept one complete score column per cycle |
+| AXI4 master/slave interfaces | partially integrated | AXI4-Lite control and AXI4 writeback are present; input uses an external 128-bit tile loader |
+| FPGA deployment | planned | VCK190 integration/test plan exists; add bitstream and board reports when available |
+| configurability bonus | partial | compile-time geometry plus runtime sequence/head/mode fields; verified point remains 32 x 32 x 64 |
+| data-reuse bonus | implemented | local score/P, online row state, persistent O banks, ping-pong cache |
+| quantization bonus | implemented and verified | INT8 Q/K/V and output, Q1.15 P/alpha, INT32 state |
+| robust test-data bonus | verified | 20-run random/directed regression, 100% functional coverage, byte-exact model |
+| real Transformer Attention | planned | Re10K and LLM board-test procedures are defined; measured results are pending |
 
-## 3. Pre-Submission Gates
+## 2. Required Artifacts
 
-1. **Functional gate:** rerun the 15-test UVM regression after the final RTL
-   revision. Archive the exact command, test log, VDB, and `urg` output.
-2. **Softmax parallelism gate:** retain the 32-lane score-scale/PWL-exp source
-   and architecture evidence showing that one 32-element score column is
-   evaluated in parallel each cycle.
-3. **Interface gate:** include the AXI DMA/tile-loader wrapper in the FPGA build
-   or describe the external integration boundary explicitly in the submission.
-4. **FPGA gate:** attach post-route utilization, timing, clocking, memory/DSP
-   inference, bandwidth, and board-power evidence. Do not substitute ASIC
-   logical synthesis for a VCK190 result.
-5. **Coverage gate:** reach the required targets or submit an approved,
-   traceable waiver list. Current 80.79% DUT code and 81.44% functional
-   coverage do not satisfy a 95%/100% requirement.
-6. **PPA gate:** replace all FPGA `TBD` entries and qualify ASIC estimates as
-   pre-layout until CTS/routed min/max STA are complete.
-7. **Presentation gate:** add the architecture figure, pipeline figure, PPA
-   table, verification table, and the four waveform panels requested in the
-   verification report to the defense slides.
+| Artifact | Location | Status |
+| --- | --- | --- |
+| synthesizable RTL | `rtl/` | ready |
+| module and UVM verification | `tb/module_tb/`, `tb/uvm/`, `tb/sim/` | ready |
+| register/interface document | `docs/register_and_interface_reference.md` | ready |
+| design/algorithm document | `docs/design_specification.md` | ready |
+| PPA/optimization report | `docs/ppa_and_optimization.md` | ASIC baseline ready; FPGA rows pending |
+| verification/coverage report | `docs/verification_report.md` | functional coverage complete; code coverage open |
+| architecture/dataflow/pipeline figures | `figures/` | current assets ready |
+| waveform panels | instructions in verification report Section 8 | screenshots pending |
+| defense presentation | `ppt/defense_outline.md` | outline ready; deck pending |
+| reproduction guide | `README.md` | ready |
 
-## 4. Final Packaging Rule
+## 3. Current Result Summary
 
-Exclude generated VCS build directories, multi-gigabyte mapped netlists/SDF,
-and raw large tensor data unless the contest explicitly asks for them. Include
-reproduction scripts, report summaries, file hashes/manifests for large data,
-and links or paths to externally retained artifacts. The final package must be
-internally consistent: every figure, number, and supported-mode statement must
-match the final RTL revision.
+| Metric | Current value |
+| --- | ---: |
+| 28 nm TT total cell area | 2,438,964.94 library units |
+| target clock | 1.60 ns / 625 MHz logical-synthesis target |
+| gate-SAIF dynamic power | 648.6251 mW |
+| gate-SAIF leakage power | 9.8584 mW |
+| gate-SAIF total power | 658.4835 mW |
+| gate-SAIF net switching power | 18.1893 mW |
+| functional regression | 20/20 passing |
+| functional coverage | 100.00% |
+| DUT code coverage | 85.28% |
+
+## 4. Pre-Submission Gates
+
+1. Rerun the complete 20-test regression on the final RTL revision and archive
+   logs, VDB, URG report, command, and seeds.
+2. Raise scoped DUT line/condition/toggle/branch coverage to the required target
+   or provide an approved waiver list; 100% functional coverage does not replace
+   the currently lower code-coverage score.
+3. Add the FPGA AXI DMA/tile-loader adapter and state the external input boundary
+   clearly in diagrams and software instructions.
+4. Attach VCK190 post-route utilization/Fmax, DDR bandwidth, board power, and
+   Re10K/LLM throughput evidence when available.
+5. Capture the four waveform panels defined in the verification report.
+6. Ensure every reported ASIC number retains the TT 0.9 V/25 C, 1.60 ns,
+   pre-layout, workload, seed, and tool-version qualifiers.
+
+## 5. Packaging Rule
+
+Exclude generated VCS build trees, raw multi-gigabyte logs, and temporary EDA
+work directories unless explicitly requested. Include source, scripts,
+maintained documents, figures, concise report extracts, and hashes/manifests for
+large external artifacts. Every claim in the package must match the final RTL.

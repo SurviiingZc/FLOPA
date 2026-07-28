@@ -15,6 +15,10 @@ set expected_top_macros [expr {
   [info exists env(FA_EXPECTED_TOP_SRAM_MACROS)] ?
   $env(FA_EXPECTED_TOP_SRAM_MACROS) : 480
 }]
+set expected_top_rtl_icgs [expr {
+  [info exists env(FA_EXPECTED_TOP_RTL_ICGS)] ?
+  $env(FA_EXPECTED_TOP_RTL_ICGS) : 0
+}]
 set physical_aware [expr {
   [info exists env(FA_PHYSICAL_AWARE)] && $env(FA_PHYSICAL_AWARE) eq "1"
 }]
@@ -25,21 +29,15 @@ set logical_hold_repair [expr {
   [info exists env(FA_LOGICAL_HOLD_REPAIR)] &&
   $env(FA_LOGICAL_HOLD_REPAIR) eq "1"
 }]
-set clock_gating [expr {
-  ![info exists env(FA_CLOCK_GATING)] || $env(FA_CLOCK_GATING) eq "1"
-}]
-set clock_gating_min_bitwidth [expr {
-  [info exists env(FA_CLOCK_GATING_MIN_BITWIDTH)] ?
-  $env(FA_CLOCK_GATING_MIN_BITWIDTH) : 8
-}]
-set clock_gating_max_fanout [expr {
-  [info exists env(FA_CLOCK_GATING_MAX_FANOUT)] ?
-  $env(FA_CLOCK_GATING_MAX_FANOUT) : 256
-}]
 
 source [file join $root_dir asic scripts library_setup.tcl]
 source [file join $root_dir asic scripts rtl_sources.tcl]
 source [file join $root_dir asic constraints core_constraints.tcl]
+
+# Preserve hierarchy guidance from RTL elaboration through mapping. Formality
+# consumes the resulting SVF after synthesis; without this, clock-gate insertion
+# produced thousands of rejected guide commands and ambiguous compare points.
+set_app_var hdlin_enable_hier_map true
 
 if {$physical_aware} {
   if {![info exists env(FA_MW_LIB)] || ![file isdirectory $env(FA_MW_LIB)]} {
@@ -67,6 +65,10 @@ define_design_lib WORK -path [file join $work_dir work]
 set first_design 1
 
 foreach top_name $top_list {
+  if {$top_name eq "attention_accel_top" && $logical_hold_repair &&
+      !$physical_aware} {
+    error "logical only_hold_time repair is not supported for the SRAM-macro top; use physical-aware FF/min-RC pre-CTS repair"
+  }
   if {!$first_design} {
     remove_design -all
   }
@@ -78,6 +80,9 @@ foreach top_name $top_list {
   file mkdir $report_dir
   file mkdir $result_dir
 
+  # Start SVF recording before analyze/elaborate/uniquify so the equivalence run
+  # sees every transformation, not only the final compile_ultra pass.
+  set_svf [file join $result_dir ${top_name}.svf]
   puts "INFO: analyzing $top_name"
   analyze -format verilog -define {SYNTHESIS ATTN_ASIC} $fa_rtl_files
   elaborate $top_name
@@ -85,6 +90,7 @@ foreach top_name $top_list {
   if {![link]} {
     error "failed to link $top_name"
   }
+  set_verification_top
   uniquify
 
   # Validate the explicit DesignWare boundary before compile_ultra can flatten,
@@ -143,33 +149,32 @@ foreach top_name $top_list {
     set_dont_touch $macro_cells
   }
 
+  # Enforce the selected RTL ICG count before compile. The current baseline is
+  # zero; retaining this check also prevents a stale characterized gate from
+  # being hidden by later optimization.
+  set rtl_icg_cells [get_cells -quiet -hierarchical \
+      -filter "ref_name =~ CKLNQD*BWP12T30P140"]
+  set rtl_icg_count [sizeof_collection $rtl_icg_cells]
+  if {$top_name eq "attention_accel_top" &&
+      $rtl_icg_count != $expected_top_rtl_icgs} {
+    error "attention_accel_top expected $expected_top_rtl_icgs explicit RTL ICGs, found $rtl_icg_count before compile"
+  }
+  if {$rtl_icg_count > 0} {
+    set_dont_touch $rtl_icg_cells
+  }
+
   fa_apply_core_constraints $clock_period
   fa_apply_sram_hold_constraints $macro_cells
   set_fix_multiple_port_nets -all -buffer_constants
-
-  if {$clock_gating} {
-    set_app_var power_cg_derive_related_clock true
-    set_clock_gating_style -minimum_bitwidth $clock_gating_min_bitwidth \
-      -max_fanout $clock_gating_max_fanout -num_stages 1
-  }
 
   if {$physical_aware && [info exists env(FA_FLOORPLAN_FILE)]} {
     read_floorplan $env(FA_FLOORPLAN_FILE)
   }
 
-  set_svf [file join $result_dir ${top_name}.svf]
   if {$physical_aware} {
-    if {$clock_gating} {
-      compile_ultra -spg -gate_clock
-    } else {
-      compile_ultra -spg
-    }
+    compile_ultra -spg
   } else {
-    if {$clock_gating} {
-      compile_ultra -gate_clock
-    } else {
-      compile_ultra
-    }
+    compile_ultra
   }
 
   # Preserve the setup-optimized checkpoint before an optional logical hold
@@ -227,9 +232,9 @@ foreach top_name $top_list {
   redirect -file [file join $report_dir qor.rpt] {report_qor}
   redirect -file [file join $report_dir area.rpt] {report_area -hierarchy}
   redirect -file [file join $report_dir power.rpt] {report_power}
-  if {$clock_gating} {
-    identify_clock_gating
-  }
+  # Automatic fine-grained insertion is not part of this flow. The current
+  # report must contain zero pre-existing and zero tool-inserted ICGs.
+  identify_clock_gating
   redirect -file [file join $report_dir clock_gating.rpt] {
     report_clock_gating -multi_stage -verbose
   }
@@ -256,9 +261,11 @@ foreach top_name $top_list {
   puts $config_fp "multiplier_wrapper_count=$mult_wrapper_count"
   puts $config_fp "linked_dw02_mult_count=$dw_multiplier_count"
   puts $config_fp "logical_hold_repair=$logical_hold_repair"
-  puts $config_fp "clock_gating=$clock_gating"
-  puts $config_fp "clock_gating_min_bitwidth=$clock_gating_min_bitwidth"
-  puts $config_fp "clock_gating_max_fanout=$clock_gating_max_fanout"
+  puts $config_fp "clock_gating=none"
+  puts $config_fp "expected_top_rtl_icgs=$expected_top_rtl_icgs"
+  puts $config_fp "rtl_icg_count=$rtl_icg_count"
+  puts $config_fp "automatic_clock_gating=0"
+  puts $config_fp "automatic_clock_gating_whitelist_count=0"
   # Collections captured before compile_ultra are invalid after optimization;
   # write the stable integer recorded before compile instead of reusing _sel IDs.
   puts $config_fp "preserved_clear_replica_instances=$clear_replica_count"

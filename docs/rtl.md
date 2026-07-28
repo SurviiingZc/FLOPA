@@ -14,8 +14,8 @@
 6. 在线 softmax 的 `(m,l,O)` 如何跨 KV tile 递推，最终如何归一化和写回。
 7. 每个 valid、tag、状态寄存器和流水边界为何存在。
 
-本文只描述当前代码已经实现的行为。decode、GQA、AXI 读 DMA 等预留接口会在
-“当前实现边界”中明确标出，不把计划功能当成现有功能。
+本文只描述当前代码已经实现的行为。MHA decode 已实现；GQA、AXI 读 DMA
+等预留接口会在“当前实现边界”中明确标出，不把计划功能当成现有功能。
 
 ## 2. Default Configuration and Numeric Formats
 
@@ -152,10 +152,17 @@ WS-PV、串行 l 更新和最终 normalization 之间存在重叠关系。
 
 ### 5.3 Q and KV lifetime
 
-Q tile 在所有 KV tiles 期间保持有效，直到本 Q tile 写回完成才
-`q_consume_w`。K/V 在一次 PV 完成后一起 consume。若另一 bank 已经 commit，
-`q_switch_w` 或 `kv_switch_w` 会切换 active bank，从而允许 loader 与 compute
-ping-pong 重叠。
+Q tile 在所有 KV tiles 的 QK 阶段保持有效，在最后一个 KV tile 的 `qk_done_w`
+后立即 consume，不再等待 normalization/writeback。K 和 V 具有不同的真实寿命：
+K 在每次 `qk_done_w` 后 consume，V 在对应 `pv_complete_q` 后 consume。若另一 bank
+已经 commit，Q/K/V 在各自完成边沿直接切换 active bank，使 loader 能立即复用刚
+释放的物理 bank。
+
+若 consume 时 next bank 尚未 ready，顶层分别置位 `q_switch_pending_q`、
+`k_switch_pending_q` 或 `v_switch_pending_q`。未来 refill 可能先把旧 active bank
+重新置 valid，因此不能用 `active_valid` 推断是否仍欠一次切换；pending 位会在
+next bank 到达后强制完成所有权推进。该机制允许 K 的 128 个 loader beats 与
+softmax/PV 重叠，而 V 在 PV 完成后独立 refill。
 
 ### 5.4 Top-level PV/normalization FSM
 
@@ -172,7 +179,8 @@ ping-pong 重叠。
 | `PV_FLOW_COMPLETE` | 产生单周期 `pv_complete_q` |
 
 `softmax_pv_ready_o` 在 rowsum 完成时产生，因此 scheduler 可以启动 WS-PV；
-与此同时 `SM_L_UPDATE` 继续逐行更新 `l`。只有两者都完成，KV tile 才释放。
+与此同时 `SM_L_UPDATE` 继续逐行更新 `l`。K 已在 QK 结束时释放，只有 V 和该
+KV tile 的 scheduler 生命周期需要等待 WS-PV 与 l 更新都完成。
 
 ### 5.5 Writeback address maintenance
 
@@ -211,13 +219,12 @@ START 当前要求：
 
 - `seq_q`, `seq_kv`, head counts 非零；
 - `HEAD_DIM=64`, `TILE_Q=TILE_K=32`；
-- MHA mode，且 `num_q_heads == num_kv_heads`；
-- prefill：`prefill=1, decode=0`；
-- 单 token decode：`prefill=0, decode=1, seq_q=1, seq_kv>=1`；
+- MHA mode，且 prefill/decode 恰好选择一个；
+- `num_q_heads == num_kv_heads`；
 - Q/K/V/O base 16-byte aligned。
 
-decode 保持物理 32x32 阵列：逻辑 query 位置是 `seq_kv-1`，数组掩码只保留
-row 0，最终只写回一个 `HEAD_DIM` 输出。GQA 仍会被 START validation 拒绝。
+decode 还要求 `seq_q=1`，但 `seq_kv` 可通过既有 KV-tile 循环跨越多个
+32-token tile；当前回归已覆盖到 256 keys。GQA 位仍会被 START validation 拒绝。
 
 ### 6.3 `accel_scheduler`
 
@@ -255,8 +262,9 @@ V cache[address=d] = V[key=0..31, feature=d]
 ### 7.3 `pingpong_buffer`
 
 每个实例维护 `active_bank` 和两位 `bank_valid`。commit 已有效 bank、切换到空 bank
-都会报告 protocol error。Q 独立管理；K/V 分别实例化 ownership 状态，但顶层要求
-两者 active bank 一致且同时有效。
+都会报告 protocol error。Q/K/V 各自实例化 ownership 状态；K 可以在 QK 后先行
+consume/switch，V 在 PV 后跟进。scheduler 只有在 K/V active bank 再次一致且同时
+有效时才允许 `LOAD_KV -> QK`。
 
 ### 7.4 `banked_sram`
 
@@ -483,10 +491,6 @@ feature tag = d
 ```
 
 所以 64 维一次连续加载，II=1，不拆成两个 feature halves。
-`fsa_pv_engine` 不再从“第几个 response”推断 `d`：每个 `v_rd_en_o` 的物理
-cache address 都进入 `V_RD_LATENCY=2` 的 tag pipeline，并与 `v_rd_valid_i`/
-`v_rd_data_i` 同拍输出。只有 data 和 tag 同时 valid 才会发出 `array_valid_o`；
-最后 feature 也由返回 tag `HEAD_DIM-1` 判定，而非计数器边界。
 
 ### 14.2 Align O seed with V
 
@@ -500,20 +504,9 @@ seed[row,d] = alpha[row] * O_old[row,d] >> 15
 
 首 KV tile 的 `pv_seed_zero_i=1`，绕过未初始化 O memory，以 zero seed 开始。
 V 数据经过 `pv_issue_cols_q -> pv_rescale_cols_q -> s1 -> s2` 延迟，与 O-rescale
-输出严格对齐；`pv_rescale_feature_q -> s1 -> s2` 与 V payload 同步推进，并在
-simulation 下检查它与所有 stripe O-seed tag 一致。之后 O seed 做 row skew，V 做
-column skew。这一检查会在任何 feature `d`/`d+1` 错位或末 feature 遗失前停止仿真。
+输出严格对齐。之后 O seed 做 row skew，V 做 column skew。
 
-### 14.3 Registered O-bank Read Return
-
-最终 normalizer 同样按 feature-major 顺序连续读取 O-bank。`norm_request_q` 保存
-请求的 `{stripe,d}`，但 O-bank 在每个后续 read 时都会更新其输出。因此
-`fsa_fused_array` 在 response valid 的同一拍把 `O[:,d]`、对应 `l` slice 和该 tag
-寄存到 `norm_rd_*_o`；normalizer 只能消费这些寄存后的 payload。不能直接组合选择
-O-bank 输出，否则连续扫描会形成 `tag=d, payload=O[:,d+1]`，将整条最终输出左移并
-丢失最后 feature。
-
-### 14.4 Probability-stationary horizontal accumulation
+### 14.3 Probability-stationary horizontal accumulation
 
 每个 PE 已保存 `prob_q=P[row,k]`。V[k,d] 从顶部向下广播，partial sum 从左向右：
 
@@ -614,14 +607,10 @@ burst size 是以下三者最小值：剩余 beats、配置 burst length（当�
 
 ## 18. Clock Gating, Reset and Power Intent
 
-`fa_clock_gate` 是 backend-portable wrapper：
-
-- ASIC：实例化 characterized `CKLNQD4BWP12T30P140` ICG。
-- FPGA：保持 root clock，依靠 FF/BRAM/DSP clock-enable inference。
-
-顶层有 array、normalizer、output 三个 enable domain。阵列内部还有一个 control/exp
-clock branch 和每 stripe 一个本地 branch，以限制单一 gated-clock fanout。enable
-覆盖 pipeline drain，不能在最后一个 input valid 后立即关钟。
+`fa_clock_gate` 当前在 ASIC/FPGA 下都直接透传 root clock。模块层 enable 与
+drain 状态暂时保留作为接口和历史结构，但不会映射为 `CKLNQD*`。32x32 top 的
+综合契约是 RTL ICG=0、tool-inserted ICG=0，DC 自动门控固定关闭。当前功耗
+报告因此是可复现的无门控比较基线，而不是门控节能结果。
 
 Reset policy：
 
@@ -674,8 +663,8 @@ filelist 和 module-TB 清单删除。当前文件树只保留现有加速器数
 
 ## 22. Current Implementation Boundaries
 
-1. 当前硬件实现固定 32x32 MHA prefill，以及单 token MHA decode。decode 仅使用
-   physical row 0，另外 31 行由既有 array mask 屏蔽；GQA 仍会被 START validation 拒绝。
+1. 当前硬件实现固定 32x32 MHA 阵列，支持 tiled prefill 和 `seq_q=1` 的
+   multi-KV-tile decode；GQA 会被 START validation 拒绝。
 2. Q/K/V base 和 stride 已有寄存器，但没有 AXI read DMA；tile loader 位于顶层外部。
 3. `cfg_value_scale_w` 和 `cfg_mask_cfg_w` 已锁存但当前 datapath 未消费。
 4. `cfg_q_base_w`, `cfg_k_base_w`, `cfg_v_base_w` 不参与当前 cache 地址生成；

@@ -271,6 +271,45 @@ class fa_attention_base_vseq extends uvm_sequence #(uvm_sequence_item);
       q_tile, p_sequencer.status_vif.debug_state,
       p_sequencer.status_vif.q_tile_index, p_sequencer.status_vif.kv_tile_index))
   endtask
+
+  task wait_for_qk_consumed(int unsigned q_tile, int unsigned kv_tile,
+                            int unsigned max_cycles = 500000);
+    bit [3:0] state;
+    for (int unsigned cycle = 0; cycle < max_cycles; cycle++) begin
+      state = p_sequencer.status_vif.debug_state;
+      if (p_sequencer.status_vif.q_tile_index > q_tile ||
+          (p_sequencer.status_vif.q_tile_index == q_tile &&
+           (p_sequencer.status_vif.kv_tile_index > kv_tile ||
+            (p_sequencer.status_vif.kv_tile_index == kv_tile &&
+             (state == `ATTN_STATE_SOFTMAX || state == `ATTN_STATE_PV ||
+              state == `ATTN_STATE_WRITEBACK || state == `ATTN_STATE_DONE)))))
+        return;
+      @(posedge p_sequencer.status_vif.clk);
+    end
+    `uvm_fatal("QK_CONSUME_TIMEOUT", $sformatf(
+      "timed out waiting for QK consume q_tile=%0d kv_tile=%0d; current state=%0d q_tile=%0d kv_tile=%0d",
+      q_tile, kv_tile, p_sequencer.status_vif.debug_state,
+      p_sequencer.status_vif.q_tile_index, p_sequencer.status_vif.kv_tile_index))
+  endtask
+
+  task wait_for_pv_consumed(int unsigned q_tile, int unsigned kv_tile,
+                            int unsigned max_cycles = 500000);
+    bit [3:0] state;
+    for (int unsigned cycle = 0; cycle < max_cycles; cycle++) begin
+      state = p_sequencer.status_vif.debug_state;
+      if (p_sequencer.status_vif.q_tile_index > q_tile ||
+          (p_sequencer.status_vif.q_tile_index == q_tile &&
+           (p_sequencer.status_vif.kv_tile_index > kv_tile ||
+            (p_sequencer.status_vif.kv_tile_index == kv_tile &&
+             (state == `ATTN_STATE_WRITEBACK || state == `ATTN_STATE_DONE)))))
+        return;
+      @(posedge p_sequencer.status_vif.clk);
+    end
+    `uvm_fatal("PV_CONSUME_TIMEOUT", $sformatf(
+      "timed out waiting for PV consume q_tile=%0d kv_tile=%0d; current state=%0d q_tile=%0d kv_tile=%0d",
+      q_tile, kv_tile, p_sequencer.status_vif.debug_state,
+      p_sequencer.status_vif.q_tile_index, p_sequencer.status_vif.kv_tile_index))
+  endtask
 endclass
 
 class fa_smoke_vseq extends fa_attention_base_vseq;
@@ -297,8 +336,7 @@ class fa_random_qkv_vseq extends fa_attention_base_vseq;
   task body();
     int unsigned q_tile_count;
     int unsigned kv_tile_count;
-    int unsigned prefetch_tile;
-    int unsigned missing_tile;
+    int unsigned total_kv_uses;
     prepare_tensor();
     q_tile_count = (cfg.seq_q + `ATTN_TILE_Q - 1) / `ATTN_TILE_Q;
     kv_tile_count = (cfg.seq_kv + `ATTN_TILE_K - 1) / `ATTN_TILE_K;
@@ -315,45 +353,42 @@ class fa_random_qkv_vseq extends fa_attention_base_vseq;
       start_supported_job();
     end
 
-    // At most two tiles can live in the cache.  Keep tile 0/1 resident before
-    // the job starts; every later tile is loaded into the bank released by the
-    // scheduler.  This covers arbitrary 32-row chunks up to FA_MAX_SEQ.
-    for (int unsigned q_tile = 0; q_tile < q_tile_count; q_tile++) begin
-      for (int unsigned kv_tile = 1; kv_tile < kv_tile_count; kv_tile++) begin
-        wait_for_kv_tile_index(q_tile, kv_tile);
-        if (kv_tile + 1 < kv_tile_count) begin
-          load_kv_tile((kv_tile + 1) % 2, kv_tile + 1);
-        end else if (!cfg.decode_en && q_tile + 1 < q_tile_count && kv_tile[0]) begin
-          // An odd final KV tile consumes bank 1 and releases bank 0, so KV0
-          // for the next Q tile can be prefetched immediately.  For an even
-          // final tile bank 0 is still active; loading KV1 into bank 1 would
-          // let the next Q tile start at KV1 before KV0 is available.
-          prefetch_tile = 0;
-          load_kv_tile(prefetch_tile[0], prefetch_tile);
+    // Treat all (Q tile, KV tile) computations as one continuous ping-pong
+    // stream. Bank parity must not restart at a Q-tile boundary because the RTL
+    // bank pointers also continue toggling across that boundary.
+    total_kv_uses = q_tile_count * kv_tile_count;
+    fork
+      begin : q_prefetch_worker
+        // Q[t-2] is dead after its final QK, so refill that bank with Q[t].
+        for (int unsigned q_tile = 2; q_tile < q_tile_count; q_tile++) begin
+          wait_for_qk_consumed(q_tile - 2, kv_tile_count - 1);
+          load_tensor_tile(FA_TILE_Q, q_tile % 2, q_tile);
         end
       end
-
-      if (!cfg.decode_en && q_tile + 1 < q_tile_count) begin
-        wait_for_tile_state(`ATTN_STATE_WRITEBACK, q_tile, kv_tile_count - 1);
-        if (kv_tile_count == 1) begin
-          load_kv_tile(0, 0);
-        end else if ((kv_tile_count - 1) % 2) begin
-          // KV0 was prefetched into bank 0 on the final LOAD_KV transition.
-          load_kv_tile(1, 1);
-        end else begin
-          // The final active bank was bank 0.  Keep bank 1 empty until KV0
-          // has been committed to bank 0, then restore KV1 for the next loop.
-          load_kv_tile(0, 0);
-          load_kv_tile(1, 1);
-        end
-        // q_tile_index is stable after the writeback edge, unlike the
-        // single-cycle LOAD_Q state.  At this point the old Q bank is free.
-        if (q_tile + 2 < q_tile_count) begin
-          wait_for_q_tile_index(q_tile + 1);
-          load_tensor_tile(FA_TILE_Q, (q_tile + 2) % 2, q_tile + 2);
+      begin : k_prefetch_worker
+        // K[g-2] is dead as soon as QK completes. This moves the 128 K beats
+        // ahead of PV instead of placing all 256 K/V beats after PV.
+        for (int unsigned global_tile = 2; global_tile < total_kv_uses; global_tile++) begin
+          int unsigned source_tile;
+          source_tile = global_tile - 2;
+          wait_for_qk_consumed(source_tile / kv_tile_count,
+                               source_tile % kv_tile_count);
+          load_tensor_tile(FA_TILE_K, global_tile % 2,
+                           global_tile % kv_tile_count);
         end
       end
-    end
+      begin : v_prefetch_worker
+        // V[g-2] remains live through PV and is refilled immediately afterward.
+        for (int unsigned global_tile = 2; global_tile < total_kv_uses; global_tile++) begin
+          int unsigned source_tile;
+          source_tile = global_tile - 2;
+          wait_for_pv_consumed(source_tile / kv_tile_count,
+                              source_tile % kv_tile_count);
+          load_tensor_tile(FA_TILE_V, global_tile % 2,
+                           global_tile % kv_tile_count);
+        end
+      end
+    join
     wait_done_or_error(500000);
     stop_saif_capture();
   endtask

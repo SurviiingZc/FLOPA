@@ -17,6 +17,7 @@
 )(
   input                                  clk,
   input                                  rst_n,
+  input                                  clock_en_i,
   input                                  clear_i,
   input                                  clear_score_i,
   input                                  ws_pv_i,
@@ -77,6 +78,9 @@
   localparam integer CLEAR_GROUPS = (COLS + CLEAR_GROUP_SIZE - 1) /
                                     CLEAR_GROUP_SIZE;
   localparam integer RESCALE_SPLIT_W = (SUM_W > 24) ? 24 : (SUM_W / 2);
+  localparam integer PE_DRAIN_CYCLES = COLS + STRIPE_ROWS + 4;
+  localparam integer PE_DRAIN_W = (PE_DRAIN_CYCLES < 2) ? 1 :
+                                  $clog2(PE_DRAIN_CYCLES + 1);
 
   wire [DATA_W-1:0] q_data_w [0:STRIPE_ROWS-1][0:COLS];
   wire q_valid_w [0:STRIPE_ROWS-1][0:COLS];
@@ -101,6 +105,15 @@
   wire [STRIPE_ROWS-1:0] o_wr_valid_w;
   wire [STRIPE_ROWS*TAG_W-1:0] o_wr_feature_w;
   wire [STRIPE_ROWS*SUM_W-1:0] o_wr_data_w;
+  wire pe_clk_w;
+  wire control_clk_w;
+  wire o_bank_clk_w;
+  wire pv_seed_clk_w;
+  wire pe_gate_enable_w;
+  wire o_bank_gate_enable_w;
+  wire pv_seed_gate_enable_w;
+  wire pe_launch_w;
+  reg [PE_DRAIN_W-1:0] pe_drain_count_q;
   reg [STRIPE_ROWS*SUM_W-1:0] pv_seed_o_q;
   reg [STRIPE_ROWS*SUM_W-1:0] pv_seed_o_s1_q;
   reg [STRIPE_ROWS*SUM_W-1:0] pv_seed_o_s2_q;
@@ -142,6 +155,50 @@
       $fatal(1, "fsa_stripe O-seed operand arrived without SRAM read response");
 `endif
 
+  // Gate complete synchronous domains, never individual PE registers. A small
+  // root-clock counter covers the longest possible wave across one stripe and
+  // avoids a wide combinational OR from every PE token into the ICG enable pin.
+  assign pe_launch_w = (|q_valid_i) || (|k_top_valid_i) ||
+      (|qk_row_done_i) || (|m_start_valid_i) ||
+      (|sum_start_valid_i) || prob_col_load_valid_i ||
+      (|pv_sum_valid_i);
+  always @(posedge clk or negedge rst_n) begin
+    if (!rst_n)
+      pe_drain_count_q <= {PE_DRAIN_W{1'b0}};
+    else if (clear_i)
+      pe_drain_count_q <= {PE_DRAIN_W{1'b0}};
+    else if (pe_launch_w)
+      pe_drain_count_q <= PE_DRAIN_CYCLES;
+    else if (|pe_drain_count_q)
+      pe_drain_count_q <= pe_drain_count_q - 1'b1;
+  end
+
+  assign pe_gate_enable_w = !rst_n || clear_i || clear_score_i ||
+      (|clear_score_group_w) || pe_launch_w || (|pe_drain_count_q);
+  assign o_bank_gate_enable_w = !rst_n || clear_i || o_rd_en_i || o_rd_valid_o ||
+      (|o_wr_valid_w);
+  assign pv_seed_gate_enable_w = !rst_n || clear_i || pv_seed_operand_valid_i ||
+      pv_seed_operand_valid_q || pv_seed_metadata_valid_s1_q ||
+      (|pv_rescale_valid_w);
+
+  fa_clock_gate u_pe_clock_gate (
+    .clk_i(clk), .enable_i(pe_gate_enable_w), .test_enable_i(1'b0),
+    .clk_o(pe_clk_w)
+  );
+  fa_clock_gate u_control_clock_gate (
+    .clk_i(clk),
+    .enable_i(!rst_n || clock_en_i || clear_i || clear_score_i),
+    .test_enable_i(1'b0), .clk_o(control_clk_w)
+  );
+  fa_clock_gate u_o_bank_clock_gate (
+    .clk_i(clk), .enable_i(o_bank_gate_enable_w), .test_enable_i(1'b0),
+    .clk_o(o_bank_clk_w)
+  );
+  fa_clock_gate u_pv_seed_clock_gate (
+    .clk_i(clk), .enable_i(pv_seed_gate_enable_w), .test_enable_i(1'b0),
+    .clk_o(pv_seed_clk_w)
+  );
+
   // Decode the global probability column tag once per stripe; each one-hot bit
   // drives only eight local PEs instead of broadcasting a binary select globally.
   assign prob_col_select_w = prob_col_load_valid_i ?
@@ -155,7 +212,7 @@
     for (clear_group = 0; clear_group < CLEAR_GROUPS;
          clear_group = clear_group + 1) begin : g_clear_replica
       fa_clear_replica u_clear_replica (
-        .clk(clk), .rst_n(rst_n), .clear_i(clear_i),
+        .clk(control_clk_w), .rst_n(rst_n), .clear_i(clear_i),
         .token_i(clear_score_i), .token_o(clear_score_group_w[clear_group])
       );
     end
@@ -231,7 +288,7 @@
           .DATA_W(DATA_W), .SCORE_W(SCORE_W), .PROB_W(PROB_W),
           .SUM_W(SUM_W), .TAG_W(TAG_W)
         ) u_pe (
-          .clk(clk), .rst_n(rst_n), .clear_i(clear_i),
+          .clk(pe_clk_w), .rst_n(rst_n), .clear_i(clear_i),
           .clear_score_i(
               clear_score_group_w[pe_col/CLEAR_GROUP_SIZE]),
           .q_valid_i(q_valid_w[pe_row][pe_col]),
@@ -291,7 +348,7 @@
     .ROWS(STRIPE_ROWS), .HEAD_DIM(HEAD_DIM), .GROUP_SIZE(COLS),
     .DATA_W(SUM_W), .FEATURE_IDX_W(TAG_W)
   ) u_o_bank (
-    .clk(clk), .rst_n(rst_n), .clear_i(clear_i),
+    .clk(o_bank_clk_w), .rst_n(rst_n), .clear_i(clear_i),
     .rd_en_i(o_rd_en_i), .rd_feature_i(o_rd_feature_i),
     .rd_valid_o(o_rd_valid_o), .rd_data_o(o_rd_data_o),
     .wr_valid_i(o_wr_valid_w), .wr_feature_i(o_wr_feature_w),
@@ -301,7 +358,7 @@
   // Capture the synchronous O SRAM response, alpha, and feature locally before
   // the latency-2, II=1 signed 32x17 rescale. This creates three independent
   // timing regions: SRAM read, multiplier partial products, and product combine.
-  always @(posedge clk or negedge rst_n) begin
+  always @(posedge pv_seed_clk_w or negedge rst_n) begin
     if (!rst_n) begin
       pv_seed_operand_valid_q <= 1'b0;
       pv_seed_metadata_valid_s1_q <= 1'b0;
@@ -315,7 +372,7 @@
     end
   end
 
-  always @(posedge clk) begin
+  always @(posedge pv_seed_clk_w) begin
     if (rst_n && !clear_i && pv_seed_operand_valid_i &&
         (pv_seed_zero_i || o_rd_valid_o)) begin
       pv_seed_o_q <= pv_seed_zero_i ?
@@ -346,7 +403,8 @@
       fa_signed_mult_pipe2 #(
         .A_W(SUM_W), .B_W(PROB_W+1), .SPLIT_W(RESCALE_SPLIT_W)
       ) u_o_rescale_multiplier (
-        .clk(clk), .rst_n(rst_n), .valid_i(pv_seed_operand_valid_q),
+        .clk(pv_seed_clk_w), .rst_n(rst_n),
+        .valid_i(pv_seed_operand_valid_q),
         .a_i($signed(pv_seed_o_q[seed_row*SUM_W +: SUM_W])),
         .b_i($signed({1'b0,
              pv_seed_alpha_q[seed_row*PROB_W +: PROB_W]})),
@@ -413,7 +471,7 @@
   end
 
   // Register the local phase to contain fanout and pipeline the hierarchical mux.
-  always @(posedge clk or negedge rst_n) begin
+  always @(posedge control_clk_w or negedge rst_n) begin
     if (!rst_n) begin
       ws_pv_q <= 1'b0;
       delta_group_valid_q <= {DELTA_GROUPS{1'b0}};
