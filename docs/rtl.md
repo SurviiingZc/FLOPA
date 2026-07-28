@@ -152,10 +152,17 @@ WS-PV、串行 l 更新和最终 normalization 之间存在重叠关系。
 
 ### 5.3 Q and KV lifetime
 
-Q tile 在所有 KV tiles 期间保持有效，直到本 Q tile 写回完成才
-`q_consume_w`。K/V 在一次 PV 完成后一起 consume。若另一 bank 已经 commit，
-`q_switch_w` 或 `kv_switch_w` 会切换 active bank，从而允许 loader 与 compute
-ping-pong 重叠。
+Q tile 在所有 KV tiles 的 QK 阶段保持有效，在最后一个 KV tile 的 `qk_done_w`
+后立即 consume，不再等待 normalization/writeback。K 和 V 具有不同的真实寿命：
+K 在每次 `qk_done_w` 后 consume，V 在对应 `pv_complete_q` 后 consume。若另一 bank
+已经 commit，Q/K/V 在各自完成边沿直接切换 active bank，使 loader 能立即复用刚
+释放的物理 bank。
+
+若 consume 时 next bank 尚未 ready，顶层分别置位 `q_switch_pending_q`、
+`k_switch_pending_q` 或 `v_switch_pending_q`。未来 refill 可能先把旧 active bank
+重新置 valid，因此不能用 `active_valid` 推断是否仍欠一次切换；pending 位会在
+next bank 到达后强制完成所有权推进。该机制允许 K 的 128 个 loader beats 与
+softmax/PV 重叠，而 V 在 PV 完成后独立 refill。
 
 ### 5.4 Top-level PV/normalization FSM
 
@@ -172,7 +179,8 @@ ping-pong 重叠。
 | `PV_FLOW_COMPLETE` | 产生单周期 `pv_complete_q` |
 
 `softmax_pv_ready_o` 在 rowsum 完成时产生，因此 scheduler 可以启动 WS-PV；
-与此同时 `SM_L_UPDATE` 继续逐行更新 `l`。只有两者都完成，KV tile 才释放。
+与此同时 `SM_L_UPDATE` 继续逐行更新 `l`。K 已在 QK 结束时释放，只有 V 和该
+KV tile 的 scheduler 生命周期需要等待 WS-PV 与 l 更新都完成。
 
 ### 5.5 Writeback address maintenance
 
@@ -254,8 +262,9 @@ V cache[address=d] = V[key=0..31, feature=d]
 ### 7.3 `pingpong_buffer`
 
 每个实例维护 `active_bank` 和两位 `bank_valid`。commit 已有效 bank、切换到空 bank
-都会报告 protocol error。Q 独立管理；K/V 分别实例化 ownership 状态，但顶层要求
-两者 active bank 一致且同时有效。
+都会报告 protocol error。Q/K/V 各自实例化 ownership 状态；K 可以在 QK 后先行
+consume/switch，V 在 PV 后跟进。scheduler 只有在 K/V active bank 再次一致且同时
+有效时才允许 `LOAD_KV -> QK`。
 
 ### 7.4 `banked_sram`
 

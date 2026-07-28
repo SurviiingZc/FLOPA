@@ -177,8 +177,12 @@ module attention_accel_top #(
   wire v_cache_rd_valid_w;
   wire q_consume_w;
   wire q_switch_w;
-  wire kv_consume_w;
-  wire kv_switch_w;
+  wire k_consume_w;
+  wire k_switch_w;
+  wire v_consume_w;
+  wire v_switch_w;
+  wire k_next_valid_w;
+  wire v_next_valid_w;
 
   wire qk_request_w;
   wire pv_request_w;
@@ -262,6 +266,9 @@ module attention_accel_top #(
   reg pv_en_d_q;
   reg wb_en_d_q;
   reg load_q_en_d_q;
+  reg q_switch_pending_q;
+  reg k_switch_pending_q;
+  reg v_switch_pending_q;
   wire fatal_error_w;
   wire [3:0] debug_state_reg_w;
   wire axi_data_ready_w;
@@ -360,13 +367,50 @@ module attention_accel_top #(
                           (cfg_seq_kv_w - 16'd1) : q_tile_base_w;
   assign array_seq_q_w = scheduler_decode_active_w ? cfg_seq_kv_w : cfg_seq_q_w;
 
-  // Q persists across all KV tiles for a Q tile; K/V are consumed after each PV.
-  // axi4_master_write holds done through ST_DONE, so consumers use its rising
-  // edge to avoid two Q consumes or two output-address increments per writeback.
-  assign q_consume_w = axi_write_done_pulse_w;
-  assign q_switch_w = load_q_en_w && !q_active_valid_w && q_next_valid_w;
-  assign kv_consume_w = pv_complete_q;
-  assign kv_switch_w = load_kv_en_w && !kv_active_valid_w && kv_next_valid_w;
+  // Release each tensor at its true last consumer. Q is dead after the final
+  // QK of its Q tile, K after every QK, and V after every PV. If the next bank
+  // is already committed, switch on the completion edge so the loader may
+  // immediately refill the released bank without exposing a future tile as active.
+  // Pending bits below retain the owed switch across producer underflow.
+  assign q_consume_w = qk_done_w && tile_last_w;
+  assign q_switch_w = (q_consume_w && !run_last_w && q_next_valid_w) ||
+                      (q_switch_pending_q && q_next_valid_w);
+  assign k_consume_w = qk_done_w;
+  assign k_switch_w = (k_consume_w && !(tile_last_w && run_last_w) && k_next_valid_w) ||
+                      (k_switch_pending_q && k_next_valid_w);
+  assign v_consume_w = pv_complete_q;
+  assign v_switch_w = (v_consume_w && !(tile_last_w && run_last_w) && v_next_valid_w) ||
+                      (v_switch_pending_q && v_next_valid_w);
+
+  // A future refill may make the old active bank valid again before the
+  // immediately-next bank arrives. Remember the owed ownership advance rather
+  // than using active_valid as a proxy for whether a switch is still required.
+  always @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      q_switch_pending_q <= 1'b0;
+      k_switch_pending_q <= 1'b0;
+      v_switch_pending_q <= 1'b0;
+    end else if (cfg_soft_reset_w || cfg_start_w) begin
+      q_switch_pending_q <= 1'b0;
+      k_switch_pending_q <= 1'b0;
+      v_switch_pending_q <= 1'b0;
+    end else begin
+      if (q_consume_w)
+        q_switch_pending_q <= !run_last_w && !q_next_valid_w;
+      else if (q_switch_pending_q && q_next_valid_w)
+        q_switch_pending_q <= 1'b0;
+
+      if (k_consume_w)
+        k_switch_pending_q <= !(tile_last_w && run_last_w) && !k_next_valid_w;
+      else if (k_switch_pending_q && k_next_valid_w)
+        k_switch_pending_q <= 1'b0;
+
+      if (v_consume_w)
+        v_switch_pending_q <= !(tile_last_w && run_last_w) && !v_next_valid_w;
+      else if (v_switch_pending_q && v_next_valid_w)
+        v_switch_pending_q <= 1'b0;
+    end
+  end
 
   // Data plane loader writes the inactive ping-pong banks while compute reads active.
   qkv_tile_cache #(.ADDR_W(CACHE_ADDR_W)) u_tile_cache (
@@ -375,10 +419,13 @@ module attention_accel_top #(
     .load_half_i(tile_load_half_i), .load_data_i(tile_load_data_i), .load_valid_i(tile_load_valid_i),
     .load_ready_o(tile_load_ready_o), .commit_kind_i(tile_commit_kind_i),
     .commit_bank_i(tile_commit_bank_i), .commit_valid_i(tile_commit_valid_i),
-    .q_consume_i(q_consume_w), .q_switch_i(q_switch_w), .kv_consume_i(kv_consume_w), .kv_switch_i(kv_switch_w),
+    .q_consume_i(q_consume_w), .q_switch_i(q_switch_w),
+    .k_consume_i(k_consume_w), .k_switch_i(k_switch_w),
+    .v_consume_i(v_consume_w), .v_switch_i(v_switch_w),
     .q_active_valid_o(q_active_valid_w), .kv_active_valid_o(kv_active_valid_w),
     .q_next_valid_o(q_next_valid_w), .kv_next_valid_o(kv_next_valid_w),
     .q_active_bank_o(q_active_bank_w), .kv_active_bank_o(kv_active_bank_w),
+    .k_next_valid_o(k_next_valid_w), .v_next_valid_o(v_next_valid_w),
     .q_rd_en_i(q_cache_rd_en_w), .q_rd_addr_i(q_cache_rd_addr_w), .q_rd_data_o(q_cache_rd_data_w), .q_rd_valid_o(q_cache_rd_valid_w),
     .k_rd_en_i(k_cache_rd_en_w), .k_rd_addr_i(k_cache_rd_addr_w), .k_rd_data_o(k_cache_rd_data_w), .k_rd_valid_o(k_cache_rd_valid_w),
     .v_rd_en_i(v_cache_rd_en_w), .v_rd_addr_i(v_cache_rd_addr_w), .v_rd_data_o(v_cache_rd_data_w), .v_rd_valid_o(v_cache_rd_valid_w),

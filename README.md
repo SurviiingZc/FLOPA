@@ -24,7 +24,7 @@ research implementation baseline rather than a post-route ASIC or FPGA release.
 | Supported modes | MHA prefill, causal masking, single-query multi-KV-tile MHA decode |
 | Deferred mode | native GQA |
 
-![FLOPA architecture](figures/architecture/flopa_overall_architecture.png)
+[View the current FLOPA architecture figure (PDF)](figures/flopa_overall_architecture.pdf)
 
 ## Measured Baseline
 

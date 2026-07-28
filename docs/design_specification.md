@@ -1,4 +1,4 @@
-# FLOPA Design Specification
+# FLOPA Technical Report
 
 ## 1. Purpose and Design Point
 
@@ -15,10 +15,13 @@ rowsum, and PV accumulation occur in or immediately adjacent to the PE stripes.
 Only feature-addressed O-bank reads and final normalized results cross the
 array boundary.
 
-![FLOPA fused architecture](../figures/architecture/flopa_overall_architecture.png)
+![FLOPA fused architecture](../figures/flopa_overall_architecture.png)
 
-*Figure 1. FLOPA architecture overview. The maintained source asset is
-`figures/architecture/flopa_overall_architecture.png`.*
+*Figure 1. FLOPA system architecture. The control plane, ping-pong tile cache,
+fused compute fabric, persistent O banks, online normalizer, and output path
+are shown at their implemented architectural boundaries. The external DMA / tile
+loader remains a system-integration component rather than an AXI read master
+inside the accelerator.*
 
 ## 2. Algorithm and Fixed-Point Contract
 
@@ -165,11 +168,13 @@ but require fresh regression and external-loader bandwidth evidence.
 
 ## 5. Fused Compute Dataflow
 
-![FLOPA overlapped pipeline](../figures/pipeline/flash_attention_pipeline.png)
+![FLOPA fused-array design overview](../figures/flopa_design_overview.png)
 
-*Figure 2. Pipeline timing. Use the vector PDF/SVG in `figures/pipeline/` in a
-paper. Widths are schematic; external-memory backpressure is intentionally not
-shown.*
+*Figure 2. Design overview of the fused fabric. Q and K enter the 32 x 32 PE
+array through orthogonal systolic links, probability remains stationary in the
+PEs during PV, and feature-addressed persistent O banks retain partial outputs
+across KV tiles. The inset summarizes the phase-shared PE arithmetic and local
+softmax state.*
 
 ### 5.1 QK and Row Maximum
 
@@ -198,6 +203,14 @@ starts from `softmax_pv_ready` before this serial row-state update fully drains;
 a sticky completion guard prevents release of the KV tile until both operations
 finish.
 
+![FLOPA QK and online-softmax dataflow](../figures/flopa_design_QKT.png)
+
+*Figure 3. QK and online-softmax dataflow. Output-stationary score accumulation
+is followed by an in-array row-maximum wave, reverse `S-m_new` propagation,
+32-lane scale/PWL-exp processing, probability return, and reverse rowsum. The
+illustrated 4 x 4 fabric is a compact representation of the implemented 32 x 32
+array.*
+
 ### 5.3 Probability-Stationary WS-PV
 
 P remains in PE `(i,k)`. For each feature `d`, V cache supplies the 32-lane
@@ -214,6 +227,14 @@ previous class of `d -> d+1` read/write alignment defects. Sixty-four features
 are launched continuously; there is no compute restart at the physical O-bank
 group boundary.
 
+![FLOPA probability-stationary WS-PV dataflow](../figures/flopa_design_PV.png)
+
+*Figure 4. Probability-stationary WS-PV dataflow. Each stored probability
+multiplies the feature-major V stream, while `alpha*O_old` enters as the
+left-edge seed. The right-edge result is tagged by feature and written directly
+to the corresponding persistent O-bank address; final normalization is applied
+only after the last KV tile.*
+
 ### 5.4 Final Normalization and Writeback
 
 After the final KV tile, the fused array serves one stripe/feature O-bank read
@@ -223,6 +244,15 @@ saturation. `output_buffer` packs the results into 256-bit storage words, and
 the AXI4 master emits 128-bit output bursts. A one-shot `axi_write_done` pulse
 is shared by scheduler completion, Q-bank consumption, and output-address
 advance so a level-held AXI response cannot consume the next Q tile twice.
+
+![FLOPA overlapped execution pipeline](../figures/flash_attention_pipeline.png)
+
+*Figure 5. Dominant pipeline spans for one KV tile. Panel (a) shows overlap
+among the QK tail, row maximum, reverse subtraction, score scaling, PWL exp,
+rowsum, row-state update, and PV launch. Panel (b) shows continuous 64-feature
+WS-PV issue, direct persistent O-bank update, and grouped final normalization.
+The spans describe the no-backpressure datapath schedule; external loader and
+AXI stalls are not included.*
 
 ## 6. Control, Power, and Physical Design Considerations
 
@@ -240,7 +270,89 @@ organizations. SRAM reshaping is intentionally deferred until after FPGA
 bring-up; it must be evaluated with port conflicts, placement, macro aspect
 ratio, and access latency, not just bit utilization.
 
-## 7. Known Limits and Next Steps
+## 7. Current PPA and Verification Results
+
+### 7.1 ASIC Synthesis Baseline
+
+The current reproducible ASIC baseline is a pre-layout Design Compiler result
+for the 32 x 32, `HEAD_DIM=64` top level. It uses the TSMC 28 nm TT CCS
+standard-cell library and the `uhdsp_256x8m4s_tt0p9v25c` SRAM library at 0.9 V
+and 25 C. The logical target is 1.60 ns (625 MHz). These numbers exclude routed
+interconnect and therefore do not represent post-route frequency or silicon
+measurements.
+
+| Metric | Current result |
+| --- | ---: |
+| Setup WNS / TNS / failing paths | 0.000 ns / 0.000 ns / 0 |
+| Critical path | 1.49 ns, 60 logic levels |
+| Total cell area | 2,438,964.94 library units |
+| Fused-array area | 2,048,222.41 (84.0%) |
+| Total cells | 1,524,232 |
+| Combinational / sequential cells | 1,281,371 / 242,335 |
+| Buffer / inverter cells | 252,342 |
+| SRAM macros | 480 |
+
+The 480 SRAM macros comprise 192 Q/K/V-cache macros, 256 persistent O-bank
+macros, and 32 output-buffer macros. The current comparison baseline contains
+zero RTL and zero tool-inserted integrated clock-gating cells.
+
+### 7.2 Gate-SAIF Power Baseline
+
+Activity was generated by a mapped-netlist VCS run of `fa_random_qkv_test` with
+seed 301 and read by Power Compiler. The 64 x 64 MHA-prefill workload used a
+1.60 ns clock, completed with zero UVM errors and fatals, and annotated nets,
+ports, and pins at 100%. The SAIF window covered cycles 57 through 4336 (4,279
+cycles, 6,846.4 ns). This is a zero-delay, pre-layout activity estimate without
+SDF annotation.
+
+| Metric | Current result |
+| --- | ---: |
+| Cell internal power | 630.4358 mW |
+| Net switching power | 18.1893 mW |
+| Total dynamic power | **648.6251 mW** |
+| Leakage power | **9.8584 mW** |
+| Total power | **658.4835 mW** |
+| Gross sampled-job energy | 4.508 uJ |
+
+The fused-array hierarchy accounts for 620.086 mW (94.2%) of total power,
+including its register clock load and persistent O banks. The tile cache,
+normalizer, output buffer, and register file account for 13.983, 12.470, 7.236,
+and 2.227 mW, respectively.
+
+### 7.3 Workload-Derived Performance and Verification
+
+The sampled 64 x 64 workload performs 524,288 MACs across four 32 x 32 Q/KV
+tile pairs and the QK and PV phases. The complete load, compute, normalization,
+and writeback window averages 122.53 MAC/cycle or 76.58 GMAC/s at 625 MHz. The
+32 x 32 array peak is 1,024 MAC/cycle or 640 GMAC/s. Gross energy efficiency is
+8.60 pJ/MAC; these values are workload-derived rather than DDR-backed or
+board-level sustained measurements.
+
+The maintained fixed-seed regression passes 20 of 20 tests with 100.00%
+functional coverage. DUT code coverage is 85.28%, and the complete merged code
+coverage is 88.06%. Prefill has been checked through 512 x 512, while MHA decode
+has been checked for one query and up to 256 KV tokens. Detailed report paths
+and update rules are maintained in [PPA and Optimization](ppa_and_optimization.md)
+and [Verification Report](verification_report.md).
+
+### 7.4 FPGA Evaluation (Pending)
+
+The VCK190 implementation and model-level measurements have not yet been
+completed. The table below is intentionally a reporting template; `TBD` entries
+must be replaced only by post-route reports or board measurements.
+
+| Metric | VCK190 result |
+| --- | ---: |
+| Post-route Fmax | TBD |
+| LUT / FF | TBD |
+| DSP | TBD |
+| BRAM / URAM | TBD |
+| PS-to-PL and PL-to-DDR bandwidth | TBD |
+| Re10K attention throughput / speedup | TBD |
+| LLM prefill throughput / speedup | TBD |
+| Board dynamic power / energy per attention | TBD |
+
+## 8. Known Limits and Next Steps
 
 1. Add a verified AXI4 read/DMA wrapper for Q/K/V ingress before claiming a
    complete PS-DDR system interface.

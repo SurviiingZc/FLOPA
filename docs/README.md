@@ -7,7 +7,7 @@ reports remain the source of truth if a document conflicts with an artifact.
 
 | Deliverable | Document |
 | --- | --- |
-| architecture, algorithm, storage, and detailed design | [Design Specification](design_specification.md) |
+| architecture, algorithm, storage, detailed design, and result summary | [Technical Report](design_specification.md) |
 | register definitions and external interfaces | [Register and Interface Reference](register_and_interface_reference.md) |
 | resource, timing, power, performance, and optimization analysis | [PPA and Optimization](ppa_and_optimization.md) |
 | verification plan, test cases, coverage, and waveform instructions | [Verification Report](verification_report.md) |
@@ -27,12 +27,14 @@ reports remain the source of truth if a document conflicts with an artifact.
 
 ## Maintained Figures
 
-- `../figures/architecture/flopa_overall_architecture.png`
-- `../figures/dataflow/flopa_design_overview.png`
-- `../figures/pipeline/flash_attention_pipeline.{pdf,svg,png,tiff}`
+- `../figures/flopa_overall_architecture.pdf`
+- `../figures/flopa_design_overview.pdf`
+- `../figures/flopa_design_QKT.pdf`
+- `../figures/flopa_design_PV.pdf`
+- `../figures/flash_attention_pipeline.pdf`
 
-The architecture PNG is the current overview asset. The pipeline is available
-in vector and raster formats for papers and slides.
+All maintained report figures use vector PDF. Their editable draw.io sources
+are kept outside the submission document set.
 
 ## Result Update Rule
 

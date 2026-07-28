@@ -56,12 +56,23 @@ class fa_tile_coverage extends uvm_subscriber #(fa_tile_item);
       bins last = {63};
     }
     kind_x_bank_x_action: cross cp_kind, cp_bank, cp_action;
-    cp_kv_bank_phase: coverpoint {tr.bank, state}
-      iff (!tr.is_commit && (tr.kind == FA_TILE_K || tr.kind == FA_TILE_V)) {
-      bins preload_bank0 = {{1'b0, `ATTN_STATE_IDLE}};
-      bins preload_bank1 = {{1'b1, `ATTN_STATE_IDLE}};
-      bins refill_bank0_after_switch = {{1'b0, `ATTN_STATE_QK}};
-      bins refill_bank1_during_writeback = {{1'b1, `ATTN_STATE_WRITEBACK}};
+    cp_prefetch_phase: coverpoint {tr.kind, state} iff (!tr.is_commit) {
+      bins q_preload = {{FA_TILE_Q, `ATTN_STATE_IDLE}};
+      bins k_preload = {{FA_TILE_K, `ATTN_STATE_IDLE}};
+      bins v_preload = {{FA_TILE_V, `ATTN_STATE_IDLE}};
+      bins q_refill_after_last_qk = {
+        {FA_TILE_Q, `ATTN_STATE_SOFTMAX}, {FA_TILE_Q, `ATTN_STATE_PV},
+        {FA_TILE_Q, `ATTN_STATE_WRITEBACK}
+      };
+      bins k_refill_after_qk = {
+        {FA_TILE_K, `ATTN_STATE_SOFTMAX}, {FA_TILE_K, `ATTN_STATE_PV},
+        {FA_TILE_K, `ATTN_STATE_LOAD_KV}, {FA_TILE_K, `ATTN_STATE_QK}
+      };
+      bins v_refill_after_pv = {
+        {FA_TILE_V, `ATTN_STATE_LOAD_KV}, {FA_TILE_V, `ATTN_STATE_QK},
+        {FA_TILE_V, `ATTN_STATE_SOFTMAX}, {FA_TILE_V, `ATTN_STATE_PV},
+        {FA_TILE_V, `ATTN_STATE_WRITEBACK}
+      };
     }
   endgroup
 

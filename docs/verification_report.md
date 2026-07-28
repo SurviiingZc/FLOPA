@@ -91,11 +91,39 @@ make uvm-regression
 The output is written below `tb/sim/build/uvm_regression/` with one log per run,
 `coverage.vdb`, and the merged `urg/` report.
 
+### 4.1 Consumption-driven tile prefetch
+
+`fa_random_qkv_vseq` treats all `(Q tile, KV tile)` operations as one continuous
+ping-pong stream; bank parity does not restart at a Q-tile boundary. Three
+workers share the 128-bit loader:
+
+- Q[t] starts after Q[t-2] completes its final QK;
+- K[g] starts after K[g-2] completes QK;
+- V[g] starts after V[g-2] completes PV.
+
+The K and V ownership states are independent, so K transfer can overlap the
+preceding softmax/PV interval. Coverage explicitly samples Q refill after final
+QK, K refill after QK, and V refill after PV. The scoreboard still requires the
+exact Q/K/V word counts and byte-accurate output, so early refill cannot hide a
+missing, duplicated, or reordered logical tile.
+
+Targeted checks for this change on 2026-07-28:
+
+| Test | Result | Loader words Q/K/V | Output |
+| --- | --- | ---: | ---: |
+| random prefill 64 x 64, seed 72802 | pass, 0 error/fatal | 128 / 256 / 256 | 4,096 bytes |
+| random prefill 96 x 96, seed 72804 | pass, 0 error/fatal | 192 / 576 / 576 | 6,144 bytes |
+| causal decode 1 x 96, seed 72805 | pass, 0 error/fatal | 64 / 192 / 192 | 64 bytes |
+
+The 96 x 96 run exercises the third Q/K/V tile and reports 100% tile covergroup
+coverage. These directed results do not replace the complete regression and
+merged code-coverage data recorded below.
+
 ## 5. Latest Regression Result
 
 | Item | Recorded result |
 | --- | --- |
-| Date | 2026-07-24 |
+| Date | 2026-07-28 |
 | Simulator | VCS V-2023.12-SP2_Full64 |
 | Backend model | `ATTN_ASIC` RTL with characterized `uhdsp_256x8m4s` model |
 | Result | **20/20 tests pass** |
@@ -130,9 +158,9 @@ score-delta saturation. They are not stimulus gaps in the declared interface.
 
 | Scope | Score | Line | Condition | Toggle | Branch |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| Full merged URG report | **88.06%** | 91.58% | 69.57% | 91.84% | 87.32% |
-| `tb_top` / DUT hierarchy | **85.28%** | 92.00% | 69.68% | 91.84% | 87.61% |
-| Module definitions | 77.86% | 72.33% | 67.84% | 82.25% | 89.03% |
+| Full merged URG report | **88.74%** | 91.59% | 72.82% | 91.83% | 87.47% |
+| `tb_top` hierarchy | **86.13%** | 92.01% | 72.92% | 91.83% | 87.76% |
+| Module definitions | 78.12% | 72.78% | 68.33% | 82.28% | 89.10% |
 
 Functional coverage is closed for the declared workload. The 95% code-coverage
 target is not yet met. Remaining work is concentrated in condition/toggle
@@ -191,10 +219,11 @@ verification evidence, not substitutes for scoreboard results.
 
 - Generate the UVM regression with an FSDB hook enabled for `prefill_long`.
 - Suggested file: `tb/sim/build/uvm_regression/prefill_long.fsdb`.
-- Signals: scheduler state/tile indices, tile load/commit, active bank IDs,
-  Q/KV consume pulses, AXI write completion pulse, and writeback address.
-- Show: inactive-bank refill, active-bank compute, ordered consume, and
-  continuous multi-Q-tile writeback.
+- Signals: scheduler state/tile indices, tile load/commit, Q/K/V active bank IDs,
+  independent Q/K/V consume/switch pulses, pending-switch bits, AXI write
+  completion pulse, and writeback address.
+- Show: Q refill after final QK, K refill during softmax/PV, V refill after PV,
+  ordered ownership advances, and continuous multi-Q-tile writeback.
 
 ## 9. Update Rule
 

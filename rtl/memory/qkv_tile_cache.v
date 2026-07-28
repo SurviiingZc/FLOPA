@@ -23,14 +23,18 @@ module qkv_tile_cache #(
   input                     commit_valid_i,
   input                     q_consume_i,
   input                     q_switch_i,
-  input                     kv_consume_i,
-  input                     kv_switch_i,
+  input                     k_consume_i,
+  input                     k_switch_i,
+  input                     v_consume_i,
+  input                     v_switch_i,
   output                    q_active_valid_o,
   output                    kv_active_valid_o,
   output                    q_next_valid_o,
   output                    kv_next_valid_o,
   output                    q_active_bank_o,
   output                    kv_active_bank_o,
+  output                    k_next_valid_o,
+  output                    v_next_valid_o,
   input                     q_rd_en_i,
   input      [ADDR_W-1:0]   q_rd_addr_i,
   output     [255:0]        q_rd_data_o,
@@ -90,6 +94,8 @@ module qkv_tile_cache #(
   assign kv_active_valid_o = k_active_valid_w & v_active_valid_w & (k_active_bank_w == v_active_bank_w);
   assign kv_next_valid_o = k_next_valid_w & v_next_valid_w;
   assign kv_active_bank_o = k_active_bank_w;
+  assign k_next_valid_o = k_next_valid_w;
+  assign v_next_valid_o = v_next_valid_w;
 
   // Assemble two 128-bit loader beats into one 256-bit cache word. The second half
   // must match kind, bank, and address captured with the first half.
@@ -135,7 +141,8 @@ module qkv_tile_cache #(
     end
   end
 
-  // Q has independent lifetime; K and V switch/consume together as a KV pair.
+  // Q, K, and V have independent release points. K is dead after QK, while V
+  // remains live through PV, so their ownership cannot share one consume pulse.
   pingpong_buffer u_q_pp (
     .clk(clk), .rst_n(rst_n), .clear_i(clear_i),
     .load_commit_i(commit_valid_i && commit_kind_i == `ATTN_CACHE_Q), .load_bank_i(commit_bank_i),
@@ -147,7 +154,7 @@ module qkv_tile_cache #(
   pingpong_buffer u_k_pp (
     .clk(clk), .rst_n(rst_n), .clear_i(clear_i),
     .load_commit_i(commit_valid_i && commit_kind_i == `ATTN_CACHE_K), .load_bank_i(commit_bank_i),
-    .consume_i(kv_consume_i), .switch_i(kv_switch_i), .active_bank_o(k_active_bank_w),
+    .consume_i(k_consume_i), .switch_i(k_switch_i), .active_bank_o(k_active_bank_w),
     .active_valid_o(k_active_valid_w), .next_valid_o(k_next_valid_w), .bank_valid_o(),
     .protocol_error_o(k_pp_error_w)
   );
@@ -155,7 +162,7 @@ module qkv_tile_cache #(
   pingpong_buffer u_v_pp (
     .clk(clk), .rst_n(rst_n), .clear_i(clear_i),
     .load_commit_i(commit_valid_i && commit_kind_i == `ATTN_CACHE_V), .load_bank_i(commit_bank_i),
-    .consume_i(kv_consume_i), .switch_i(kv_switch_i), .active_bank_o(v_active_bank_w),
+    .consume_i(v_consume_i), .switch_i(v_switch_i), .active_bank_o(v_active_bank_w),
     .active_valid_o(v_active_valid_w), .next_valid_o(v_next_valid_w), .bank_valid_o(),
     .protocol_error_o(v_pp_error_w)
   );
