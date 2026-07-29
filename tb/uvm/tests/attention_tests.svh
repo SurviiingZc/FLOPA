@@ -105,6 +105,26 @@ class fa_random_qkv_test extends fa_base_test;
   endtask
 endclass
 
+class fa_multihead_underflow_test extends fa_base_test;
+  `uvm_component_utils(fa_multihead_underflow_test)
+  function new(string name = "fa_multihead_underflow_test", uvm_component parent = null);
+    super.new(name, parent);
+  endfunction
+  virtual function void configure();
+    super.configure();
+    cfg.seq_q = 32;
+    cfg.seq_kv = 32;
+    cfg.num_q_heads = 2;
+    cfg.num_kv_heads = 2;
+    cfg.stimulus = FA_STIM_RANDOM_FULL_RANGE;
+  endfunction
+  virtual task run_sequence();
+    fa_multihead_underflow_vseq seq;
+    seq = fa_multihead_underflow_vseq::type_id::create("multihead_underflow_seq");
+    seq.start(env.vseqr);
+  endtask
+endclass
+
 class fa_pwl_corner_test extends fa_base_test;
   `uvm_component_utils(fa_pwl_corner_test)
   function new(string name = "fa_pwl_corner_test", uvm_component parent = null);
@@ -130,6 +150,7 @@ class fa_arith_rounding_test extends fa_base_test;
     super.configure();
     cfg.stimulus = FA_STIM_ARITH_ROUNDING;
     cfg.score_scale = 32'h0002_0005;
+    cfg.out_scale = 32'h000e_2000;
   endfunction
   virtual task run_sequence();
     fa_random_qkv_vseq seq;
@@ -137,6 +158,12 @@ class fa_arith_rounding_test extends fa_base_test;
     seq.start(env.vseqr);
     if (!env.scoreboard.ref_model.last_event.saw_score_round_increment)
       `uvm_error("ROUNDING", "score-scale guard/sticky rounding corner was not observed")
+    if (!env.scoreboard.ref_model.last_event.saw_normalizer_negative_tie)
+      `uvm_error("ROUNDING", "normalizer negative half-tie corner was not observed")
+    if (!env.scoreboard.ref_model.last_event.reciprocal_seed_mask[6] ||
+        !env.scoreboard.ref_model.last_event.reciprocal_seed_mask[12])
+      `uvm_error("RECIPROCAL", $sformatf("required LUT seed indices 6/c not both observed mask=%04h",
+                                         env.scoreboard.ref_model.last_event.reciprocal_seed_mask))
   endtask
 endclass
 
@@ -148,6 +175,7 @@ class fa_positive_saturation_test extends fa_base_test;
   virtual function void configure();
     super.configure();
     cfg.stimulus = FA_STIM_POSITIVE_SAT;
+    cfg.out_scale = 32'h0000_0001;
   endfunction
   virtual task run_sequence();
     fa_random_qkv_vseq seq;
@@ -217,6 +245,7 @@ class fa_illegal_config_test extends fa_base_test;
     super.configure();
     cfg.enable_data_check = 0;
     cfg.allow_axil_error_response = 1;
+    cfg.allow_tile_protocol_error = 1;
   endfunction
   virtual task run_sequence();
     fa_illegal_config_vseq seq;
@@ -251,6 +280,7 @@ class fa_axi_bresp_error_test extends fa_base_test;
     super.configure();
     cfg.inject_axi_bresp_error = 1;
     cfg.enable_data_check = 0;
+    cfg.allow_axil_error_response = 1;
   endfunction
   virtual task run_sequence();
     fa_axi_bresp_error_vseq seq;

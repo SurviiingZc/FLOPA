@@ -35,27 +35,27 @@ class fa_axil_driver extends uvm_driver #(fa_axil_item);
   endtask
 
   task drive_write(fa_axil_item tr);
-    bit aw_done;
-    bit w_done;
-    aw_done = 0;
-    w_done = 0;
     @(negedge vif.clk);
-    vif.awaddr  <= tr.addr;
-    vif.awvalid <= 1'b1;
-    vif.wdata   <= tr.data;
-    vif.wstrb   <= tr.strb;
-    vif.wvalid  <= 1'b1;
-    while (!(aw_done && w_done)) begin
-      @(posedge vif.clk);
-      if (!aw_done && vif.awvalid && vif.awready) begin
+    fork
+      begin
+        repeat (tr.aw_delay_cycles) @(negedge vif.clk);
+        vif.awaddr <= tr.addr;
+        vif.awvalid <= 1'b1;
+        do @(posedge vif.clk); while (!(vif.awvalid && vif.awready));
+        @(negedge vif.clk);
         vif.awvalid <= 1'b0;
-        aw_done = 1;
       end
-      if (!w_done && vif.wvalid && vif.wready) begin
+      begin
+        repeat (tr.w_delay_cycles) @(negedge vif.clk);
+        vif.wdata <= tr.data;
+        vif.wstrb <= tr.strb;
+        vif.wvalid <= 1'b1;
+        do @(posedge vif.clk); while (!(vif.wvalid && vif.wready));
+        @(negedge vif.clk);
         vif.wvalid <= 1'b0;
-        w_done = 1;
       end
-    end
+    join
+    repeat (tr.bready_delay_cycles) @(negedge vif.clk);
     vif.bready <= 1'b1;
     do @(posedge vif.clk); while (!vif.bvalid);
     tr.resp = vif.bresp;
@@ -65,11 +65,13 @@ class fa_axil_driver extends uvm_driver #(fa_axil_item);
 
   task drive_read(fa_axil_item tr);
     @(negedge vif.clk);
+    repeat (tr.ar_delay_cycles) @(negedge vif.clk);
     vif.araddr  <= tr.addr;
     vif.arvalid <= 1'b1;
     do @(posedge vif.clk); while (!vif.arready);
     @(negedge vif.clk);
     vif.arvalid <= 1'b0;
+    repeat (tr.rready_delay_cycles) @(negedge vif.clk);
     vif.rready  <= 1'b1;
     do @(posedge vif.clk); while (!vif.rvalid);
     tr.rdata = vif.rdata;

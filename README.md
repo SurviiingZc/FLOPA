@@ -51,7 +51,7 @@ artifact paths are recorded in [PPA and Optimization](docs/ppa_and_optimization.
 | [Design Specification](docs/design_specification.md) | architecture, algorithms, formats, memory organization, and dataflow |
 | [Register and Interface Reference](docs/register_and_interface_reference.md) | register table, bit fields, protocols, and programming sequence |
 | [PPA and Optimization](docs/ppa_and_optimization.md) | current area, timing, power, performance, and optimization evidence |
-| [Verification Report](docs/verification_report.md) | 20-run regression, functional/code coverage, and waveform plan |
+| [Verification Report](docs/verification_report.md) | 21-run regression, raw/waived code coverage, functional coverage, and waveform plan |
 | [Submission Checklist](docs/submission_checklist.md) | requirement-to-evidence and packaging checklist |
 | [RTL Code Guide](docs/rtl.md) | detailed Chinese implementation walkthrough |
 | [Synthesis Notes](docs/synth.md) | internal synthesis and implementation history |
@@ -97,7 +97,7 @@ make -C tb/sim run
 make -C tb/sim asic-sram
 make -C tb/sim lint-rtl
 
-# Complete 20-run UVM regression and merged coverage.
+# Complete 21-run UVM regression and raw/waived merged coverage.
 make uvm-regression
 
 # One configurable UVM workload.
@@ -115,10 +115,13 @@ make gate-saif-power CORNER=tt GATE_SEQ_Q=64 GATE_SEQ_KV=64 \
 
 ## Verification Status
 
-The recorded VCS regression contains 20 fixed-seed runs. All 20 pass with zero
-UVM errors and fatals. Functional coverage is 100.00%; the current DUT-hierarchy
-code-coverage score is 85.28%, so the 95% code-coverage target is not claimed.
-The latest 64 x 64 mapped-netlist power workload also passes byte-exact checking.
+The recorded VCS regression contains 21 fixed-seed runs. All 21 pass with zero
+UVM errors and fatals. Functional coverage is 100.00%; the raw `tb_top` score is
+95.01% and the reviewed DUT-scoped score is 96.00%. Waived module-definition
+line and branch coverage reach 95.23% and 97.61%. The aggregate code-coverage
+target is met; remaining condition/toggle gaps are classified in the verification
+report and remain visible in the raw report. The latest
+64 x 64 mapped-netlist power workload also passes byte-exact checking.
 
 ## Integration Boundaries
 

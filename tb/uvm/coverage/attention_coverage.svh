@@ -12,7 +12,14 @@ class fa_axil_coverage extends uvm_subscriber #(fa_axil_item);
       bins control = {`ATTN_REG_CONTROL};
       bins status_cfg[] = {`ATTN_REG_SEQ_Q, `ATTN_REG_SEQ_KV, `ATTN_REG_HEAD_DIM,
                            `ATTN_REG_TILE_Q, `ATTN_REG_TILE_K};
-      bins scale_cfg[] = {`ATTN_REG_SCORE_SCALE, `ATTN_REG_VALUE_SCALE, `ATTN_REG_OUT_SCALE};
+      bins scale_cfg[] = {`ATTN_REG_SCORE_SCALE, `ATTN_REG_OUT_SCALE};
+      bins reserved_razwi[] = {
+        `ATTN_REG_Q_BASE_LO, `ATTN_REG_Q_BASE_HI,
+        `ATTN_REG_K_BASE_LO, `ATTN_REG_K_BASE_HI,
+        `ATTN_REG_V_BASE_LO, `ATTN_REG_V_BASE_HI,
+        `ATTN_REG_Q_STRIDE, `ATTN_REG_K_STRIDE, `ATTN_REG_V_STRIDE,
+        `ATTN_REG_VALUE_SCALE, `ATTN_REG_MASK_CFG
+      };
       bins perf_cfg = {`ATTN_REG_PERF_CTRL};
       bins other = default;
     }
@@ -21,6 +28,15 @@ class fa_axil_coverage extends uvm_subscriber #(fa_axil_item);
       bins slverr = {2'b10};
       // AXI4-Lite has no EXOKAY response and accel_regfile only emits OKAY/SLVERR.
       illegal_bins reserved = {2'b01, 2'b11};
+    }
+    cp_write_strobe: coverpoint tr.strb iff (!tr.is_read) {
+      bins full = {4'hf};
+      bins partial = {[4'h1:4'he]};
+      bins none = {4'h0};
+    }
+    cp_control_byte0: coverpoint tr.strb[0]
+      iff (!tr.is_read && tr.addr == `ATTN_REG_CONTROL) {
+      bins disabled = {0}; bins enabled = {1};
     }
     direction_x_addr: cross cp_direction, cp_addr {
       // cp_addr is intentionally sampled only for writes.
@@ -54,6 +70,13 @@ class fa_tile_coverage extends uvm_subscriber #(fa_tile_item);
       bins first = {0};
       bins middle = {[1:62]};
       bins last = {63};
+    }
+    cp_protocol_error: coverpoint tr.protocol_error {
+      bins none = {FA_TILE_PROTOCOL_NONE};
+      bins missing_lower = {FA_TILE_PROTOCOL_MISSING_LOWER};
+      bins kind_mismatch = {FA_TILE_PROTOCOL_KIND_MISMATCH};
+      bins bank_mismatch = {FA_TILE_PROTOCOL_BANK_MISMATCH};
+      bins addr_mismatch = {FA_TILE_PROTOCOL_ADDR_MISMATCH};
     }
     kind_x_bank_x_action: cross cp_kind, cp_bank, cp_action;
     cp_prefetch_phase: coverpoint {tr.kind, state} iff (!tr.is_commit) {
@@ -194,6 +217,10 @@ class fa_math_coverage extends uvm_subscriber #(fa_model_event);
       bins negative_sat = {FA_STIM_NEGATIVE_SAT};
     }
     cp_mode: coverpoint tr.decode_en { bins prefill = {0}; bins decode = {1}; }
+    cp_head_count: coverpoint tr.num_heads {
+      bins single = {1};
+      bins multi = {[2:255]};
+    }
     cp_tile_shape: coverpoint {tr.multi_q_tile, tr.multi_kv_tile} {
       bins one_by_one = {2'b00};
       bins one_by_many = {2'b01};
@@ -255,6 +282,36 @@ class fa_math_coverage extends uvm_subscriber #(fa_model_event);
     }
     cp_score_round: coverpoint tr.saw_score_round_increment { bins no = {0}; bins yes = {1}; }
     cp_normalizer_round: coverpoint tr.saw_normalizer_round_increment { bins no = {0}; bins yes = {1}; }
+    cp_normalizer_negative_tie: coverpoint tr.saw_normalizer_negative_tie {
+      bins no = {0}; bins yes = {1};
+    }
+    cp_reciprocal_seed: coverpoint tr.reciprocal_seed_mask {
+      wildcard bins seed0 = {16'b???????????????1};
+      wildcard bins seed1 = {16'b??????????????1?};
+      wildcard bins seed2 = {16'b?????????????1??};
+      wildcard bins seed3 = {16'b????????????1???};
+      wildcard bins seed4 = {16'b???????????1????};
+      wildcard bins seed5 = {16'b??????????1?????};
+      wildcard bins seed6 = {16'b?????????1??????};
+      wildcard bins seed7 = {16'b????????1???????};
+      wildcard bins seed8 = {16'b???????1????????};
+      wildcard bins seed9 = {16'b??????1?????????};
+      wildcard bins seed10 = {16'b?????1??????????};
+      wildcard bins seed11 = {16'b????1???????????};
+      wildcard bins seed12 = {16'b???1????????????};
+      wildcard bins seed13 = {16'b??1?????????????};
+      wildcard bins seed14 = {16'b?1??????????????};
+      wildcard bins seed15 = {16'b1???????????????};
+    }
+    cp_score_shift: coverpoint tr.score_scale[21:16] {
+      bins zero = {0}; bins nonzero = {[1:63]};
+    }
+    cp_score_mantissa: coverpoint tr.score_scale[15:0] {
+      bins unit = {1}; bins nonunit = {[2:16'hffff]};
+    }
+    cp_out_shift: coverpoint tr.out_scale[21:16] {
+      bins zero = {0}; bins mid = {[1:14]}; bins high = {[15:63]};
+    }
     cp_output_sat: coverpoint {tr.saw_output_pos_sat, tr.saw_output_neg_sat} {
       bins none = {2'b00}; bins positive = {2'b10}; bins negative = {2'b01}; bins both = {2'b11};
     }

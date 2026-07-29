@@ -95,7 +95,8 @@ class attention_ref_model extends uvm_object;
     return result[15:0];
   endfunction
 
-  function automatic longint unsigned reciprocal_exact(longint unsigned value);
+  function automatic longint unsigned reciprocal_exact(
+    longint unsigned value, ref fa_model_event model_ev);
     int signed msb;
     longint unsigned normalized;
     longint unsigned seed;
@@ -104,6 +105,7 @@ class attention_ref_model extends uvm_object;
     while (msb > 0 && !value[msb]) msb--;
     if (msb >= 15) normalized = value >> (msb - 15);
     else normalized = value << (15 - msb);
+    model_ev.reciprocal_seed_mask[normalized[14:11]] = 1'b1;
     case (normalized[14:11])
       0: seed = 32767;
       1: seed = 30840;
@@ -142,6 +144,18 @@ class attention_ref_model extends uvm_object;
     return guard_bit && (!bits[63] || sticky_bit);
   endfunction
 
+  function automatic bit normalizer_negative_half_tie(
+    longint signed value, int unsigned shift);
+    bit [63:0] bits;
+    bit sticky_bit;
+    bits = value;
+    sticky_bit = 0;
+    if (shift == 0 || !bits[63] || !bits[shift-1]) return 0;
+    for (int unsigned bit_index = 0; bit_index < shift-1; bit_index++)
+      sticky_bit |= bits[bit_index];
+    return !sticky_bit;
+  endfunction
+
   function automatic byte signed normalize_exact(
     longint signed accumulator, longint unsigned l_value, bit [31:0] out_scale,
     ref fa_model_event model_ev);
@@ -151,7 +165,7 @@ class attention_ref_model extends uvm_object;
     longint signed rounded;
     longint unsigned reciprocal;
     int unsigned shift;
-    reciprocal = reciprocal_exact(l_value);
+    reciprocal = reciprocal_exact(l_value, model_ev);
     normalized = (accumulator * $signed({1'b0, reciprocal[29:0]})) >>> 15;
     scale_product = normalized * $signed(out_scale[15:0]);
     shift = out_scale[21:16];
@@ -159,6 +173,8 @@ class attention_ref_model extends uvm_object;
     rounded = shifted + normalizer_round_increment(scale_product, shift);
     if (normalizer_round_increment(scale_product, shift))
       model_ev.saw_normalizer_round_increment = 1;
+    if (normalizer_negative_half_tie(scale_product, shift))
+      model_ev.saw_normalizer_negative_tie = 1;
     if (shifted > 127 || rounded > 127) begin
       model_ev.saw_output_pos_sat = 1;
       return 8'sd127;
@@ -229,6 +245,7 @@ class attention_ref_model extends uvm_object;
     golden_valid = 0;
     last_event = fa_model_event::type_id::create("model_event");
     last_event.stimulus = cfg.stimulus;
+    last_event.num_heads = cfg.num_q_heads;
     last_event.decode_en = cfg.decode_en;
     last_event.causal_en = cfg.causal_en;
     last_event.multi_q_tile = (cfg.seq_q > `ATTN_ARRAY_ROWS);
@@ -238,6 +255,8 @@ class attention_ref_model extends uvm_object;
     last_event.q_tail_tile = (cfg.seq_q % `ATTN_TILE_Q) != 0;
     last_event.kv_tail_tile = (cfg.seq_kv % `ATTN_TILE_K) != 0;
     last_event.write_backpressured = cfg.ready_low_pct != 0;
+    last_event.score_scale = cfg.score_scale;
+    last_event.out_scale = cfg.out_scale;
     if (!(q_loaded && k_loaded && v_loaded)) begin
       `uvm_error("REF_INPUT", "Reference model started before all Q/K/V words were observed")
       return;

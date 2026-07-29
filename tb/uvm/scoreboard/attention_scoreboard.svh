@@ -50,7 +50,7 @@ class attention_scoreboard extends uvm_component;
   function int unsigned expected_q_load_words();
     int unsigned q_tiles;
     q_tiles = cfg.decode_en ? 1 : ((cfg.seq_q + `ATTN_TILE_Q - 1) / `ATTN_TILE_Q);
-    return q_tiles * cfg.head_dim;
+    return cfg.num_q_heads * q_tiles * cfg.head_dim;
   endfunction
 
   function int unsigned expected_kv_load_words();
@@ -58,18 +58,21 @@ class attention_scoreboard extends uvm_component;
     int unsigned kv_tiles;
     q_tiles = cfg.decode_en ? 1 : ((cfg.seq_q + `ATTN_TILE_Q - 1) / `ATTN_TILE_Q);
     kv_tiles = (cfg.seq_kv + `ATTN_TILE_K - 1) / `ATTN_TILE_K;
-    return q_tiles * kv_tiles * cfg.head_dim;
+    return cfg.num_q_heads * q_tiles * kv_tiles * cfg.head_dim;
   endfunction
 
   function void check_q_load_payload(fa_tile_item tr);
     int unsigned logical_tile;
+    int unsigned q_tiles_per_head;
     int unsigned logical_row;
     byte signed expected_value;
     byte signed actual_value;
     // Q tiles are issued in logical order.  This check guards the UVM-side
     // bank-reuse schedule independently of end-to-end output comparison.
-    logical_tile = q_load_words / cfg.head_dim;
-    if (logical_tile >= expected_q_load_words() / cfg.head_dim)
+    q_tiles_per_head = cfg.decode_en ? 1 :
+                       ((cfg.seq_q + `ATTN_TILE_Q - 1) / `ATTN_TILE_Q);
+    logical_tile = (q_load_words / cfg.head_dim) % q_tiles_per_head;
+    if ((q_load_words / cfg.head_dim) >= expected_q_load_words() / cfg.head_dim)
       return;
     for (int unsigned lane = 0; lane < `ATTN_ARRAY_ROWS; lane++) begin
       logical_row = logical_tile * `ATTN_ARRAY_ROWS + lane;
@@ -125,6 +128,8 @@ class attention_scoreboard extends uvm_component;
     bit [7:0] next_expected;
     bit [7:0] previous_q_tile_expected;
     int unsigned byte_address;
+    int unsigned head_byte_address;
+    int unsigned bytes_per_head;
     int unsigned row;
     int unsigned dim;
     int signed matching_feature;
@@ -140,20 +145,22 @@ class attention_scoreboard extends uvm_component;
           continue;
         end
         byte_address = tr.addr - cfg.o_base + lane;
-        if (byte_address >= (cfg.decode_en ? `ATTN_HEAD_DIM : cfg.seq_q * `ATTN_HEAD_DIM)) begin
+        bytes_per_head = cfg.decode_en ? `ATTN_HEAD_DIM : cfg.seq_q * `ATTN_HEAD_DIM;
+        if (byte_address >= cfg.num_q_heads * bytes_per_head) begin
           invalid_output_bytes++;
           if (!address_error_reported) begin
             `uvm_error("SB_ADDR", $sformatf("first invalid write byte address %0d; expected range is [0:%0d]",
-              byte_address, (cfg.decode_en ? `ATTN_HEAD_DIM : cfg.seq_q * `ATTN_HEAD_DIM) - 1))
+              byte_address, cfg.num_q_heads * bytes_per_head - 1))
             address_error_reported = 1;
           end
         end else begin
-          row = byte_address / `ATTN_HEAD_DIM;
-          dim = byte_address % `ATTN_HEAD_DIM;
+          head_byte_address = byte_address % bytes_per_head;
+          row = head_byte_address / `ATTN_HEAD_DIM;
+          dim = head_byte_address % `ATTN_HEAD_DIM;
           if (output_seen.exists(byte_address))
             `uvm_error("SB_DUP", $sformatf("duplicate write byte address %0d", byte_address))
           output_seen[byte_address] = 1;
-          expected = ref_model.expected_byte(byte_address);
+          expected = ref_model.expected_byte(head_byte_address);
           actual = tr.data[lane*8 +: 8];
           if (actual !== expected) begin
             matching_feature = -1;
@@ -165,7 +172,7 @@ class attention_scoreboard extends uvm_component;
             previous_q_tile_expected = (row < `ATTN_TILE_Q) ? '0 :
                                        ref_model.expected[row - `ATTN_TILE_Q][dim];
             `uvm_error("SB_DATA", $sformatf("mismatch addr=%04h row=%0d dim=%0d expected=%0d(0x%02h) actual=%0d(0x%02h) prev_dim=%0d next_dim=%0d prev_q_tile=%0d matching_feature=%0d",
-              byte_address, byte_address / `ATTN_HEAD_DIM, byte_address % `ATTN_HEAD_DIM,
+              byte_address, row, dim,
               $signed(expected), expected, $signed(actual), actual,
               $signed(previous_expected), $signed(next_expected),
               $signed(previous_q_tile_expected), matching_feature))
@@ -203,7 +210,8 @@ class attention_scoreboard extends uvm_component;
   function void report_phase(uvm_phase phase);
     int unsigned expected_bytes;
     int unsigned missing_bytes;
-    expected_bytes = cfg.decode_en ? `ATTN_HEAD_DIM : cfg.seq_q * `ATTN_HEAD_DIM;
+    expected_bytes = cfg.num_q_heads *
+                     (cfg.decode_en ? `ATTN_HEAD_DIM : cfg.seq_q * `ATTN_HEAD_DIM);
     if (cfg.enable_data_check && output_beats == 0)
       `uvm_error("SB_DATA", "No AXI write beats observed in data-checking test")
     if (cfg.enable_data_check && output_bytes != expected_bytes)

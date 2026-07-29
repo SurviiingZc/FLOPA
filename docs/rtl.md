@@ -133,9 +133,9 @@ for head in num_q_heads:
 3. AXI4 write master：输出写回。
 4. `irq_o` 和 `debug_state_o`：任务完成/错误中断和 scheduler 状态。
 
-当前顶层没有 AXI read master。Q/K/V 的 base address 和 stride 能被软件配置，
-但当前 RTL 不使用它们发起 DDR 读取；系统集成逻辑必须通过 `tile_load_*` 将数据
-送入 cache。
+当前顶层没有 AXI read master。Q/K/V 的 base address 和 stride 地址保留为
+RAZ/WI 兼容占位符，不再保存无用 shadow/snapshot 状态；系统集成逻辑必须通过
+`tile_load_*` 将数据送入 cache。
 
 ### 5.2 Level-to-pulse conversion
 
@@ -211,6 +211,8 @@ AXI AW 和 W 可以独立到达，各有一个 holding register。两者都到�
 
 - `prog_*`：软件可写 shadow registers。
 - `cfg_*`：成功 START 时原子复制的运行时快照。
+- Q/K/V base/stride、`VALUE_SCALE`、`MASK_CFG` 地址为 RAZ/WI，不属于
+  shadow/snapshot 状态。
 
 因此任务运行时软件修改 shadow 不会改变当前任务。运行期间只有 CONTROL 和
 PERF_CTRL 可写，其余写操作返回 `SLVERR` 并记录 sticky error。
@@ -221,7 +223,7 @@ START 当前要求：
 - `HEAD_DIM=64`, `TILE_Q=TILE_K=32`；
 - MHA mode，且 prefill/decode 恰好选择一个；
 - `num_q_heads == num_kv_heads`；
-- Q/K/V/O base 16-byte aligned。
+- O base 16-byte aligned。
 
 decode 还要求 `seq_q=1`，但 `seq_kv` 可通过既有 KV-tile 循环跨越多个
 32-token tile；当前回归已覆盖到 256 keys。GQA 位仍会被 START validation 拒绝。
@@ -318,6 +320,19 @@ Q/K valid 必须同时出现，否则 engine 报错。请求结束后进入 DRAI
 这样 PE `(r,c)` 在同一周期看到匹配的数据。Q 水平传播、K/V 垂直传播，每经过一个
 PE 都注册一次。`fsa_delay_line` 只在 valid 时更新 payload，bubble 时保持数据，减少
 无效翻转；valid 和 last 始终逐级传播。
+
+对于同一 issue token 驱动、固定延迟完全相同的复制流水，数据通路只保留一个
+canonical valid，不再把必然相等的 valid 做 AND/reduction。WS-PV 是最直接的例子：
+O-seed 到 PE `(r,c)` 的延迟为 `r+1+c`，V 的延迟为 `c+1+r`，所以
+`pv_mac_valid_i` 直接使用 `ws_pv_q && pv_forward_valid`；PE 内不再重复与
+`sum_valid_i`、`k_valid_i` 相与。仿真 SVA 在每个 PE 检查 canonical valid 出现时
+`ws_pv_q`、O-seed valid 和 V valid 必须同时为 1，并检查整条流水逐拍相等。
+
+同一规则还用于四个 stripe 的 delta/PV-seed valid、32 个 exp lane、8 个
+normalizer reciprocal/multiply lane 以及 l-update product/metadata valid。SVA 位于
+`ifndef SYNTHESIS` 内，因此保留接口契约检查而不重新引入综合 valid 组合逻辑。
+Q/K cache response、SRAM request/response、K/V bank ownership、AXI ready/valid 和
+tail/mask row valid 属于独立事件，仍保留双边握手或组合判断，不能按该规则合并。
 
 原来每个 PE 的 q_last/k_last/mac_last sideband 已被单个
 `qk_completion_q[ROWS+COLS-1:0]` 替代。tap `row+1` 启动对应 row 的 rowmax，
@@ -514,6 +529,13 @@ V 数据经过 `pv_issue_cols_q -> pv_rescale_cols_q -> s1 -> s2` 延迟，与 O
 PE[row,k]: sum_out = sum_in + P[row,k] * V[k,d]
 ```
 
+`sum_valid_i` is the canonical token for the partial-sum result register.
+`pv_mac_valid_i` still selects the multiply-add arithmetic, and the PE assertion
+requires every PV MAC token to carry both `sum_valid_i` and the aligned V valid.
+The result register therefore does not retain a redundant
+`pv_mac_valid_i || sum_valid_i` condition; a protocol mismatch fails SVA instead
+of creating an untestable functional branch.
+
 feature tag 与 partial sum 一起传递。右边界得到 32 个
 `O_new[row,d]`，每行根据自己的 tag 直接写回 stripe-local O-bank。不同 row 的
 到达 skew 不需要全局重排，因为每个 write 都携带完整 feature 地址。
@@ -665,10 +687,10 @@ filelist 和 module-TB 清单删除。当前文件树只保留现有加速器数
 
 1. 当前硬件实现固定 32x32 MHA 阵列，支持 tiled prefill 和 `seq_q=1` 的
    multi-KV-tile decode；GQA 会被 START validation 拒绝。
-2. Q/K/V base 和 stride 已有寄存器，但没有 AXI read DMA；tile loader 位于顶层外部。
-3. `cfg_value_scale_w` 和 `cfg_mask_cfg_w` 已锁存但当前 datapath 未消费。
-4. `cfg_q_base_w`, `cfg_k_base_w`, `cfg_v_base_w` 不参与当前 cache 地址生成；
-   fused array 的 mask 使用 tile index 生成的 logical `q_base/k_base`。
+2. Q/K/V base/stride、`VALUE_SCALE`、`MASK_CFG` 地址为 RAZ/WI，不生成寄存器；
+   这批未消费配置的 shadow 和 START snapshot 共删除 704 bit RTL 状态。
+3. tile loader 位于顶层外部；fused array 的 mask 使用 tile index 生成的 logical
+   `q_base/k_base`。
 5. reciprocal 和 exp 都是查表/PWL 近似，精度必须通过系统级 golden model 验证。
 6. O-bank 和部分 cache memory 是 single-port；调度必须保持文中说明的 read/write
    互斥。ASIC 更换 SRAM macro 时必须保持 wrapper 的同步 latency contract。

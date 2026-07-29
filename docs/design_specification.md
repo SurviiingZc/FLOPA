@@ -142,9 +142,9 @@ The RTL source of truth is `rtl/common/attention_defines.vh` together with
 | Register class | Important fields | Notes |
 | --- | --- | --- |
 | `CONTROL`, `STATUS`, `ERROR_CODE` | start, soft reset, clear done/error, mode, causal, prefill/decode | START captures a configuration snapshot |
-| tensor addresses and strides | Q/K/V/O base and stride registers | O base is used by writeback; Q/K/V base/stride await a DMA reader integration |
+| tensor addresses and strides | Q/K/V/O base and stride addresses | O base/stride are active; Q/K/V addresses remain legal RAZ/WI placeholders for a future DMA reader |
 | shape | `SEQ_Q`, `SEQ_KV`, Q/KV heads, head dimension, tile dimensions | tile and head dimensions are validated against the elaborated design point |
-| numeric controls | score, value, and output scale; mask config | score and output scales are active; `VALUE_SCALE`/`MASK_CFG` are retained/readable but not yet consumed by the datapath |
+| numeric controls | score, value, and output scale; mask config | score and output scales are active; unused `VALUE_SCALE`/`MASK_CFG` addresses are RAZ/WI and have no RTL state |
 | counters | cycles, stalls, MACs, tiles | used for performance instrumentation, not yet a board-level sign-off source |
 
 One non-obvious software requirement is that every `CONTROL` command write
@@ -157,7 +157,7 @@ register table and command values.
 
 | Mode | Legal configuration | Verification status |
 | --- | --- | --- |
-| MHA prefill | `prefill=1`, `decode=0`, 32-token tile geometry, MHA head mapping | 20-run suite includes one/two-tile, tail, and 512 x 512 cases |
+| MHA prefill | `prefill=1`, `decode=0`, 32-token tile geometry, MHA head mapping | 21-run suite includes one/two-tile, two-head, tail, and 512 x 512 cases |
 | MHA decode | `prefill=0`, `decode=1`, `seq_q=1` | smoke plus causal/non-causal 256-token multi-KV-tile tests pass |
 | causal masking | prefill or decode configuration with causal enable | tested |
 | GQA | unequal Q/KV head counts | explicitly rejected at START; future work |
@@ -328,9 +328,12 @@ and writeback window averages 122.53 MAC/cycle or 76.58 GMAC/s at 625 MHz. The
 8.60 pJ/MAC; these values are workload-derived rather than DDR-backed or
 board-level sustained measurements.
 
-The maintained fixed-seed regression passes 20 of 20 tests with 100.00%
-functional coverage. DUT code coverage is 85.28%, and the complete merged code
-coverage is 88.06%. Prefill has been checked through 512 x 512, while MHA decode
+The maintained fixed-seed regression passes 21 of 21 tests with 100.00%
+functional coverage. Raw `tb_top` code coverage is 95.01%, the complete raw
+merged score is 95.66%, and the reviewed DUT-scoped report is 96.00%. Waived
+module-definition line/branch coverage is 95.23%/97.61%; individual condition
+and toggle gaps remain classified in the auditable raw report. Prefill has been checked
+through 512 x 512, while MHA decode
 has been checked for one query and up to 256 KV tokens. Detailed report paths
 and update rules are maintained in [PPA and Optimization](ppa_and_optimization.md)
 and [Verification Report](verification_report.md).
@@ -359,8 +362,9 @@ must be replaced only by post-route reports or board measurements.
 2. Retain the 32-lane score-scale/PWL-exp source and architecture evidence in
    the final submission to demonstrate the required greater-than-16 softmax
    parallelism.
-3. Raise DUT code coverage beyond the current 85.28% while preserving the
-   completed 100.00% functional coverage result.
+3. Formally classify the remaining normalizer/engine condition and toggle gaps
+   beyond the current 96.00% waived score while preserving 100.00% functional
+   coverage and the auditable raw report.
 4. Complete VCK190 implementation and report post-route Fmax, resource use,
    external-memory bandwidth, and measured board power.
 5. Add native GQA and extend decode verification beyond the current 256-token

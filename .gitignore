@@ -43,6 +43,10 @@ novas*
 !tb/uvm/env/*.svh
 !tb/uvm/coverage/
 !tb/uvm/coverage/*.svh
+!tb/sim/coverage/
+!tb/sim/coverage/README.md
+!tb/sim/coverage/*.hier
+!tb/sim/coverage/*.el
 
 # Synopsys DC
 *.svf

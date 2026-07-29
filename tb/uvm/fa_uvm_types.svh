@@ -16,6 +16,14 @@ typedef enum int unsigned {
   FA_STIM_NEGATIVE_SAT
 } fa_stimulus_e;
 
+typedef enum int unsigned {
+  FA_TILE_PROTOCOL_NONE,
+  FA_TILE_PROTOCOL_MISSING_LOWER,
+  FA_TILE_PROTOCOL_KIND_MISMATCH,
+  FA_TILE_PROTOCOL_BANK_MISMATCH,
+  FA_TILE_PROTOCOL_ADDR_MISMATCH
+} fa_tile_protocol_e;
+
 // UVM uses the architectural 16-bit sequence registers, but caps the
 // reference model at 512 tokens so the regression exercises long streaming
 // ping-pong traffic without making every smoke test prohibitively expensive.
@@ -82,14 +90,31 @@ class fa_qkv_tensor extends uvm_object;
   endfunction
 
   function void fill_arith_rounding();
-    // The first Q/K feature makes score deltas of 0, -1, -2 and -3. With
-    // scale mantissa=5 and shift=2, -1*5 has guard and sticky bits both set.
+    // Three Q row classes combine score-scale rounding with reciprocal LUT
+    // seed indices 6/c and a negative output half tie in one existing test.
+    fill_constant(8'sd0, 8'sd0, -8'sd1);
     for (int unsigned row = 0; row < FA_MAX_SEQ; row++)
-      for (int unsigned dim = 0; dim < `ATTN_HEAD_DIM; dim++) begin
-        q[row][dim] = (dim == 0) ? 8'sd1 : 8'sd0;
-        k[row][dim] = (dim == 0) ? (8'sd2 - (row % 4)) : 8'sd0;
-        v[row][dim] = 8'sd1;
-      end
+      case (row % 3)
+        0: for (int unsigned dim = 0; dim < 16; dim++) q[row][dim] = 8'sd1;
+        1: for (int unsigned dim = 16; dim < 32; dim++) q[row][dim] = 8'sd1;
+        default: for (int unsigned dim = 32; dim < 48; dim++) q[row][dim] = 8'sd1;
+      endcase
+    for (int unsigned row = 0; row < FA_MAX_SEQ; row++) begin
+      case (row)
+        0: begin end
+        1: begin
+          k[row][0] = -8'sd128; k[row][1] = -8'sd56;
+          k[row][16] = -8'sd77;
+          k[row][32] = -8'sd1;
+        end
+        2, 3: begin
+          for (int unsigned dim = 0; dim < 32; dim++) k[row][dim] = -8'sd128;
+          k[row][32] = (row == 2) ? -8'sd2 : -8'sd3;
+        end
+        default:
+          for (int unsigned dim = 0; dim < 48; dim++) k[row][dim] = -8'sd128;
+      endcase
+    end
   endfunction
 
   function void fill_score_spread(byte signed value_value);
@@ -120,6 +145,7 @@ endclass
 
 class fa_model_event extends uvm_sequence_item;
   fa_stimulus_e stimulus;
+  int unsigned num_heads;
   bit decode_en;
   bit causal_en;
   bit multi_q_tile;
@@ -131,6 +157,8 @@ class fa_model_event extends uvm_sequence_item;
   bit saw_score_neg_sat;
   bit saw_score_round_increment;
   bit saw_normalizer_round_increment;
+  bit saw_normalizer_negative_tie;
+  bit [15:0] reciprocal_seed_mask;
   bit saw_output_pos_sat;
   bit saw_output_neg_sat;
   bit saw_q_negative;
@@ -148,9 +176,12 @@ class fa_model_event extends uvm_sequence_item;
   int unsigned q_tile_count;
   int unsigned kv_tile_count;
   int unsigned valid_lanes;
+  bit [31:0] score_scale;
+  bit [31:0] out_scale;
 
   `uvm_object_utils_begin(fa_model_event)
     `uvm_field_enum(fa_stimulus_e, stimulus, UVM_DEFAULT)
+    `uvm_field_int(num_heads, UVM_DEFAULT)
     `uvm_field_int(decode_en, UVM_DEFAULT)
     `uvm_field_int(causal_en, UVM_DEFAULT)
     `uvm_field_int(multi_q_tile, UVM_DEFAULT)
@@ -162,6 +193,8 @@ class fa_model_event extends uvm_sequence_item;
     `uvm_field_int(saw_score_neg_sat, UVM_DEFAULT)
     `uvm_field_int(saw_score_round_increment, UVM_DEFAULT)
     `uvm_field_int(saw_normalizer_round_increment, UVM_DEFAULT)
+    `uvm_field_int(saw_normalizer_negative_tie, UVM_DEFAULT)
+    `uvm_field_int(reciprocal_seed_mask, UVM_DEFAULT)
     `uvm_field_int(saw_output_pos_sat, UVM_DEFAULT)
     `uvm_field_int(saw_output_neg_sat, UVM_DEFAULT)
     `uvm_field_int(saw_q_negative, UVM_DEFAULT)
@@ -179,6 +212,8 @@ class fa_model_event extends uvm_sequence_item;
     `uvm_field_int(q_tile_count, UVM_DEFAULT)
     `uvm_field_int(kv_tile_count, UVM_DEFAULT)
     `uvm_field_int(valid_lanes, UVM_DEFAULT)
+    `uvm_field_int(score_scale, UVM_DEFAULT)
+    `uvm_field_int(out_scale, UVM_DEFAULT)
   `uvm_object_utils_end
 
   function new(string name = "fa_model_event");
@@ -191,6 +226,11 @@ class fa_axil_item extends uvm_sequence_item;
   rand bit [31:0] addr;
   rand bit [31:0] data;
   rand bit [3:0]  strb;
+       int unsigned aw_delay_cycles;
+       int unsigned w_delay_cycles;
+       int unsigned bready_delay_cycles;
+       int unsigned ar_delay_cycles;
+       int unsigned rready_delay_cycles;
        bit [31:0] rdata;
        bit [1:0]  resp;
 
@@ -199,6 +239,11 @@ class fa_axil_item extends uvm_sequence_item;
     `uvm_field_int(addr, UVM_DEFAULT)
     `uvm_field_int(data, UVM_DEFAULT)
     `uvm_field_int(strb, UVM_DEFAULT)
+    `uvm_field_int(aw_delay_cycles, UVM_DEFAULT)
+    `uvm_field_int(w_delay_cycles, UVM_DEFAULT)
+    `uvm_field_int(bready_delay_cycles, UVM_DEFAULT)
+    `uvm_field_int(ar_delay_cycles, UVM_DEFAULT)
+    `uvm_field_int(rready_delay_cycles, UVM_DEFAULT)
     `uvm_field_int(rdata, UVM_DEFAULT)
     `uvm_field_int(resp, UVM_DEFAULT)
   `uvm_object_utils_end
@@ -214,6 +259,9 @@ class fa_tile_item extends uvm_sequence_item;
   rand bit [5:0]      addr;
   rand bit [255:0]    data;
   rand bit            is_commit;
+  rand bit            upper_half_only;
+  rand bit            lower_half_only;
+       fa_tile_protocol_e protocol_error;
 
   `uvm_object_utils_begin(fa_tile_item)
     `uvm_field_enum(fa_tile_kind_e, kind, UVM_DEFAULT)
@@ -221,6 +269,9 @@ class fa_tile_item extends uvm_sequence_item;
     `uvm_field_int(addr, UVM_DEFAULT)
     `uvm_field_int(data, UVM_DEFAULT)
     `uvm_field_int(is_commit, UVM_DEFAULT)
+    `uvm_field_int(upper_half_only, UVM_DEFAULT)
+    `uvm_field_int(lower_half_only, UVM_DEFAULT)
+    `uvm_field_enum(fa_tile_protocol_e, protocol_error, UVM_DEFAULT)
   `uvm_object_utils_end
 
   function new(string name = "fa_tile_item");
@@ -264,7 +315,6 @@ class fa_test_cfg extends uvm_object;
   rand int unsigned tile_k;
   rand int unsigned ready_low_pct;
   bit [31:0]       score_scale;
-  bit [31:0]       value_scale;
   bit [31:0]       out_scale;
   bit [31:0]       o_base;
   bit              decode_en;
@@ -276,6 +326,7 @@ class fa_test_cfg extends uvm_object;
   byte signed      canonical_value;
   bit              enable_data_check;
   bit              allow_axil_error_response;
+  bit              allow_tile_protocol_error;
   bit              inject_axi_bresp_error;
   bit              saif_capture;
 
@@ -283,8 +334,8 @@ class fa_test_cfg extends uvm_object;
     seq_q inside {[1:FA_MAX_SEQ]};
     seq_kv inside {[1:FA_MAX_SEQ]};
     decode_en -> seq_q == 1;
-    num_q_heads == 1;
-    num_kv_heads == 1;
+    num_q_heads inside {[1:2]};
+    num_kv_heads == num_q_heads;
     head_dim == `ATTN_HEAD_DIM;
     tile_q == `ATTN_TILE_Q;
     tile_k == `ATTN_TILE_K;
@@ -301,7 +352,6 @@ class fa_test_cfg extends uvm_object;
     `uvm_field_int(tile_k, UVM_DEFAULT)
     `uvm_field_int(ready_low_pct, UVM_DEFAULT)
     `uvm_field_int(score_scale, UVM_DEFAULT)
-    `uvm_field_int(value_scale, UVM_DEFAULT)
     `uvm_field_int(out_scale, UVM_DEFAULT)
     `uvm_field_int(o_base, UVM_DEFAULT)
     `uvm_field_int(decode_en, UVM_DEFAULT)
@@ -312,6 +362,7 @@ class fa_test_cfg extends uvm_object;
     `uvm_field_int(canonical_value, UVM_DEFAULT)
     `uvm_field_int(enable_data_check, UVM_DEFAULT)
     `uvm_field_int(allow_axil_error_response, UVM_DEFAULT)
+    `uvm_field_int(allow_tile_protocol_error, UVM_DEFAULT)
     `uvm_field_int(inject_axi_bresp_error, UVM_DEFAULT)
     `uvm_field_int(saif_capture, UVM_DEFAULT)
   `uvm_object_utils_end
@@ -327,7 +378,6 @@ class fa_test_cfg extends uvm_object;
     tile_k = `ATTN_TILE_K;
     ready_low_pct = 0;
     score_scale = 32'h0000_0001;
-    value_scale = 32'h0000_0001;
     out_scale = 32'h000f_0001;
     o_base = 32'd0;
     decode_en = 0;
@@ -339,6 +389,7 @@ class fa_test_cfg extends uvm_object;
     canonical_value = 1;
     enable_data_check = 1;
     allow_axil_error_response = 0;
+    allow_tile_protocol_error = 0;
     inject_axi_bresp_error = 0;
     saif_capture = 0;
   endfunction

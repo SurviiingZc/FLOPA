@@ -12,6 +12,13 @@ SIM_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 OUT_DIR="${OUT_DIR:-$SIM_ROOT/build/uvm_regression}"
 VCS_BIN="${VCS:-vcs}"
 COV_DIR="$OUT_DIR/coverage.vdb"
+WAIVER_DIR="$SIM_ROOT/coverage"
+WAIVER_HIER="$WAIVER_DIR/uvm_dut.hier"
+WAIVER_FILES=(
+  "$WAIVER_DIR/uvm_unreachable.line.el"
+  "$WAIVER_DIR/uvm_unreachable.cond.el"
+  "$WAIVER_DIR/uvm_unreachable.branch.el"
+)
 
 tests=(
   "smoke|fa_smoke_test|1|"
@@ -19,6 +26,7 @@ tests=(
   "random_1x1|fa_random_qkv_test|101|+FA_SEQ_Q=32 +FA_SEQ_KV=32"
   "prefill_causal_1x1|fa_random_qkv_test|102|+FA_SEQ_Q=32 +FA_SEQ_KV=32 +FA_CAUSAL_EN=1"
   "prefill_2x2|fa_random_qkv_test|103|+FA_SEQ_Q=64 +FA_SEQ_KV=64"
+  "multihead_underflow|fa_multihead_underflow_test|111|"
   "prefill_kv_tail|fa_random_qkv_test|104|+FA_SEQ_Q=64 +FA_SEQ_KV=65"
   "prefill_long|fa_random_qkv_test|401|+FA_SEQ_Q=512 +FA_SEQ_KV=512 +FA_CAUSAL_EN=1 +FA_READY_LOW_PCT=25"
   "prefill_tail_causal|fa_random_qkv_test|105|+FA_SEQ_Q=65 +FA_SEQ_KV=65 +FA_CAUSAL_EN=1 +FA_READY_LOW_PCT=50"
@@ -54,7 +62,7 @@ trap cleanup_transients EXIT
 
 "$VCS_BIN" -full64 -sverilog -ntb_opts uvm -timescale=1ns/1ps \
   -debug_access+all -kdb -lca -Mdir="$OUT_DIR/csrc" \
-  -cm line+cond+tgl+branch -cm_dir "$COV_DIR" \
+  -cm line+cond+tgl+branch+assert -cm_dir "$COV_DIR" \
   +define+ATTN_ASIC -f filelists/asic_models.f -f filelists/rtl.f \
   -f filelists/uvm.f -top tb_top \
   -l "$OUT_DIR/compile.log" -o "$OUT_DIR/simv"
@@ -67,7 +75,7 @@ for entry in "${tests[@]}"; do
 
   "$OUT_DIR/simv" +UVM_TESTNAME="$test_name" +ntb_random_seed="$seed" "${plusarg_array[@]}" \
     +no_notifier +notimingcheck \
-    -cm line+cond+tgl+branch -cm_dir "$COV_DIR" -cm_name "$run_name" \
+    -cm line+cond+tgl+branch+assert -cm_dir "$COV_DIR" -cm_name "$run_name" \
     -l "$log" || failures=$((failures + 1))
 
   if ! grep -Eq 'UVM_ERROR :[[:space:]]*0' "$log" || \
@@ -82,9 +90,23 @@ done
 
 urg -dir "$COV_DIR" -report "$OUT_DIR/urg" -format both
 
+for waiver in "$WAIVER_HIER" "${WAIVER_FILES[@]}"; do
+  if [[ ! -s "$waiver" ]]; then
+    echo "Missing coverage waiver: $waiver" >&2
+    exit 2
+  fi
+done
+
+waiver_args=()
+for waiver in "${WAIVER_FILES[@]}"; do
+  waiver_args+=( -elfile "$waiver" )
+done
+urg -dir "$COV_DIR" -report "$OUT_DIR/urg_waived" -format both \
+  -hier "$WAIVER_HIER" "${waiver_args[@]}"
+
 if (( failures != 0 )); then
-  echo "UVM regression completed with $failures failing test(s); coverage is in $OUT_DIR/urg" >&2
+  echo "UVM regression completed with $failures failing test(s); raw coverage is in $OUT_DIR/urg" >&2
   exit 1
 fi
 
-echo "UVM regression passed; coverage is in $OUT_DIR/urg"
+echo "UVM regression passed; raw/waived coverage is in $OUT_DIR/urg and $OUT_DIR/urg_waived"

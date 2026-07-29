@@ -10,8 +10,9 @@ AXI4-Lite control BAR.
 
 All registers are 32 bits wide and word aligned. `RW` fields support byte
 strobes; narrow fields use only the least-significant byte or half-word.
-`W1P` means that writing one generates a one-cycle command pulse. Reserved
-bits read as zero and should be written as zero.
+`W1P` means that writing one generates a one-cycle command pulse. `RAZ/WI`
+means read-as-zero/write-ignored; the address remains legal and returns OKAY.
+Reserved bits read as zero and should be written as zero.
 
 | Offset | Register | Access | Reset | Implemented behavior |
 | ---: | --- | :---: | ---: | --- |
@@ -19,17 +20,17 @@ bits read as zero and should be written as zero.
 | `0x004` | `STATUS` | RO | `0x0000_0008` | live scheduler and phase status |
 | `0x008` | `ERROR_CODE` | RO | `0x0000_0000` | sticky four-bit error code |
 | `0x00C` | `VERSION` | RO | `0x0002_0000` | RTL programming-model version 2.0 |
-| `0x010` | `Q_BASE_LO` | RW | `0x0000_0000` | Q byte address `[31:0]`; reserved for input DMA integration |
-| `0x014` | `Q_BASE_HI` | RW | `0x0000_0000` | Q byte address `[63:32]`; reserved for input DMA integration |
-| `0x018` | `K_BASE_LO` | RW | `0x0000_0000` | K byte address `[31:0]`; reserved for input DMA integration |
-| `0x01C` | `K_BASE_HI` | RW | `0x0000_0000` | K byte address `[63:32]`; reserved for input DMA integration |
-| `0x020` | `V_BASE_LO` | RW | `0x0000_0000` | V byte address `[31:0]`; reserved for input DMA integration |
-| `0x024` | `V_BASE_HI` | RW | `0x0000_0000` | V byte address `[63:32]`; reserved for input DMA integration |
+| `0x010` | `Q_BASE_LO` | RAZ/WI | `0x0000_0000` | reserved for a future input DMA; no storage in this RTL |
+| `0x014` | `Q_BASE_HI` | RAZ/WI | `0x0000_0000` | reserved for a future input DMA; no storage in this RTL |
+| `0x018` | `K_BASE_LO` | RAZ/WI | `0x0000_0000` | reserved for a future input DMA; no storage in this RTL |
+| `0x01C` | `K_BASE_HI` | RAZ/WI | `0x0000_0000` | reserved for a future input DMA; no storage in this RTL |
+| `0x020` | `V_BASE_LO` | RAZ/WI | `0x0000_0000` | reserved for a future input DMA; no storage in this RTL |
+| `0x024` | `V_BASE_HI` | RAZ/WI | `0x0000_0000` | reserved for a future input DMA; no storage in this RTL |
 | `0x028` | `O_BASE_LO` | RW | `0x0000_0000` | output byte address `[31:0]`; consumed by AXI4 writeback |
 | `0x02C` | `O_BASE_HI` | RW | `0x0000_0000` | output byte address `[63:32]`; stored, but current write master uses only the low 32 bits |
-| `0x030` | `Q_STRIDE` | RW | `0x0000_0000` | Q row stride in bytes; reserved for input DMA integration |
-| `0x034` | `K_STRIDE` | RW | `0x0000_0000` | K row stride in bytes; reserved for input DMA integration |
-| `0x038` | `V_STRIDE` | RW | `0x0000_0000` | V row stride in bytes; reserved for input DMA integration |
+| `0x030` | `Q_STRIDE` | RAZ/WI | `0x0000_0000` | reserved for a future input DMA; no storage in this RTL |
+| `0x034` | `K_STRIDE` | RAZ/WI | `0x0000_0000` | reserved for a future input DMA; no storage in this RTL |
+| `0x038` | `V_STRIDE` | RAZ/WI | `0x0000_0000` | reserved for a future input DMA; no storage in this RTL |
 | `0x03C` | `O_STRIDE` | RW | `0x0000_0000` | output row stride in bytes; active in Q-tile/head address progression |
 | `0x040` | `SEQ_Q` | RW | `0x0000_0000` | query sequence length in `[15:0]` |
 | `0x044` | `SEQ_KV` | RW | `0x0000_0000` | key/value sequence length in `[15:0]` |
@@ -40,9 +41,9 @@ bits read as zero and should be written as zero.
 | `0x058` | `TILE_K` | RW | `0x0000_0020` | key tile size in `[7:0]`; must be 32 |
 | `0x05C` | `MODE` | RW | `0x0000_0004` | persistent copy of mode fields; see Section 2.3 |
 | `0x060` | `SCORE_SCALE` | RW | `0x0000_0000` | signed mantissa and right shift before PWL exp |
-| `0x064` | `VALUE_SCALE` | RW | `0x0000_0000` | retained in the snapshot but not consumed by the current datapath |
+| `0x064` | `VALUE_SCALE` | RAZ/WI | `0x0000_0000` | reserved; current PV path consumes native V values |
 | `0x068` | `OUT_SCALE` | RW | `0x0000_0000` | signed mantissa and right shift for final INT8 requantization |
-| `0x06C` | `MASK_CFG` | RW | `0x0000_0000` | retained/readable; current masking uses sequence, tile-base, and causal mode instead |
+| `0x06C` | `MASK_CFG` | RAZ/WI | `0x0000_0000` | reserved; masking uses sequence, tile-base, and causal mode |
 | `0x070` | `PERF_CTRL` | RW | `0x0000_0000` | bit 0 is a level-sensitive counter clear |
 | `0x074` | `PERF_CYCLES_LO` | RO | `0x0000_0000` | busy-cycle counter `[31:0]` |
 | `0x078` | `PERF_CYCLES_HI` | RO | `0x0000_0000` | busy-cycle counter `[63:32]` |
@@ -145,7 +146,7 @@ and retry if the two high values differ.
 | `0x1` | `BAD_CFG` | illegal mode/shape, write to protected configuration while busy, or START while busy |
 | `0x2` | `BUS` | unknown address or write to a read-only address |
 | `0x3` | `PROTOCOL` | reserved protocol classification |
-| `0x4` | `ALIGNMENT` | one or more Q/K/V/O base addresses are not 16-byte aligned |
+| `0x4` | `ALIGNMENT` | active O base address is not 16-byte aligned |
 | `0x5` | `OVERFLOW` | reserved arithmetic-overflow classification |
 | `0xF` | `FATAL` | cache/array/AXI write fatal error, or an unclassified hardware error |
 
@@ -154,15 +155,15 @@ registers. Only one unaccepted B response and one unaccepted R response are
 allowed. Unknown reads, unknown writes, and writes to RO registers return
 AXI `SLVERR` (`2'b10`). While `STATUS.BUSY=1`, only `CONTROL` and `PERF_CTRL`
 are writable; other writes return `SLVERR` and record `BAD_CFG`. A successful
-START snapshots all shadow registers, so later shadow writes cannot alter the
-running job.
+START snapshots all implemented RW configuration, so later shadow writes cannot
+alter the running job. RAZ/WI addresses have no shadow or snapshot state.
 
 START is accepted only when all of the following are true:
 
 - `SEQ_Q`, `SEQ_KV`, `NUM_Q_HEADS`, and `NUM_KV_HEADS` are nonzero;
 - `HEAD_DIM=64`, `TILE_Q=32`, and `TILE_K=32` for the default elaboration;
 - MHA is selected and `NUM_Q_HEADS == NUM_KV_HEADS`;
-- Q/K/V/O base addresses are all 16-byte aligned;
+- O base address is 16-byte aligned;
 - exactly one of prefill and decode is selected;
 - decode additionally requires `SEQ_Q=1`.
 
@@ -251,8 +252,8 @@ space is below 4 GiB.
 ## 5. Minimal Programming Sequence
 
 1. Wait for `STATUS.BUSY=0`.
-2. Program aligned tensor bases, byte strides, sequence lengths, head counts,
-   `HEAD_DIM=64`, `TILE_Q=32`, `TILE_K=32`, and both active scale registers.
+2. Program aligned O base/stride, sequence lengths, head counts, `HEAD_DIM=64`,
+   `TILE_Q=32`, `TILE_K=32`, and both active scale registers.
 3. Clear counters by writing `PERF_CTRL=1`, then `PERF_CTRL=0`.
 4. Start prefill with `CONTROL=0x41`, or decode with `CONTROL=0x81`.
 5. Supply and commit Q/K/V ping-pong tiles through the tile-loader interface;
@@ -260,5 +261,6 @@ space is below 4 GiB.
 6. Poll `STATUS`, or wait for `irq_o`. On ERROR, read `ERROR_CODE`. On DONE,
    read the performance counters and clear DONE with the matching mode value.
 
-Configuration registers are shadowed. A successful START is the transaction
-boundary at which every field becomes immutable for the running job.
+Implemented RW configuration registers are shadowed. A successful START is the
+transaction boundary at which every active field becomes immutable for the
+running job. Q/K/V base/stride, `VALUE_SCALE`, and `MASK_CFG` are RAZ/WI.
