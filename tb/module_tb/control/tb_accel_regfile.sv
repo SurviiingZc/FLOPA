@@ -50,13 +50,7 @@ module tb_accel_regfile;
   wire cfg_causal_en_o;
   wire cfg_prefill_en_o;
   wire cfg_decode_en_o;
-  wire [63:0] cfg_q_base_o;
-  wire [63:0] cfg_k_base_o;
-  wire [63:0] cfg_v_base_o;
   wire [63:0] cfg_o_base_o;
-  wire [31:0] cfg_q_stride_o;
-  wire [31:0] cfg_k_stride_o;
-  wire [31:0] cfg_v_stride_o;
   wire [31:0] cfg_o_stride_o;
   wire [15:0] cfg_seq_q_o;
   wire [15:0] cfg_seq_kv_o;
@@ -66,9 +60,7 @@ module tb_accel_regfile;
   wire [7:0] cfg_tile_q_o;
   wire [7:0] cfg_tile_k_o;
   wire [31:0] cfg_score_scale_o;
-  wire [31:0] cfg_value_scale_o;
   wire [31:0] cfg_out_scale_o;
-  wire [31:0] cfg_mask_cfg_o;
   wire [31:0] cfg_perf_ctrl_o;
 
   accel_regfile dut (
@@ -82,12 +74,11 @@ module tb_accel_regfile;
     .cfg_clear_done_pulse_o(clear_done_seen), .cfg_clear_error_pulse_o(clear_error_seen),
     .cfg_mode_sel_o(cfg_mode_sel_o), .cfg_causal_en_o(cfg_causal_en_o),
     .cfg_prefill_en_o(cfg_prefill_en_o), .cfg_decode_en_o(cfg_decode_en_o),
-    .cfg_q_base_o(cfg_q_base_o), .cfg_k_base_o(cfg_k_base_o), .cfg_v_base_o(cfg_v_base_o), .cfg_o_base_o(cfg_o_base_o),
-    .cfg_q_stride_o(cfg_q_stride_o), .cfg_k_stride_o(cfg_k_stride_o), .cfg_v_stride_o(cfg_v_stride_o), .cfg_o_stride_o(cfg_o_stride_o),
+    .cfg_o_base_o(cfg_o_base_o), .cfg_o_stride_o(cfg_o_stride_o),
     .cfg_seq_q_o(cfg_seq_q_o), .cfg_seq_kv_o(cfg_seq_kv_o), .cfg_num_q_heads_o(cfg_num_q_heads_o),
     .cfg_num_kv_heads_o(cfg_num_kv_heads_o), .cfg_head_dim_o(cfg_head_dim_o), .cfg_tile_q_o(cfg_tile_q_o), .cfg_tile_k_o(cfg_tile_k_o),
-    .cfg_score_scale_o(cfg_score_scale_o), .cfg_value_scale_o(cfg_value_scale_o), .cfg_out_scale_o(cfg_out_scale_o),
-    .cfg_mask_cfg_o(cfg_mask_cfg_o), .cfg_perf_ctrl_o(cfg_perf_ctrl_o),
+    .cfg_score_scale_o(cfg_score_scale_o), .cfg_out_scale_o(cfg_out_scale_o),
+    .cfg_perf_ctrl_o(cfg_perf_ctrl_o),
     .busy_i(busy_i), .done_i(done_i), .error_i(error_i), .error_code_i(error_code_i),
     .idle_i(idle_i), .load_active_i(load_active_i), .compute_active_i(compute_active_i), .writeback_active_i(writeback_active_i),
     .perf_cycles_i(perf_cycles_i), .perf_stall_i(perf_stall_i), .perf_mac_i(perf_mac_i), .perf_tiles_i(perf_tiles_i)
@@ -199,8 +190,10 @@ module tb_accel_regfile;
     axil_write(`ATTN_REG_MASK_CFG, 32'h0000_0001);
     axil_write(`ATTN_REG_MODE, 32'h0000_000b);
 
-    axil_read(`ATTN_REG_Q_BASE_LO, rd_data); if (rd_data != 32'h1111_2220) $fatal(1, "Q_BASE_LO mismatch");
-    axil_read(`ATTN_REG_Q_BASE_HI, rd_data); if (rd_data != 32'h3333_4444) $fatal(1, "Q_BASE_HI mismatch");
+    axil_read(`ATTN_REG_Q_BASE_LO, rd_data); if (rd_data != 32'd0) $fatal(1, "reserved Q_BASE_LO must read zero");
+    axil_read(`ATTN_REG_Q_BASE_HI, rd_data); if (rd_data != 32'd0) $fatal(1, "reserved Q_BASE_HI must read zero");
+    axil_read(`ATTN_REG_VALUE_SCALE, rd_data); if (rd_data != 32'd0) $fatal(1, "reserved VALUE_SCALE must read zero");
+    axil_read(`ATTN_REG_MASK_CFG, rd_data); if (rd_data != 32'd0) $fatal(1, "reserved MASK_CFG must read zero");
     axil_read(`ATTN_REG_SEQ_Q, rd_data); if (rd_data != 32'd576) $fatal(1, "SEQ_Q mismatch");
     axil_read(`ATTN_REG_MODE, rd_data); if (rd_data[3:0] != 4'b1011) $fatal(1, "MODE mismatch: %h", rd_data);
 

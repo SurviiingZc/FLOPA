@@ -253,9 +253,11 @@ module tb_axis_tile_loader;
             end
             begin
                 wait (loader.tile_count_q == 3);
+                #1;
                 `TB_CHECK(q_active_valid && kv_active_valid,
                           "Q0/K0/V0 are ready at the compute start watermark")
                 wait (loader.tile_count_q == 6);
+                #1;
                 `TB_CHECK(q_active_valid && q_next_valid,
                           "both Q banks are ready before compute")
                 `TB_CHECK(kv_active_valid && kv_next_valid,

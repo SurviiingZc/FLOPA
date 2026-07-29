@@ -44,8 +44,11 @@ module tb_fsa_stripe;
     k_top_data_i={8'sd3,8'sd2}; k_top_valid_i=2'b01;
     pv_sum_valid_i=2'b01; pv_sum_data_i=0; pv_sum_data_i[SUM_W-1:0]=32'd11;
     pv_sum_tag_i=0; pv_sum_tag_i[TAG_W-1:0]=2'd3;
-    @(negedge clk); k_top_valid_i=2'b10; pv_sum_valid_i=0;
+    // Row and column skew require one matched diagonal token per cycle.
+    @(negedge clk); k_top_valid_i=2'b10; pv_sum_valid_i=2'b10;
+    pv_sum_tag_i=0; pv_sum_tag_i[2*TAG_W-1 -: TAG_W]=2'd3;
     @(negedge clk); k_top_valid_i=0;
+    pv_sum_valid_i=0;
     repeat(5) @(posedge clk);
     @(negedge clk); o_rd_en_i=1; o_rd_feature_i=3;
     @(negedge clk); o_rd_en_i=0;

@@ -73,7 +73,9 @@ module fsa_fused_pe #(
   reg signed [SCORE_W-1:0] delta_w;
   reg signed [SCORE_W-1:0] max_score_w;
   wire qk_mac_valid_w = q_valid_i && k_valid_i;
-  wire pv_mac_valid_w = pv_mac_valid_i && sum_valid_i && k_valid_i;
+  // pv_mac_valid_i is the canonical WS-PV token. The stripe proves that the
+  // sum and V payloads carrying this token are aligned before they enter a PE.
+  wire pv_mac_valid_w = pv_mac_valid_i;
 
   // QK and PV tokens are mutually exclusive, so one exact 17x9 DesignWare
   // multiplier serves both modes without a second arithmetic unit.
@@ -93,13 +95,29 @@ module fsa_fused_pe #(
       $fatal(1, "fsa_fused_pe SCORE_W is too narrow for signed Q * signed K");
   end
 
-  always @(posedge clk)
-    if (rst_n && qk_mac_valid_w && pv_mac_valid_w)
-      $fatal(1, "fsa_fused_pe QK and PV valid tokens overlap");
-    else if (rst_n && qk_mac_valid_w && sum_valid_i)
-      $fatal(1, "fsa_fused_pe QK and rowsum valid tokens overlap");
-    else if (rst_n && pv_mac_valid_i && !(sum_valid_i && k_valid_i))
-      $fatal(1, "fsa_fused_pe malformed PV MAC token");
+  property p_qk_pv_tokens_do_not_overlap;
+    @(posedge clk) disable iff (!rst_n || clear_i)
+      !(qk_mac_valid_w && pv_mac_valid_w);
+  endproperty
+  a_qk_pv_tokens_do_not_overlap:
+    assert property (p_qk_pv_tokens_do_not_overlap)
+    else $fatal(1, "fsa_fused_pe QK and PV valid tokens overlap");
+
+  property p_qk_rowsum_tokens_do_not_overlap;
+    @(posedge clk) disable iff (!rst_n || clear_i)
+      !(qk_mac_valid_w && sum_valid_i);
+  endproperty
+  a_qk_rowsum_tokens_do_not_overlap:
+    assert property (p_qk_rowsum_tokens_do_not_overlap)
+    else $fatal(1, "fsa_fused_pe QK and rowsum valid tokens overlap");
+
+  property p_pv_mac_has_sum_and_v;
+    @(posedge clk) disable iff (!rst_n || clear_i)
+      pv_mac_valid_i |-> (sum_valid_i && k_valid_i);
+  endproperty
+  a_pv_mac_has_sum_and_v:
+    assert property (p_pv_mac_has_sum_and_v)
+    else $fatal(1, "fsa_fused_pe malformed PV MAC token");
 `endif
 
   assign delta_o = $unsigned(accum_q);
@@ -198,7 +216,9 @@ module fsa_fused_pe #(
           max_data_o <= max_data_i;
       end
       if (m_valid_i) m_data_o <= m_data_i;
-      if (pv_mac_valid_w || sum_valid_i) begin
+      // sum_valid_i is the canonical PV result token. The PV protocol
+      // assertions above prove every pv_mac_valid_w cycle carries this token.
+      if (sum_valid_i) begin
         sum_data_o <= $unsigned(shared_add_result_w[SUM_W-1:0]);
         sum_tag_o <= sum_tag_i;
       end

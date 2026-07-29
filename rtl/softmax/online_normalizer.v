@@ -56,7 +56,7 @@ module online_normalizer #(
 
   wire [LANES-1:0] reciprocal_valid_w;
   wire [LANES*RECIP_W-1:0] reciprocal_w;
-  wire all_reciprocal_valid_w = &reciprocal_valid_w;
+  wire reciprocal_stage_valid_w = reciprocal_valid_w[0];
   reg [LANES*ACC_W-1:0] acc_s0_q;
   reg [LANES*ACC_W-1:0] acc_s1_q;
   reg [LANES*ACC_W-1:0] acc_s2_q;
@@ -73,9 +73,35 @@ module online_normalizer #(
   reg norm_valid_q;
   reg mult_metadata_valid_s1_q;
   wire [LANES-1:0] norm_product_valid_w;
-  wire all_norm_product_valid_w = &norm_product_valid_w;
+  wire norm_product_stage_valid_w = norm_product_valid_w[0];
   wire [LANES-1:0] scale_product_valid_w;
-  wire all_scale_product_valid_w = &scale_product_valid_w;
+  wire scale_product_stage_valid_w = scale_product_valid_w[0];
+
+`ifndef SYNTHESIS
+  property p_reciprocal_lane_valids_aligned;
+    @(posedge gated_clk_w) disable iff (!rst_n)
+      reciprocal_valid_w == {LANES{reciprocal_valid_w[0]}};
+  endproperty
+  a_reciprocal_lane_valids_aligned:
+    assert property (p_reciprocal_lane_valids_aligned)
+    else $fatal(1, "online_normalizer reciprocal lane valid mismatch");
+
+  property p_norm_product_lane_valids_aligned;
+    @(posedge gated_clk_w) disable iff (!rst_n)
+      norm_product_valid_w == {LANES{norm_product_valid_w[0]}};
+  endproperty
+  a_norm_product_lane_valids_aligned:
+    assert property (p_norm_product_lane_valids_aligned)
+    else $fatal(1, "online_normalizer norm-product lane valid mismatch");
+
+  property p_scale_product_lane_valids_aligned;
+    @(posedge gated_clk_w) disable iff (!rst_n)
+      scale_product_valid_w == {LANES{scale_product_valid_w[0]}};
+  endproperty
+  a_scale_product_lane_valids_aligned:
+    assert property (p_scale_product_lane_valids_aligned)
+    else $fatal(1, "online_normalizer scale-product lane valid mismatch");
+`endif
 
   // Each lane owns a reciprocal and two multipliers so all rows in a stripe are
   // normalized together while features stream one per cycle.
@@ -127,7 +153,7 @@ module online_normalizer #(
         .A_W(ACC_W), .B_W(NORM_MULT_B_W), .SPLIT_W(ACC_W/2)
       ) u_reciprocal_multiplier (
         .clk(gated_clk_w), .rst_n(rst_n),
-        .valid_i(all_reciprocal_valid_w),
+        .valid_i(reciprocal_stage_valid_w),
         .a_i($signed(acc_s2_q[lane*ACC_W +: ACC_W])),
         .b_i($signed({1'b0,
              reciprocal_w[lane*RECIP_W +: RECIP_W]})),
@@ -166,7 +192,7 @@ module online_normalizer #(
       // Metadata follows the two multiplier pipelines. Payload registers are
       // valid-qualified and intentionally unreset to reduce reset-tree load.
       always @(posedge gated_clk_w) begin
-        if (all_reciprocal_valid_w) begin
+        if (reciprocal_stage_valid_w) begin
           scale_mant_q <= $signed(scale_s2_q[15:0]);
           scale_shift_q <= scale_s2_q[21:16];
         end
@@ -211,18 +237,18 @@ module online_normalizer #(
       tag_s0_q <= tag_i;
       tag_s1_q <= tag_s0_q;
       tag_s2_q <= tag_s1_q;
-      norm_valid_q <= all_reciprocal_valid_w;
-      mult_metadata_valid_s1_q <= all_norm_product_valid_w;
-      valid_o <= all_scale_product_valid_w;
-      if (all_reciprocal_valid_w)
+      norm_valid_q <= reciprocal_stage_valid_w;
+      mult_metadata_valid_s1_q <= norm_product_stage_valid_w;
+      valid_o <= scale_product_stage_valid_w;
+      if (reciprocal_stage_valid_w)
         norm_tag_q <= tag_s2_q;
       if (norm_valid_q)
         norm_tag_s1_q <= norm_tag_q;
-      if (all_norm_product_valid_w)
+      if (norm_product_stage_valid_w)
         mult_tag_s1_q <= norm_tag_s1_q;
       if (mult_metadata_valid_s1_q)
         mult_tag_s2_q <= mult_tag_s1_q;
-      if (all_scale_product_valid_w)
+      if (scale_product_stage_valid_w)
         tag_o <= mult_tag_s2_q;
     end
   end

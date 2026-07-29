@@ -30,8 +30,8 @@
 
 ## 6. Verification Evidence
 
-- 20/20 fixed-seed UVM runs passing with a bit-accurate reference model.
-- 100.00% functional coverage; 85.28% DUT code coverage with closure plan.
+- 21/21 fixed-seed UVM runs passing with a bit-accurate reference model.
+- 100.00% functional coverage; 95.66% raw merged and 96.00% reviewed DUT coverage.
 - 64 x 64 mapped-netlist power workload: zero UVM errors/fatals.
 - Include four waveform panels from `docs/verification_report.md` Section 8.
 
@@ -51,5 +51,5 @@
 
 ## 9. Limitations and Roadmap
 
-- Native GQA, code-coverage closure, physical ASIC power, and full board results.
+- Native GQA, residual condition/toggle proof, physical ASIC power, and full board results.
 - Larger SRAM macro organization and extended decode/model evaluation.

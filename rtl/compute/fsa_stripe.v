@@ -284,6 +284,8 @@
     genvar pe_col;
     for (pe_row = 0; pe_row < STRIPE_ROWS; pe_row = pe_row + 1) begin : g_pe_row
       for (pe_col = 0; pe_col < COLS; pe_col = pe_col + 1) begin : g_pe_col
+        wire pv_forward_valid_w = sum_forward_valid_w[pe_row][pe_col];
+        wire pv_mac_issue_valid_w = ws_pv_q ? pv_forward_valid_w : 1'b0;
         fsa_fused_pe #(
           .DATA_W(DATA_W), .SCORE_W(SCORE_W), .PROB_W(PROB_W),
           .SUM_W(SUM_W), .TAG_W(TAG_W)
@@ -311,12 +313,9 @@
           .delta_o(delta_w[pe_row][pe_col]),
           .prob_load_i(prob_col_select_w[pe_col]),
           .prob_data_i(prob_col_load_data_i[pe_row*PROB_W +: PROB_W]),
-          .pv_mac_valid_i(ws_pv_q &&
-                          sum_forward_valid_w[pe_row][pe_col] &&
-                          k_valid_w[pe_row][pe_col]),
+          .pv_mac_valid_i(pv_mac_issue_valid_w),
           .sum_valid_i(ws_pv_q ?
-              (sum_forward_valid_w[pe_row][pe_col] &&
-               k_valid_w[pe_row][pe_col]) :
+              pv_forward_valid_w :
               sum_reverse_valid_w[pe_row][pe_col+1]),
           .sum_data_i(ws_pv_q ? sum_forward_data_w[pe_row][pe_col] :
                                 sum_reverse_data_w[pe_row][pe_col+1]),
@@ -326,6 +325,33 @@
           .sum_data_o(pe_sum_data_w[pe_row][pe_col]),
           .sum_tag_o(pe_sum_tag_w[pe_row][pe_col])
         );
+`ifndef SYNTHESIS
+        // Row and column skew have equal total delay at every PE: row+1+col
+        // for the O seed, and col+1+row for V. Keep this invariant out of the
+        // synthesized valid cone while checking it at every generated point.
+        property p_pv_seed_and_v_valid_aligned;
+          @(posedge pe_clk_w) disable iff (!rst_n || clear_i)
+            ws_pv_q |->
+              (pv_forward_valid_w == k_valid_w[pe_row][pe_col]);
+        endproperty
+        a_pv_seed_and_v_valid_aligned:
+          assert property (p_pv_seed_and_v_valid_aligned)
+          else $fatal(1,
+              "fsa_stripe PV seed/V valid mismatch row=%0d col=%0d",
+              pe_row, pe_col);
+
+        property p_pv_mac_has_all_three_valids;
+          @(posedge pe_clk_w) disable iff (!rst_n || clear_i)
+            pv_mac_issue_valid_w |->
+              (ws_pv_q && pv_forward_valid_w &&
+               k_valid_w[pe_row][pe_col]);
+        endproperty
+        a_pv_mac_has_all_three_valids:
+          assert property (p_pv_mac_has_all_three_valids)
+          else $fatal(1,
+              "fsa_stripe PV MAC valid missing phase/seed/V row=%0d col=%0d",
+              pe_row, pe_col);
+`endif
         assign sum_forward_valid_w[pe_row][pe_col+1] =
             pe_sum_valid_w[pe_row][pe_col];
         assign sum_forward_data_w[pe_row][pe_col+1] =
@@ -393,8 +419,21 @@
     end
   end
 
-  assign pv_seed_valid_o = &pv_rescale_valid_w;
+  // All row multipliers share one input valid and identical latency. Row zero
+  // is the canonical token; the assertion below checks every replicated lane.
+  assign pv_seed_valid_o = pv_rescale_valid_w[0];
   assign pv_seed_feature_o = pv_seed_feature_s2_q;
+
+`ifndef SYNTHESIS
+  property p_pv_rescale_valids_aligned;
+    @(posedge pv_seed_clk_w) disable iff (!rst_n || clear_i)
+      pv_rescale_valid_w ==
+        {STRIPE_ROWS{pv_rescale_valid_w[0]}};
+  endproperty
+  a_pv_rescale_valids_aligned:
+    assert property (p_pv_rescale_valids_aligned)
+    else $fatal(1, "fsa_stripe PV rescale lane valid mismatch");
+`endif
 
   generate
     genvar seed_row;

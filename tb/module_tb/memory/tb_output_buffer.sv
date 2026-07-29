@@ -17,6 +17,38 @@ module tb_output_buffer;
   integer feature,lane,errors=0;
   output_buffer #(.HEAD_DIM(HEAD_DIM)) dut(.*);
   always #5 clk=~clk; `TB_TIMEOUT(600,"tb_output_buffer")
+
+  task automatic check_stream_words;
+    input [15:0] byte_count;
+    input integer word_a;
+    input [255:0] expected_a;
+    input integer word_b;
+    input [255:0] expected_b;
+    integer beat,beat_count;
+    begin
+      @(negedge clk); stream_bytes_i=byte_count; stream_start_i=1; stream_ready_i=1;
+      @(negedge clk); stream_start_i=0;
+      beat=0; beat_count=(byte_count+15)/16;
+      while(beat<beat_count) begin
+        @(negedge clk);
+        if(stream_valid_o && stream_ready_i) begin
+          if(beat==word_a*2)
+            `TB_CHECK(stream_data_o===expected_a[127:0],"stream word A low beat")
+          if(beat==word_a*2+1)
+            `TB_CHECK(stream_data_o===expected_a[255:128],"stream word A high beat")
+          if(beat==word_b*2)
+            `TB_CHECK(stream_data_o===expected_b[127:0],"stream word B low beat")
+          if(beat==word_b*2+1)
+            `TB_CHECK(stream_data_o===expected_b[255:128],"stream word B high beat")
+          beat=beat+1;
+        end
+      end
+      @(posedge clk); #1;
+      `TB_CHECK(stream_done_o && !stream_busy_o,"public stream completion")
+      @(negedge clk); stream_ready_i=0;
+    end
+  endtask
+
   initial begin
     expected_first=0; expected_second=0;
     expected_lane1=0; expected_lane7=0;
@@ -42,9 +74,7 @@ module tb_output_buffer;
     end
     @(negedge clk); norm_valid_i=0;
     wait(norm_group_done_o);
-    #1;
-    `TB_CHECK(dut.out_mem[2]===expected_lane1,"fixed-port flush preserves lane 1")
-    `TB_CHECK(dut.out_mem[14]===expected_lane7,"fixed-port flush preserves lane 7")
+    check_stream_words(16'd480,2,expected_lane1,14,expected_lane7);
     @(negedge clk); stream_bytes_i=20; stream_start_i=1;
     @(negedge clk); stream_start_i=0;
     wait(stream_valid_o); #1;
@@ -65,9 +95,8 @@ module tb_output_buffer;
         norm_data_i[lane*OUT_W +: OUT_W]=feature+lane;
     end
     @(negedge clk); norm_valid_i=0;
-    wait(norm_group_done_o); #1;
-    `TB_CHECK(dut.out_mem[1]===expected_partial0,"partial final group lane 0")
-    `TB_CHECK(dut.out_mem[15]===expected_partial7,"partial final group lane 7")
+    wait(norm_group_done_o);
+    check_stream_words(16'd512,1,expected_partial0,15,expected_partial7);
     `TB_FINISH("tb_output_buffer")
   end
 endmodule

@@ -57,8 +57,10 @@ class fa_tile_driver extends uvm_driver #(fa_tile_item);
       @(negedge vif.clk);
       vif.commit_valid <= 1'b0;
     end else begin
-      drive_half(tr, 1'b0);
-      drive_half(tr, 1'b1);
+      if (!tr.upper_half_only)
+        drive_half(tr, 1'b0);
+      if (!tr.lower_half_only)
+        drive_half(tr, 1'b1);
     end
   endtask
 
@@ -77,17 +79,22 @@ endclass
 class fa_tile_monitor extends uvm_component;
   `uvm_component_utils(fa_tile_monitor)
   virtual fa_tile_loader_if vif;
+  fa_test_cfg cfg;
   uvm_analysis_port #(fa_tile_item) ap;
+  uvm_analysis_port #(fa_tile_item) protocol_ap;
 
   function new(string name = "fa_tile_monitor", uvm_component parent = null);
     super.new(name, parent);
     ap = new("ap", this);
+    protocol_ap = new("protocol_ap", this);
   endfunction
 
   function void build_phase(uvm_phase phase);
     super.build_phase(phase);
     if (!uvm_config_db#(virtual fa_tile_loader_if)::get(this, "", "vif", vif))
       `uvm_fatal("NOVIF", "fa_tile_monitor requires virtual interface tile_vif")
+    if (!uvm_config_db#(fa_test_cfg)::get(this, "", "cfg", cfg))
+      `uvm_fatal("NOCFG", "fa_tile_monitor requires fa_test_cfg")
   endfunction
 
   task run_phase(uvm_phase phase);
@@ -122,7 +129,24 @@ class fa_tile_monitor extends uvm_component;
             ap.write(lo);
             have_lo = 0;
           end else begin
-            `uvm_error("TILE_PROTOCOL", "High cache half arrived without matching low half")
+            tr = fa_tile_item::type_id::create("observed_protocol_error");
+            tr.kind = fa_tile_kind_e'(vif.load_kind);
+            tr.bank = vif.load_bank;
+            tr.addr = vif.load_addr;
+            tr.is_commit = 0;
+            tr.protocol_error = !have_lo ? FA_TILE_PROTOCOL_MISSING_LOWER :
+                                (lo.kind != fa_tile_kind_e'(vif.load_kind)) ?
+                                  FA_TILE_PROTOCOL_KIND_MISMATCH :
+                                (lo.bank != vif.load_bank) ?
+                                  FA_TILE_PROTOCOL_BANK_MISMATCH :
+                                  FA_TILE_PROTOCOL_ADDR_MISMATCH;
+            protocol_ap.write(tr);
+            have_lo = 0;
+            if (cfg.allow_tile_protocol_error)
+              `uvm_info("TILE_PROTOCOL_EXPECTED",
+                        "Observed directed high cache half without matching low half", UVM_LOW)
+            else
+              `uvm_error("TILE_PROTOCOL", "High cache half arrived without matching low half")
           end
         end
       end

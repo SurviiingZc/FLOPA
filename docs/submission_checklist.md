@@ -12,7 +12,7 @@
 | configurability bonus | partial | compile-time geometry plus runtime sequence/head/mode fields; verified point remains 32 x 32 x 64 |
 | data-reuse bonus | implemented | local score/P, online row state, persistent O banks, ping-pong cache |
 | quantization bonus | implemented and verified | INT8 Q/K/V and output, Q1.15 P/alpha, INT32 state |
-| robust test-data bonus | verified | 20-run random/directed regression, 100% functional coverage, byte-exact model |
+| robust test-data bonus | verified | 21-run random/directed regression, 100% functional coverage, byte-exact model |
 | real Transformer Attention | planned | Re10K and LLM board-test procedures are defined; measured results are pending |
 
 ## 2. Required Artifacts
@@ -24,7 +24,7 @@
 | register/interface document | `docs/register_and_interface_reference.md` | ready |
 | design/algorithm document | `docs/design_specification.md` | ready |
 | PPA/optimization report | `docs/ppa_and_optimization.md` | ASIC baseline ready; FPGA rows pending |
-| verification/coverage report | `docs/verification_report.md` | functional coverage complete; code coverage open |
+| verification/coverage report | `docs/verification_report.md`, `tb/sim/coverage/` | 21/21 pass; 100% functional and 96.00% waived DUT aggregate; residual gaps classified |
 | architecture/dataflow/pipeline figures | `figures/` | current assets ready |
 | waveform panels | instructions in verification report Section 8 | screenshots pending |
 | defense presentation | `ppt/defense_outline.md` | outline ready; deck pending |
@@ -40,17 +40,19 @@
 | gate-SAIF leakage power | 9.8584 mW |
 | gate-SAIF total power | 658.4835 mW |
 | gate-SAIF net switching power | 18.1893 mW |
-| functional regression | 20/20 passing |
+| functional regression | 21/21 passing |
 | functional coverage | 100.00% |
-| DUT code coverage | 85.28% |
+| raw `tb_top` code coverage | 95.01% |
+| raw full merged code coverage | 95.66% |
+| reviewed-waiver DUT code coverage | 96.00% |
+| waived module line / branch | 95.23% / 97.61% |
 
 ## 4. Pre-Submission Gates
 
-1. Rerun the complete 20-test regression on the final RTL revision and archive
+1. Rerun the complete 21-test regression on the final RTL revision and archive
    logs, VDB, URG report, command, and seeds.
-2. Raise scoped DUT line/condition/toggle/branch coverage to the required target
-   or provide an approved waiver list; 100% functional coverage does not replace
-   the currently lower code-coverage score.
+2. Retain the raw and reviewed-waiver URG reports together and complete formal
+   classification of the remaining normalizer/engine condition and toggle gaps.
 3. Add the FPGA AXI DMA/tile-loader adapter and state the external input boundary
    clearly in diagrams and software instructions.
 4. Attach VCK190 post-route utilization/Fmax, DDR bandwidth, board power, and

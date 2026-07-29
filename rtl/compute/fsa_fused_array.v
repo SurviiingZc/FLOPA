@@ -141,7 +141,7 @@ module fsa_fused_array #(
       [0:NUM_STRIPES-1];
   wire [FEATURE_IDX_W-1:0] stripe_pv_seed_feature_w
       [0:NUM_STRIPES-1];
-  wire all_stripe_pv_seed_valid_w = &stripe_pv_seed_valid_w;
+  wire pv_seed_stage_valid_w = stripe_pv_seed_valid_w[0];
 
   wire [ROWS*SCORE_W-1:0] delta_col_data_w;
   wire delta_col_valid_w;
@@ -153,7 +153,7 @@ module fsa_fused_array #(
   wire [EXP_LANES-1:0] scaled_exp_valid_w;
   wire [EXP_LANES*PROB_W-1:0] exp_data_w;
   wire [EXP_LANES-1:0] exp_valid_w;
-  wire all_exp_valid_w;
+  wire exp_stage_valid_w;
   wire prob_write_valid_w;
   wire [COL_IDX_W-1:0] prob_write_col_w;
 
@@ -234,8 +234,9 @@ module fsa_fused_array #(
       {LSE_W{1'b1}} : lse_total_w[LSE_W-1:0];
   wire [LSE_W-1:0] lse_new_l_w =
       lse_bypass_s1_q ? lse_old_l_s1_q : lse_new_l_math_w;
-  wire lse_result_valid_w = lse_product_valid_w &&
-                            lse_metadata_valid_s1_q;
+  // Product and metadata are driven by the same issue token through equal
+  // two-cycle pipelines. The product valid is canonical; SVA checks metadata.
+  wire lse_result_valid_w = lse_product_valid_w;
   wire [ROWS*LSE_W-1:0] lse_new_l_extended_w =
       {{((ROWS-1)*LSE_W){1'b0}}, lse_new_l_w};
   wire [ROWS*LSE_W-1:0] l_rows_shifted_w =
@@ -290,17 +291,49 @@ module fsa_fused_array #(
       $fatal(1, "QK completion sideband is too short for rowmax launch");
   end
 
+  property p_stripe_delta_valids_aligned;
+    @(posedge clk) disable iff (!rst_n || clear_i)
+      stripe_delta_col_valid_w ==
+        {NUM_STRIPES{stripe_delta_col_valid_w[0]}};
+  endproperty
+  a_stripe_delta_valids_aligned:
+    assert property (p_stripe_delta_valids_aligned)
+    else $fatal(1, "fsa_fused_array stripe delta-column valid misalignment");
+
+  property p_stripe_pv_seed_valids_aligned;
+    @(posedge clk) disable iff (!rst_n || clear_i)
+      stripe_pv_seed_valid_w ==
+        {NUM_STRIPES{stripe_pv_seed_valid_w[0]}};
+  endproperty
+  a_stripe_pv_seed_valids_aligned:
+    assert property (p_stripe_pv_seed_valids_aligned)
+    else $fatal(1, "fsa_fused_array stripe PV-seed valid misalignment");
+
+  property p_exp_lane_valids_aligned;
+    @(posedge array_clk_w) disable iff (!rst_n || clear_i)
+      exp_valid_w == {EXP_LANES{exp_valid_w[0]}};
+  endproperty
+  a_exp_lane_valids_aligned:
+    assert property (p_exp_lane_valids_aligned)
+    else $fatal(1, "fsa_fused_array exp lane valid misalignment");
+
+  property p_lse_product_metadata_valid_aligned;
+    @(posedge array_clk_w) disable iff (!rst_n || clear_i)
+      lse_product_valid_w == lse_metadata_valid_s1_q;
+  endproperty
+  a_lse_product_metadata_valid_aligned:
+    assert property (p_lse_product_metadata_valid_aligned)
+    else $fatal(1, "fsa_fused_array l-update product/metadata valid mismatch");
+
   always @(posedge clk) begin
-    if (rst_n && (|stripe_delta_col_valid_w)) begin
-      if (!(&stripe_delta_col_valid_w))
-        $fatal(1, "fsa_fused_array stripe delta-column valid misalignment");
+    if (rst_n && stripe_delta_col_valid_w[0]) begin
       for (consistency_stripe = 1; consistency_stripe < NUM_STRIPES;
            consistency_stripe = consistency_stripe + 1)
         if (stripe_delta_col_index_w[consistency_stripe] !=
             stripe_delta_col_index_w[0])
           $fatal(1, "fsa_fused_array stripe delta-column tag mismatch");
     end
-    if (rst_n && all_stripe_pv_seed_valid_w) begin
+    if (rst_n && pv_seed_stage_valid_w) begin
       for (consistency_stripe = 1; consistency_stripe < NUM_STRIPES;
            consistency_stripe = consistency_stripe + 1)
         if (stripe_pv_seed_feature_w[consistency_stripe] !=
@@ -328,7 +361,7 @@ module fsa_fused_array #(
   // The stripe-local operand register and latency-2 O-rescale add three PV
   // stages. V follows the same payload pipeline before entering column skew.
   assign source_valid_w = source_is_pv_w ?
-                          all_stripe_pv_seed_valid_w : qk_valid_i;
+                          pv_seed_stage_valid_w : qk_valid_i;
   assign source_cols_w = source_is_pv_w ? pv_rescale_cols_s2_q : qk_cols_i;
 
   // Each skew network is a complete payload/valid bundle. A root-clock
@@ -348,7 +381,7 @@ module fsa_fused_array #(
           {q_skew_occupancy_q[ROWS-1:0], qk_valid_i};
       pv_seed_skew_occupancy_q <=
           {pv_seed_skew_occupancy_q[ROWS-1:0],
-           all_stripe_pv_seed_valid_w};
+           pv_seed_stage_valid_w};
       k_skew_occupancy_q <=
           {k_skew_occupancy_q[COLS-1:0], source_valid_w};
     end
@@ -357,7 +390,7 @@ module fsa_fused_array #(
   assign q_skew_gate_enable_w = !rst_n || pipeline_clear_w || qk_valid_i ||
       (|q_skew_occupancy_q) || (|q_boundary_valid_w);
   assign pv_seed_skew_gate_enable_w = !rst_n || pipeline_clear_w ||
-      all_stripe_pv_seed_valid_w || (|pv_seed_skew_occupancy_q) ||
+      pv_seed_stage_valid_w || (|pv_seed_skew_occupancy_q) ||
       (|pv_seed_boundary_valid_w);
   assign k_skew_gate_enable_w = !rst_n || pipeline_clear_w || source_valid_w ||
       (|k_skew_occupancy_q) || (|k_boundary_valid_w);
@@ -391,7 +424,7 @@ module fsa_fused_array #(
   // For non-first KV tiles, the incoming V feature ID is simultaneously used as
   // the persistent O-bank read address. First-tile seeds bypass memory with zero.
   assign seed_read_request_w = pv_valid_i && !pv_seed_zero_i;
-  assign delta_col_valid_w = &stripe_delta_col_valid_w;
+  assign delta_col_valid_w = stripe_delta_col_valid_w[0];
   assign delta_col_index_w = stripe_delta_col_index_w[0];
   assign prob_write_col_w = prob_col_tag_q[EXP_LATENCY-1];
 
@@ -594,8 +627,8 @@ module fsa_fused_array #(
 
   assign exp_source_valid_w = (softmax_state_q == SM_ALPHA_LAUNCH) ||
                               delta_col_valid_w;
-  assign all_exp_valid_w = &exp_valid_w;
-  assign prob_write_valid_w = all_exp_valid_w &&
+  assign exp_stage_valid_w = exp_valid_w[0];
+  assign prob_write_valid_w = exp_stage_valid_w &&
                               prob_col_tag_valid_q[EXP_LATENCY-1];
 
   // FlashAttention recurrence: m_new=max(m_old, block_max) and
@@ -769,7 +802,7 @@ module fsa_fused_array #(
         SM_MAX_WAIT: if (&max_ready_rows_q) softmax_state_q <= SM_ALPHA_LAUNCH;
         SM_ALPHA_LAUNCH: softmax_state_q <= SM_ALPHA_WAIT;
         SM_ALPHA_WAIT: begin
-          if (all_exp_valid_w) begin
+          if (exp_stage_valid_w) begin
             m_rows_q <= m_pending_q;
             for (row_idx = 0; row_idx < ROWS; row_idx = row_idx + 1) begin
               if (old_row_state_valid_q[row_idx])

@@ -54,6 +54,7 @@ class attention_env extends uvm_env;
     write_agent.mon.ap.connect(scoreboard.write_fifo.analysis_export);
     axil_agent.mon.ap.connect(axil_cov.analysis_export);
     tile_agent.mon.ap.connect(tile_cov.analysis_export);
+    tile_agent.mon.protocol_ap.connect(tile_cov.analysis_export);
     write_agent.mon.ap.connect(write_cov.analysis_export);
     scoreboard.model_ap.connect(math_cov.analysis_export);
   endfunction

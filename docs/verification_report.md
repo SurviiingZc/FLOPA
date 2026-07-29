@@ -9,12 +9,14 @@ rounding, saturation, masking, and output-byte packing.
 
 The verified scope includes:
 
-- 32 x 32 signed-INT8 MHA prefill from one tile through 512 x 512 tokens;
+- 32 x 32 signed-INT8 MHA prefill from one tile through 512 x 512 tokens,
+  including a two-head scheduling transition;
 - single-query MHA decode with KV contexts through 256 tokens;
 - causal and non-causal modes, sequence tails, ping-pong refill, and AXI stalls;
 - AXI4-Lite programming, the 128-bit tile loader, and 128-bit AXI writeback;
-- PWL boundaries, rounding, positive/negative saturation, error reporting, and
-  recovery after an AXI write response error.
+- PWL boundaries, rounding, positive/negative saturation, error reporting,
+  malformed tile protocol, busy-register rejection, and recovery through
+  CLEAR_ERROR, soft reset, DONE restart, and AXI write-response errors.
 
 Native GQA, an integrated AXI read DMA, VCK190 hardware execution, and
 post-route PPA remain outside the current verification claim.
@@ -38,8 +40,9 @@ Tile-loader agent -----+--> attention_accel_top -+---- status/IRQ monitor
 | tests/sequences | `tb/uvm/tests/`, `tb/uvm/sequences/` | random, directed, backpressure, tail, decode, and error stimulus |
 | reference model | `tb/uvm/ref_model/attention_ref_model.svh` | byte-exact fixed-point expected output |
 | scoreboard | `tb/uvm/scoreboard/attention_scoreboard.svh` | payload, address, count, and loader-accounting checks |
-| assertions | `tb/uvm/protocol_assertions.sv` | AXI ready/valid and protocol stability |
+| assertions | `tb/uvm/protocol_assertions.sv`, compute RTL SVA | AXI protocol stability, mutually exclusive phases, and replicated valid-lane alignment |
 | coverage | `tb/uvm/coverage/attention_coverage.svh` | register, tile, AXI, phase, arithmetic, and shape coverage |
+| code-coverage waivers | `tb/sim/coverage/` | reviewed hierarchy/expression exclusions and raw-versus-waived report policy |
 
 The synthesizable DUT remains Verilog. UVM packages and interfaces are confined
 to the verification hierarchy.
@@ -70,17 +73,17 @@ Each retained module testbench generates an FSDB by default.
 ## 4. UVM Regression Matrix
 
 The authoritative script is `tb/sim/scripts/run_uvm_regression.sh`. It compiles
-once with the ASIC SRAM model and executes 20 fixed-seed runs.
+once with the ASIC SRAM model and executes 21 fixed-seed runs.
 
 | Group | Runs | Verification purpose |
 | --- | --- | --- |
 | basic traffic | `smoke`, `axi_backpressure` | legal end-to-end execution and AXI ready throttling |
-| prefill shapes | `random_1x1`, `prefill_causal_1x1`, `prefill_2x2`, `prefill_kv_tail` | one/two tiles, causal behavior, random INT8 data, KV tail |
+| prefill shapes | `random_1x1`, `prefill_causal_1x1`, `prefill_2x2`, `prefill_kv_tail`, `multihead_underflow` | one/two tiles, causal behavior, random INT8 data, KV tail, two-head transition, delayed Q/K/V refill |
 | long/tail prefill | `prefill_long`, `prefill_tail_causal` | 512 x 512 ping-pong schedule, dual tail, random stalls |
 | decode | `random_decode_long`, `random_decode_noncausal`, `decode_smoke` | one-query decode, 256-token multi-KV context, causal/non-causal execution |
 | write addressing | `axi_4k_boundary` | one-beat boundary burst and 4-KiB split behavior |
-| arithmetic | `pwl_corner`, `arith_rounding`, `positive_saturation`, `negative_saturation` | PWL segments, rounding increment, signed output rails |
-| configuration/error | `decode_illegal`, `illegal_config`, `register_access`, `axi_bresp_error` | START rejection, byte strobes, RO/unknown access, write-fault recovery |
+| arithmetic | `pwl_corner`, `arith_rounding`, `positive_saturation`, `negative_saturation` | all PWL segments, all 16 reciprocal seed indices, score guard/sticky rounding, negative normalizer half-tie, and signed output rails |
+| configuration/error | `decode_illegal`, `illegal_config`, `register_access`, `axi_bresp_error` | all shape/mode START rejection; Q/K/V duplicate commit; missing-low and kind/bank/address half-word mismatch; full/partial/zero WSTRB; legal busy START rejection; busy PERF write acceptance; ordinary busy-config rejection; write-fault recovery, CLEAR_ERROR, soft reset, and DONE restart/clear |
 
 Reproduce it from the repository root:
 
@@ -89,7 +92,8 @@ make uvm-regression
 ```
 
 The output is written below `tb/sim/build/uvm_regression/` with one log per run,
-`coverage.vdb`, and the merged `urg/` report.
+`coverage.vdb`, the unmodified merged `urg/` report, and the separately generated
+`urg_waived/` sign-off view. Both reports are retained for auditability.
 
 ### 4.1 Consumption-driven tile prefetch
 
@@ -123,10 +127,10 @@ merged code-coverage data recorded below.
 
 | Item | Recorded result |
 | --- | --- |
-| Date | 2026-07-28 |
+| Date | 2026-07-29 |
 | Simulator | VCS V-2023.12-SP2_Full64 |
 | Backend model | `ATTN_ASIC` RTL with characterized `uhdsp_256x8m4s` model |
-| Result | **20/20 tests pass** |
+| Result | **21/21 tests pass** |
 | UVM severity | every run reports `UVM_ERROR=0`, `UVM_FATAL=0` |
 | Numerical checking | every active output byte is compared with the bit-accurate model |
 | Module coverage runs | 23/23 directed coverage jobs pass |
@@ -135,6 +139,9 @@ The long prefill test covers 16 Q tiles and 16 KV tiles with causal masking and
 25% write backpressure. Decode tests cover a single query across eight KV tiles
 for `SEQ_KV=256`. Tail, 4-KiB split, register-access, and error-recovery cases
 exercise the principal control boundaries beyond numerical datapath testing.
+The added two-head case checks 128 Q, 128 K, and 128 V loader words and 4,096
+output bytes while deliberately withholding the next bank until the relevant
+QK/PV consumption event. Its output is checked byte-for-byte for both heads.
 
 ## 6. Coverage Analysis
 
@@ -156,16 +163,87 @@ score-delta saturation. They are not stimulus gaps in the declared interface.
 
 ### 6.2 Code Coverage
 
-| Scope | Score | Line | Condition | Toggle | Branch |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| Full merged URG report | **88.74%** | 91.59% | 72.82% | 91.83% | 87.47% |
-| `tb_top` hierarchy | **86.13%** | 92.01% | 72.92% | 91.83% | 87.76% |
-| Module definitions | 78.12% | 72.78% | 68.33% | 82.28% | 89.10% |
+| Scope | Score | Line | Condition | Toggle | Branch | Assert |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Raw full merged report | **95.66%** | 94.95% | 94.10% | 92.16% | 92.89% | 99.88% |
+| Raw `tb_top` hierarchy | **95.01%** | 95.42% | 94.37% | 92.16% | 93.21% | 99.92% |
+| Raw module definitions | 88.52% | 76.18% | 91.66% | 84.30% | 91.60% | 98.87% |
+| Waived DUT-scoped report | **96.00%** | 95.53% | 94.48% | 92.65% | 93.35% | 100.00% |
+| Waived module definitions | 94.51% | 95.23% | 94.87% | 84.87% | 97.61% | 100.00% |
 
-Functional coverage is closed for the declared workload. The 95% code-coverage
-target is not yet met. Remaining work is concentrated in condition/toggle
-combinations in the normalizer, array controller, scheduler, register file, and
-AXI write engine; no higher code-coverage claim is made.
+These are the final 2026-07-29 merged results from 21 passing tests. Functional
+coverage remains 100%, and the reviewed DUT-scoped signoff view now exceeds the
+95% aggregate code-coverage target. The module-definition score remains below
+95% because it weights parameter guards and every definition independently;
+the principal remaining metric is toggle coverage rather than a functional
+condition gap.
+
+The final expansion adds byte-enable/no-op control writes, legal busy START,
+busy PERF access, all three tile-half metadata mismatches, Q/K/V duplicate
+commits, reciprocal seed coverage, and a negative normalizer half-tie. The
+`accel_regfile` now reaches 100% line and 91.84% condition coverage. All five
+functional covergroups report 100% in the merged database.
+
+The earlier dominant condition deficit was caused by redundant logic, not
+missing stimulus. WS-PV O-seed and V tokens are launched through row/column
+skews with equal total delay at every PE. The RTL now uses the O-seed token as
+the canonical `pv_mac_valid_i` and checks the former three-input contract with
+SVA. The same rule is applied to replicated stripe delta/PV-seed valids, exp
+lanes, normalizer reciprocal/multiply lanes, and the l-update product/metadata
+pipeline. Consequently `fsa_stripe` condition coverage increased from 62.67%
+to 99.14%, and `fsa_fused_pe` increased from 76.74% to 94.74%, without excluding
+either module.
+
+Assertion coverage reports 5,133 successful assertions, zero failures, and six
+uncovered assertions out of 5,139. All DUT assertions are covered in the scoped
+signoff report. The six raw-report gaps are four testbench interface properties
+whose failure branches correctly never occur and two unused UVM-library
+properties; they are outside DUT ownership. In particular, every generated
+WS-PV alignment assertion has real successful attempts in the long prefill
+workload.
+
+`online_normalizer` condition coverage is now 61.45%. Its remaining deficit
+is dominated by conservative arithmetic overflow/clamp expressions, not the
+removed replicated-lane valid reductions. Those conditions require numeric
+range proofs before any further RTL deletion or waiver.
+
+### 6.3 Formal Waiver Policy
+
+The maintained waiver manifest is `tb/sim/coverage/README.md`. It records the
+excluded source expression, rationale, review requirement, and the RTL checksum
+used when the waiver was created. A checksum change invalidates the affected
+waiver until it is reviewed again. Current exclusions are limited to:
+
+- `W-HIER-001`: third-party DesignWare multiplier and SRAM-model internals;
+- `W-RTL-001`: fixed-parameter fatal guards that cannot fire in this build;
+- `W-RTL-002`: scheduler START combinations blocked by the register file;
+- `W-RTL-003`: defensive FSM defaults reachable only by corrupt state;
+- `W-RTL-004`: a top-level wait path unreachable at the fixed head dimension
+  and pipeline latencies;
+- `W-MATH-001`: PWL interpolation clamps excluded by the input-domain proof.
+
+The regression compiles and runs with `line+cond+tgl+branch+assert`, emits the
+raw report first, and applies `uvm_dut.hier` plus the reviewed
+line/condition/branch exclusion files only to the second report. Toggle gaps
+are intentionally not waiver-filtered at this stage.
+
+### 6.4 Remaining Gap Disposition
+
+| Classification | Remaining gap | Disposition |
+| --- | --- | --- |
+| approved waiver | third-party DW/SRAM internals, fixed-parameter guards, corrupt-state FSM defaults, scheduler combinations blocked by the register file, fixed-latency `PV_FLOW_WAIT_L`, proven PWL clamps | already encoded in `tb/sim/coverage/`; retain raw and waived reports together |
+| module-level covered | scheduler/controller error arcs, AXI `READY=1` while response `VALID=0`, parameterized output-buffer partial final group | checked by `tb_accel_scheduler`, `tb_fsa_controller`, `tb_axi4_slave_if`, `tb_accel_regfile`, and `tb_output_buffer`; top UVM cannot force several of these without violating the public protocol |
+| unwaived arithmetic gap | conservative `online_normalizer` reduced-product overflow and saturation combinations | retain in the score until interval/formal range proof establishes unreachable expressions; do not waive from percentage alone |
+| unwaived integration gap | `fsa_qk_engine`/`fsa_pv_engine` defensive timeout/error branches and some AXI write abort ordering | inject only through an explicit internal fault campaign or prove unreachable from legal cache/controller handshakes |
+| non-functional toggle gap | constant configuration bits, sign-extension/high multiplier bits, per-lane reciprocal seeds, and long delay-line stages | not a functional failure; analyze per-instance toggle only for power intent, not by adding illegal traffic |
+
+The reciprocal functional model observes every seed index across the merged
+regression. Lower per-instance LUT toggle scores mean a particular generated
+lane does not see every seed value; they do not indicate a missing reciprocal
+algorithm case. Likewise, the two zero-head MC/DC rows in `start_cfg_valid_w`
+cannot independently toggle while the required Q/KV head-equality term remains
+true. They remain visible in raw condition coverage pending a formal expression
+waiver rather than being hidden by a contrived illegal sequence.
 
 ## 7. Current Gate-Level Power Workload Check
 
@@ -228,5 +306,5 @@ verification evidence, not substitutes for scoreboard results.
 ## 9. Update Rule
 
 After an RTL change, rerun the affected module test, the relevant UVM case, and
-the complete 20-run regression before changing a verified claim. Record the
+the complete 21-run regression before changing a verified claim. Record the
 date, RTL revision, command, seeds, pass/fail count, and new coverage report.

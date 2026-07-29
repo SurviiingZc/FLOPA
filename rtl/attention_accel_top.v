@@ -105,13 +105,7 @@ module attention_accel_top #(
   wire cfg_causal_en_w;
   wire cfg_prefill_en_w;
   wire cfg_decode_en_w;
-  wire [63:0] cfg_q_base_w;
-  wire [63:0] cfg_k_base_w;
-  wire [63:0] cfg_v_base_w;
   wire [63:0] cfg_o_base_w;
-  wire [31:0] cfg_q_stride_w;
-  wire [31:0] cfg_k_stride_w;
-  wire [31:0] cfg_v_stride_w;
   wire [31:0] cfg_o_stride_w;
   wire [15:0] cfg_seq_q_w;
   wire [15:0] cfg_seq_kv_w;
@@ -121,9 +115,7 @@ module attention_accel_top #(
   wire [7:0] cfg_tile_q_w;
   wire [7:0] cfg_tile_k_w;
   wire [31:0] cfg_score_scale_w;
-  wire [31:0] cfg_value_scale_w;
   wire [31:0] cfg_out_scale_w;
-  wire [31:0] cfg_mask_cfg_w;
   wire [31:0] cfg_perf_ctrl_w;
 
   wire scheduler_busy_w;
@@ -309,9 +301,13 @@ module attention_accel_top #(
   assign irq_o = scheduler_done_w | scheduler_error_w;
   // clear_error acknowledges a completed AXI write fault. The master clears
   // on the same command, so suppress its registered error for that cycle.
-  assign fatal_error_w = cache_protocol_error_w | array_controller_error_w | qk_error_w |
-                         pv_engine_error_w | softmax_error_w |
-                         (axi_write_error_w && !cfg_clear_error_w);
+  // Soft reset clears the producer error flops on this edge. Suppress their
+  // pre-edge values so the regfile cannot immediately relatch a stale fatal
+  // error in the same cycle that it clears its sticky status.
+  assign fatal_error_w = !cfg_soft_reset_w &&
+                         (cache_protocol_error_w | array_controller_error_w | qk_error_w |
+                          pv_engine_error_w | softmax_error_w |
+                          (axi_write_error_w && !cfg_clear_error_w));
 
   // Control plane: software-visible shadow registers feed the job scheduler.
   accel_regfile #(.HEAD_DIM(HEAD_DIM)) u_regfile (
@@ -325,13 +321,12 @@ module attention_accel_top #(
     .cfg_clear_done_pulse_o(cfg_clear_done_w), .cfg_clear_error_pulse_o(cfg_clear_error_w),
     .cfg_mode_sel_o(cfg_mode_sel_w), .cfg_causal_en_o(cfg_causal_en_w),
     .cfg_prefill_en_o(cfg_prefill_en_w), .cfg_decode_en_o(cfg_decode_en_w),
-    .cfg_q_base_o(cfg_q_base_w), .cfg_k_base_o(cfg_k_base_w), .cfg_v_base_o(cfg_v_base_w), .cfg_o_base_o(cfg_o_base_w),
-    .cfg_q_stride_o(cfg_q_stride_w), .cfg_k_stride_o(cfg_k_stride_w), .cfg_v_stride_o(cfg_v_stride_w), .cfg_o_stride_o(cfg_o_stride_w),
+    .cfg_o_base_o(cfg_o_base_w), .cfg_o_stride_o(cfg_o_stride_w),
     .cfg_seq_q_o(cfg_seq_q_w), .cfg_seq_kv_o(cfg_seq_kv_w), .cfg_num_q_heads_o(cfg_num_q_heads_w),
     .cfg_num_kv_heads_o(cfg_num_kv_heads_w), .cfg_head_dim_o(cfg_head_dim_w),
     .cfg_tile_q_o(cfg_tile_q_w), .cfg_tile_k_o(cfg_tile_k_w),
-    .cfg_score_scale_o(cfg_score_scale_w), .cfg_value_scale_o(cfg_value_scale_w), .cfg_out_scale_o(cfg_out_scale_w),
-    .cfg_mask_cfg_o(cfg_mask_cfg_w), .cfg_perf_ctrl_o(cfg_perf_ctrl_w),
+    .cfg_score_scale_o(cfg_score_scale_w), .cfg_out_scale_o(cfg_out_scale_w),
+    .cfg_perf_ctrl_o(cfg_perf_ctrl_w),
     .busy_i(scheduler_busy_w), .done_i(scheduler_done_w), .error_i(scheduler_error_w | fatal_error_w),
     .error_code_i(scheduler_error_w ? scheduler_error_code_w : `ATTN_ERR_FATAL),
     .idle_i(scheduler_idle_w), .load_active_i(load_active_w), .compute_active_i(compute_active_w),

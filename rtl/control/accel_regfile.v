@@ -1,8 +1,8 @@
 `timescale 1ns/1ps
 `include "attention_defines.vh"
 
-// AXI4-Lite programming model. Software writes shadow registers; a valid START
-// atomically snapshots them into cfg_* outputs so a running job is immutable.
+// AXI4-Lite programming model. Software writes implemented shadow registers;
+// a valid START snapshots them into cfg_* outputs so a job is immutable.
 module accel_regfile #(
   parameter ADDR_W = `ATTN_AXI_ADDR_W,
   parameter HEAD_DIM = `ATTN_HEAD_DIM
@@ -34,13 +34,7 @@ module accel_regfile #(
   output reg             cfg_causal_en_o,
   output reg             cfg_prefill_en_o,
   output reg             cfg_decode_en_o,
-  output reg [63:0]      cfg_q_base_o,
-  output reg [63:0]      cfg_k_base_o,
-  output reg [63:0]      cfg_v_base_o,
   output reg [63:0]      cfg_o_base_o,
-  output reg [31:0]      cfg_q_stride_o,
-  output reg [31:0]      cfg_k_stride_o,
-  output reg [31:0]      cfg_v_stride_o,
   output reg [31:0]      cfg_o_stride_o,
   output reg [15:0]      cfg_seq_q_o,
   output reg [15:0]      cfg_seq_kv_o,
@@ -50,9 +44,7 @@ module accel_regfile #(
   output reg [7:0]       cfg_tile_q_o,
   output reg [7:0]       cfg_tile_k_o,
   output reg [31:0]      cfg_score_scale_o,
-  output reg [31:0]      cfg_value_scale_o,
   output reg [31:0]      cfg_out_scale_o,
-  output reg [31:0]      cfg_mask_cfg_o,
   output reg [31:0]      cfg_perf_ctrl_o,
   input                  busy_i,
   input                  done_i,
@@ -80,13 +72,7 @@ module accel_regfile #(
   reg prog_causal_en_q;
   reg prog_prefill_en_q;
   reg prog_decode_en_q;
-  reg [63:0] prog_q_base_q;
-  reg [63:0] prog_k_base_q;
-  reg [63:0] prog_v_base_q;
   reg [63:0] prog_o_base_q;
-  reg [31:0] prog_q_stride_q;
-  reg [31:0] prog_k_stride_q;
-  reg [31:0] prog_v_stride_q;
   reg [31:0] prog_o_stride_q;
   reg [15:0] prog_seq_q_q;
   reg [15:0] prog_seq_kv_q;
@@ -96,9 +82,7 @@ module accel_regfile #(
   reg [7:0] prog_tile_q_q;
   reg [7:0] prog_tile_k_q;
   reg [31:0] prog_score_scale_q;
-  reg [31:0] prog_value_scale_q;
   reg [31:0] prog_out_scale_q;
-  reg [31:0] prog_mask_cfg_q;
   reg [31:0] prog_perf_ctrl_q;
   localparam [7:0] HEAD_DIM_CFG = HEAD_DIM;
 
@@ -120,8 +104,9 @@ module accel_regfile #(
   assign start_causal_en_w = control_write_w ? wr_data_w[`ATTN_CTRL_CAUSAL_EN_BIT] : prog_causal_en_q;
   assign start_prefill_en_w = control_write_w ? wr_data_w[`ATTN_CTRL_PREFILL_EN_BIT] : prog_prefill_en_q;
   assign start_decode_en_w = control_write_w ? wr_data_w[`ATTN_CTRL_DECODE_EN_BIT] : prog_decode_en_q;
-  assign start_alignment_valid_w = (prog_q_base_q[3:0] == 0) && (prog_k_base_q[3:0] == 0) &&
-                                   (prog_v_base_q[3:0] == 0) && (prog_o_base_q[3:0] == 0);
+  // Q/K/V arrive through the tile-loader interface, so only the implemented
+  // O writeback address participates in alignment validation.
+  assign start_alignment_valid_w = (prog_o_base_q[3:0] == 0);
   assign start_cfg_valid_w = prog_seq_q_q != 0 && prog_seq_kv_q != 0 &&
       prog_num_q_heads_q != 0 && prog_num_kv_heads_q != 0 &&
       prog_head_dim_q == HEAD_DIM_CFG && prog_tile_q_q == `ATTN_TILE_Q &&
@@ -220,17 +205,15 @@ module accel_regfile #(
                                             (error_i | (sticky_error_q != `ATTN_ERR_NONE)), done_i, busy_i};
         `ATTN_REG_ERROR_CODE: read_reg_value_w = {28'd0, sticky_error_q};
         `ATTN_REG_VERSION: read_reg_value_w = 32'h0002_0000;
-        `ATTN_REG_Q_BASE_LO: read_reg_value_w = prog_q_base_q[31:0];
-        `ATTN_REG_Q_BASE_HI: read_reg_value_w = prog_q_base_q[63:32];
-        `ATTN_REG_K_BASE_LO: read_reg_value_w = prog_k_base_q[31:0];
-        `ATTN_REG_K_BASE_HI: read_reg_value_w = prog_k_base_q[63:32];
-        `ATTN_REG_V_BASE_LO: read_reg_value_w = prog_v_base_q[31:0];
-        `ATTN_REG_V_BASE_HI: read_reg_value_w = prog_v_base_q[63:32];
+        // Reserved for a future read DMA. Retain address-map compatibility
+        // without implementing state that has no hardware consumer (RAZ/WI).
+        `ATTN_REG_Q_BASE_LO, `ATTN_REG_Q_BASE_HI,
+        `ATTN_REG_K_BASE_LO, `ATTN_REG_K_BASE_HI,
+        `ATTN_REG_V_BASE_LO, `ATTN_REG_V_BASE_HI,
+        `ATTN_REG_Q_STRIDE, `ATTN_REG_K_STRIDE, `ATTN_REG_V_STRIDE,
+        `ATTN_REG_VALUE_SCALE, `ATTN_REG_MASK_CFG: read_reg_value_w = 32'd0;
         `ATTN_REG_O_BASE_LO: read_reg_value_w = prog_o_base_q[31:0];
         `ATTN_REG_O_BASE_HI: read_reg_value_w = prog_o_base_q[63:32];
-        `ATTN_REG_Q_STRIDE: read_reg_value_w = prog_q_stride_q;
-        `ATTN_REG_K_STRIDE: read_reg_value_w = prog_k_stride_q;
-        `ATTN_REG_V_STRIDE: read_reg_value_w = prog_v_stride_q;
         `ATTN_REG_O_STRIDE: read_reg_value_w = prog_o_stride_q;
         `ATTN_REG_SEQ_Q: read_reg_value_w = {16'd0, prog_seq_q_q};
         `ATTN_REG_SEQ_KV: read_reg_value_w = {16'd0, prog_seq_kv_q};
@@ -241,9 +224,7 @@ module accel_regfile #(
         `ATTN_REG_TILE_K: read_reg_value_w = {24'd0, prog_tile_k_q};
         `ATTN_REG_MODE: read_reg_value_w = {28'd0, prog_decode_en_q, prog_prefill_en_q, prog_causal_en_q, prog_mode_sel_q};
         `ATTN_REG_SCORE_SCALE: read_reg_value_w = prog_score_scale_q;
-        `ATTN_REG_VALUE_SCALE: read_reg_value_w = prog_value_scale_q;
         `ATTN_REG_OUT_SCALE: read_reg_value_w = prog_out_scale_q;
-        `ATTN_REG_MASK_CFG: read_reg_value_w = prog_mask_cfg_q;
         `ATTN_REG_PERF_CTRL: read_reg_value_w = prog_perf_ctrl_q;
         `ATTN_REG_PERF_CYCLES_LO: read_reg_value_w = perf_cycles_i[31:0];
         `ATTN_REG_PERF_CYCLES_HI: read_reg_value_w = perf_cycles_i[63:32];
@@ -273,28 +254,33 @@ module accel_regfile #(
       prog_causal_en_q <= 1'b0;
       prog_prefill_en_q <= 1'b1;
       prog_decode_en_q <= 1'b0;
-      prog_q_base_q <= 64'd0; prog_k_base_q <= 64'd0; prog_v_base_q <= 64'd0; prog_o_base_q <= 64'd0;
-      prog_q_stride_q <= 32'd0; prog_k_stride_q <= 32'd0; prog_v_stride_q <= 32'd0; prog_o_stride_q <= 32'd0;
+      prog_o_base_q <= 64'd0;
+      prog_o_stride_q <= 32'd0;
       prog_seq_q_q <= 16'd0; prog_seq_kv_q <= 16'd0;
       prog_num_q_heads_q <= `ATTN_DEFAULT_NUM_HEADS; prog_num_kv_heads_q <= `ATTN_DEFAULT_NUM_HEADS;
       prog_head_dim_q <= `ATTN_DEFAULT_HEAD_DIM; prog_tile_q_q <= `ATTN_DEFAULT_TILE_Q; prog_tile_k_q <= `ATTN_DEFAULT_TILE_K;
-      prog_score_scale_q <= 32'd0; prog_value_scale_q <= 32'd0; prog_out_scale_q <= 32'd0;
-      prog_mask_cfg_q <= 32'd0; prog_perf_ctrl_q <= 32'd0;
+      prog_score_scale_q <= 32'd0; prog_out_scale_q <= 32'd0;
+      prog_perf_ctrl_q <= 32'd0;
       cfg_mode_sel_o <= `ATTN_MODESEL_MHA; cfg_causal_en_o <= 1'b0; cfg_prefill_en_o <= 1'b1; cfg_decode_en_o <= 1'b0;
-      cfg_q_base_o <= 64'd0; cfg_k_base_o <= 64'd0; cfg_v_base_o <= 64'd0; cfg_o_base_o <= 64'd0;
-      cfg_q_stride_o <= 32'd0; cfg_k_stride_o <= 32'd0; cfg_v_stride_o <= 32'd0; cfg_o_stride_o <= 32'd0;
+      cfg_o_base_o <= 64'd0;
+      cfg_o_stride_o <= 32'd0;
       cfg_seq_q_o <= 16'd0; cfg_seq_kv_o <= 16'd0;
       cfg_num_q_heads_o <= `ATTN_DEFAULT_NUM_HEADS; cfg_num_kv_heads_o <= `ATTN_DEFAULT_NUM_HEADS;
       cfg_head_dim_o <= `ATTN_DEFAULT_HEAD_DIM; cfg_tile_q_o <= `ATTN_DEFAULT_TILE_Q; cfg_tile_k_o <= `ATTN_DEFAULT_TILE_K;
-      cfg_score_scale_o <= 32'd0; cfg_value_scale_o <= 32'd0; cfg_out_scale_o <= 32'd0;
-      cfg_mask_cfg_o <= 32'd0; cfg_perf_ctrl_o <= 32'd0;
+      cfg_score_scale_o <= 32'd0; cfg_out_scale_o <= 32'd0;
+      cfg_perf_ctrl_o <= 32'd0;
       sticky_error_q <= `ATTN_ERR_NONE;
     end else begin
       cfg_start_pulse_o <= 1'b0;
       cfg_soft_reset_pulse_o <= 1'b0;
       cfg_clear_done_pulse_o <= 1'b0;
       cfg_clear_error_pulse_o <= 1'b0;
-      if (error_i && sticky_error_q == `ATTN_ERR_NONE)
+      // Command pulses are registered, so downstream error flops still carry
+      // their pre-clear value on this edge. Preserve clear/reset priority over
+      // that stale error rather than immediately relatching it.
+      if (cfg_clear_error_pulse_o || cfg_soft_reset_pulse_o)
+        sticky_error_q <= `ATTN_ERR_NONE;
+      else if (error_i && sticky_error_q == `ATTN_ERR_NONE)
         sticky_error_q <= (error_code_i == `ATTN_ERR_NONE) ? `ATTN_ERR_FATAL : error_code_i;
 
       if (wr_fire_w) begin
@@ -329,31 +315,20 @@ module accel_regfile #(
                     cfg_causal_en_o <= start_causal_en_w;
                     cfg_prefill_en_o <= start_prefill_en_w;
                     cfg_decode_en_o <= start_decode_en_w;
-                    cfg_q_base_o <= prog_q_base_q; cfg_k_base_o <= prog_k_base_q;
-                    cfg_v_base_o <= prog_v_base_q; cfg_o_base_o <= prog_o_base_q;
-                    cfg_q_stride_o <= prog_q_stride_q; cfg_k_stride_o <= prog_k_stride_q;
-                    cfg_v_stride_o <= prog_v_stride_q; cfg_o_stride_o <= prog_o_stride_q;
+                    cfg_o_base_o <= prog_o_base_q;
+                    cfg_o_stride_o <= prog_o_stride_q;
                     cfg_seq_q_o <= prog_seq_q_q; cfg_seq_kv_o <= prog_seq_kv_q;
                     cfg_num_q_heads_o <= prog_num_q_heads_q; cfg_num_kv_heads_o <= prog_num_kv_heads_q;
                     cfg_head_dim_o <= prog_head_dim_q; cfg_tile_q_o <= prog_tile_q_q; cfg_tile_k_o <= prog_tile_k_q;
-                    cfg_score_scale_o <= prog_score_scale_q; cfg_value_scale_o <= prog_value_scale_q;
-                    cfg_out_scale_o <= prog_out_scale_q; cfg_mask_cfg_o <= prog_mask_cfg_q;
+                    cfg_score_scale_o <= prog_score_scale_q;
+                    cfg_out_scale_o <= prog_out_scale_q;
                     cfg_perf_ctrl_o <= prog_perf_ctrl_q;
                   end
                 end
               end
             end
-            `ATTN_REG_Q_BASE_LO: prog_q_base_q[31:0] <= merge_wstrb(prog_q_base_q[31:0], wr_data_w, wr_strb_w);
-            `ATTN_REG_Q_BASE_HI: prog_q_base_q[63:32] <= merge_wstrb(prog_q_base_q[63:32], wr_data_w, wr_strb_w);
-            `ATTN_REG_K_BASE_LO: prog_k_base_q[31:0] <= merge_wstrb(prog_k_base_q[31:0], wr_data_w, wr_strb_w);
-            `ATTN_REG_K_BASE_HI: prog_k_base_q[63:32] <= merge_wstrb(prog_k_base_q[63:32], wr_data_w, wr_strb_w);
-            `ATTN_REG_V_BASE_LO: prog_v_base_q[31:0] <= merge_wstrb(prog_v_base_q[31:0], wr_data_w, wr_strb_w);
-            `ATTN_REG_V_BASE_HI: prog_v_base_q[63:32] <= merge_wstrb(prog_v_base_q[63:32], wr_data_w, wr_strb_w);
             `ATTN_REG_O_BASE_LO: prog_o_base_q[31:0] <= merge_wstrb(prog_o_base_q[31:0], wr_data_w, wr_strb_w);
             `ATTN_REG_O_BASE_HI: prog_o_base_q[63:32] <= merge_wstrb(prog_o_base_q[63:32], wr_data_w, wr_strb_w);
-            `ATTN_REG_Q_STRIDE: prog_q_stride_q <= merge_wstrb(prog_q_stride_q, wr_data_w, wr_strb_w);
-            `ATTN_REG_K_STRIDE: prog_k_stride_q <= merge_wstrb(prog_k_stride_q, wr_data_w, wr_strb_w);
-            `ATTN_REG_V_STRIDE: prog_v_stride_q <= merge_wstrb(prog_v_stride_q, wr_data_w, wr_strb_w);
             `ATTN_REG_O_STRIDE: prog_o_stride_q <= merge_wstrb(prog_o_stride_q, wr_data_w, wr_strb_w);
             `ATTN_REG_SEQ_Q: prog_seq_q_q <= merge_wstrb16(prog_seq_q_q, wr_data_w, wr_strb_w);
             `ATTN_REG_SEQ_KV: prog_seq_kv_q <= merge_wstrb16(prog_seq_kv_q, wr_data_w, wr_strb_w);
@@ -369,9 +344,7 @@ module accel_regfile #(
               end
             end
             `ATTN_REG_SCORE_SCALE: prog_score_scale_q <= merge_wstrb(prog_score_scale_q, wr_data_w, wr_strb_w);
-            `ATTN_REG_VALUE_SCALE: prog_value_scale_q <= merge_wstrb(prog_value_scale_q, wr_data_w, wr_strb_w);
             `ATTN_REG_OUT_SCALE: prog_out_scale_q <= merge_wstrb(prog_out_scale_q, wr_data_w, wr_strb_w);
-            `ATTN_REG_MASK_CFG: prog_mask_cfg_q <= merge_wstrb(prog_mask_cfg_q, wr_data_w, wr_strb_w);
             `ATTN_REG_PERF_CTRL: begin
               prog_perf_ctrl_q <= merge_wstrb(prog_perf_ctrl_q, wr_data_w, wr_strb_w);
               cfg_perf_ctrl_o <= merge_wstrb(prog_perf_ctrl_q, wr_data_w, wr_strb_w);
