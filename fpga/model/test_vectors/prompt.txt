@@ -1,0 +1,7 @@
+<|im_start|>system
+You are a precise assistant. Answer with one short factual sentence.<|im_end|>
+<|im_start|>user
+Explain why matching an FPGA boot image with its runtime metadata matters, and mention what can
+happen when they come from different builds. Keep the answer concise and technically accurate.
+<|im_end|>
+<|im_start|>assistant

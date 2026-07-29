@@ -59,7 +59,7 @@ From the repository root:
 ```bash
 source fpga/my_env.sh
 make -C fpga clean
-make -C fpga impl JOBS=8 FREQ_MHZ=170
+make -C fpga impl JOBS=2 FREQ_MHZ=170
 ```
 
 The `impl` flow generates synthesis reports first and continues only when setup
@@ -72,7 +72,7 @@ To stop after the 170 MHz synthesis baseline, use:
 
 ```bash
 make -C fpga clean
-make -C fpga synth JOBS=8 FREQ_MHZ=170
+make -C fpga synth JOBS=2 FREQ_MHZ=170
 ```
 
 Generated reports are under `fpga/vivado/build/reports`. The PDI and XSA are

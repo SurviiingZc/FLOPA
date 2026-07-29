@@ -71,6 +71,7 @@ asic/dc/logs/*
 
 # Vivado / Vitis
 .Xil/
+/.ipcache/
 *.jou
 *.str
 *.backup/

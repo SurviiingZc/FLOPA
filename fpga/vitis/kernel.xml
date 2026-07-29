@@ -50,7 +50,7 @@
                 offset="0x0"
                 hostOffset="0x0"
                 hostSize="0x8"
-                type="stream&lt;ap_axiu&lt;128,0,0,0&gt;&gt;&amp;"/>
+                type="stream&lt;ap_axiu&lt;128,4,0,0&gt;&gt;&amp;"/>
         </args>
     </kernel>
 </root>

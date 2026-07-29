@@ -10,13 +10,20 @@ The design contains two kernels:
 - `dit_fa`: user-managed RTL kernel containing the attention core, tile loader,
   AXI-Lite register map, and DDR write master;
 - `dit_fa_tile_mover`: HLS kernel that reads XRT BO data from DDR and streams a
-  selected tile into `dit_fa`.
+  complete 90-tile, nine-Q-head schedule into `dit_fa` in one invocation.
+
+For each attention node in the current `seq=64`, `head_dim=64` path, software
+expands model 9Q/3KV GQA into the accelerator's 9Q/9KV MHA interface. It starts
+the mover once and sends one RTL `START` after the first `Q0/K0/V0` commits.
+The mover then traverses all heads, prefetches
+`K1/V1/Q1`, and refills released K/V banks under AXIS backpressure. See
+[`../docs/pingpong_streaming.md`](../docs/pingpong_streaming.md) for the protocol.
 
 ## Build
 
 ```bash
 source fpga/my_env.sh
-make -C fpga/vitis runtime FREQ_HZ=170000000 JOBS=8
+make -C fpga/vitis runtime FREQ_HZ=170000000 JOBS=1
 ```
 
 Useful incremental targets are `rtl-xo`, `mover-xo`, `xo`, `link`, `xclbin`,
@@ -28,7 +35,7 @@ The deployable directory is `fpga/vitis/build/runtime/`; the equivalent archive
 is `fpga/vitis/build/dit-fa-xrt-runtime.tar.gz`.
 
 The verified 170 MHz build meets all timing constraints with setup WNS/TNS of
-`0.000/0.000 ns` and hold WHS/THS of `0.000/0.000 ns`. Treat it as the board
+`0.001/0.000 ns` and hold WHS/THS of `0.009/0.000 ns`. Treat it as the board
 functionality baseline, not as evidence of frequency margin. The routed report
 is under `build/reports/link/imp/`.
 
@@ -47,6 +54,7 @@ Expected final output includes:
 
 ```text
 Completed tiles: 4
+Loaded tiles: 10
 PASS: seq=64, head_dim=64, four tiles
 ```
 

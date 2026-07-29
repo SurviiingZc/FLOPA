@@ -16,6 +16,7 @@
 ../../rtl/memory/o_accumulator_bank.v
 ../../rtl/memory/pingpong_buffer.v
 ../../rtl/memory/qkv_tile_cache.v
+../../fpga/rtl/axis_tile_loader.v
 ../../rtl/compute/score_scale_pipe.v
 ../../rtl/compute/fsa_delay_line.v
 ../../rtl/compute/fsa_fused_pe.v

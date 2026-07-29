@@ -15,7 +15,7 @@ endif
 XCLBINUTIL ?= /opt/xilinx/xrt/bin/xclbinutil
 TARGET ?= hw
 FREQ_HZ ?= 170000000
-JOBS ?= 8
+JOBS ?= 1
 
 BUILD_DIR ?= $(abspath build)
 RTL_XO := $(BUILD_DIR)/dit_fa.xo
@@ -28,6 +28,7 @@ PROBE_HOST := $(BUILD_DIR)/pdi_probe/pdi_probe_host
 CONTROL_IP_HOST := $(BUILD_DIR)/control_probe/control_probe_ip_host
 RUNTIME_DIR := $(BUILD_DIR)/runtime
 RUNTIME_TAR := $(BUILD_DIR)/dit-fa-xrt-runtime.tar.gz
+GIT_COMMIT := $(shell git -C ../.. rev-parse HEAD 2>/dev/null || printf unknown)
 
 RTL_SOURCES := $(wildcard rtl/*.v) kernel.xml scripts/package_rtl_kernel.tcl
 RTL_SOURCES += $(wildcard ../rtl/*.v ../../rtl/*/*.v ../../rtl/*.v)
@@ -52,7 +53,7 @@ help:
 	@printf '%s\n' 'Vitis/XRT flow for the installed VCK190 common platform'
 	@printf '%s\n' ''
 	@printf '%s\n' '  make -C fpga/vitis xo'
-	@printf '%s\n' '  make -C fpga/vitis xclbin FREQ_HZ=170000000 JOBS=8'
+	@printf '%s\n' '  make -C fpga/vitis xclbin FREQ_HZ=170000000 JOBS=1'
 	@printf '%s\n' '  make -C fpga/vitis host'
 	@printf '%s\n' '  make -C fpga/vitis probe-host'
 	@printf '%s\n' '  make -C fpga/vitis control-ip-host'
@@ -132,7 +133,7 @@ $(CONTROL_IP_HOST): $(CONTROL_IP_HOST_SOURCES)
 
 runtime: $(XCLBIN) $(BOOT_BIN) $(HOST)
 	scripts/package_runtime.sh "$(XCLBIN)" "$(BOOT_BIN)" "$(HOST)" \
-		"$(RUNTIME_DIR)" "$(RUNTIME_TAR)"
+		"$(RUNTIME_DIR)" "$(RUNTIME_TAR)" "$(FREQ_HZ)" "$(GIT_COMMIT)"
 
 inspect: $(XCLBIN)
 	"$(XCLBINUTIL)" --info --input "$(XCLBIN)"

@@ -4,6 +4,9 @@ This directory is the complete board payload. The VCK190 must use the included
 `BOOT.BIN`, because this non-DFX common platform configures the linked PL design
 at boot. The existing PetaLinux `Image` and root filesystem remain unchanged.
 
+`BUILD_INFO` records the RTL Git commit, requested kernel frequency, platform,
+and toolchain. It is covered by `SHA256SUMS`.
+
 Check the payload, install it on the SD boot partition, and reboot:
 
 ```bash
@@ -28,4 +31,5 @@ sudo /run/media/mmcblk0p1/dit_fa_xrt_test \
 The test uses `seq=64`, `head_dim=64`, one head, and four compute tiles. Q and K
 are zero, V is one, and every output byte must be one. The host also requires
 the XRT buffer device address to fit below 4 GiB because the current RTL output
-write address is 32 bits.
+write address is 32 bits. A successful run reports four compute tiles and ten
+loaded memory tiles.

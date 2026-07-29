@@ -64,9 +64,8 @@ constexpr std::uint32_t kAttentionPerfTiles = 0x08c;
 constexpr std::uint32_t kLoaderBase = 0x100;
 constexpr std::uint32_t kLoaderControl = kLoaderBase + 0x000;
 constexpr std::uint32_t kLoaderStatus = kLoaderBase + 0x004;
-constexpr std::uint32_t kLoaderDescriptor = kLoaderBase + 0x008;
-constexpr std::uint32_t kLoaderBeats = kLoaderBase + 0x00c;
 constexpr std::uint32_t kLoaderVersion = kLoaderBase + 0x014;
+constexpr std::uint32_t kLoaderTiles = kLoaderBase + 0x018;
 
 constexpr std::uint32_t kAttentionStart = 1U << 0;
 constexpr std::uint32_t kAttentionSoftReset = 1U << 1;
@@ -80,23 +79,19 @@ constexpr std::uint32_t kLoaderStart = 1U << 0;
 constexpr std::uint32_t kLoaderAbort = 1U << 1;
 constexpr std::uint32_t kLoaderClearDone = 1U << 2;
 constexpr std::uint32_t kLoaderClearError = 1U << 3;
-constexpr std::uint32_t kLoaderDone = 1U << 1;
 constexpr std::uint32_t kLoaderError = 1U << 2;
 
-constexpr std::uint32_t kCacheQ = 0;
-constexpr std::uint32_t kCacheK = 1;
-constexpr std::uint32_t kCacheV = 2;
 constexpr std::uint32_t kSeq = 64;
 constexpr std::uint32_t kHeadDim = 64;
 constexpr std::uint32_t kTileRows = 32;
-constexpr std::uint32_t kTileBytes = kTileRows * kHeadDim;
 constexpr std::uint32_t kTensorBytes = kSeq * kHeadDim;
 constexpr std::uint32_t kQOffset = 0;
 constexpr std::uint32_t kKOffset = kQOffset + kTensorBytes;
 constexpr std::uint32_t kVOffset = kKOffset + kTensorBytes;
 constexpr std::uint32_t kOOffset = kVOffset + kTensorBytes;
 constexpr std::uint32_t kBufferBytes = kOOffset + kTensorBytes;
-constexpr std::uint32_t kTileBeats = kTileBytes / 16;
+constexpr std::uint32_t kInitialTiles = 3;
+constexpr std::uint32_t kScheduleTiles = 10;
 constexpr std::uint32_t kTimeoutMs = 5000;
 
 std::uint64_t join_u64(std::uint32_t low, std::uint32_t high)
@@ -190,90 +185,56 @@ void wait_for_attention(xrt::ip &accelerator, std::uint32_t mask)
     throw std::runtime_error("attention timeout");
 }
 
-void wait_for_tiles(xrt::ip &accelerator, std::uint32_t tile_count)
+void wait_for_loader_tiles(xrt::ip &accelerator, std::uint32_t tile_count)
 {
     const auto deadline = std::chrono::steady_clock::now()
         + std::chrono::milliseconds(kTimeoutMs);
 
-    while (std::chrono::steady_clock::now() < deadline) {
-        const auto status = accelerator.read_register(kAttentionStatus);
-
-        if ((status & kAttentionErrorStatus) != 0) {
-            const auto error = accelerator.read_register(kAttentionError);
-            throw std::runtime_error(
-                "attention error while waiting for tiles, code="
-                + std::to_string(error));
-        }
-        if (accelerator.read_register(kAttentionPerfTiles) >= tile_count) {
-            return;
-        }
-        std::this_thread::sleep_for(std::chrono::microseconds(50));
-    }
-    throw std::runtime_error("attention tile-count timeout");
-}
-
-void load_tile(
-    xrt::ip &accelerator,
-    xrt::kernel &mover,
-    xrt::bo &buffer,
-    std::uint32_t byte_offset,
-    std::uint32_t kind,
-    std::uint32_t bank)
-{
-    accelerator.write_register(
-        kLoaderControl,
-        kLoaderAbort | kLoaderClearDone | kLoaderClearError);
-    accelerator.write_register(kLoaderDescriptor, kind | (bank << 2));
-    accelerator.write_register(kLoaderBeats, kTileBeats);
-    accelerator.write_register(kLoaderControl, kLoaderStart);
-
-    auto run = mover(buffer, byte_offset / 16, kTileBeats);
-    const auto state = run.wait(kTimeoutMs);
-
-    if (state == ERT_CMD_STATE_TIMEOUT) {
-        run.abort();
-        accelerator.write_register(kLoaderControl, kLoaderAbort);
-        throw std::runtime_error("tile mover timeout");
-    }
-    if (state != ERT_CMD_STATE_COMPLETED) {
-        throw std::runtime_error(
-            "tile mover failed, state=" + std::to_string(state));
-    }
-
-    const auto deadline = std::chrono::steady_clock::now()
-        + std::chrono::milliseconds(kTimeoutMs);
     while (std::chrono::steady_clock::now() < deadline) {
         const auto status = accelerator.read_register(kLoaderStatus);
 
         if ((status & kLoaderError) != 0) {
             throw std::runtime_error("tile loader reported an error");
         }
-        if ((status & kLoaderDone) != 0) {
+        if (accelerator.read_register(kLoaderTiles) >= tile_count) {
             return;
         }
-        std::this_thread::sleep_for(std::chrono::microseconds(50));
     }
     throw std::runtime_error("tile loader timeout");
 }
 
 void run_workload(xrt::ip &accelerator, xrt::kernel &mover, xrt::bo &buffer)
 {
-    load_tile(accelerator, mover, buffer, kQOffset, kCacheQ, 0);
-    load_tile(accelerator, mover, buffer, kKOffset, kCacheK, 0);
-    load_tile(accelerator, mover, buffer, kVOffset, kCacheV, 0);
-    load_tile(accelerator, mover, buffer, kKOffset + kTileBytes, kCacheK, 1);
-    load_tile(accelerator, mover, buffer, kVOffset + kTileBytes, kCacheV, 1);
+    accelerator.write_register(
+        kLoaderControl,
+        kLoaderStart | kLoaderClearDone | kLoaderClearError);
+
+    auto run = mover(
+        buffer,
+        kQOffset / 16,
+        kKOffset / 16,
+        kVOffset / 16,
+        1);
+
+    wait_for_loader_tiles(accelerator, kInitialTiles);
 
     accelerator.write_register(
         kAttentionControl,
         kAttentionStart | kAttentionPrefill);
-    wait_for_tiles(accelerator, kSeq / kTileRows);
 
-    load_tile(accelerator, mover, buffer, kQOffset + kTileBytes, kCacheQ, 1);
-    load_tile(accelerator, mover, buffer, kKOffset, kCacheK, 0);
-    load_tile(accelerator, mover, buffer, kVOffset, kCacheV, 0);
-    load_tile(accelerator, mover, buffer, kKOffset + kTileBytes, kCacheK, 1);
-    load_tile(accelerator, mover, buffer, kVOffset + kTileBytes, kCacheV, 1);
+    const auto state = run.wait(kTimeoutMs);
+    if (state == ERT_CMD_STATE_TIMEOUT) {
+        run.abort();
+        accelerator.write_register(kLoaderControl, kLoaderAbort);
+        throw std::runtime_error("tile mover timeout");
+    }
+    if (state != ERT_CMD_STATE_COMPLETED) {
+        accelerator.write_register(kLoaderControl, kLoaderAbort);
+        throw std::runtime_error(
+            "tile mover failed, state=" + std::to_string(state));
+    }
+
+    wait_for_loader_tiles(accelerator, kScheduleTiles);
 
     wait_for_attention(accelerator, kAttentionDone);
 }
@@ -322,6 +283,8 @@ void print_results(xrt::ip &accelerator)
     std::cout << "MACs: " << macs << '\n';
     std::cout << "Completed tiles: "
               << accelerator.read_register(kAttentionPerfTiles) << '\n';
+    std::cout << "Loaded tiles: "
+              << accelerator.read_register(kLoaderTiles) << '\n';
 }
 
 } // namespace

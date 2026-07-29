@@ -49,6 +49,8 @@ module dit_fa_kernel (
     input      [15:0]   s_axis_tile_tkeep,
     (* X_INTERFACE_INFO = "xilinx.com:interface:axis:1.0 s_axis_tile TSTRB" *)
     input      [15:0]   s_axis_tile_tstrb,
+    (* X_INTERFACE_INFO = "xilinx.com:interface:axis:1.0 s_axis_tile TUSER" *)
+    input      [3:0]    s_axis_tile_tuser,
     (* X_INTERFACE_INFO = "xilinx.com:interface:axis:1.0 s_axis_tile TLAST" *)
     input               s_axis_tile_tlast,
     (* X_INTERFACE_INFO = "xilinx.com:interface:axis:1.0 s_axis_tile TVALID" *)
@@ -274,6 +276,7 @@ module dit_fa_kernel (
         .s_axi_loader_rready(loader_rready_w),
         .s_axis_tile_tdata(s_axis_tile_tdata),
         .s_axis_tile_tkeep(s_axis_tile_tkeep & s_axis_tile_tstrb),
+        .s_axis_tile_tuser(s_axis_tile_tuser),
         .s_axis_tile_tlast(s_axis_tile_tlast),
         .s_axis_tile_tvalid(s_axis_tile_tvalid),
         .s_axis_tile_tready(s_axis_tile_tready),

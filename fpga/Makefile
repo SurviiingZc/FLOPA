@@ -2,7 +2,7 @@ SHELL := /bin/bash
 .SHELLFLAGS := -o pipefail -c
 
 VIVADO ?= vivado
-JOBS ?= 8
+JOBS ?= 1
 FREQ_MHZ ?= 170
 FREQ_HZ ?= 170000000
 SYNTH_MIN_WNS ?= 0.0
@@ -13,23 +13,25 @@ export FREQ_MHZ SYNTH_MIN_WNS
 
 .NOTPARALLEL:
 
-.PHONY: all help check-vivado project synth impl hw vitis-xo xclbin host \
-	runtime full clean-vivado clean-vitis clean
+.PHONY: all help check-vivado project synth impl hw pingpong-sim vitis-xo xclbin host \
+	runtime model-download model-host model full clean-vivado clean-vitis clean
 
 all: runtime
 
 help:
 	@printf '%s\n' 'Board deployment uses the Vitis/XRT common-platform flow:'
 	@printf '%s\n' '  source fpga/my_env.sh'
-	@printf '%s\n' '  make -C fpga runtime FREQ_HZ=170000000 JOBS=8'
+	@printf '%s\n' '  make -C fpga runtime FREQ_HZ=170000000 JOBS=1'
 	@printf '%s\n' ''
 	@printf '%s\n' 'Targets:'
 	@printf '%s\n' '  synth      Run the standalone Vivado RTL timing baseline.'
 	@printf '%s\n' '  impl       Run the standalone Vivado implementation baseline.'
+	@printf '%s\n' '  pingpong-sim  Verify loader/cache and multi-head scheduling with XSIM.'
 	@printf '%s\n' '  vitis-xo   Package the RTL and HLS kernels.'
 	@printf '%s\n' '  xclbin     Link the kernels into the VCK190 common platform.'
 	@printf '%s\n' '  host       Cross-compile the AArch64 XRT test.'
 	@printf '%s\n' '  runtime    Build the matched BOOT.BIN, xclbin, and host payload.'
+	@printf '%s\n' '  model      Download the pinned model and build the AArch64 model test.'
 
 check-vivado:
 	@command -v "$(VIVADO)" >/dev/null || { \
@@ -54,6 +56,9 @@ impl: check-vivado
 
 hw: impl
 
+pingpong-sim:
+	vivado/scripts/run_pingpong_sim.sh
+
 vitis-xo:
 	+$(MAKE) -C vitis xo FREQ_HZ="$(FREQ_HZ)" JOBS="$(JOBS)"
 
@@ -65,6 +70,14 @@ host:
 
 runtime:
 	+$(MAKE) -C vitis runtime FREQ_HZ="$(FREQ_HZ)" JOBS="$(JOBS)"
+
+model-download:
+	models/download_model.sh
+
+model-host:
+	JOBS="$(JOBS)" model/scripts/build_aarch64.sh
+
+model: model-download model-host
 
 full: runtime
 
