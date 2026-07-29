@@ -1,4 +1,4 @@
-# Register and Interface Reference
+# FLOPA Register and Interface Reference
 
 This document is the software and integration reference for
 `rtl/attention_accel_top.v`. The RTL definitions in

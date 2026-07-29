@@ -1,4 +1,4 @@
-# DIT-FA Model Test Payload
+# FLOPA Model Test Payload
 
 Verify this payload and the separately installed model before running it:
 

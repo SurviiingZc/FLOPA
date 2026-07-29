@@ -1,8 +1,8 @@
-# DIT-FA VCK190 Evaluation Material
+# FLOPA VCK190 Evaluation Report
 
 ## Executive Summary
 
-DIT-FA has a measured `19.762x` Attention-core speedup on the final 64-token SmolLM2 workload.
+FLOPA has a measured `19.762x` Attention-core speedup on the final 64-token SmolLM2 workload.
 The isolated two-thread PS Attention time is `92.342 ms`, while the complete PL cycle-counter
 interval is `4.673 ms` across all 30 layers at 170 MHz. This approximately `20x` result is the
 primary accelerator result.
@@ -56,6 +56,9 @@ The reported intervals have distinct meanings:
 | PS+PL prefill | Complete model with all Attention nodes replaced by PL |
 | PL callback | Quantization through output conversion for all 30 nodes |
 | PL core | RTL performance-counter cycles divided by 170 MHz |
+
+The generated Vitis files retain the legacy `dit_fa_*` prefix for build and
+runtime compatibility; all such artifacts in this repository implement FLOPA.
 
 ## Runtime-Configurable Streaming
 
@@ -174,8 +177,8 @@ integration.
 
 | Artifact | Repository-relative location |
 | --- | --- |
-| Matched boot image, xclbin, and deterministic host | `fpga/vitis/build/runtime` |
-| Routed timing, HLS, build, and xclbin evidence | `fpga/vitis/build/reports/release-20260729` |
+| Matched boot image, xclbin, and deterministic host | generated under `fpga/vitis/build/runtime` |
+| Routed timing, HLS, build, and xclbin evidence | generated under `fpga/vitis/build/reports/release-20260729` |
 | AArch64 model host, prompts, runner, and checksums | `fpga/model/deploy` |
 | Pinned model manifest and downloader | `fpga/models` |
 | Sequence-64 raw board result | `fpga/model/results/compare-seq64-20260729.json` |
@@ -190,6 +193,7 @@ small model payload.
 - The 64-token raw JSON and console log are retained under `fpga/model/results`.
 - The 1024-token raw JSON and console log are retained under `fpga/model/results`.
 - Both final results have one measured repetition and should be repeated for variance analysis.
+- Final routed LUT/FF/DSP/BRAM/URAM totals and board power were not retained as reportable evidence.
 - The deterministic hardware test must pass after every matched boot-image/xclbin deployment.
 - Earlier numerical qualification compared more than one million values and matched top-1 output.
 - Final-logit agreement is a sanity check, not an exhaustive replacement for tensor-level tests.

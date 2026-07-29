@@ -67,7 +67,8 @@ attention values. Those checks were intentionally removed after functional quali
 measured `llama_decode` interval still includes required quantization, packing, XRT/PL work,
 output conversion, and all non-attention CPU operators.
 
-See `../docs/model_dataflow.md` for the complete path and optimization priorities.
+See `../docs/final_report_material.md` for the complete execution boundary,
+measured phase breakdown, and optimization priorities.
 
 Run PL mode only after booting the `BOOT.BIN` that matches the xclbin:
 

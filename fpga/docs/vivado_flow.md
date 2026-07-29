@@ -127,23 +127,3 @@ The reported source-to-destination placement spans multiple PE rows and has
 long fanout. Any future physical constraint should be scoped to a single stripe
 and compared against an unconstrained seed. Do not reapply the earlier global
 PE Pblocks, because they worsened these routing-dominated paths.
-
-## Historical pre-Round-3 synthesis baseline
-
-Vivado 2023.1 completed the clean top-level synthesis flow with the original
-compute RTL at a requested 312.5 MHz. The clock wizard generated 312.501176 MHz.
-These results predate the native-INT8 and pipelined-multiplier changes documented
-in `docs/synth.md`; use a clean synthesis of the current RTL for current QoR.
-
-| Metric | Post-synthesis result |
-| --- | --- |
-| Errors / critical warnings | 0 / 0 |
-| WNS / TNS | -1.594 ns / -26029.932 ns |
-| CLB LUTs | 355092 / 899840 (39.46%) |
-| Registers | 311788 / 1799680 (17.32%) |
-| BRAM tiles | 6.5 / 967 (0.67%) |
-| URAM | 96 / 463 (20.73%) |
-| DSP58 | 2188 / 1968 (111.18%) |
-
-This was a synthesis-only baseline. Implementation was not run. Its DSP excess
-and estimated slack are retained for historical comparison only.

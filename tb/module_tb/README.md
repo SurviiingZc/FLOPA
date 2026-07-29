@@ -1,27 +1,22 @@
 # Directed Module Testbenches
 
-Every retained RTL module is covered either by a self-checking directed
-testbench or by the nearest parent integration test. Fused PE/delay-line logic
-is covered through `tb_fsa_fused_array`; the FSA stream wrappers are covered
-through `tb_attention_accel_top`.
-The two ASIC SRAM composition wrappers are covered together by
-`memory/tb_asic_sram_backend.sv`, because both require the foundry functional
-macro model and the `ATTN_ASIC` build define.
+The directed suite covers every active leaf or its nearest integration parent.
+The current suite contains 23 Makefile jobs; several jobs exercise multiple
+small helpers or both ASIC memory wrappers.
 
-| RTL area | Testbench coverage |
+| RTL area | Testbenches |
 | --- | --- |
-| AXI | `tb_axi4_slave_if`, `tb_axi4_master_write` |
-| Control | `tb_accel_regfile`, `tb_accel_scheduler`, `tb_perf_counter` |
-| Compute | `tb_fsa_fused_array`, `tb_fsa_stripe`, `tb_fsa_controller`, `tb_score_scale_pipe` |
-| Memory | `tb_banked_sram`, `tb_output_buffer`, `tb_pingpong_buffer`, `tb_qkv_tile_cache`, `tb_asic_sram_backend` |
+| AXI and FPGA ingress | `tb_axi4_slave_if`, `tb_axi4_master_write`, `tb_axis_tile_loader` |
+| Control/common | `tb_accel_regfile`, `tb_accel_scheduler`, `tb_perf_counter`, `tb_fa_clear_replica`, `tb_fa_signed_mult_pipe2`, `tb_fa_unsigned_mult_pipe2`, `tb_fixed_defs_smoke` |
+| Compute | `tb_fsa_fused_array`, `tb_fsa_fused_pe`, `tb_fsa_stripe`, `tb_fsa_controller`, `tb_fsa_pv_engine`, `tb_score_scale_pipe` |
+| Memory | `tb_banked_sram`, `tb_output_buffer`, `tb_pingpong_buffer`, `tb_qkv_tile_cache`, `tb_o_accumulator_bank`, `tb_asic_sram_backend` |
 | Softmax | `tb_online_normalizer`, `tb_pwl_exp_unit`, `tb_reciprocal_lut` |
 | Integration | `tb_attention_accel_top` |
 
-Run the generic RTL suite with `make -C tb/sim run`. Run the foundry SRAM
-suite separately with `make -C tb/sim asic-sram`.
+Run the generic RTL suite with `make -C tb/sim run` and the foundry SRAM
+functional models with `make -C tb/sim asic-sram`. All output is written below
+`tb/sim/build/<test>/`.
 
-All simulator output is written below `tb/sim/build/<test>/`.
-
-Every module TB enables FSDB dumping by default. The default waveform name is
-`<tb_name>.fsdb`; pass `+FSDB_FILE=<path>` to `simv` to override it. VCS must
-be compiled with Verdi PLI support (`-debug_access+all -kdb`).
+FSDB dumping is enabled by default in every module testbench. The default file
+is `<tb_name>.fsdb`; pass `+FSDB_FILE=<path>` to `simv` to override it. VCS
+must be built with Verdi PLI/debug support (`-debug_access+all -kdb`).

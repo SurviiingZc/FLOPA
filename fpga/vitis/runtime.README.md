@@ -1,4 +1,4 @@
-# DIT-FA XRT Runtime
+# FLOPA XRT Runtime
 
 This directory is the complete board payload. The VCK190 must use the included
 `BOOT.BIN`, because this non-DFX common platform configures the linked PL design

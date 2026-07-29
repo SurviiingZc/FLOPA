@@ -2,7 +2,7 @@
 
 ## Scope
 
-This document records the failures found while bringing the DIT-FA attention kernel up on a
+This document records the failures found while bringing the FLOPA attention kernel up on a
 VCK190 with the Vitis 2023.1 common platform. It is the release checklist for every later RTL,
 host, or platform rebuild.
 

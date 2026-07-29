@@ -23,6 +23,42 @@ are shown at their implemented architectural boundaries. The external DMA / tile
 loader remains a system-integration component rather than an AXI read master
 inside the accelerator.*
 
+### 1.1 Competition Specification Compliance
+
+FLOPA completes the mandatory compute, storage, nonlinear, interface, and FPGA
+requirements at the accelerator or VCK190 system boundary.
+
+| Competition requirement | Status | Implemented evidence |
+| --- | --- | --- |
+| systolic array larger than 16 x 16 | **Completed** | 32 x 32 fused systolic PE array |
+| KV cache capacity greater than 4 KiB | **Completed** | 4 KiB K plus 4 KiB V ping-pong storage, 8 KiB combined |
+| hardware nonlinear softmax with parallelism greater than 16 | **Completed** | 32 parallel score-scale/PWL-exp lanes |
+| AXI4 master output | **Completed** | 128-bit AXI4 burst writeback for normalized O |
+| AXI4 slave input/configuration | **Completed at the VCK190 system boundary** | AXI4-Lite register slave plus the AXI-connected mover that feeds the 128-bit tile-loader stream |
+| FPGA implementation | **Completed** | routed 170 MHz VCK190 design and two passing deterministic board-smoke runs |
+
+The tile-loader interface is the RTL bulk-input boundary; it is supplied by
+the VCK190 mover rather than by an AXI read master instantiated inside
+`attention_accel_top`. This boundary is stated explicitly so that system-level
+compliance is not confused with the core RTL port list.
+
+### 1.2 Completed Bonus Items
+
+All five competition bonus items are implemented and supported by the evidence
+below.
+
+| Bonus item | Status | FLOPA implementation and evidence |
+| --- | --- | --- |
+| 1. Scalability | **Completed** | Parameterized array/stripe/head geometry, runtime sequence/head/mode registers, tiled prefill/decode scheduling, and a VCK190 mover accepting sequence lengths 32-1024 in 32-token steps. The delivered verification point covers prefill through 512 x 512 and decode through 1 x 256. |
+| 2. Data reuse | **Completed** | PE-local score and probability state, probability-stationary WS-PV, persistent feature-addressed O banks, online `m/l/O` state, and Q/K/V ping-pong caches eliminate score/P materialization and repeated partial-O preload. |
+| 3. Energy optimization per computation | **Completed** | Signed INT8 Q/K/V, Q1.15 P/alpha, phase-shared PE accumulators and 17 x 9 multipliers, SRAM/BRAM/URAM storage, local dataflow, and pipelined nonlinear arithmetic reduce switching, storage, and interconnect. Gate-SAIF reports 8.60 pJ/MAC and 0.233 TOPS/W for the documented workload. |
+| 4. Comprehensive test data | **Completed** | 21/21 UVM tests and 23/23 directed module jobs pass; tests include random full-range INT8, PWL boundaries, rounding/saturation, causal tails, 512-token prefill, 256-token decode, ping-pong refill, malformed traffic, and AXI backpressure. Functional coverage is 100.00%. |
+| 5. Real Transformer Attention | **Completed** | SmolLM2-135M-Instruct Q8_0 runs on the VCK190 PS+PL path. Sequence-64 and sequence-1024 tests provide measured core/callback/full-prefill latency and matching token hashes/top-1 outputs; PL-core speedups are 19.762x and 9.378x. |
+
+The energy figure is a mapped 28 nm gate-activity estimate, while the
+Transformer result is a real VCK190 board measurement. FPGA board power has
+not been measured and is not substituted with the ASIC estimate.
+
 ## 2. Algorithm and Fixed-Point Contract
 
 For each query tile `Qr` and key/value tile `(Kc,Vc)`, FLOPA implements the
@@ -270,11 +306,11 @@ organizations. SRAM reshaping is intentionally deferred until after FPGA
 bring-up; it must be evaluated with port conflicts, placement, macro aspect
 ratio, and access latency, not just bit utilization.
 
-## 7. Current PPA and Verification Results
+## 7. Final PPA and Verification Results
 
-### 7.1 ASIC Synthesis Baseline
+### 7.1 ASIC Synthesis Estimate
 
-The current reproducible ASIC baseline is a pre-layout Design Compiler result
+The final ASIC estimate is a pre-layout Design Compiler result
 for the 32 x 32, `HEAD_DIM=64` top level. It uses the TSMC 28 nm TT CCS
 standard-cell library and the `uhdsp_256x8m4s_tt0p9v25c` SRAM library at 0.9 V
 and 25 C. The logical target is 1.60 ns (625 MHz). These numbers exclude routed
@@ -284,17 +320,17 @@ measurements.
 | Metric | Current result |
 | --- | ---: |
 | Setup WNS / TNS / failing paths | 0.000 ns / 0.000 ns / 0 |
-| Critical path | 1.49 ns, 60 logic levels |
-| Total cell area | 2,438,964.94 library units |
-| Fused-array area | 2,048,222.41 (84.0%) |
-| Total cells | 1,524,232 |
-| Combinational / sequential cells | 1,281,371 / 242,335 |
-| Buffer / inverter cells | 252,342 |
+| Critical path | 1.49 ns, 58 logic levels |
+| Total cell area | 2,438,948.64 library units |
+| Fused-array area | 2,048,232.66 (84.0%) |
+| Total cells | 1,523,959 |
+| Combinational / sequential cells | 1,281,141 / 242,818 |
+| Buffer / inverter cells | 252,200 |
 | SRAM macros | 480 |
 
 The 480 SRAM macros comprise 192 Q/K/V-cache macros, 256 persistent O-bank
-macros, and 32 output-buffer macros. The current comparison baseline contains
-zero RTL and zero tool-inserted integrated clock-gating cells.
+macros, and 32 output-buffer macros. The gate-SAIF workload uses the delivered
+ungated comparison configuration.
 
 ### 7.2 Gate-SAIF Power Baseline
 
@@ -338,35 +374,39 @@ has been checked for one query and up to 256 KV tokens. Detailed report paths
 and update rules are maintained in [PPA and Optimization](ppa_and_optimization.md)
 and [Verification Report](verification_report.md).
 
-### 7.4 FPGA Evaluation (Pending)
+### 7.4 VCK190 and Model Evaluation
 
-The VCK190 implementation and model-level measurements have not yet been
-completed. The table below is intentionally a reporting template; `TBD` entries
-must be replaced only by post-route reports or board measurements.
+The final VCK190 release uses Vivado/Vitis 2023.1 and the
+`xilinx_vck190_base_202310_1` platform. The routed PL clock is 170 MHz. A
+deterministic smoke test passed twice with 2,942 cycles, zero stalls, four
+completed compute tiles, ten loaded tiles, and zero errors.
 
-| Metric | VCK190 result |
-| --- | ---: |
-| Post-route Fmax | TBD |
-| LUT / FF | TBD |
-| DSP | TBD |
-| BRAM / URAM | TBD |
-| PS-to-PL and PL-to-DDR bandwidth | TBD |
-| Re10K attention throughput / speedup | TBD |
-| LLM prefill throughput / speedup | TBD |
-| Board dynamic power / energy per attention | TBD |
+SmolLM2-135M-Instruct Q8_0 was measured with two Cortex-A72 threads. The model
+has 30 layers, 9 Q heads, 3 KV heads, and head dimension 64; the host expands
+KV heads to nine for the current MHA accelerator interface.
+
+| Sequence | PS prefill | PS+PL prefill | Full speedup | Callback speedup | PL-core speedup |
+| ---: | ---: | ---: | ---: | ---: | ---: |
+| 64 | 1582.633 ms | 1570.297 ms | 1.008x | 1.410x | **19.762x** |
+| 1024 | 30178.154 ms | 25476.343 ms | 1.185x | 3.865x | **9.378x** |
+
+The PS and PS+PL paths produce matching final token hashes and top-1 outputs.
+Board power, the final routed resource table, and Re10K board measurements are
+not yet available.
 
 ## 8. Known Limits and Next Steps
 
-1. Add a verified AXI4 read/DMA wrapper for Q/K/V ingress before claiming a
-   complete PS-DDR system interface.
-2. Retain the 32-lane score-scale/PWL-exp source and architecture evidence in
+1. Retain the 32-lane score-scale/PWL-exp source and architecture evidence in
    the final submission to demonstrate the required greater-than-16 softmax
    parallelism.
-3. Formally classify the remaining normalizer/engine condition and toggle gaps
+2. Formally classify the remaining normalizer/engine condition and toggle gaps
    beyond the current 96.00% waived score while preserving 100.00% functional
    coverage and the auditable raw report.
-4. Complete VCK190 implementation and report post-route Fmax, resource use,
-   external-memory bandwidth, and measured board power.
-5. Add native GQA and extend decode verification beyond the current 256-token
+3. Add native GQA and extend decode verification beyond the current 256-token
    KV context; current GQA is intentionally rejected rather than silently
    remapped.
+4. Fuse or move quantization, packing, GQA expansion, and output conversion to
+   PL; these dominate the measured callback overhead.
+5. Measure VCK190 board power, retain the final routed utilization table, and
+   complete the Re10K board workload.
+6. Perform routed ASIC implementation and evaluate wider/deeper SRAM macros.

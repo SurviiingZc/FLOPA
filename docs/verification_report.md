@@ -1,4 +1,4 @@
-# Verification Plan, Test Cases, and Coverage Report
+# FLOPA Verification Plan, Test Cases, and Coverage Report
 
 ## 1. Objective and Verified Scope
 
@@ -18,8 +18,10 @@ The verified scope includes:
   malformed tile protocol, busy-register rejection, and recovery through
   CLEAR_ERROR, soft reset, DONE restart, and AXI write-response errors.
 
-Native GQA, an integrated AXI read DMA, VCK190 hardware execution, and
-post-route PPA remain outside the current verification claim.
+Native GQA remains outside the RTL functional claim. VCK190 execution and
+SmolLM2 measurements are qualified separately by deterministic board smoke,
+token-hash/top-1 agreement, and the board reports under `fpga/`; they are not
+substitutes for the bit-accurate UVM checks in this document.
 
 ## 2. Environment
 
@@ -245,7 +247,7 @@ cannot independently toggle while the required Q/KV head-equality term remains
 true. They remain visible in raw condition coverage pending a formal expression
 waiver rather than being hidden by a contrived illegal sequence.
 
-## 7. Current Gate-Level Power Workload Check
+## 7. Gate-Level Power Workload Check
 
 The 2026-07-27 power workload independently validates the exact mapped netlist
 used for the current power number:

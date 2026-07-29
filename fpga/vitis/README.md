@@ -1,7 +1,7 @@
 # Vitis/XRT Board Flow
 
 This flow targets a VCK190 running the 2023.1 PetaLinux common platform. Vitis
-links the DIT-FA RTL into `xilinx_vck190_base_202310_1` and emits a matched
+links the FLOPA RTL into `xilinx_vck190_base_202310_1` and emits a matched
 `BOOT.BIN`, xclbin, and host. It does not build a WIC, kernel Image, or root
 filesystem.
 

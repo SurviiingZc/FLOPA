@@ -101,3 +101,11 @@ build/
 out/
 tmp/
 dist/
+
+# Retain compact Design Compiler reports while keeping netlists, databases,
+# waveforms, logs, and other generated work products ignored.
+!asic/dc/work/
+asic/dc/work/**
+!asic/dc/work/**/
+!asic/dc/work/**/reports/
+!asic/dc/work/**/reports/**

@@ -1,0 +1,59 @@
+ 
+****************************************
+Report : clock_gating
+        -verbose
+        -multi_stage
+Design : attention_accel_top
+Version: V-2023.12-SP5
+Date   : Tue Jul 28 17:36:26 2026
+****************************************
+
+Information: Identification of clock-gating cells has not been performed. Pre-existing clock-gating cells will not be reported. (PWR-947)
+
+
+                             Clock Gating Summary
+          ------------------------------------------------------------
+          |    Number of Clock gating elements    |        0         |
+          |                                       |                  |
+          |    Number of Gated registers          |     0 (0.00%)    |
+          |                                       |                  |
+          |    Number of Ungated registers        | 242338 (100.0%)  |
+          |                                       |                  |
+          |    Total number of registers          |   242338         |
+          |                                       |                  |
+          |    Number of multi-stage clock gates  |        0         |
+          |                                       |                  |
+          |    Average multi-stage fanout         |        -         |
+          |                                       |                  |
+          |    Number of gated cells              |        0         |
+          |                                       |                  |
+          |    Maximum number of stages           |        -         |
+          |                                       |                  |
+          |    Average number of stages           |        -         |
+          ------------------------------------------------------------
+
+
+
+                             Clock Gating Report by Origin
+          +-------------------------------------------------+------------------+
+          |                                                 |    Actual (%)    |
+          |                                                 |    Count         |
+          +-------------------------------------------------+------------------+
+          |  Number of tool-inserted clock gating elements  |     0 (0.00%)    |
+          |                                                 |                  |
+          |  Number of pre-existing clock gating elements   |     0 (0.00%)    |
+          |                                                 |                  |
+          |  Number of gated registers                      |     0 (0.00%)    |
+          |                                                 |                  |
+          |  Number of tool-inserted gated registers        |     0 (0.00%)    |
+          |                                                 |                  |
+          |  Number of pre-existing gated registers         |     0 (0.00%)    |
+          |                                                 |                  |
+          |  Number of ungated registers                    | 242338 (100.0%)  |
+          |                                                 |                  |
+          |  Number of registers                            |   242338         |
+          +-------------------------------------------------+------------------+
+
+
+
+1

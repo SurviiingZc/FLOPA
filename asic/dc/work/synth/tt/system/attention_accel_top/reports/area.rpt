@@ -1,0 +1,131 @@
+ 
+****************************************
+Report : area
+Design : attention_accel_top
+Version: V-2023.12-SP5
+Date   : Tue Jul 28 17:36:03 2026
+****************************************
+
+Library(s) Used:
+
+    tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs (File: /data/public/STD/tcbn28hpcplusbwp12t30p140_190a/tcbn28hpcplusbwp12t30p140_180a_ccs/TSMCHOME/digital/Front_End/timing_power_noise/CCS/tcbn28hpcplusbwp12t30p140_180a/tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs.db)
+    uhdsp_256x8m4s_tt0p9v25c (File: /data/workspaces/zhangcheng/flash_attention/asic/dc/work/lib/uhdsp_256x8m4s_tt0p9v25c.db)
+
+Number of ports:                        21159
+Number of nets:                       1640437
+Number of cells:                      1524005
+Number of combinational cells:        1281141
+Number of sequential cells:            242338
+Number of macros/black boxes:             480
+Number of buf/inv:                     252200
+Number of references:                      64
+
+Combinational area:            1160962.977626
+Buf/Inv area:                    86986.703025
+Noncombinational area:          621238.962471
+Macro/Black Box area:           656746.699219
+Net Interconnect area:      undefined  (Wire load has zero net area)
+
+Total cell area:               2438948.639316
+Total area:                 undefined
+
+Hierarchical area distribution
+------------------------------
+
+                                  Global cell area                  Local cell area
+                                  ---------------------  -------------------------------------- 
+Hierarchical cell                 Absolute      Percent  Combi-        Noncombi-    Black-
+                                  Total         Total    national      national     boxes        Design
+--------------------------------  ------------  -------  ------------  -----------  -----------  ---------------------------------------------------------------------------------------------------------------
+attention_accel_top               2438948.6393    100.0     2988.0480    1642.0320       0.0000  attention_accel_top
+u_fused_array                     2048232.6555     84.0   119750.3986   87169.4869       0.0000  fsa_fused_array_ROWS32_STRIPE_ROWS8_COLS32_DATA_W8_SCORE_W32_PROB_W16_ACC_W32_LSE_W32_HEAD_DIM64_FEATURE_IDX_W6
+u_fused_array/g_q_skew[15].u_pv_seed_skew
+                                     2322.4320      0.1      741.8880    1580.5440       0.0000  fsa_delay_line_WIDTH38_DEPTH16
+u_fused_array/g_q_skew[16].u_pv_seed_skew
+                                     2467.5840      0.1      788.2560    1679.3280       0.0000  fsa_delay_line_WIDTH38_DEPTH17
+u_fused_array/g_q_skew[17].u_pv_seed_skew
+                                     2612.7360      0.1      834.6240    1778.1120       0.0000  fsa_delay_line_WIDTH38_DEPTH18
+u_fused_array/g_q_skew[18].u_pv_seed_skew
+                                     2757.8880      0.1      880.9920    1876.8960       0.0000  fsa_delay_line_WIDTH38_DEPTH19
+u_fused_array/g_q_skew[19].u_pv_seed_skew
+                                     2903.0400      0.1      927.3600    1975.6800       0.0000  fsa_delay_line_WIDTH38_DEPTH20
+u_fused_array/g_q_skew[20].u_pv_seed_skew
+                                     3048.1920      0.1      973.7280    2074.4640       0.0000  fsa_delay_line_WIDTH38_DEPTH21
+u_fused_array/g_q_skew[21].u_pv_seed_skew
+                                     3193.3440      0.1     1020.0960    2173.2480       0.0000  fsa_delay_line_WIDTH38_DEPTH22
+u_fused_array/g_q_skew[22].u_pv_seed_skew
+                                     3338.4960      0.1     1066.4640    2272.0320       0.0000  fsa_delay_line_WIDTH38_DEPTH23
+u_fused_array/g_q_skew[23].u_pv_seed_skew
+                                     3483.6480      0.1     1112.8320    2370.8160       0.0000  fsa_delay_line_WIDTH38_DEPTH24
+u_fused_array/g_q_skew[24].u_pv_seed_skew
+                                     3629.3040      0.1     1159.7040    2469.6000       0.0000  fsa_delay_line_WIDTH38_DEPTH25
+u_fused_array/g_q_skew[25].u_pv_seed_skew
+                                     3774.4560      0.2     1206.0720    2568.3840       0.0000  fsa_delay_line_WIDTH38_DEPTH26
+u_fused_array/g_q_skew[26].u_pv_seed_skew
+                                     3920.1120      0.2     1252.9440    2667.1680       0.0000  fsa_delay_line_WIDTH38_DEPTH27
+u_fused_array/g_q_skew[27].u_pv_seed_skew
+                                     4065.2640      0.2     1299.3120    2765.9520       0.0000  fsa_delay_line_WIDTH38_DEPTH28
+u_fused_array/g_q_skew[28].u_pv_seed_skew
+                                     4210.4160      0.2     1345.6800    2864.7360       0.0000  fsa_delay_line_WIDTH38_DEPTH29
+u_fused_array/g_q_skew[29].u_pv_seed_skew
+                                     4355.5680      0.2     1392.0480    2963.5200       0.0000  fsa_delay_line_WIDTH38_DEPTH30
+u_fused_array/g_q_skew[30].u_pv_seed_skew
+                                     4500.7200      0.2     1438.4160    3062.3040       0.0000  fsa_delay_line_WIDTH38_DEPTH31
+u_fused_array/g_q_skew[31].u_pv_seed_skew
+                                     4645.8720      0.2     1484.7840    3161.0880       0.0000  fsa_delay_line_WIDTH38_DEPTH32
+u_fused_array/g_stripe[0].u_stripe
+                                   445565.8225     18.3   240856.0529  116707.0791       0.0000  fsa_stripe_STRIPE_ROWS8_COLS32_HEAD_DIM64_DATA_W8_SCORE_W32_PROB_W16_SUM_W32_TAG_W6_LOCAL_ROW_IDX_W3_3
+u_fused_array/g_stripe[0].u_stripe/g_clear_replica[0].u_clear_replica
+                                        3.6960      0.0        0.6720       3.0240       0.0000  fa_clear_replica_15
+u_fused_array/g_stripe[0].u_stripe/g_clear_replica[1].u_clear_replica
+                                        3.6960      0.0        0.6720       3.0240       0.0000  fa_clear_replica_14
+u_fused_array/g_stripe[0].u_stripe/g_clear_replica[2].u_clear_replica
+                                        3.6960      0.0        0.6720       3.0240       0.0000  fa_clear_replica_13
+u_fused_array/g_stripe[0].u_stripe/g_clear_replica[3].u_clear_replica
+                                        3.6960      0.0        0.6720       3.0240       0.0000  fa_clear_replica_12
+u_fused_array/g_stripe[0].u_stripe/u_o_bank
+                                    87987.9066      3.6      415.6320       6.0480   87566.2266  o_accumulator_bank_ROWS8_HEAD_DIM64_GROUP_SIZE32_DATA_W32_FEATURE_IDX_W6_3
+u_fused_array/g_stripe[1].u_stripe
+                                   445864.5266     18.3   241207.8450  116653.9911       0.0000  fsa_stripe_STRIPE_ROWS8_COLS32_HEAD_DIM64_DATA_W8_SCORE_W32_PROB_W16_SUM_W32_TAG_W6_LOCAL_ROW_IDX_W3_2
+u_fused_array/g_stripe[1].u_stripe/g_clear_replica[0].u_clear_replica
+                                        3.6960      0.0        0.6720       3.0240       0.0000  fa_clear_replica_11
+u_fused_array/g_stripe[1].u_stripe/g_clear_replica[1].u_clear_replica
+                                        3.6960      0.0        0.6720       3.0240       0.0000  fa_clear_replica_10
+u_fused_array/g_stripe[1].u_stripe/g_clear_replica[2].u_clear_replica
+                                        3.6960      0.0        0.6720       3.0240       0.0000  fa_clear_replica_9
+u_fused_array/g_stripe[1].u_stripe/g_clear_replica[3].u_clear_replica
+                                        3.6960      0.0        0.6720       3.0240       0.0000  fa_clear_replica_8
+u_fused_array/g_stripe[1].u_stripe/u_o_bank
+                                    87987.9066      3.6      415.6320       6.0480   87566.2266  o_accumulator_bank_ROWS8_HEAD_DIM64_GROUP_SIZE32_DATA_W32_FEATURE_IDX_W6_2
+u_fused_array/g_stripe[2].u_stripe
+                                   445879.1426     18.3   241222.4610  116653.9911       0.0000  fsa_stripe_STRIPE_ROWS8_COLS32_HEAD_DIM64_DATA_W8_SCORE_W32_PROB_W16_SUM_W32_TAG_W6_LOCAL_ROW_IDX_W3_1
+u_fused_array/g_stripe[2].u_stripe/g_clear_replica[0].u_clear_replica
+                                        3.6960      0.0        0.6720       3.0240       0.0000  fa_clear_replica_7
+u_fused_array/g_stripe[2].u_stripe/g_clear_replica[1].u_clear_replica
+                                        3.6960      0.0        0.6720       3.0240       0.0000  fa_clear_replica_6
+u_fused_array/g_stripe[2].u_stripe/g_clear_replica[2].u_clear_replica
+                                        3.6960      0.0        0.6720       3.0240       0.0000  fa_clear_replica_5
+u_fused_array/g_stripe[2].u_stripe/g_clear_replica[3].u_clear_replica
+                                        3.6960      0.0        0.6720       3.0240       0.0000  fa_clear_replica_4
+u_fused_array/g_stripe[2].u_stripe/u_o_bank
+                                    87987.9066      3.6      415.6320       6.0480   87566.2266  o_accumulator_bank_ROWS8_HEAD_DIM64_GROUP_SIZE32_DATA_W32_FEATURE_IDX_W6_1
+u_fused_array/g_stripe[3].u_stripe
+                                   444774.2066     18.2   240859.4130  115912.1031       0.0000  fsa_stripe_STRIPE_ROWS8_COLS32_HEAD_DIM64_DATA_W8_SCORE_W32_PROB_W16_SUM_W32_TAG_W6_LOCAL_ROW_IDX_W3_0
+u_fused_array/g_stripe[3].u_stripe/g_clear_replica[0].u_clear_replica
+                                        3.6960      0.0        0.6720       3.0240       0.0000  fa_clear_replica_3
+u_fused_array/g_stripe[3].u_stripe/g_clear_replica[1].u_clear_replica
+                                        3.6960      0.0        0.6720       3.0240       0.0000  fa_clear_replica_2
+u_fused_array/g_stripe[3].u_stripe/g_clear_replica[2].u_clear_replica
+                                        3.6960      0.0        0.6720       3.0240       0.0000  fa_clear_replica_1
+u_fused_array/g_stripe[3].u_stripe/g_clear_replica[3].u_clear_replica
+                                        3.6960      0.0        0.6720       3.0240       0.0000  fa_clear_replica_0
+u_fused_array/g_stripe[3].u_stripe/u_o_bank
+                                    87987.9066      3.6      415.6320       6.0480   87566.2266  o_accumulator_bank_ROWS8_HEAD_DIM64_GROUP_SIZE32_DATA_W32_FEATURE_IDX_W6_0
+u_normalizer                        56207.5914      2.3    45246.2634   10961.3280       0.0000  online_normalizer_LANES8_ACC_W32_LSE_W32_OUT_W8_TAG_W8
+u_output_buffer                     53423.6251      2.2     3347.5679    6292.9439   43783.1133  output_buffer_ROWS32_NORM_LANES8_HEAD_DIM64_OUT_W8_GROUP_SIZE32
+u_regfile                            4291.0559      0.2     1617.6720    2673.3839       0.0000  accel_regfile_HEAD_DIM64
+u_tile_cache                       272163.6316     11.2     3268.7760    6196.1759  262698.6797  qkv_tile_cache_ADDR_W6
+--------------------------------  ------------  -------  ------------  -----------  -----------  ---------------------------------------------------------------------------------------------------------------
+Total                                                    1160962.9776  621238.9625  656746.6992
+
+1

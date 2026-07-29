@@ -1,4 +1,4 @@
-# FlashAttention Accelerator RTL Code Guide
+# FLOPA RTL Code Guide
 
 ## 1. Document Purpose
 

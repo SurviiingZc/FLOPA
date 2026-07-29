@@ -1,8 +1,9 @@
-# VCK190 Attention 实测与 LLM 对比测试计划
+# VCK190 Attention 实测协议与后续测试计划
 
-## 1. 文档目的
+## 1. 文档目的与当前范围
 
-本计划定义两类板级 workload：
+本文档固化已经完成的 SmolLM2 板级测量协议，并保留 Re10K、板级功耗和
+后续优化的测试计划。覆盖两类板级 workload：
 
 1. 既定的 Re10K Transformer Attention 子层；
 2. 能够在 VCK190 PS 端独立运行、并可将 Attention 子层替换为本设计 PL

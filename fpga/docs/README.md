@@ -1,19 +1,20 @@
-# FPGA Board-Level Test Documents
+# FLOPA FPGA Documentation
 
-- `attention_test_plan.md`: Re10K and LLM Attention board test plan.
-- `board_bringup_postmortem.md`: Board failures, root causes, recovery, and release gates.
-- `pingpong_streaming.md`: Batched mover protocol, cache ownership, and bandwidth method.
-- `model_dataflow.md`: Current PS+PL model data flow and prioritized optimization plan.
-- `final_report_material.md`: Reproducible measurements and final-report conclusions.
-- `vivado_flow.md`: Vivado block design, implementation, and hardware export flow.
-- `../vitis/README.md`: Common-platform Vitis/XRT build and board test flow.
-- `../model/README.md`: Pinned SmolLM2 full-model PS and PS+PL comparison flow.
+| Document | Purpose |
+| --- | --- |
+| [Final Evaluation Report](final_report_material.md) | authoritative VCK190/SmolLM2 configuration, measurements, and limits |
+| [Vivado Flow](vivado_flow.md) | block design, address map, implementation, and export |
+| [Vitis/XRT Flow](../vitis/README.md) | common-platform build, packaging, and board smoke |
+| [Model Benchmark](../model/README.md) | pinned SmolLM2 PS and PS+PL comparison |
+| [Ping-Pong Streaming](pingpong_streaming.md) | mover protocol, bank ownership, backpressure, and reuse |
+| [Bring-Up Postmortem](board_bringup_postmortem.md) | root causes, recovery, and release gates |
+| [Evaluation Protocol](attention_test_plan.md) | completed SmolLM2 method and remaining Re10K/power plan |
 
-Board deployment uses the matched `BOOT.BIN`, xclbin, and AArch64 host generated
-under `fpga/vitis`. The standalone PDI, DTBO, kernel-module, WIC, and replacement
-rootfs paths are not part of the supported flow.
+The supported release uses a matched `BOOT.BIN`, xclbin, and AArch64 host from
+one Vitis link against `xilinx_vck190_base_202310_1`. Standalone PDI/DTBO,
+replacement-rootfs, and mixed-build deployment are not supported.
 
-The final 170 MHz board result demonstrates `19.762x` Attention-core acceleration at seq64 and
-`9.378x` at seq1024. The current Attention integration bottleneck is PS-side quantization,
-packing, GQA expansion, and output conversion. See `final_report_material.md` for the only
-authoritative performance table; older exploratory results are not retained.
+At 170 MHz, FLOPA achieves 19.762x/9.378x PL-core speedup for SmolLM2 sequence
+64/1024. Callback speedups are 1.410x/3.865x and full-prefill speedups are
+1.008x/1.185x. The final report is the only authoritative performance table.
+Board power and Re10K board measurements remain open.
