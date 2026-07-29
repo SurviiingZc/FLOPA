@@ -43,6 +43,7 @@ module tb_accel_scheduler;
   wire pv_en_o;
   wire wb_en_o;
   wire decode_active_o;
+  wire [7:0] head_index_o;
 
   accel_scheduler dut (
     .clk(clk), .rst_n(rst_n), .start_i(start_i), .soft_reset_i(soft_reset_i),
@@ -56,7 +57,8 @@ module tb_accel_scheduler;
     .state_o(state_o), .busy_o(busy_o), .done_o(done_o), .error_o(error_o), .error_code_o(error_code_o),
     .idle_o(idle_o), .load_active_o(load_active_o), .compute_active_o(compute_active_o), .writeback_active_o(writeback_active_o),
     .load_q_en_o(load_q_en_o), .load_kv_en_o(load_kv_en_o), .qk_en_o(qk_en_o), .softmax_en_o(softmax_en_o),
-    .pv_en_o(pv_en_o), .wb_en_o(wb_en_o), .head_index_o(), .q_tile_index_o(),
+    .pv_en_o(pv_en_o), .wb_en_o(wb_en_o), .head_index_o(head_index_o),
+    .q_tile_index_o(),
     .kv_tile_index_o(), .q_tile_base_o(), .kv_tile_base_o(), .tile_last_o(), .run_last_o(),
     .decode_active_o(decode_active_o)
   );
@@ -117,6 +119,34 @@ module tb_accel_scheduler;
     if (!done_o || busy_o) $fatal(1, "DONE outputs wrong");
 
     clear_done_i = 1'b1; @(posedge clk); #1; clear_done_i = 1'b0; expect_state(`ATTN_STATE_IDLE);
+
+    // A two-head MHA prefill uses one START and reports done after both heads.
+    num_q_heads_i = 8'd2;
+    num_kv_heads_i = 8'd2;
+    start_i = 1'b1; @(posedge clk); #1; start_i = 1'b0;
+    expect_state(`ATTN_STATE_LOAD_Q);
+    load_q_done_i = 1'b1; @(posedge clk); #1; load_q_done_i = 1'b0;
+    load_kv_done_i = 1'b1; @(posedge clk); #1; load_kv_done_i = 1'b0;
+    qk_done_i = 1'b1; @(posedge clk); #1; qk_done_i = 1'b0;
+    softmax_pv_ready_i = 1'b1; @(posedge clk); #1; softmax_pv_ready_i = 1'b0;
+    pv_done_i = 1'b1; @(posedge clk); #1; pv_done_i = 1'b0;
+    wb_done_i = 1'b1; @(posedge clk); #1; wb_done_i = 1'b0;
+    expect_state(`ATTN_STATE_LOAD_Q);
+    if (done_o || head_index_o != 8'd1) begin
+      $fatal(1, "MHA completed before the second head");
+    end
+    load_q_done_i = 1'b1; @(posedge clk); #1; load_q_done_i = 1'b0;
+    load_kv_done_i = 1'b1; @(posedge clk); #1; load_kv_done_i = 1'b0;
+    qk_done_i = 1'b1; @(posedge clk); #1; qk_done_i = 1'b0;
+    softmax_pv_ready_i = 1'b1; @(posedge clk); #1; softmax_pv_ready_i = 1'b0;
+    pv_done_i = 1'b1; @(posedge clk); #1; pv_done_i = 1'b0;
+    wb_done_i = 1'b1; @(posedge clk); #1; wb_done_i = 1'b0;
+    expect_state(`ATTN_STATE_DONE);
+    if (!done_o || head_index_o != 8'd1) $fatal(1, "MHA node did not complete");
+    clear_done_i = 1'b1; @(posedge clk); #1; clear_done_i = 1'b0;
+    expect_state(`ATTN_STATE_IDLE);
+    num_q_heads_i = 8'd1;
+    num_kv_heads_i = 8'd1;
 
     prefill_en_i = 1'b1;
     decode_en_i = 1'b1;

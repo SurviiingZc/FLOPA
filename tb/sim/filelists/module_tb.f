@@ -26,6 +26,7 @@
 ../../tb/module_tb/memory/tb_o_accumulator_bank.sv
 ../../tb/module_tb/memory/tb_pingpong_buffer.sv
 ../../tb/module_tb/memory/tb_qkv_tile_cache.sv
+../../tb/module_tb/memory/tb_axis_tile_loader.sv
 ../../tb/module_tb/softmax/tb_online_normalizer.sv
 ../../tb/module_tb/softmax/tb_pwl_exp_unit.sv
 ../../tb/module_tb/softmax/tb_reciprocal_lut.sv

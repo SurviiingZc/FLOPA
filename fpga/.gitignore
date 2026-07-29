@@ -1,0 +1,28 @@
+/vivado/build/
+/vitis/build*/
+/vitis/.Xil/
+/vitis/.ipcache/
+/.Xil/
+/*.jou
+/*.log
+/*.str
+/vitis/*.log
+/vitis/*.jou
+
+# FPGA tool products written outside the build directories.
+*.dcp
+*.elf
+*.ko
+*.pdi
+*.wic
+*.xsa
+*.xo
+*.xclbin
+
+# Downloaded model weights; keep manifests and test inputs under version control.
+/models/*.gguf
+
+# Pinned third-party sources are fetched by scripts and are not vendored.
+/third_party/llama.cpp/
+/model/build*/
+/model/results/

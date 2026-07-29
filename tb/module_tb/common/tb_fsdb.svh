@@ -1,6 +1,9 @@
 `ifndef TB_FSDB_SVH
 `define TB_FSDB_SVH
 
+`ifdef TB_NO_FSDB
+`define TB_FSDB_DUMP(DEFAULT_FILE, TOP_SCOPE)
+`else
 `define TB_FSDB_DUMP(DEFAULT_FILE, TOP_SCOPE) \
   string fsdb_file; \
   initial begin \
@@ -10,5 +13,6 @@
     $fsdbDumpvars(0, TOP_SCOPE, "+all"); \
     $fsdbDumpMDA(); \
   end
+`endif
 
 `endif
