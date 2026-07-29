@@ -23,8 +23,9 @@
 
 namespace {
 
-constexpr std::size_t kSequenceLength = 64;
 constexpr std::uint64_t kAttentionNodesPerPrefill = 30;
+constexpr int kTileRows = 32;
+constexpr int kMaximumSequenceLength = 1024;
 
 using Clock = std::chrono::steady_clock;
 
@@ -37,6 +38,7 @@ struct Options {
     int threads = 2;
     int warmups = 1;
     int repetitions = 5;
+    int sequence_length = 64;
     double pl_clock_mhz = 170.0;
 };
 
@@ -149,6 +151,8 @@ Options parse_options(int argc, char **argv)
             options.warmups = parse_nonnegative(argv[++index], "warmups");
         } else if (argument == "--repetitions") {
             options.repetitions = parse_positive(argv[++index], "repetitions");
+        } else if (argument == "--sequence-length") {
+            options.sequence_length = parse_positive(argv[++index], "sequence length");
         } else if (argument == "--pl-clock-mhz") {
             options.pl_clock_mhz = parse_positive_double(argv[++index], "PL clock");
         } else {
@@ -165,6 +169,11 @@ Options parse_options(int argc, char **argv)
     }
     if (options.backend != "ps" && options.xclbin_path.empty()) {
         throw std::runtime_error("--xclbin is required for PL and compare backends");
+    }
+    if (options.sequence_length > kMaximumSequenceLength
+        || options.sequence_length % kTileRows != 0) {
+        throw std::runtime_error(
+            "--sequence-length must be a multiple of 32 in [32, 1024]");
     }
     return options;
 }
@@ -220,7 +229,8 @@ bool pl_eval_callback(ggml_tensor *tensor, bool ask, void *user_data)
 
 std::vector<llama_token> tokenize(
     const llama_vocab *vocab,
-    const std::string &prompt)
+    const std::string &prompt,
+    std::size_t sequence_length)
 {
     const int required = -llama_tokenize(
         vocab, prompt.data(), static_cast<int>(prompt.size()), nullptr, 0, true, true);
@@ -237,10 +247,12 @@ std::vector<llama_token> tokenize(
         static_cast<int>(tokens.size()),
         true,
         true);
-    if (count < static_cast<int>(kSequenceLength)) {
-        throw std::runtime_error("fixed prompt contains fewer than 64 tokens");
+    if (count < static_cast<int>(sequence_length)) {
+        throw std::runtime_error(
+            "prompt contains " + std::to_string(count) + " tokens, fewer than requested "
+            + std::to_string(sequence_length));
     }
-    tokens.resize(kSequenceLength);
+    tokens.resize(sequence_length);
     return tokens;
 }
 
@@ -390,7 +402,9 @@ BenchmarkResult benchmark_backend(
     std::unique_ptr<PlAttention> pl_attention;
     PlCallbackState pl_callback;
     if (backend == "pl") {
-        pl_attention = std::make_unique<PlAttention>(options.xclbin_path);
+        pl_attention = std::make_unique<PlAttention>(
+            options.xclbin_path,
+            static_cast<std::uint32_t>(options.sequence_length));
         pl_callback.attention = pl_attention.get();
     }
 #else
@@ -400,9 +414,9 @@ BenchmarkResult benchmark_backend(
 #endif
 
     llama_context_params params = llama_context_default_params();
-    params.n_ctx = kSequenceLength;
-    params.n_batch = kSequenceLength;
-    params.n_ubatch = kSequenceLength;
+    params.n_ctx = options.sequence_length;
+    params.n_batch = options.sequence_length;
+    params.n_ubatch = options.sequence_length;
     params.n_threads = options.threads;
     params.n_threads_batch = options.threads;
     params.flash_attn_type = LLAMA_FLASH_ATTN_TYPE_ENABLED;
@@ -624,7 +638,7 @@ void write_result(
 {
     output << std::fixed << std::setprecision(6);
     output << "{\n";
-    output << "    \"sequence_length\": " << kSequenceLength << ",\n";
+    output << "    \"sequence_length\": " << options.sequence_length << ",\n";
     output << "    \"threads\": " << options.threads << ",\n";
     output << "    \"warmups\": " << options.warmups << ",\n";
     output << "    \"repetitions\": " << options.repetitions << ",\n";
@@ -717,7 +731,10 @@ int run(const Options &options)
     }
 
     const llama_vocab *vocab = llama_model_get_vocab(model.get());
-    const auto tokens = tokenize(vocab, read_text(options.prompt_path));
+    const auto tokens = tokenize(
+        vocab,
+        read_text(options.prompt_path),
+        static_cast<std::size_t>(options.sequence_length));
     std::vector<BenchmarkResult> results;
     if (options.backend == "ps" || options.backend == "compare") {
         results.push_back(benchmark_ps(options, model.get(), tokens));

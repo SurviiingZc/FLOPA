@@ -1,0 +1,149 @@
+Write a detailed engineering review of a heterogeneous inference system that runs a compact
+language model on an embedded processor and delegates attention to a programmable-logic
+accelerator. Treat the following notes as the complete project record. Preserve technical
+precision, distinguish measured facts from projections, and explain all important tradeoffs.
+
+The target is a VCK190 board running PetaLinux. The processing system launches an XRT compute
+unit and exchanges packed tensors through a shared buffer in external memory. The programmable
+logic contains an attention scheduler, tile caches, processing elements, online softmax logic,
+and an output writer. The implemented clock is one hundred seventy megahertz.
+
+The model has thirty transformer layers. Every attention node supplies nine query heads and
+three key-value heads, with a head dimension of sixty-four. The present hardware implements
+multi-head attention, so software expands each key-value head three times before invoking the
+accelerator. This conversion is correct but consumes processor time and memory bandwidth.
+
+Input values arrive as floating-point tensors. Software scans each tensor to find a scale,
+quantizes the values to signed eight-bit integers, packs each thirty-two-row tile in the layout
+expected by the RTL, and synchronizes the buffer to the device. Output values are synchronized
+back, converted to floating point, and written into the tensor layout expected by the remaining
+model graph.
+
+The tile mover reads fixed-size tiles. Its runtime arguments select the query, key, and value
+offsets as well as the query-head count, query-tile count, and key-value-tile count. For every
+query tile it emits one query tile followed by every key and value tile required for that query.
+The same executable therefore supports sequence lengths from thirty-two through one thousand
+twenty-four in increments of thirty-two.
+
+Two cache banks implement a ping-pong protocol. Consecutive query jobs alternate banks, and
+consecutive key-value pairs also alternate banks. AXI stream backpressure is the credit signal:
+the mover may fill the free bank while the accelerator consumes the occupied bank, but it cannot
+overwrite data that has not yet been accepted. This overlaps movement from memory with compute
+without adding a second software launch for each tile.
+
+The processing system launches one mover run and one attention job per model attention node.
+It does not launch one compute unit per tile. This removes thousands of XRT dispatch operations
+from a long prefill. A transformer-layer dependency still prevents prefetching the next layer's
+query, key, and value tensors before the current layer has produced its output.
+
+At a sequence length of sixty-four, a deterministic four-tile hardware test completed in two
+thousand nine hundred ten accelerator cycles with zero reported stalls. The test covered four
+processing tiles and five hundred twenty-four thousand two hundred eighty-eight multiply and
+accumulate operations. It established that the linked platform, mover, RTL kernel, and host
+control path were mutually compatible.
+
+The full-model baseline uses two processor threads. It measures an unprofiled processor prefill,
+a separately profiled processor attention pass, and a processor-plus-logic prefill. Separating
+the baseline from profiling avoids charging callback instrumentation to the published processor
+prefill number. Both paths use the same token sequence and report final-token logits.
+
+For the sixty-four-token run, the mean pure-processor prefill was approximately one thousand
+five hundred eighty-five milliseconds. The mean processor-plus-logic prefill was approximately
+one thousand five hundred seventy-three milliseconds. This is only a small end-to-end gain even
+though the hardware arithmetic itself is much faster than the isolated processor attention.
+
+The isolated processor attention took approximately ninety-five milliseconds across all thirty
+layers. The measured accelerator core time was approximately four point six milliseconds, which
+corresponds to an attention-core speedup of about twenty point five times. This is the principal
+hardware result and should not be confused with callback latency or complete-model latency.
+
+The processor-plus-logic callback took approximately sixty-five point five milliseconds. About
+forty-seven point four milliseconds were spent quantizing and packing inputs, while about eleven
+point five milliseconds were spent converting and scattering outputs. Device synchronization,
+register setup, and hardware waiting accounted for the remainder. Software conversion therefore
+hides most of the arithmetic acceleration in the short-sequence end-to-end result.
+
+The long-prefill experiment uses exactly one thousand twenty-four tokens, one warmup, and one
+measured repetition. It repeats the same methodology and stores detailed per-layer timing in a
+machine-readable result. The long run is intended to show how quadratic attention growth changes
+the balance between accelerator work and the mostly linear software preparation costs.
+
+For a sequence length of one thousand twenty-four, each head has thirty-two query tiles and
+thirty-two key-value tiles. Every layer streams two thousand eighty query, key, and value tile
+transactions per head grouping according to the configured schedule. Across nine heads, the
+mover emits eighteen thousand seven hundred twenty tiles for one attention node.
+
+The current two-bank cache does not retain all keys and values for reuse across query tiles.
+Consequently, the mover rereads the key and value tiles for every query tile. This behavior is
+functionally required by the present storage organization and is included in the measured core
+time. Wider caching or a dataflow that reuses key-value blocks could reduce external-memory
+traffic in a later architecture.
+
+The report must separate four levels of timing. Core time comes from RTL performance counters.
+Hardware-wait time is observed by the host and includes launch and polling effects. Callback time
+also includes quantization, synchronization, and output conversion. Complete prefill includes all
+model operators, projections, normalization, feed-forward layers, and graph scheduling.
+
+Numerical qualification preceded throughput testing. An earlier observer implementation ran the
+processor attention and compared it with programmable-logic output. It checked more than one
+million values, reported bounded quantization error, and produced the same top-ranked token.
+After qualification, the processor attention calculation and element-wise comparison were
+removed from the throughput path so that they could not distort performance measurements.
+
+Runtime compatibility is part of correctness. The boot image and xclbin must be generated from
+the same common platform and link result. The deployed system uses the Xilinx VCK190 base common
+platform for the 2023.1 tool release. The device must report ready before any benchmark begins.
+
+The board network address is configured persistently by systemd-networkd. Deployment preserves
+the previous boot image as a recovery copy, verifies file hashes, installs the matching xclbin and
+host executable, and reboots only after all artifacts are present. A deterministic smoke test is
+run before a full-model benchmark consumes substantial time.
+
+One boot-time driver warning reports that an interrupt index is absent, yet the XRT device becomes
+ready and all exercised kernels complete. The warning should remain documented as a residual risk
+rather than being presented as a demonstrated failure. Future testing should cover recovery from
+timeouts, repeated xclbin loads, and longer-duration workload loops.
+
+The first software optimization should be a vectorized packer. AArch64 NEON can calculate scales,
+quantize values, transpose tiles, and duplicate grouped key-value heads with fewer passes over
+memory. Persistent worker threads can avoid thread creation and scheduling overhead at every
+attention node. Measurements should determine whether two workers saturate available memory
+bandwidth before adding more concurrency.
+
+A stronger solution moves packing into programmable logic or fuses it with the query, key, and
+value projections. Native grouped-query support would eliminate the threefold key-value copy.
+Likewise, producing the downstream tensor layout directly would avoid the processor's output
+scatter. These changes attack the dominant callback phases rather than merely reducing register
+writes that are already small.
+
+The accelerator interface can also evolve toward a persistent command queue. Descriptor rings
+could describe multiple attention nodes while shared buffers remain mapped for the application
+lifetime. However, dependencies between transformer layers remain real, so a queue cannot make
+future layer inputs available before the processor completes the intervening graph operations.
+
+Model-level optimization must examine operators outside attention. At short sequence lengths,
+feed-forward layers, projections, normalization, token handling, and general graph scheduling
+dominate total latency. Accelerating attention alone therefore has a strict Amdahl-law limit even
+when its isolated speedup exceeds twenty times.
+
+At long sequence lengths, attention has quadratic work while most packing and elementwise model
+operations scale linearly. This should increase the fraction of runtime addressed by the current
+accelerator, but memory traffic from repeated key-value tiles can eventually become limiting.
+Measured counters and host phase timers are needed to determine where that transition occurs.
+
+The final report should state that the existing result proves a roughly twenty-times attention
+core acceleration at sixty-four tokens. It should also state plainly that software preparation and
+the rest of the processor model currently limit end-to-end improvement. Any claim about a strong
+future model-level speedup must be presented as an engineering projection conditioned on removing
+quantization, layout conversion, grouped-query expansion, and non-attention bottlenecks.
+
+Present tables for both sequence lengths. Include the pure-processor prefill, processor-plus-logic
+prefill, isolated processor attention, accelerator callback, accelerator core, all phase totals,
+and the derived speedups. Record the exact clock, thread count, warmup count, repetition count,
+token hash, artifact identity, and test date so that another engineer can reproduce every number.
+
+Conclude with a prioritized roadmap. First preserve functional correctness and repeatability.
+Second vectorize or offload packing and remove grouped-query duplication. Third improve key-value
+reuse and output layout. Fourth profile and accelerate the remaining model graph. The expected
+outcome is that a well-integrated design retains the demonstrated attention-core advantage while
+turning a much larger fraction of it into useful end-to-end throughput.

@@ -70,25 +70,53 @@ constexpr std::uint32_t kLoaderClearDone = 1U << 2;
 constexpr std::uint32_t kLoaderClearError = 1U << 3;
 constexpr std::uint32_t kLoaderError = 1U << 2;
 
-constexpr std::uint32_t kSeq = 64;
 constexpr std::uint32_t kHeadDim = 64;
 constexpr std::uint32_t kQHeads = 9;
 constexpr std::uint32_t kModelKvHeads = 3;
 constexpr std::uint32_t kKvCopies = kQHeads / kModelKvHeads;
 static_assert(kQHeads % kModelKvHeads == 0, "Q/KV head ratio must be integral");
 constexpr std::uint32_t kTileRows = 32;
+constexpr std::uint32_t kMaximumSequenceLength = 1024;
 constexpr std::uint32_t kTileBytes = kTileRows * kHeadDim;
-constexpr std::uint32_t kTensorBytes = kSeq * kHeadDim;
-constexpr std::uint32_t kQOffset = 0;
-constexpr std::uint32_t kKOffset = kQOffset + kQHeads * kTensorBytes;
-constexpr std::uint32_t kVOffset = kKOffset + kQHeads * kTensorBytes;
-constexpr std::uint32_t kOOffset = kVOffset + kQHeads * kTensorBytes;
-constexpr std::uint32_t kOutputBytes = kQHeads * kTensorBytes;
-constexpr std::uint32_t kBufferBytes = kOOffset + kOutputBytes;
 constexpr std::uint32_t kTimeoutMs = 5000;
 constexpr std::uint32_t kInitialTiles = 3;
-constexpr std::uint32_t kTilesPerHead = 10;
-constexpr std::uint32_t kScheduleTiles = kQHeads * kTilesPerHead;
+
+struct Geometry {
+    explicit Geometry(std::uint32_t sequence_length)
+        : seq(sequence_length)
+    {
+        if (seq == 0 || seq > kMaximumSequenceLength || seq % kTileRows != 0) {
+            throw std::runtime_error(
+                "PL sequence length must be a multiple of 32 in [32, 1024]");
+        }
+        tile_count = seq / kTileRows;
+        const std::uint64_t schedule = static_cast<std::uint64_t>(kQHeads)
+            * tile_count * (1 + 2 * tile_count);
+        if (schedule > std::numeric_limits<std::uint16_t>::max()) {
+            throw std::runtime_error("PL sequence length exceeds the loader tile counter");
+        }
+
+        tensor_bytes = seq * kHeadDim;
+        q_offset = 0;
+        k_offset = q_offset + kQHeads * tensor_bytes;
+        v_offset = k_offset + kQHeads * tensor_bytes;
+        o_offset = v_offset + kQHeads * tensor_bytes;
+        output_bytes = kQHeads * tensor_bytes;
+        buffer_bytes = o_offset + output_bytes;
+        schedule_tiles = static_cast<std::uint32_t>(schedule);
+    }
+
+    std::uint32_t seq;
+    std::uint32_t tile_count = 0;
+    std::uint32_t tensor_bytes = 0;
+    std::uint32_t q_offset = 0;
+    std::uint32_t k_offset = 0;
+    std::uint32_t v_offset = 0;
+    std::uint32_t o_offset = 0;
+    std::uint32_t output_bytes = 0;
+    std::uint32_t buffer_bytes = 0;
+    std::uint32_t schedule_tiles = 0;
+};
 
 std::uint32_t packed_input_index(std::uint32_t row, std::uint32_t element)
 {
@@ -129,26 +157,45 @@ float quantize_expanded_heads(
     const ggml_tensor *tensor,
     std::uint32_t source_head_count,
     std::uint32_t copies_per_head,
+    std::uint32_t sequence_length,
+    std::uint32_t tensor_bytes,
     std::int8_t *output)
 {
     float max_absolute = 0.0F;
     const bool dense_f32 = tensor->type == GGML_TYPE_F32
         && tensor->nb[0] == sizeof(float)
         && tensor->nb[1] == kHeadDim * sizeof(float)
-        && tensor->nb[2] == kSeq * kHeadDim * sizeof(float);
-    const auto *dense_values = dense_f32
+        && tensor->nb[2] == sequence_length * kHeadDim * sizeof(float);
+    const bool dense_f16 = tensor->type == GGML_TYPE_F16
+        && tensor->nb[0] == sizeof(ggml_fp16_t)
+        && tensor->nb[1] == kHeadDim * sizeof(ggml_fp16_t)
+        && tensor->nb[2] == sequence_length * kHeadDim * sizeof(ggml_fp16_t);
+    const auto *dense_f32_values = dense_f32
         ? static_cast<const float *>(tensor->data)
+        : nullptr;
+    const auto *dense_f16_values = dense_f16
+        ? static_cast<const ggml_fp16_t *>(tensor->data)
         : nullptr;
 
     if (dense_f32) {
         const std::size_t value_count = static_cast<std::size_t>(source_head_count)
-            * kSeq * kHeadDim;
+            * sequence_length * kHeadDim;
         for (std::size_t index = 0; index < value_count; ++index) {
-            max_absolute = std::max(max_absolute, std::fabs(dense_values[index]));
+            max_absolute = std::max(
+                max_absolute,
+                std::fabs(dense_f32_values[index]));
+        }
+    } else if (dense_f16) {
+        const std::size_t value_count = static_cast<std::size_t>(source_head_count)
+            * sequence_length * kHeadDim;
+        for (std::size_t index = 0; index < value_count; ++index) {
+            max_absolute = std::max(
+                max_absolute,
+                std::fabs(ggml_fp16_to_fp32(dense_f16_values[index])));
         }
     } else {
         for (std::uint32_t head = 0; head < source_head_count; ++head) {
-            for (std::uint32_t row = 0; row < kSeq; ++row) {
+            for (std::uint32_t row = 0; row < sequence_length; ++row) {
                 for (std::uint32_t element = 0; element < kHeadDim; ++element) {
                     max_absolute = std::max(
                         max_absolute,
@@ -164,15 +211,24 @@ float quantize_expanded_heads(
          source_head < source_head_count;
          ++source_head) {
         const std::uint32_t first_output_head = source_head * copies_per_head;
-        const std::uint32_t head_offset = first_output_head * kTensorBytes;
-        const float *dense_head = dense_f32
-            ? dense_values + source_head * kTensorBytes
+        const std::uint32_t head_offset = first_output_head * tensor_bytes;
+        const float *dense_f32_head = dense_f32
+            ? dense_f32_values + source_head * tensor_bytes
             : nullptr;
-        for (std::uint32_t row = 0; row < kSeq; ++row) {
+        const ggml_fp16_t *dense_f16_head = dense_f16
+            ? dense_f16_values + source_head * tensor_bytes
+            : nullptr;
+        for (std::uint32_t row = 0; row < sequence_length; ++row) {
             for (std::uint32_t element = 0; element < kHeadDim; ++element) {
-                const float value = dense_f32
-                    ? dense_head[row * kHeadDim + element]
-                    : tensor_value(tensor, element, row, source_head);
+                float value = 0.0F;
+                if (dense_f32) {
+                    value = dense_f32_head[row * kHeadDim + element];
+                } else if (dense_f16) {
+                    value = ggml_fp16_to_fp32(
+                        dense_f16_head[row * kHeadDim + element]);
+                } else {
+                    value = tensor_value(tensor, element, row, source_head);
+                }
                 const long rounded = std::lround(value * inverse_scale);
                 const long clamped = std::max(-127L, std::min(127L, rounded));
                 output[head_offset + packed_input_index(row, element)] =
@@ -181,9 +237,9 @@ float quantize_expanded_heads(
         }
         for (std::uint32_t copy = 1; copy < copies_per_head; ++copy) {
             std::memcpy(
-                output + (first_output_head + copy) * kTensorBytes,
+                output + (first_output_head + copy) * tensor_bytes,
                 output + head_offset,
-                kTensorBytes);
+                tensor_bytes);
         }
     }
     return scale;
@@ -232,7 +288,7 @@ std::string tensor_layout(const char *name, const ggml_tensor *tensor)
     return output.str();
 }
 
-void check_tensor_contract(const ggml_tensor *node)
+void check_tensor_contract(const ggml_tensor *node, std::uint32_t sequence_length)
 {
     if (node->op != GGML_OP_FLASH_ATTN_EXT) {
         throw std::runtime_error("PL callback received a non-attention node");
@@ -244,17 +300,18 @@ void check_tensor_contract(const ggml_tensor *node)
     if (q == nullptr || k == nullptr || v == nullptr || mask == nullptr) {
         throw std::runtime_error("PL attention requires Q, K, V, and causal mask tensors");
     }
-    if (q->ne[0] != kHeadDim || q->ne[1] != kSeq || q->ne[2] != kQHeads
-        || q->ne[3] != 1 || k->ne[0] != kHeadDim || k->ne[1] < kSeq
+    if (q->ne[0] != kHeadDim || q->ne[1] != sequence_length || q->ne[2] != kQHeads
+        || q->ne[3] != 1 || k->ne[0] != kHeadDim || k->ne[1] < sequence_length
         || k->ne[2] != kModelKvHeads || k->ne[3] != 1 || v->ne[0] != kHeadDim
-        || v->ne[1] < kSeq || v->ne[2] != kModelKvHeads || v->ne[3] != 1) {
+        || v->ne[1] < sequence_length || v->ne[2] != kModelKvHeads || v->ne[3] != 1) {
         throw std::runtime_error(
-            "PL attention tensor shape is not seq=64, dim=64 with 9/3 GQA: "
+            "PL attention tensor shape does not match the configured sequence: "
             + tensor_layout("Q", q) + "; " + tensor_layout("K", k) + "; "
             + tensor_layout("V", v) + "; " + tensor_layout("O", node));
     }
     if (node->type != GGML_TYPE_F32 || node->ne[0] != kHeadDim
-        || node->ne[1] != kQHeads || node->ne[2] != kSeq || node->ne[3] != 1) {
+        || node->ne[1] != kQHeads || node->ne[2] != sequence_length
+        || node->ne[3] != 1) {
         throw std::runtime_error("PL attention output tensor layout is unsupported");
     }
 }
@@ -263,32 +320,35 @@ void check_tensor_contract(const ggml_tensor *node)
 
 class PlAttention::Impl {
 public:
-    explicit Impl(const std::string &xclbin_path)
-        : device_(0),
+    Impl(const std::string &xclbin_path, std::uint32_t sequence_length)
+        : geometry_(sequence_length),
+          device_(0),
           uuid_(device_.load_xclbin(xclbin_path)),
           accelerator_(device_, uuid_, "dit_fa:{dit_fa_1}"),
           mover_(device_, uuid_, "dit_fa_tile_mover:{dit_fa_tile_mover_1}"),
           mover_run_(mover_),
-          buffer_(device_, kBufferBytes, xrt::bo::flags::normal, 0),
+          buffer_(device_, geometry_.buffer_bytes, xrt::bo::flags::normal, 0),
           data_(buffer_.map<std::int8_t *>()),
           buffer_address_(buffer_.address())
     {
         if (buffer_address_ > std::numeric_limits<std::uint32_t>::max()
-            || buffer_address_ + kBufferBytes - 1
+            || buffer_address_ + geometry_.buffer_bytes - 1
                 > std::numeric_limits<std::uint32_t>::max()) {
             throw std::runtime_error("XRT BO is above the RTL 32-bit write address range");
         }
         program_static_job();
         mover_run_.set_arg(0, buffer_);
-        mover_run_.set_arg(1, kQOffset / 16);
-        mover_run_.set_arg(2, kKOffset / 16);
-        mover_run_.set_arg(3, kVOffset / 16);
+        mover_run_.set_arg(1, geometry_.q_offset / 16);
+        mover_run_.set_arg(2, geometry_.k_offset / 16);
+        mover_run_.set_arg(3, geometry_.v_offset / 16);
         mover_run_.set_arg(4, kQHeads);
+        mover_run_.set_arg(5, geometry_.tile_count);
+        mover_run_.set_arg(6, geometry_.tile_count);
     }
 
     void execute(ggml_tensor *node)
     {
-        check_tensor_contract(node);
+        check_tensor_contract(node, geometry_.seq);
         const auto start = std::chrono::steady_clock::now();
         float kq_scale = 0.0F;
         std::memcpy(&kq_scale, node->op_params, sizeof(kq_scale));
@@ -301,21 +361,27 @@ public:
             q,
             kQHeads,
             1,
-            data_ + kQOffset);
+            geometry_.seq,
+            geometry_.tensor_bytes,
+            data_ + geometry_.q_offset);
         const float k_scale = quantize_expanded_heads(
             k,
             kModelKvHeads,
             kKvCopies,
-            data_ + kKOffset);
+            geometry_.seq,
+            geometry_.tensor_bytes,
+            data_ + geometry_.k_offset);
         const float v_scale = quantize_expanded_heads(
             v,
             kModelKvHeads,
             kKvCopies,
-            data_ + kVOffset);
+            geometry_.seq,
+            geometry_.tensor_bytes,
+            data_ + geometry_.v_offset);
         const auto quantize_end = std::chrono::steady_clock::now();
 
         const auto input_sync_start = quantize_end;
-        buffer_.sync(XCL_BO_SYNC_BO_TO_DEVICE, kOOffset, 0);
+        buffer_.sync(XCL_BO_SYNC_BO_TO_DEVICE, geometry_.o_offset, 0);
         const auto input_sync_end = std::chrono::steady_clock::now();
 
         const auto setup_start = input_sync_end;
@@ -331,7 +397,10 @@ public:
         const auto hardware_end = std::chrono::steady_clock::now();
 
         const auto output_sync_start = hardware_end;
-        buffer_.sync(XCL_BO_SYNC_BO_FROM_DEVICE, kOutputBytes, kOOffset);
+        buffer_.sync(
+            XCL_BO_SYNC_BO_FROM_DEVICE,
+            geometry_.output_bytes,
+            geometry_.o_offset);
         const auto output_sync_end = std::chrono::steady_clock::now();
 
         const auto dequantize_start = output_sync_end;
@@ -402,17 +471,29 @@ private:
 
     void program_static_job()
     {
-        write_address(kAttentionQBaseLow, kAttentionQBaseHigh, buffer_address_ + kQOffset);
-        write_address(kAttentionKBaseLow, kAttentionKBaseHigh, buffer_address_ + kKOffset);
-        write_address(kAttentionVBaseLow, kAttentionVBaseHigh, buffer_address_ + kVOffset);
-        write_address(kAttentionOBaseLow, kAttentionOBaseHigh, buffer_address_ + kOOffset);
+        write_address(
+            kAttentionQBaseLow,
+            kAttentionQBaseHigh,
+            buffer_address_ + geometry_.q_offset);
+        write_address(
+            kAttentionKBaseLow,
+            kAttentionKBaseHigh,
+            buffer_address_ + geometry_.k_offset);
+        write_address(
+            kAttentionVBaseLow,
+            kAttentionVBaseHigh,
+            buffer_address_ + geometry_.v_offset);
+        write_address(
+            kAttentionOBaseLow,
+            kAttentionOBaseHigh,
+            buffer_address_ + geometry_.o_offset);
 
         accelerator_.write_register(kAttentionQStride, kHeadDim);
         accelerator_.write_register(kAttentionKStride, kHeadDim);
         accelerator_.write_register(kAttentionVStride, kHeadDim);
         accelerator_.write_register(kAttentionOStride, kHeadDim);
-        accelerator_.write_register(kAttentionSeqQ, kSeq);
-        accelerator_.write_register(kAttentionSeqKv, kSeq);
+        accelerator_.write_register(kAttentionSeqQ, geometry_.seq);
+        accelerator_.write_register(kAttentionSeqKv, geometry_.seq);
         accelerator_.write_register(kAttentionNumQHeads, kQHeads);
         accelerator_.write_register(kAttentionNumKvHeads, kQHeads);
         accelerator_.write_register(kAttentionHeadDim, kHeadDim);
@@ -487,7 +568,7 @@ private:
             throw std::runtime_error(
                 "batched tile mover failed, state=" + std::to_string(mover_state));
         }
-        wait_for_loader_tiles(kScheduleTiles);
+        wait_for_loader_tiles(geometry_.schedule_tiles);
         wait_for_attention(kAttentionDone);
     }
 
@@ -499,9 +580,10 @@ private:
             && node->nb[2] == kQHeads * kHeadDim * sizeof(float);
         auto *dense_output = dense_f32 ? static_cast<float *>(node->data) : nullptr;
 
-        for (std::uint32_t row = 0; row < kSeq; ++row) {
+        for (std::uint32_t row = 0; row < geometry_.seq; ++row) {
             for (std::uint32_t head = 0; head < kQHeads; ++head) {
-                const std::uint32_t head_offset = kOOffset + head * kTensorBytes;
+                const std::uint32_t head_offset = geometry_.o_offset
+                    + head * geometry_.tensor_bytes;
                 const auto *source = data_ + head_offset + row * kHeadDim;
                 float *dense_destination = dense_f32
                     ? dense_output + (row * kQHeads + head) * kHeadDim
@@ -522,6 +604,7 @@ private:
         }
     }
 
+    Geometry geometry_;
     xrt::device device_;
     xrt::uuid uuid_;
     xrt::ip accelerator_;
@@ -533,8 +616,8 @@ private:
     PlAttentionStats stats_;
 };
 
-PlAttention::PlAttention(const std::string &xclbin_path)
-    : impl_(std::make_unique<Impl>(xclbin_path))
+PlAttention::PlAttention(const std::string &xclbin_path, std::uint32_t sequence_length)
+    : impl_(std::make_unique<Impl>(xclbin_path, sequence_length))
 {
 }
 

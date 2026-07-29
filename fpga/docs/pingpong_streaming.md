@@ -2,13 +2,13 @@
 
 ## Scope
 
-The current protocol is specialized for the SmolLM2 prefill attention node:
+The current protocol implements the SmolLM2 prefill attention node:
 
-- `seq=64` and `head_dim=64`;
+- `seq=32..1024` in steps of 32 and `head_dim=64`;
 - nine Q heads and nine PS-expanded KV heads at the accelerator interface;
 - 32-row Q and KV tiles;
 - one HLS mover command and one RTL `START` per attention node;
-- 36 compute tiles per attention node.
+- `9 * (seq / 32)^2` compute tiles per attention node.
 
 The change affects data movement and multi-head control. The attention arithmetic datapath is
 unchanged.
@@ -19,7 +19,7 @@ The HLS mover and RTL loader use a 128-bit AXIS interface. At 170 MHz, its peak 
 2.72 GB/s. One 32-by-64 INT8 tile is 2048 bytes, or 128 AXIS beats. HLS requests one 128-beat
 AXI burst per tile and sustains an inner-loop initiation interval of one.
 
-For each Q head, the mover emits this ten-tile sequence:
+At `seq=64`, each Q head emits this ten-tile sequence:
 
 | Position | Tile | Role |
 | --- | --- | --- |
@@ -51,7 +51,7 @@ Each AXIS beat carries four `TUSER` bits:
 | --- | --- |
 | `[1:0]` | Cache kind: Q=0, K=1, V=2 |
 | `[2]` | Ping-pong bank |
-| `[3]` | Last tile in the complete 90-tile mover job |
+| `[3]` | Last tile in the complete mover job |
 
 `TLAST` marks the final beat of each 128-beat tile. The loader rejects partial `TKEEP`, early
 or missing `TLAST`, invalid kinds, and metadata changes within a tile. Loader version
@@ -86,15 +86,23 @@ with:
 make -C fpga pingpong-sim
 ```
 
-The Vitis 2023.1 HLS build reports `II=1` and estimates 232.89 MHz for the 90-tile mover loop.
+The Vitis 2023.1 HLS build reports `II=1` and estimates 232.89 MHz for the mover loop.
 The AArch64 model and deterministic hosts compile with warnings as errors, and both kernels
-package as XO files. A full link, boot image, and board run are still required before reporting
-the node-level speedup.
+package as XO files. The final 170 MHz runtime passed the deterministic four-tile test twice with
+2942 cycles, zero stalls, ten loaded tiles, and byte-for-byte output agreement.
+
+The full-model board test measured `19.762x` PL-core acceleration at 64 tokens and `9.378x` at
+1024 tokens. The lower long-sequence ratio reflects both improved CPU flash-Attention efficiency
+and repeated K/V mover traffic; it is still a strong accelerator result. The larger immediate
+gap is in PS adaptation: at 1024 tokens, the callback is `968.89 ms` longer than the PL interval
+because quantization, packing, GQA expansion, and output conversion remain on the PS.
 
 ## Generalization
 
-The fixed schedule is deliberate for the first measured nine-head MHA interface. A general mover
-should retain the same ownership protocol and replace the fixed arrays with descriptors:
+Sequence length and Q/KV tile counts are runtime arguments. The mover emits
+`9 * T * (1 + 2 * T)` tiles for `T=seq/32`, while the RTL scheduler performs `9 * T^2`
+compute tiles. Further generalization should retain the same ownership protocol and may replace
+the nested schedule with descriptors:
 
 1. Describe tensor kind, bank, DDR offset, beat count, and job boundary.
 2. Start compute at the minimum valid working-set watermark.
@@ -103,6 +111,5 @@ should retain the same ownership protocol and replace the fixed arrays with desc
 5. Keep DDR, mover, AXIS, and loader widths aligned to maximum-length bursts.
 6. Count accepted AXIS beats, cache waits, DDR waits, scheduler stalls, and compute separately.
 
-For larger sequences, a persistent mover or descriptor ring avoids reintroducing one command
-per tile. Add buffering only after counters show producer jitter exceeds the available compute
-slack.
+A persistent mover or descriptor ring could reduce the remaining one command per attention node.
+Add buffering only after counters show producer jitter exceeds the available compute slack.

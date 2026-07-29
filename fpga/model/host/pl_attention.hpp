@@ -29,7 +29,7 @@ struct PlAttentionStats {
 
 class PlAttention {
 public:
-    explicit PlAttention(const std::string &xclbin_path);
+    PlAttention(const std::string &xclbin_path, std::uint32_t sequence_length);
     ~PlAttention();
 
     PlAttention(const PlAttention &) = delete;

@@ -25,4 +25,5 @@
 # Pinned third-party sources are fetched by scripts and are not vendored.
 /third_party/llama.cpp/
 /model/build*/
+/model/deploy/
 /model/results/

@@ -10,13 +10,13 @@ The design contains two kernels:
 - `dit_fa`: user-managed RTL kernel containing the attention core, tile loader,
   AXI-Lite register map, and DDR write master;
 - `dit_fa_tile_mover`: HLS kernel that reads XRT BO data from DDR and streams a
-  complete 90-tile, nine-Q-head schedule into `dit_fa` in one invocation.
+  complete runtime-sized, nine-Q-head schedule into `dit_fa` in one invocation.
 
-For each attention node in the current `seq=64`, `head_dim=64` path, software
+For each attention node in the `seq=32..1024`, `head_dim=64` path, software
 expands model 9Q/3KV GQA into the accelerator's 9Q/9KV MHA interface. It starts
 the mover once and sends one RTL `START` after the first `Q0/K0/V0` commits.
-The mover then traverses all heads, prefetches
-`K1/V1/Q1`, and refills released K/V banks under AXIS backpressure. See
+The mover then traverses all heads and tiles and refills released banks under AXIS
+backpressure. See
 [`../docs/pingpong_streaming.md`](../docs/pingpong_streaming.md) for the protocol.
 
 ## Build
@@ -31,13 +31,13 @@ Useful incremental targets are `rtl-xo`, `mover-xo`, `xo`, `link`, `xclbin`,
 the XRT xclbin and boot-time PL PDI. All generated files stay under
 `fpga/vitis/build/`.
 
-The deployable directory is `fpga/vitis/build/runtime/`; the equivalent archive
-is `fpga/vitis/build/dit-fa-xrt-runtime.tar.gz`.
+The deployable directory is `fpga/vitis/build/runtime/`. Generated archives and intermediate
+link products are intentionally not retained after the runtime directory passes its checksums.
 
 The verified 170 MHz build meets all timing constraints with setup WNS/TNS of
-`0.001/0.000 ns` and hold WHS/THS of `0.009/0.000 ns`. Treat it as the board
+`0.000/0.000 ns` and hold WHS/THS of `0.010/0.000 ns`. Treat it as the board
 functionality baseline, not as evidence of frequency margin. The routed report
-is under `build/reports/link/imp/`.
+is `build/reports/release-20260729/timing_summary_routed.rpt`.
 
 ## Board Run
 
@@ -57,6 +57,18 @@ Completed tiles: 4
 Loaded tiles: 10
 PASS: seq=64, head_dim=64, four tiles
 ```
+
+The final board run completed this test twice with `2942` cycles, zero stall cycles, four
+completed tiles, ten loaded tiles, and zero errors. The matched full-model test measured:
+
+| Sequence | PS Attention | PL callback | PL interval | Core speedup |
+| --- | ---: | ---: | ---: | ---: |
+| 64 | 92.342 ms | 65.511 ms | 4.673 ms | 19.762x |
+| 1024 | 6369.045 ms | 1648.075 ms | 679.180 ms | 9.378x |
+
+The accelerator is substantially faster than the PS implementation. The main remaining
+Attention-integration bottleneck is PS quantization, packing, GQA expansion, and output
+conversion; optimizing those stages is the next priority.
 
 No standalone `.pdi`, `.dtbo`, kernel module, WIC, or rootfs image is needed.
 This base platform configures the linked PL design from `BOOT.BIN`; runtime XRT

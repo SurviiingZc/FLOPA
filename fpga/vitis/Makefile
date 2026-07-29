@@ -24,8 +24,6 @@ LINK_XSA := $(BUILD_DIR)/dit_fa_link.xsa
 XCLBIN := $(BUILD_DIR)/dit_fa.xclbin
 BOOT_BIN := $(BUILD_DIR)/package/BOOT.BIN
 HOST := $(BUILD_DIR)/dit_fa_xrt_test
-PROBE_HOST := $(BUILD_DIR)/pdi_probe/pdi_probe_host
-CONTROL_IP_HOST := $(BUILD_DIR)/control_probe/control_probe_ip_host
 RUNTIME_DIR := $(BUILD_DIR)/runtime
 RUNTIME_TAR := $(BUILD_DIR)/dit-fa-xrt-runtime.tar.gz
 GIT_COMMIT := $(shell git -C ../.. rev-parse HEAD 2>/dev/null || printf unknown)
@@ -34,8 +32,6 @@ RTL_SOURCES := $(wildcard rtl/*.v) kernel.xml scripts/package_rtl_kernel.tcl
 RTL_SOURCES += $(wildcard ../rtl/*.v ../../rtl/*/*.v ../../rtl/*.v)
 HLS_SOURCES := hls/dit_fa_tile_mover.cpp
 HOST_SOURCES := host/dit_fa_xrt_test.cpp
-PROBE_HOST_SOURCES := diagnostics/pdi_probe_host.cpp
-CONTROL_IP_HOST_SOURCES := diagnostics/control_probe_ip_host.cpp
 
 HOST_FLAGS := -std=c++17 -O2 -Wall -Wextra -Werror --sysroot=$(SYSROOT)
 HOST_FLAGS += -I$(SYSROOT)/usr/include/xrt
@@ -44,7 +40,7 @@ HOST_LINK_FLAGS += -lxrt_coreutil -luuid -lpthread -lrt -ldl
 
 .NOTPARALLEL:
 
-.PHONY: all help check rtl-xo mover-xo xo link xclbin host probe-host control-ip-host
+.PHONY: all help check rtl-xo mover-xo xo link xclbin host
 .PHONY: runtime inspect clean
 
 all: runtime
@@ -55,8 +51,6 @@ help:
 	@printf '%s\n' '  make -C fpga/vitis xo'
 	@printf '%s\n' '  make -C fpga/vitis xclbin FREQ_HZ=170000000 JOBS=1'
 	@printf '%s\n' '  make -C fpga/vitis host'
-	@printf '%s\n' '  make -C fpga/vitis probe-host'
-	@printf '%s\n' '  make -C fpga/vitis control-ip-host'
 	@printf '%s\n' '  make -C fpga/vitis runtime'
 	@printf '%s\n' ''
 	@printf '%s\n' 'Copy build/runtime to the board, then follow runtime/README.md.'
@@ -117,18 +111,6 @@ host: check $(HOST)
 
 $(HOST): $(HOST_SOURCES)
 	@mkdir -p "$(BUILD_DIR)"
-	"$(CXX)" $(HOST_FLAGS) "$<" -o "$@" $(HOST_LINK_FLAGS)
-
-probe-host: check $(PROBE_HOST)
-
-$(PROBE_HOST): $(PROBE_HOST_SOURCES)
-	@mkdir -p "$(dir $@)"
-	"$(CXX)" $(HOST_FLAGS) "$<" -o "$@" $(HOST_LINK_FLAGS)
-
-control-ip-host: check $(CONTROL_IP_HOST)
-
-$(CONTROL_IP_HOST): $(CONTROL_IP_HOST_SOURCES)
-	@mkdir -p "$(dir $@)"
 	"$(CXX)" $(HOST_FLAGS) "$<" -o "$@" $(HOST_LINK_FLAGS)
 
 runtime: $(XCLBIN) $(BOOT_BIN) $(HOST)

@@ -20,8 +20,27 @@
 本计划第一阶段只要求完成 **batch=1、prefill、MHA-compatible** 板级流程。
 当前 RTL 的启动检查要求 `num_q_heads == num_kv_heads`，因此明确拒绝原生
 GQA。RTL 已实现 `seq_q=1`、单个 32-token KV tile 的 MHA decode，并有 UVM
-smoke、随机和回压验证；但 DMA/PS 集成、多 KV tile decode 和板级性能尚未
-完成，首轮板级结果仍必须标为 prefill-only。
+smoke、随机和回压验证。SmolLM2 prefill 的 DMA/PS 集成和板级性能测试已经
+完成；多 KV tile decode 尚未完成，因此当前最终结果必须标为 prefill-only。
+
+### 1.1 当前最终状态
+
+SmolLM2 的 batch-1 prefill 上板流程已经完成。本轮最终结果统一使用 170 MHz
+匹配 runtime、两线程 Cortex-A72、一次 warmup 和一次正式测量：
+
+| Seq | PS Attention | PL callback | PL core | Core speedup | Full prefill speedup |
+| ---: | ---: | ---: | ---: | ---: | ---: |
+| 64 | 92.342 ms | 65.511 ms | 4.673 ms | 19.762x | 1.008x |
+| 1024 | 6369.045 ms | 1648.075 ms | 679.180 ms | 9.378x | 1.185x |
+
+Attention 加速器本身具有很高的加速效果。当前 Attention 集成的主要瓶颈是
+PS 端量化、tile packing、GQA-to-MHA expansion 和输出反量化；seq1024 时这些
+适配工作在 PL interval 之外增加了 `968.89 ms`。完整模型还保留约 `23.81 s`
+的非 Attention PS 图，后续需要分别优化 Attention 适配和其余算子。
+
+PS 与 PS+PL 在 seq64 和 seq1024 均得到相同 top-1 token。原始结果位于
+`fpga/model/results`，详细结论位于 `final_report_material.md`。以下未完成的
+Re10K、功耗、长期稳定性和原生 GQA 项目保留为后续扩展计划，不属于本轮最终结果。
 
 ## 2. 推荐工作负载
 
@@ -74,7 +93,7 @@ Re10K 性能结果的 sequence length 栏。
 | hidden size | 576 |
 | Q heads / KV heads | 9 / 3 |
 | head dimension | 64 |
-| 原生最大位置长度 | 8192；首轮只测到 2048 |
+| 原生最大位置长度 | 8192；本轮实测到 1024 |
 | 首轮运行格式 | PS 端 GGUF Q8_0 或等价 AArch64 量化格式 |
 | Attention 输入 | RoPE 后 Q/K、V，转换到 accelerator INT8 定点格式 |
 

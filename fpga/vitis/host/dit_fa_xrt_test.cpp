@@ -214,7 +214,9 @@ void run_workload(xrt::ip &accelerator, xrt::kernel &mover, xrt::bo &buffer)
         kQOffset / 16,
         kKOffset / 16,
         kVOffset / 16,
-        1);
+        1,
+        kSeq / kTileRows,
+        kSeq / kTileRows);
 
     wait_for_loader_tiles(accelerator, kInitialTiles);
 

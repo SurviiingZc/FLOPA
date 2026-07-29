@@ -4,6 +4,10 @@ This flow is retained for RTL synthesis and implementation analysis. Its PDI
 and XSA are not deployment artifacts for the existing PetaLinux common image.
 Board deployment must use the Vitis/XRT flow in `fpga/vitis/README.md`.
 
+The final deployed Vitis implementation runs at 170 MHz with setup WNS/TNS of
+`0.000/0.000 ns` and hold WHS/THS of `0.010/0.000 ns`. Its authoritative timing report is
+`fpga/vitis/build/reports/release-20260729/timing_summary_routed.rpt`.
+
 ## Hardware topology
 
 The first board design uses the VCK190 board part
@@ -98,9 +102,9 @@ hold slack, and writes `dit_fa_vck190.xsa` plus the generated PDI under
 
 ## Frequency Plan After Board Bring-Up
 
-The released 170 MHz implementation meets setup and hold, but both reported
-worst slacks are 0.000 ns. Keep this XSA as the functional board baseline; do
-not claim additional frequency margin from this result.
+The released 170 MHz Vitis implementation meets setup and hold with setup WNS of `0.000 ns` and
+hold WHS of `0.010 ns`. Keep its matched runtime as the functional board baseline; do not claim
+additional frequency margin from this result.
 
 The worst setup paths are entirely inside `u_fused_array`, from shared row-state
 launch registers into PE accumulators. They use 17 to 19 logic levels and spend
@@ -108,7 +112,7 @@ roughly 52% to 60% of the data-path delay in routing. CIPS, NoC, AXI DMA, and
 the board wrapper are not data-path endpoints for these violations. A large
 monolithic Pblock is therefore not the next optimization step.
 
-After the first `dit_fa_test` board pass, use this order:
+For future frequency work, use this order:
 
 1. Record cycles, stalls, MACs, and DDR/DMA behavior at 170 MHz.
 2. Try 175 MHz, then 180 MHz with several implementation seeds. Keep a result

@@ -17,20 +17,38 @@ module, WIC, and replacement rootfs flows are outside this supported path.
 
 ## Final Result
 
-The final 170 MHz runtime from Git commit
-`779c38bb91d7a220f704e3d62d65f39d0982dfa5` passed the deterministic test at `seq=64`,
-`head_dim=64`, and four compute tiles four consecutive times. The four results were:
+The current 170 MHz runtime records Git commit
+`cce5158aa2fc699cc2ae2e25991d8627ebd75aac` and source-diff digest
+`1e215eaf5568dd6cd9814041090673499102560e154c5f8a3fbccdbd6b11c434`. After installing the
+matched runtime and rebooting, the deterministic `seq=64`, `head_dim=64`, four-compute-tile test
+passed both before and after the full-model measurements:
 
 ```text
-run  cycles  stalls  macs    completed_tiles
-1    43580   40671   524288  4
-2    38063   35153   524288  4
-3    38613   35704   524288  4
-4    38763   35854   524288  4
+run  cycles  stalls  macs    completed_tiles  loaded_tiles
+1    2942    0       524288  4                10
+2    2942    0       524288  4                10
 ```
 
-Every run reported attention version `0x00020000`, loader version `0x00010000`, final status
-`0x0000000a`, error zero, and byte-for-byte output PASS.
+Both runs reported attention and loader version `0x00020000`, final status `0x0000000a`, error
+zero, and byte-for-byte output PASS. XRT 2.15 reported the device Ready and loaded xclbin UUID
+`5cfe912a-18e4-db14-5b72-5aace132ec56`.
+
+The model throughput runner also completed with matching top-1 tokens between PS and PS+PL:
+
+| Sequence | PS prefill | PS+PL prefill | PS Attention | PL callback | PL core |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 64 | 1582.633 ms | 1570.297 ms | 92.342 ms | 65.511 ms | 4.673 ms |
+| 1024 | 30178.154 ms | 25476.343 ms | 6369.045 ms | 1648.075 ms | 679.180 ms |
+
+The 1024-token speedups are `1.185x` for full prefill, `3.865x` for the complete Attention
+callback, and `9.378x` for the PL core. The raw JSON and logs are under `fpga/model/results`.
+
+The accelerator result is strong: the final seq64 PL interval is `19.762x` faster than isolated
+PS Attention, and seq1024 remains `9.378x` faster. The primary bottleneck inside the current
+Attention replacement is PS adaptation. At seq1024, quantization, packing, GQA expansion, and
+output conversion add `968.89 ms` around a `679.18 ms` PL interval. These software stages are the
+first optimization target; the separate non-Attention PS graph dominates the remaining complete
+prefill time.
 
 The historical full SmolLM2 qualification executed all 30 attention nodes and 270 Q heads
 through PL. Local attention comparison against llama.cpp reported MAE `0.016733` and RMSE
@@ -171,8 +189,16 @@ The first replacement path submitted one 10-tile HLS mover command per Q head. T
 submits one 90-tile mover command and one RTL `START` per attention node. It starts compute after
 the first Q0/K0/V0, prefetches subsequent tiles, and lets cache ownership drive AXIS
 backpressure. The llama.cpp override callback now excludes the attention node from CPU
-execution. Its loader/cache and multi-head scheduler tests pass, and both kernels package as XO
-files. Do not claim a board speedup until a matching runtime is built, booted, and measured.
+execution. The dynamic mover extends the same protocol through 1024 tokens. Its loader/cache and
+multi-head scheduler tests pass, both kernels package as XO files, and the matched runtime has now
+been booted and measured on the board.
+
+### ZOCL IRQ Warning Remains Non-Fatal
+
+Boot still reports `IRQ index 63 not found` while probing ZOCL. XRT 2.15 nevertheless reports the
+device Ready, both compute units open successfully, model runs complete, and the deterministic
+test passes after the model workload. Treat the message as a residual platform warning, but keep
+it in the release checklist in case a future platform image changes interrupt connectivity.
 
 ## Misleading Indicators
 
