@@ -61,6 +61,12 @@ syn/
 dc_out/
 reports/
 results/
+!fpga/model/results/
+!fpga/model/results/SHA256SUMS
+!fpga/model/results/compare-seq64-20260729.json
+!fpga/model/results/compare-seq64-20260729.log
+!fpga/model/results/compare-seq1024-20260729.json
+!fpga/model/results/compare-seq1024-20260729.log
 *.saif
 
 # Keep DC output below asic/dc instead of the repository root

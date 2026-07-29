@@ -26,4 +26,9 @@
 /third_party/llama.cpp/
 /model/build*/
 /model/deploy/
-/model/results/
+/model/results/*
+!/model/results/SHA256SUMS
+!/model/results/compare-seq64-20260729.json
+!/model/results/compare-seq64-20260729.log
+!/model/results/compare-seq1024-20260729.json
+!/model/results/compare-seq1024-20260729.log
