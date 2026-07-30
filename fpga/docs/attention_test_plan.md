@@ -26,13 +26,18 @@ smoke、随机和回压验证。SmolLM2 prefill 的 DMA/PS 集成和板级性能
 
 ### 1.1 当前最终状态
 
-SmolLM2 的 batch-1 prefill 上板流程已经完成。本轮最终结果统一使用 170 MHz
+SmolLM2 的 batch-1 prefill 上板流程已经完成。本轮最终结果统一使用名义
+170 MHz（布局布线报告为 170.019 MHz）
 匹配 runtime、两线程 Cortex-A72、一次 warmup 和一次正式测量：
 
 | Seq | PS Attention | PL callback | PL core | Core speedup | Full prefill speedup |
 | ---: | ---: | ---: | ---: | ---: | ---: |
 | 64 | 92.342 ms | 65.511 ms | 4.673 ms | 19.762x | 1.008x |
 | 1024 | 6369.045 ms | 1648.075 ms | 679.180 ms | 9.378x | 1.185x |
+
+最终 post-route 报告给出 setup WNS/TNS `0.012/0.000 ns`，系统顶层使用
+294,718 LUT、295,111 FF、6.5 BRAM、96 URAM 和 1,220 DSP58；报告保存在
+`fpga/vivado/build/reports/`。
 
 Attention 加速器本身具有很高的加速效果。当前 Attention 集成的主要瓶颈是
 PS 端量化、tile packing、GQA-to-MHA expansion 和输出反量化；seq1024 时这些

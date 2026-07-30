@@ -109,3 +109,11 @@ asic/dc/work/**
 !asic/dc/work/**/
 !asic/dc/work/**/reports/
 !asic/dc/work/**/reports/**
+
+# Retain compact Vivado implementation reports without exposing checkpoints,
+# generated IP, bitstreams, or the rest of the FPGA build tree.
+!fpga/vivado/build/
+fpga/vivado/build/**
+!fpga/vivado/build/**/
+!fpga/vivado/build/reports/
+!fpga/vivado/build/reports/**

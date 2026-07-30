@@ -4,7 +4,8 @@
 
 FLOPA has a measured `19.762x` Attention-core speedup on the final 64-token SmolLM2 workload.
 The isolated two-thread PS Attention time is `92.342 ms`, while the complete PL cycle-counter
-interval is `4.673 ms` across all 30 layers at 170 MHz. This approximately `20x` result is the
+interval is `4.673 ms` across all 30 layers at the nominal 170 MHz operating point. This
+approximately `20x` result is the
 primary accelerator result.
 
 The current 64-token full-model speedup is only `1.008x`. Required PS quantization, packing,
@@ -24,12 +25,25 @@ and full-prefill speedups are `9.378x`, `3.865x`, and `1.185x`, respectively.
 | OS | PetaLinux 2023.1 |
 | Platform | `xilinx_vck190_base_202310_1` |
 | Toolchain | Vivado/Vitis 2023.1 |
-| PL clock | 170 MHz |
+| PL clock | 170.019 MHz routed (170 MHz runtime convention) |
+| Routed timing | setup WNS/TNS `0.012/0.000 ns`; all user timing constraints met |
 | Model | SmolLM2-135M-Instruct, Q8_0 GGUF |
 | Model dimensions | 30 layers, 9 Q heads, 3 KV heads, head dimension 64 |
 | CPU configuration | 2 Cortex-A72 threads |
 | PL Attention interface | 9 Q heads and 9 PS-expanded KV heads |
 | Tile shape | 32 rows by 64 elements, INT8 |
+
+| Routed system resource | Used | Available | Utilization |
+| --- | ---: | ---: | ---: |
+| LUT | 294,718 | 899,840 | 32.75% |
+| FF | 295,111 | 1,799,680 | 16.40% |
+| BRAM tile | 6.5 | 967 | 0.67% |
+| URAM | 96 | 463 | 20.73% |
+| DSP58 | 1,220 | 1,968 | 61.99% |
+
+The FLOPA `u_attention` hierarchy accounts for 291,543 LUTs, 292,728 FFs,
+four RAMB36 blocks, 96 URAMs, and all 1,220 DSP58s. The remaining top-level
+resources implement the PS/NoC/DMA/clock integration.
 
 The boot image and xclbin come from one Vitis link against the common platform. Runtime loading
 uses the xclbin metadata that matches the design already configured by `BOOT.BIN`; it does not
@@ -178,7 +192,7 @@ integration.
 | Artifact | Repository-relative location |
 | --- | --- |
 | Matched boot image, xclbin, and deterministic host | generated under `fpga/vitis/build/runtime` |
-| Routed timing, HLS, build, and xclbin evidence | generated under `fpga/vitis/build/reports/release-20260729` |
+| Vivado synthesis, routed timing, utilization, DRC, methodology, clock, and power-container reports | `fpga/vivado/build/reports` |
 | AArch64 model host, prompts, runner, and checksums | `fpga/model/deploy` |
 | Pinned model manifest and downloader | `fpga/models` |
 | Sequence-64 raw board result | `fpga/model/results/compare-seq64-20260729.json` |
@@ -193,7 +207,8 @@ small model payload.
 - The 64-token raw JSON and console log are retained under `fpga/model/results`.
 - The 1024-token raw JSON and console log are retained under `fpga/model/results`.
 - Both final results have one measured repetition and should be repeated for variance analysis.
-- Final routed LUT/FF/DSP/BRAM/URAM totals and board power were not retained as reportable evidence.
+- Board power was not measured. `power_1.rpx` is a Vivado estimate container
+  whose RAM activity uses the tool default; it is not a board-power result.
 - The deterministic hardware test must pass after every matched boot-image/xclbin deployment.
 - Earlier numerical qualification compared more than one million values and matched top-1 output.
 - Final-logit agreement is a sanity check, not an exhaustive replacement for tensor-level tests.

@@ -18,17 +18,21 @@ entire model graph.
 | Tool | Design Compiler V-2023.12-SP5 | logical synthesis |
 | Target clock | 1.60 ns | 625 MHz |
 | Setup WNS / TNS / failing paths | 0.000 ns / 0.000 ns / 0 | mapped netlist |
-| Critical path | 1.49 ns, 58 logic levels | mapped netlist |
-| Total cell area | **2,438,948.64** library units | interconnect excluded |
-| Fused-array area | 2,048,232.66 (84.0%) | includes persistent O banks |
-| Total cells | 1,523,959 | mapped leaf cells |
-| Combinational / sequential cells | 1,281,141 / 242,818 | mapped counts |
-| Buffer/inverter cells | 252,200 | pre-layout count |
+| Critical path | 1.49 ns, 57 logic levels | mapped netlist |
+| Total cell area | **2,436,075.17** library units | interconnect excluded |
+| Fused-array area | 2,047,098.32 (84.0%) | includes persistent O banks |
+| Leaf cells | 1,518,837 | mapped QoR count |
+| Combinational / sequential cells | 1,276,428 / 242,409 | mapped QoR counts |
+| Buffer/inverter cells | 250,507 | pre-layout count |
 | SRAM macros | 480 | 192 Q/K/V, 256 O-bank, 32 output |
 
 Primary reports are below
 `asic/dc/work/synth/tt/system/attention_accel_top/reports/`. ZeroWireload is
 used, so 625 MHz is a synthesis target, not a routed ASIC Fmax.
+
+The synthesis-local `power.rpt` uses default vectorless activity and reports
+594.6547 mW total. It is a diagnostic estimate and does not replace the
+workload-annotated gate-SAIF result in Section 3.
 
 ## 3. Gate-SAIF Power
 
@@ -88,11 +92,24 @@ not DDR-backed sustained system throughput.
 | Item | VCK190 result |
 | --- | ---: |
 | Platform/toolchain | `xilinx_vck190_base_202310_1`, Vivado/Vitis 2023.1 |
-| Routed PL clock | **170 MHz** |
-| Setup WNS / TNS | 0.000 / 0.000 ns |
+| Routed PL clock | **170.019 MHz** (5.882 ns) |
+| Setup WNS / TNS | **0.012 / 0.000 ns** |
 | Deterministic smoke | 2/2 pass; 2,942 cycles; 0 stalls; 0 errors |
-| LUT / FF / DSP / BRAM / URAM | final routed utilization report not retained in the source checkout |
 | Board power | not measured |
+
+| Routed system resource | Used | Available | Utilization |
+| --- | ---: | ---: | ---: |
+| LUT | 294,718 | 899,840 | 32.75% |
+| FF | 295,111 | 1,799,680 | 16.40% |
+| BRAM tile | 6.5 | 967 | 0.67% |
+| URAM | 96 | 463 | 20.73% |
+| DSP58 | 1,220 | 1,968 | 61.99% |
+
+The `u_attention` hierarchy uses 291,543 LUTs, 292,728 FFs, four RAMB36
+blocks, 96 URAMs, and 1,220 DSP58s. Reports are versioned at
+`fpga/vivado/build/reports/`. The binary `power_1.rpx` also records a Vivado
+estimate, but no measured board power is available and the methodology report
+shows that RAM activity used a default assumption.
 
 ### 5.1 SmolLM2-135M-Instruct
 
@@ -142,5 +159,5 @@ full-model speedup is smaller than the PL-core speedup.
 
 | Date | Workload | Area | Dynamic / leakage / total | Verification |
 | --- | --- | ---: | ---: | --- |
-| 2026-07-29 | 64 x 64 gate MHA, seed 301 | 2,438,948.64 | 648.6251 / 9.8584 / 658.4835 mW | zero gate UVM errors/fatals; 100% SAIF |
-| 2026-07-29 | VCK190 SmolLM2 seq64/1024 | n/a | board power not measured | matching token hashes/top-1; smoke 2/2 |
+| 2026-07-30 | 64 x 64 gate MHA, seed 301 | 2,436,075.17 | 648.6251 / 9.8584 / 658.4835 mW | zero gate UVM errors/fatals; 100% SAIF |
+| 2026-07-30 | VCK190 SmolLM2 seq64/1024 | 294,718 LUT / 295,111 FF / 1,220 DSP58 | board power not measured | 170.019 MHz timing met; matching tokens; smoke 2/2 |

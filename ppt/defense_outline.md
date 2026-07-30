@@ -48,14 +48,15 @@
 ## 7. ASIC PPA
 
 - 28 nm TT, 0.9 V, 25 C; 1.60 ns target.
-- Estimated area 2,438,948.64 library units with 480 SRAM macros.
+- Estimated area 2,436,075.17 library units with 480 SRAM macros.
 - Gate-SAIF: 648.6251 mW dynamic, 9.8584 mW leakage, 658.4835 mW total.
 - 76.58 GMAC/s (153.16 GOPS) and 8.60 pJ/MAC on the sampled 64 x 64 job.
 
 ## 8. VCK190 and SmolLM2
 
-- Routed 170 MHz VCK190 design; deterministic smoke passes twice with zero
-  stalls and zero errors.
+- Routed 170.019 MHz VCK190 design with 0.012 ns setup WNS; deterministic
+  smoke passes twice with zero stalls and zero errors.
+- 294,718 LUTs, 295,111 FFs, 6.5 BRAM tiles, 96 URAMs, and 1,220 DSP58s.
 - Sequence 64: 19.762x core, 1.410x callback, 1.008x full-prefill speedup.
 - Sequence 1024: 9.378x core, 3.865x callback, 1.185x full-prefill speedup.
 - Explain the gap using measured quantization/packing/GQA/output conversion

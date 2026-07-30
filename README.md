@@ -30,7 +30,7 @@ SmolLM2-135M-Instruct and has been measured on board.
 ### ASIC estimate
 
 The 28 nm TT, 0.9 V, 25 C synthesis target is 1.60 ns (625 MHz). The final
-area estimate is **2,438,948.64 library units** with 480 SRAM macros. A
+area estimate is **2,436,075.17 library units** with 480 SRAM macros. A
 64 x 64 mapped-netlist `fa_random_qkv_test` run achieved 100% SAIF annotation
 and zero UVM errors/fatals.
 
@@ -49,10 +49,19 @@ conventions are defined in [PPA and Optimization](docs/ppa_and_optimization.md).
 
 ### VCK190 board result
 
-The routed design operates at **170 MHz** on an AMD VCK190. The final board
+The routed design operates at **170.019 MHz** on an AMD VCK190 and meets timing
+with setup WNS/TNS of `0.012/0.000 ns`. The final board
 smoke test passed twice with 2,942 accelerator cycles, zero stall cycles, and
 zero errors. SmolLM2-135M-Instruct uses two Cortex-A72 threads and software
 GQA-to-MHA expansion for the current MHA hardware interface.
+
+| Routed system resource | Used | Device utilization |
+| --- | ---: | ---: |
+| LUT | 294,718 | 32.75% |
+| FF | 295,111 | 16.40% |
+| BRAM tile | 6.5 | 0.67% |
+| URAM | 96 | 20.73% |
+| DSP58 | 1,220 | 61.99% |
 
 | Sequence | Attention-core speedup | Callback speedup | Full-prefill speedup |
 | ---: | ---: | ---: | ---: |
@@ -72,11 +81,12 @@ be collected.
 | ASIC PPA and gate-SAIF interpretation | `docs/ppa_and_optimization.md` |
 | FPGA board evaluation report | `fpga/docs/final_report_material.md` |
 | Sequence-64/1024 raw FPGA JSON, logs, and hashes | `fpga/model/results/` |
-| Generated Vivado/Vitis release reports | `fpga/vitis/build/reports/release-20260729/` |
+| Vivado synthesis, routed timing, utilization, DRC, methodology, clock, and power-container reports | `fpga/vivado/build/reports/` |
 
-The compact DC `reports/` trees are intentionally allowed by `.gitignore` so
-accepted synthesis evidence can be versioned. DDC/netlist/SDF, simulator,
-waveform, SAIF, and general EDA work products remain ignored.
+The compact DC and Vivado `reports/` trees are intentionally allowed by
+`.gitignore` so accepted implementation evidence can be versioned. DDC,
+netlist, checkpoint, bitstream, simulator, waveform, SAIF, and general EDA
+work products remain ignored.
 
 ## Documentation
 

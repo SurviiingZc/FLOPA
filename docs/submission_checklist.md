@@ -8,7 +8,7 @@
 | KV cache greater than 4 KiB | complete | K and V each provide 4 KiB ping-pong capacity; 8 KiB combined |
 | hardware softmax parallelism greater than 16 | complete | 32 score-scale/PWL-exp lanes |
 | AXI4 master/slave interfaces | complete at system boundary | AXI4-Lite control, AXI4 writeback, VCK190 mover for 128-bit tile-loader input |
-| FPGA implementation | complete | routed 170 MHz VCK190 design and deterministic smoke |
+| FPGA implementation | complete | routed 170.019 MHz VCK190 design and deterministic smoke |
 | bonus 1: scalability | **complete** | parameterized geometry, runtime configuration, tiled prefill/decode, VCK190 sequence 32-1024 mover |
 | bonus 2: data reuse | **complete** | local score/P and row state, probability-stationary WS-PV, persistent O banks, ping-pong cache |
 | bonus 3: energy optimization per computation | **complete** | INT8/Q1.15 mixed precision, shared 17 x 9 multipliers/accumulators, local dataflow; 8.60 pJ/MAC and 0.233 TOPS/W gate estimate |
@@ -36,13 +36,15 @@
 
 | Metric | Value |
 | --- | ---: |
-| 28 nm TT cell area estimate | 2,438,948.64 library units |
+| 28 nm TT cell area estimate | 2,436,075.17 library units |
 | ASIC target clock | 1.60 ns / 625 MHz |
 | gate-SAIF dynamic / leakage / total | 648.6251 / 9.8584 / 658.4835 mW |
 | gate workload throughput/efficiency | 76.58 GMAC/s; 8.60 pJ/MAC |
 | UVM / module jobs | 21/21 / 23/23 passing |
 | functional / raw merged / reviewed DUT coverage | 100.00% / 95.66% / 96.00% |
-| VCK190 routed clock | 170 MHz |
+| VCK190 routed clock / setup WNS | 170.019 MHz / 0.012 ns |
+| VCK190 LUT / FF | 294,718 / 295,111 |
+| VCK190 BRAM / URAM / DSP58 | 6.5 / 96 / 1,220 |
 | seq64 core / callback / full speedup | 19.762x / 1.410x / 1.008x |
 | seq1024 core / callback / full speedup | 9.378x / 3.865x / 1.185x |
 
@@ -53,8 +55,8 @@
 2. Verify every deployable directory with its `SHA256SUMS` before board use.
 3. Keep the matched `BOOT.BIN`, xclbin, and host from one release build.
 4. Capture the four waveform panels defined in the verification report.
-5. State that FPGA power, final routed utilization table, and Re10K board data
-   are not included; do not infer them from ASIC or historical FPGA reports.
+5. State that FPGA board power and Re10K board data are not included; do not
+   interpret the Vivado `power_1.rpx` estimate as measured board power.
 6. Qualify ASIC values as 28 nm TT 0.9 V/25 C mapped estimates and distinguish
    PL core, callback, and full-prefill intervals in every performance chart.
 

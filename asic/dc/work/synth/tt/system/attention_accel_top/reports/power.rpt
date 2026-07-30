@@ -4,7 +4,7 @@ Report : power
         -analysis_effort low
 Design : attention_accel_top
 Version: V-2023.12-SP5
-Date   : Tue Jul 28 17:36:19 2026
+Date   : Thu Jul 30 16:13:36 2026
 ****************************************
 
 
@@ -20,8 +20,6 @@ Wire Load Model Mode: segmented
 Design        Wire Load Model            Library
 ------------------------------------------------
 attention_accel_top    ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
-accel_regfile_HEAD_DIM64
-                       ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
 qkv_tile_cache_ADDR_W6 ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
 fsa_fused_array_ROWS32_STRIPE_ROWS8_COLS32_DATA_W8_SCORE_W32_PROB_W16_ACC_W32_LSE_W32_HEAD_DIM64_FEATURE_IDX_W6
                        ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
@@ -111,24 +109,24 @@ Attributes
 i - Including register clock pin internal power
 
 
-  Cell Internal Power  = 585.4974 mW  (100%)
-  Net Switching Power  =   1.9996 mW    (0%)
+  Cell Internal Power  = 584.3615 mW  (100%)
+  Net Switching Power  =   2.0131 mW    (0%)
                          ---------
-Total Dynamic Power    = 587.4970 mW  (100%)
+Total Dynamic Power    = 586.3746 mW  (100%)
 
-Cell Leakage Power     =   9.1489 mW
+Cell Leakage Power     =   9.1572 mW
 
 
                  Internal         Switching           Leakage            Total
 Power Group      Power            Power               Power              Power   (   %    )  Attrs
 --------------------------------------------------------------------------------------------------
 io_pad             0.0000            0.0000            0.0000            0.0000  (   0.00%)
-memory             3.4924        6.4062e-02        1.8334e+06            5.3898  (   0.90%)
+memory             3.4971        6.4062e-02        1.8334e+06            5.3945  (   0.91%)
 black_box          0.0000            0.0000            0.0000            0.0000  (   0.00%)
-clock_network    580.2924            0.0000            0.0000          580.2924  (  97.40%)  i
-register           0.1020        5.5306e-03        3.1700e+06            3.2775  (   0.55%)
+clock_network    579.1716            0.0000            0.0000          579.1716  (  97.40%)  i
+register           0.1021        5.6373e-03        3.1659e+06            3.2738  (   0.55%)
 sequential         0.0000            0.0000            0.0000            0.0000  (   0.00%)
-combinational      0.7287            1.9300        4.1456e+06            6.8043  (   1.14%)
+combinational      0.7137            1.9434        4.1579e+06            6.8147  (   1.15%)
 --------------------------------------------------------------------------------------------------
-Total            584.6155 mW         1.9996 mW     9.1489e+06 nW       595.7640 mW
+Total            583.4844 mW         2.0131 mW     9.1572e+06 nW       594.6547 mW
 1

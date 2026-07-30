@@ -35,7 +35,7 @@ requirements at the accelerator or VCK190 system boundary.
 | hardware nonlinear softmax with parallelism greater than 16 | **Completed** | 32 parallel score-scale/PWL-exp lanes |
 | AXI4 master output | **Completed** | 128-bit AXI4 burst writeback for normalized O |
 | AXI4 slave input/configuration | **Completed at the VCK190 system boundary** | AXI4-Lite register slave plus the AXI-connected mover that feeds the 128-bit tile-loader stream |
-| FPGA implementation | **Completed** | routed 170 MHz VCK190 design and two passing deterministic board-smoke runs |
+| FPGA implementation | **Completed** | routed 170.019 MHz VCK190 design and two passing deterministic board-smoke runs |
 
 The tile-loader interface is the RTL bulk-input boundary; it is supplied by
 the VCK190 mover rather than by an AXI read master instantiated inside
@@ -320,12 +320,12 @@ measurements.
 | Metric | Current result |
 | --- | ---: |
 | Setup WNS / TNS / failing paths | 0.000 ns / 0.000 ns / 0 |
-| Critical path | 1.49 ns, 58 logic levels |
-| Total cell area | 2,438,948.64 library units |
-| Fused-array area | 2,048,232.66 (84.0%) |
-| Total cells | 1,523,959 |
-| Combinational / sequential cells | 1,281,141 / 242,818 |
-| Buffer / inverter cells | 252,200 |
+| Critical path | 1.49 ns, 57 logic levels |
+| Total cell area | 2,436,075.17 library units |
+| Fused-array area | 2,047,098.32 (84.0%) |
+| Leaf cells | 1,518,837 |
+| Combinational / sequential cells | 1,276,428 / 242,409 |
+| Buffer / inverter cells | 250,507 |
 | SRAM macros | 480 |
 
 The 480 SRAM macros comprise 192 Q/K/V-cache macros, 256 persistent O-bank
@@ -377,9 +377,22 @@ and [Verification Report](verification_report.md).
 ### 7.4 VCK190 and Model Evaluation
 
 The final VCK190 release uses Vivado/Vitis 2023.1 and the
-`xilinx_vck190_base_202310_1` platform. The routed PL clock is 170 MHz. A
+`xilinx_vck190_base_202310_1` platform. The routed PL clock is 170.019 MHz
+with setup WNS/TNS of `0.012/0.000 ns`. A
 deterministic smoke test passed twice with 2,942 cycles, zero stalls, four
 completed compute tiles, ten loaded tiles, and zero errors.
+
+| Routed system resource | Used | Available | Utilization |
+| --- | ---: | ---: | ---: |
+| LUT | 294,718 | 899,840 | 32.75% |
+| FF | 295,111 | 1,799,680 | 16.40% |
+| BRAM tile | 6.5 | 967 | 0.67% |
+| URAM | 96 | 463 | 20.73% |
+| DSP58 | 1,220 | 1,968 | 61.99% |
+
+The FLOPA accelerator hierarchy itself accounts for 291,543 LUTs, 292,728
+FFs, four RAMB36 blocks, 96 URAMs, and all 1,220 DSP58s. The remaining system
+resources belong to CIPS, NoC, DMA, clocks, and integration logic.
 
 SmolLM2-135M-Instruct Q8_0 was measured with two Cortex-A72 threads. The model
 has 30 layers, 9 Q heads, 3 KV heads, and head dimension 64; the host expands
@@ -391,8 +404,8 @@ KV heads to nine for the current MHA accelerator interface.
 | 1024 | 30178.154 ms | 25476.343 ms | 1.185x | 3.865x | **9.378x** |
 
 The PS and PS+PL paths produce matching final token hashes and top-1 outputs.
-Board power, the final routed resource table, and Re10K board measurements are
-not yet available.
+Board power and Re10K board measurements are not yet available. The Vivado
+`power_1.rpx` file is a tool estimate container, not a board measurement.
 
 ## 8. Known Limits and Next Steps
 
@@ -407,6 +420,5 @@ not yet available.
    remapped.
 4. Fuse or move quantization, packing, GQA expansion, and output conversion to
    PL; these dominate the measured callback overhead.
-5. Measure VCK190 board power, retain the final routed utilization table, and
-   complete the Re10K board workload.
+5. Measure VCK190 board power and complete the Re10K board workload.
 6. Perform routed ASIC implementation and evaluate wider/deeper SRAM macros.

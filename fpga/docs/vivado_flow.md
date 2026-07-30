@@ -4,9 +4,18 @@ This flow is retained for RTL synthesis and implementation analysis. Its PDI
 and XSA are not deployment artifacts for the existing PetaLinux common image.
 Board deployment must use the Vitis/XRT flow in `fpga/vitis/README.md`.
 
-The final deployed Vitis implementation runs at 170 MHz with setup WNS/TNS of
-`0.000/0.000 ns` and hold WHS/THS of `0.010/0.000 ns`. Its authoritative timing report is
-`fpga/vitis/build/reports/release-20260729/timing_summary_routed.rpt`.
+The final routed implementation runs at 170.019 MHz with setup WNS/TNS of
+`0.012/0.000 ns` and hold WHS/THS of `0.013/0.000 ns`. Its authoritative
+timing and utilization reports are versioned under
+`fpga/vivado/build/reports/`.
+
+| Routed system resource | Used | Available | Utilization |
+| --- | ---: | ---: | ---: |
+| LUT | 294,718 | 899,840 | 32.75% |
+| FF | 295,111 | 1,799,680 | 16.40% |
+| BRAM tile | 6.5 | 967 | 0.67% |
+| URAM | 96 | 463 | 20.73% |
+| DSP58 | 1,220 | 1,968 | 61.99% |
 
 ## Hardware topology
 
@@ -85,6 +94,16 @@ QoR/debug outputs and must not be loaded over the PetaLinux common platform.
 `flow_summary.txt` records the synthesis gate and final timing margins. Separate
 setup and hold violation reports retain up to 2000 detailed paths.
 
+The retained report set contains post-synthesis and post-route timing and
+utilization, clock utilization, DRC, methodology, `flow_summary.txt`, and the
+Vivado `power_1.rpx` container. Post-route timing meets all user constraints.
+The DRC summary contains 7,998 warning-level findings and no error-severity
+finding; most are DSP pipeline recommendations and repeated URAM primitive
+attribute checks already covered by board validation. The methodology report
+contains one warning and two advisories, including use of default RAM activity.
+Consequently, `power_1.rpx` is retained for tool inspection but is not reported
+as measured board power.
+
 The default clock request is 170 MHz. Raise `FREQ_MHZ` explicitly after reviewing
 the post-route margin; 185, 200, 250, 300, and 312.5 MHz are candidate steps and
 do not require an RTL change.
@@ -102,9 +121,9 @@ hold slack, and writes `dit_fa_vck190.xsa` plus the generated PDI under
 
 ## Frequency Plan After Board Bring-Up
 
-The released 170 MHz Vitis implementation meets setup and hold with setup WNS of `0.000 ns` and
-hold WHS of `0.010 ns`. Keep its matched runtime as the functional board baseline; do not claim
-additional frequency margin from this result.
+The released 170 MHz implementation meets setup and hold with setup WNS of
+`0.012 ns` and hold WHS of `0.013 ns`. Keep its matched runtime as the
+functional board baseline; the margin is too small to claim a higher frequency.
 
 The worst setup paths are entirely inside `u_fused_array`, from shared row-state
 launch registers into PE accumulators. They use 17 to 19 logic levels and spend

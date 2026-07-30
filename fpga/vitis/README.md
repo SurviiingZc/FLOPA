@@ -34,10 +34,11 @@ the XRT xclbin and boot-time PL PDI. All generated files stay under
 The deployable directory is `fpga/vitis/build/runtime/`. Generated archives and intermediate
 link products are intentionally not retained after the runtime directory passes its checksums.
 
-The verified 170 MHz build meets all timing constraints with setup WNS/TNS of
-`0.000/0.000 ns` and hold WHS/THS of `0.010/0.000 ns`. Treat it as the board
-functionality baseline, not as evidence of frequency margin. The routed report
-is `build/reports/release-20260729/timing_summary_routed.rpt`.
+The verified nominal-170 MHz build routes at 170.019 MHz and meets all timing
+constraints with setup WNS/TNS of `0.012/0.000 ns` and hold WHS/THS of
+`0.013/0.000 ns`. Treat it as the board functionality baseline, not as evidence
+of additional frequency margin. Versioned reports are under
+`../vivado/build/reports/`.
 
 ## Board Run
 

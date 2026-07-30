@@ -26,9 +26,9 @@ outputs are written below `asic/dc/work/power/reports/`.
 | --- | ---: |
 | target clock | 1.60 ns / 625 MHz |
 | setup WNS / TNS | 0.000 / 0.000 ns |
-| critical path | 1.49 ns, 58 logic levels |
-| cell area | 2,438,948.64 library units |
-| mapped cells | 1,523,959 |
+| critical path | 1.49 ns, 57 logic levels |
+| cell area | 2,436,075.17 library units |
+| mapped leaf cells | 1,518,837 |
 | SRAM macros | 480 |
 | dynamic / leakage / total power | 648.6251 / 9.8584 / 658.4835 mW |
 | net switching power | 18.1893 mW |
@@ -37,6 +37,10 @@ The power workload is a 64 x 64 random MHA prefill (`seed=301`) with 100%
 SAIF annotation and zero UVM errors/fatals. These are mapped pre-layout
 estimates; [PPA and Optimization](../docs/ppa_and_optimization.md) defines the
 measurement boundary and derived throughput convention.
+
+The synthesis-local `reports/power.rpt` uses default vectorless activity and
+reports 594.6547 mW total power. It is retained as a synthesis diagnostic only;
+the workload-annotated gate-SAIF result above is the reportable power number.
 
 ## Memory Mapping
 

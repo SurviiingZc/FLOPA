@@ -15,8 +15,9 @@ unchanged.
 
 ## Node Schedule
 
-The HLS mover and RTL loader use a 128-bit AXIS interface. At 170 MHz, its peak bandwidth is
-2.72 GB/s. One 32-by-64 INT8 tile is 2048 bytes, or 128 AXIS beats. HLS requests one 128-beat
+The HLS mover and RTL loader use a 128-bit AXIS interface. At the routed
+170.019 MHz clock, its peak interface bandwidth is 2.720 GB/s. One 32-by-64
+INT8 tile is 2048 bytes, or 128 AXIS beats. HLS requests one 128-beat
 AXI burst per tile and sustains an inner-loop initiation interval of one.
 
 At `seq=64`, each Q head emits this ten-tile sequence:

@@ -4,7 +4,7 @@ Report : constraint
         -all_violators
 Design : attention_accel_top
 Version: V-2023.12-SP5
-Date   : Tue Jul 28 17:35:43 2026
+Date   : Thu Jul 30 16:12:33 2026
 ****************************************
 
 
@@ -7693,6 +7693,174 @@ Date   : Tue Jul 28 17:35:43 2026
                                 0.14           0.05 r        -0.09  (VIOLATED)
    u_output_buffer/u_out_mem/g_byte[31].u_sram/D[7]
                                 0.14           0.05 r        -0.09  (VIOLATED)
+   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[0].u_sram/A[0]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[0].u_sram/A[1]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[0].u_sram/A[2]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[0].u_sram/A[3]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[0].u_sram/A[4]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[1].u_sram/A[0]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[1].u_sram/A[1]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[1].u_sram/A[2]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[1].u_sram/A[3]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[1].u_sram/A[4]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[2].u_sram/A[0]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[2].u_sram/A[1]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[2].u_sram/A[2]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[2].u_sram/A[3]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[2].u_sram/A[4]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[3].u_sram/A[0]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[3].u_sram/A[1]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[3].u_sram/A[2]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[3].u_sram/A[3]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[3].u_sram/A[4]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[0].u_sram/A[0]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[0].u_sram/A[1]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[0].u_sram/A[2]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[0].u_sram/A[3]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[0].u_sram/A[4]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[1].u_sram/A[0]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[1].u_sram/A[1]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[1].u_sram/A[2]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[1].u_sram/A[3]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[1].u_sram/A[4]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[2].u_sram/A[0]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[2].u_sram/A[1]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[2].u_sram/A[2]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[2].u_sram/A[3]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[2].u_sram/A[4]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[3].u_sram/A[0]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[3].u_sram/A[1]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[3].u_sram/A[2]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[3].u_sram/A[3]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[3].u_sram/A[4]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[0].u_sram/A[0]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[0].u_sram/A[1]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[0].u_sram/A[2]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[0].u_sram/A[3]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[0].u_sram/A[4]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[1].u_sram/A[0]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[1].u_sram/A[1]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[1].u_sram/A[2]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[1].u_sram/A[3]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[1].u_sram/A[4]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[2].u_sram/A[0]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[2].u_sram/A[1]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[2].u_sram/A[2]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[2].u_sram/A[3]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[2].u_sram/A[4]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[3].u_sram/A[0]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[3].u_sram/A[1]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[3].u_sram/A[2]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[3].u_sram/A[3]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[3].u_sram/A[4]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[0].u_sram/A[0]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[0].u_sram/A[1]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[0].u_sram/A[2]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[0].u_sram/A[3]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[0].u_sram/A[4]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[1].u_sram/A[0]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[1].u_sram/A[1]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[1].u_sram/A[2]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[1].u_sram/A[3]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[1].u_sram/A[4]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[2].u_sram/A[0]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[2].u_sram/A[1]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[2].u_sram/A[2]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[2].u_sram/A[3]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[2].u_sram/A[4]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[3].u_sram/A[0]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[3].u_sram/A[1]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[3].u_sram/A[2]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[3].u_sram/A[3]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[3].u_sram/A[4]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[0].u_sram/A[0]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[1].u_sram/A[0]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[2].u_sram/A[0]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[3].u_sram/A[0]
+                                0.10           0.07 r        -0.03  (VIOLATED)
    u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[2].g_group[0].u_mem/g_byte[0].u_sram/A[0]
                                 0.10           0.07 r        -0.03  (VIOLATED)
    u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[2].g_group[0].u_mem/g_byte[1].u_sram/A[0]
@@ -7740,6 +7908,14 @@ Date   : Tue Jul 28 17:35:43 2026
    u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[7].g_group[0].u_mem/g_byte[2].u_sram/A[0]
                                 0.10           0.07 r        -0.03  (VIOLATED)
    u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[7].g_group[0].u_mem/g_byte[3].u_sram/A[0]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[0].u_sram/A[0]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[1].u_sram/A[0]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[2].u_sram/A[0]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[3].u_sram/A[0]
                                 0.10           0.07 r        -0.03  (VIOLATED)
    u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[2].g_group[0].u_mem/g_byte[0].u_sram/A[0]
                                 0.10           0.07 r        -0.03  (VIOLATED)
@@ -7789,6 +7965,14 @@ Date   : Tue Jul 28 17:35:43 2026
                                 0.10           0.07 r        -0.03  (VIOLATED)
    u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[7].g_group[0].u_mem/g_byte[3].u_sram/A[0]
                                 0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[0].u_sram/A[0]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[1].u_sram/A[0]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[2].u_sram/A[0]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[3].u_sram/A[0]
+                                0.10           0.07 r        -0.03  (VIOLATED)
    u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[2].g_group[0].u_mem/g_byte[0].u_sram/A[0]
                                 0.10           0.07 r        -0.03  (VIOLATED)
    u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[2].g_group[0].u_mem/g_byte[1].u_sram/A[0]
@@ -7837,6 +8021,14 @@ Date   : Tue Jul 28 17:35:43 2026
                                 0.10           0.07 r        -0.03  (VIOLATED)
    u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[7].g_group[0].u_mem/g_byte[3].u_sram/A[0]
                                 0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[0].u_sram/A[0]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[1].u_sram/A[0]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[2].u_sram/A[0]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[3].u_sram/A[0]
+                                0.10           0.07 r        -0.03  (VIOLATED)
    u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[2].g_group[0].u_mem/g_byte[0].u_sram/A[0]
                                 0.10           0.07 r        -0.03  (VIOLATED)
    u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[2].g_group[0].u_mem/g_byte[1].u_sram/A[0]
@@ -7877,38 +8069,6 @@ Date   : Tue Jul 28 17:35:43 2026
                                 0.10           0.07 r        -0.03  (VIOLATED)
    u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[6].g_group[0].u_mem/g_byte[3].u_sram/A[0]
                                 0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[0].u_sram/A[1]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[0].u_sram/A[2]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[0].u_sram/A[3]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[0].u_sram/A[4]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[1].u_sram/A[1]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[1].u_sram/A[2]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[1].u_sram/A[3]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[1].u_sram/A[4]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[2].u_sram/A[1]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[2].u_sram/A[2]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[2].u_sram/A[3]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[2].u_sram/A[4]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[3].u_sram/A[1]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[3].u_sram/A[2]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[3].u_sram/A[3]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[3].u_sram/A[4]
-                                0.10           0.07 r        -0.03  (VIOLATED)
    u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[0].u_sram/A[1]
                                 0.10           0.07 r        -0.03  (VIOLATED)
    u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[0].u_sram/A[2]
@@ -7940,262 +8100,6 @@ Date   : Tue Jul 28 17:35:43 2026
    u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[3].u_sram/A[3]
                                 0.10           0.07 r        -0.03  (VIOLATED)
    u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[3].u_sram/A[4]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[0].u_sram/A[1]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[0].u_sram/A[2]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[0].u_sram/A[3]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[0].u_sram/A[4]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[1].u_sram/A[1]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[1].u_sram/A[2]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[1].u_sram/A[3]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[1].u_sram/A[4]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[2].u_sram/A[1]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[2].u_sram/A[2]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[2].u_sram/A[3]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[2].u_sram/A[4]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[3].u_sram/A[1]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[3].u_sram/A[2]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[3].u_sram/A[3]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[3].u_sram/A[4]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[0].u_sram/A[1]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[0].u_sram/A[2]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[0].u_sram/A[3]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[0].u_sram/A[4]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[1].u_sram/A[1]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[1].u_sram/A[2]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[1].u_sram/A[3]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[1].u_sram/A[4]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[2].u_sram/A[1]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[2].u_sram/A[2]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[2].u_sram/A[3]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[2].u_sram/A[4]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[3].u_sram/A[1]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[3].u_sram/A[2]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[3].u_sram/A[3]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[3].u_sram/A[4]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[0].u_sram/A[1]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[0].u_sram/A[2]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[0].u_sram/A[3]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[0].u_sram/A[4]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[1].u_sram/A[1]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[1].u_sram/A[2]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[1].u_sram/A[3]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[1].u_sram/A[4]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[2].u_sram/A[1]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[2].u_sram/A[2]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[2].u_sram/A[3]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[2].u_sram/A[4]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[3].u_sram/A[1]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[3].u_sram/A[2]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[3].u_sram/A[3]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[3].u_sram/A[4]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[0].u_sram/A[1]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[0].u_sram/A[2]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[0].u_sram/A[3]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[0].u_sram/A[4]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[1].u_sram/A[1]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[1].u_sram/A[2]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[1].u_sram/A[3]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[1].u_sram/A[4]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[2].u_sram/A[1]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[2].u_sram/A[2]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[2].u_sram/A[3]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[2].u_sram/A[4]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[3].u_sram/A[1]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[3].u_sram/A[2]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[3].u_sram/A[3]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[3].u_sram/A[4]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[0].u_sram/A[1]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[0].u_sram/A[2]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[0].u_sram/A[3]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[0].u_sram/A[4]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[1].u_sram/A[1]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[1].u_sram/A[2]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[1].u_sram/A[3]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[1].u_sram/A[4]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[2].u_sram/A[1]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[2].u_sram/A[2]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[2].u_sram/A[3]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[2].u_sram/A[4]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[3].u_sram/A[1]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[3].u_sram/A[2]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[3].u_sram/A[3]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[3].u_sram/A[4]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[0].u_sram/A[1]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[0].u_sram/A[2]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[0].u_sram/A[3]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[0].u_sram/A[4]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[1].u_sram/A[1]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[1].u_sram/A[2]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[1].u_sram/A[3]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[1].u_sram/A[4]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[2].u_sram/A[1]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[2].u_sram/A[2]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[2].u_sram/A[3]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[2].u_sram/A[4]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[3].u_sram/A[1]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[3].u_sram/A[2]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[3].u_sram/A[3]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[3].u_sram/A[4]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[0].u_sram/A[0]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[1].u_sram/A[0]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[2].u_sram/A[0]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[3].u_sram/A[0]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[0].u_sram/A[0]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[1].u_sram/A[0]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[2].u_sram/A[0]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[3].u_sram/A[0]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[0].u_sram/A[0]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[1].u_sram/A[0]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[2].u_sram/A[0]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[3].u_sram/A[0]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[0].u_sram/A[0]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[1].u_sram/A[0]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[2].u_sram/A[0]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[3].u_sram/A[0]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[0].u_sram/A[0]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[1].u_sram/A[0]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[2].u_sram/A[0]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[3].u_sram/A[0]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[0].u_sram/A[0]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[1].u_sram/A[0]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[2].u_sram/A[0]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[3].u_sram/A[0]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[0].u_sram/A[0]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[1].u_sram/A[0]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[2].u_sram/A[0]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[3].u_sram/A[0]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[0].u_sram/A[0]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[1].u_sram/A[0]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[2].u_sram/A[0]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[3].u_sram/A[0]
                                 0.10           0.07 r        -0.03  (VIOLATED)
    u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[2].g_group[0].u_mem/g_byte[0].u_sram/A[1]
                                 0.10           0.07 r        -0.03  (VIOLATED)
@@ -8389,6 +8293,38 @@ Date   : Tue Jul 28 17:35:43 2026
                                 0.10           0.07 r        -0.03  (VIOLATED)
    u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[7].g_group[0].u_mem/g_byte[3].u_sram/A[4]
                                 0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[0].u_sram/A[1]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[0].u_sram/A[2]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[0].u_sram/A[3]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[0].u_sram/A[4]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[1].u_sram/A[1]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[1].u_sram/A[2]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[1].u_sram/A[3]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[1].u_sram/A[4]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[2].u_sram/A[1]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[2].u_sram/A[2]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[2].u_sram/A[3]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[2].u_sram/A[4]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[3].u_sram/A[1]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[3].u_sram/A[2]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[3].u_sram/A[3]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[3].u_sram/A[4]
+                                0.10           0.07 r        -0.03  (VIOLATED)
    u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[2].g_group[0].u_mem/g_byte[0].u_sram/A[1]
                                 0.10           0.07 r        -0.03  (VIOLATED)
    u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[2].g_group[0].u_mem/g_byte[0].u_sram/A[2]
@@ -8580,6 +8516,38 @@ Date   : Tue Jul 28 17:35:43 2026
    u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[7].g_group[0].u_mem/g_byte[3].u_sram/A[3]
                                 0.10           0.07 r        -0.03  (VIOLATED)
    u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[7].g_group[0].u_mem/g_byte[3].u_sram/A[4]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[0].u_sram/A[1]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[0].u_sram/A[2]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[0].u_sram/A[3]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[0].u_sram/A[4]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[1].u_sram/A[1]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[1].u_sram/A[2]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[1].u_sram/A[3]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[1].u_sram/A[4]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[2].u_sram/A[1]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[2].u_sram/A[2]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[2].u_sram/A[3]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[2].u_sram/A[4]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[3].u_sram/A[1]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[3].u_sram/A[2]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[3].u_sram/A[3]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[3].u_sram/A[4]
                                 0.10           0.07 r        -0.03  (VIOLATED)
    u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[2].g_group[0].u_mem/g_byte[0].u_sram/A[1]
                                 0.10           0.07 r        -0.03  (VIOLATED)
@@ -8773,6 +8741,38 @@ Date   : Tue Jul 28 17:35:43 2026
                                 0.10           0.07 r        -0.03  (VIOLATED)
    u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[7].g_group[0].u_mem/g_byte[3].u_sram/A[4]
                                 0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[0].u_sram/A[1]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[0].u_sram/A[2]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[0].u_sram/A[3]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[0].u_sram/A[4]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[1].u_sram/A[1]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[1].u_sram/A[2]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[1].u_sram/A[3]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[1].u_sram/A[4]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[2].u_sram/A[1]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[2].u_sram/A[2]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[2].u_sram/A[3]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[2].u_sram/A[4]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[3].u_sram/A[1]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[3].u_sram/A[2]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[3].u_sram/A[3]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[3].u_sram/A[4]
+                                0.10           0.07 r        -0.03  (VIOLATED)
    u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[2].g_group[0].u_mem/g_byte[0].u_sram/A[1]
                                 0.10           0.07 r        -0.03  (VIOLATED)
    u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[2].g_group[0].u_mem/g_byte[0].u_sram/A[2]
@@ -8933,6 +8933,54 @@ Date   : Tue Jul 28 17:35:43 2026
                                 0.10           0.07 r        -0.03  (VIOLATED)
    u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[6].g_group[0].u_mem/g_byte[3].u_sram/A[4]
                                 0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[0].u_sram/A[0]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[0].u_sram/A[1]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[0].u_sram/A[2]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[0].u_sram/A[3]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[0].u_sram/A[4]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[1].u_sram/A[0]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[1].u_sram/A[1]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[1].u_sram/A[2]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[1].u_sram/A[3]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[1].u_sram/A[4]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[2].u_sram/A[0]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[2].u_sram/A[1]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[2].u_sram/A[2]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[2].u_sram/A[3]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[2].u_sram/A[4]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[3].u_sram/A[0]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[3].u_sram/A[1]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[3].u_sram/A[2]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[3].u_sram/A[3]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[3].u_sram/A[4]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[0].u_sram/A[0]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[1].u_sram/A[0]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[2].u_sram/A[0]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[3].u_sram/A[0]
+                                0.10           0.07 r        -0.03  (VIOLATED)
    u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[2].g_group[1].u_mem/g_byte[0].u_sram/A[0]
                                 0.10           0.07 r        -0.03  (VIOLATED)
    u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[2].g_group[1].u_mem/g_byte[1].u_sram/A[0]
@@ -8980,6 +9028,54 @@ Date   : Tue Jul 28 17:35:43 2026
    u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[7].g_group[1].u_mem/g_byte[2].u_sram/A[0]
                                 0.10           0.07 r        -0.03  (VIOLATED)
    u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[7].g_group[1].u_mem/g_byte[3].u_sram/A[0]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[0].u_sram/A[0]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[0].u_sram/A[1]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[0].u_sram/A[2]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[0].u_sram/A[3]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[0].u_sram/A[4]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[1].u_sram/A[0]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[1].u_sram/A[1]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[1].u_sram/A[2]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[1].u_sram/A[3]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[1].u_sram/A[4]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[2].u_sram/A[0]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[2].u_sram/A[1]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[2].u_sram/A[2]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[2].u_sram/A[3]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[2].u_sram/A[4]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[3].u_sram/A[0]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[3].u_sram/A[1]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[3].u_sram/A[2]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[3].u_sram/A[3]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[3].u_sram/A[4]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[0].u_sram/A[0]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[1].u_sram/A[0]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[2].u_sram/A[0]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[3].u_sram/A[0]
                                 0.10           0.07 r        -0.03  (VIOLATED)
    u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[2].g_group[1].u_mem/g_byte[0].u_sram/A[0]
                                 0.10           0.07 r        -0.03  (VIOLATED)
@@ -9029,6 +9125,54 @@ Date   : Tue Jul 28 17:35:43 2026
                                 0.10           0.07 r        -0.03  (VIOLATED)
    u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[7].g_group[1].u_mem/g_byte[3].u_sram/A[0]
                                 0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[0].u_sram/A[0]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[0].u_sram/A[1]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[0].u_sram/A[2]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[0].u_sram/A[3]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[0].u_sram/A[4]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[1].u_sram/A[0]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[1].u_sram/A[1]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[1].u_sram/A[2]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[1].u_sram/A[3]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[1].u_sram/A[4]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[2].u_sram/A[0]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[2].u_sram/A[1]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[2].u_sram/A[2]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[2].u_sram/A[3]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[2].u_sram/A[4]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[3].u_sram/A[0]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[3].u_sram/A[1]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[3].u_sram/A[2]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[3].u_sram/A[3]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[3].u_sram/A[4]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[0].u_sram/A[0]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[1].u_sram/A[0]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[2].u_sram/A[0]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[3].u_sram/A[0]
+                                0.10           0.07 r        -0.03  (VIOLATED)
    u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[2].g_group[1].u_mem/g_byte[0].u_sram/A[0]
                                 0.10           0.07 r        -0.03  (VIOLATED)
    u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[2].g_group[1].u_mem/g_byte[1].u_sram/A[0]
@@ -9077,6 +9221,54 @@ Date   : Tue Jul 28 17:35:43 2026
                                 0.10           0.07 r        -0.03  (VIOLATED)
    u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[7].g_group[1].u_mem/g_byte[3].u_sram/A[0]
                                 0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[0].u_sram/A[0]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[0].u_sram/A[1]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[0].u_sram/A[2]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[0].u_sram/A[3]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[0].u_sram/A[4]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[1].u_sram/A[0]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[1].u_sram/A[1]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[1].u_sram/A[2]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[1].u_sram/A[3]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[1].u_sram/A[4]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[2].u_sram/A[0]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[2].u_sram/A[1]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[2].u_sram/A[2]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[2].u_sram/A[3]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[2].u_sram/A[4]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[3].u_sram/A[0]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[3].u_sram/A[1]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[3].u_sram/A[2]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[3].u_sram/A[3]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[3].u_sram/A[4]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[0].u_sram/A[0]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[1].u_sram/A[0]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[2].u_sram/A[0]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[3].u_sram/A[0]
+                                0.10           0.07 r        -0.03  (VIOLATED)
    u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[2].g_group[1].u_mem/g_byte[0].u_sram/A[0]
                                 0.10           0.07 r        -0.03  (VIOLATED)
    u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[2].g_group[1].u_mem/g_byte[1].u_sram/A[0]
@@ -9117,38 +9309,6 @@ Date   : Tue Jul 28 17:35:43 2026
                                 0.10           0.07 r        -0.03  (VIOLATED)
    u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[6].g_group[1].u_mem/g_byte[3].u_sram/A[0]
                                 0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[0].u_sram/A[1]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[0].u_sram/A[2]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[0].u_sram/A[3]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[0].u_sram/A[4]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[1].u_sram/A[1]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[1].u_sram/A[2]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[1].u_sram/A[3]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[1].u_sram/A[4]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[2].u_sram/A[1]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[2].u_sram/A[2]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[2].u_sram/A[3]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[2].u_sram/A[4]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[3].u_sram/A[1]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[3].u_sram/A[2]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[3].u_sram/A[3]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[3].u_sram/A[4]
-                                0.10           0.07 r        -0.03  (VIOLATED)
    u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[0].u_sram/A[1]
                                 0.10           0.07 r        -0.03  (VIOLATED)
    u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[0].u_sram/A[2]
@@ -9180,214 +9340,6 @@ Date   : Tue Jul 28 17:35:43 2026
    u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[3].u_sram/A[3]
                                 0.10           0.07 r        -0.03  (VIOLATED)
    u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[3].u_sram/A[4]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[0].u_sram/A[1]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[0].u_sram/A[2]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[0].u_sram/A[3]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[0].u_sram/A[4]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[1].u_sram/A[1]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[1].u_sram/A[2]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[1].u_sram/A[3]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[1].u_sram/A[4]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[2].u_sram/A[1]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[2].u_sram/A[2]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[2].u_sram/A[3]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[2].u_sram/A[4]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[3].u_sram/A[1]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[3].u_sram/A[2]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[3].u_sram/A[3]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[3].u_sram/A[4]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[0].u_sram/A[1]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[0].u_sram/A[2]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[0].u_sram/A[3]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[0].u_sram/A[4]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[1].u_sram/A[1]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[1].u_sram/A[2]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[1].u_sram/A[3]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[1].u_sram/A[4]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[2].u_sram/A[1]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[2].u_sram/A[2]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[2].u_sram/A[3]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[2].u_sram/A[4]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[3].u_sram/A[1]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[3].u_sram/A[2]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[3].u_sram/A[3]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[3].u_sram/A[4]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[0].u_sram/A[1]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[0].u_sram/A[2]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[0].u_sram/A[3]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[0].u_sram/A[4]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[1].u_sram/A[1]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[1].u_sram/A[2]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[1].u_sram/A[3]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[1].u_sram/A[4]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[2].u_sram/A[1]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[2].u_sram/A[2]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[2].u_sram/A[3]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[2].u_sram/A[4]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[3].u_sram/A[1]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[3].u_sram/A[2]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[3].u_sram/A[3]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[3].u_sram/A[4]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[0].u_sram/A[1]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[0].u_sram/A[2]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[0].u_sram/A[3]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[0].u_sram/A[4]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[1].u_sram/A[1]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[1].u_sram/A[2]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[1].u_sram/A[3]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[1].u_sram/A[4]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[2].u_sram/A[1]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[2].u_sram/A[2]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[2].u_sram/A[3]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[2].u_sram/A[4]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[3].u_sram/A[1]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[3].u_sram/A[2]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[3].u_sram/A[3]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[3].u_sram/A[4]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[0].u_sram/A[1]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[0].u_sram/A[2]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[0].u_sram/A[3]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[0].u_sram/A[4]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[1].u_sram/A[1]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[1].u_sram/A[2]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[1].u_sram/A[3]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[1].u_sram/A[4]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[2].u_sram/A[1]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[2].u_sram/A[2]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[2].u_sram/A[3]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[2].u_sram/A[4]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[3].u_sram/A[1]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[3].u_sram/A[2]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[3].u_sram/A[3]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[3].u_sram/A[4]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[0].u_sram/A[1]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[0].u_sram/A[2]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[0].u_sram/A[3]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[0].u_sram/A[4]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[1].u_sram/A[1]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[1].u_sram/A[2]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[1].u_sram/A[3]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[1].u_sram/A[4]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[2].u_sram/A[1]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[2].u_sram/A[2]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[2].u_sram/A[3]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[2].u_sram/A[4]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[3].u_sram/A[1]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[3].u_sram/A[2]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[3].u_sram/A[3]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[3].u_sram/A[4]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[0].u_sram/A[0]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[1].u_sram/A[0]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[2].u_sram/A[0]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[3].u_sram/A[0]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[0].u_sram/A[0]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[1].u_sram/A[0]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[2].u_sram/A[0]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[3].u_sram/A[0]
                                 0.10           0.07 r        -0.03  (VIOLATED)
    u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[2].g_group[1].u_mem/g_byte[0].u_sram/A[1]
                                 0.10           0.07 r        -0.03  (VIOLATED)
@@ -9581,21 +9533,37 @@ Date   : Tue Jul 28 17:35:43 2026
                                 0.10           0.07 r        -0.03  (VIOLATED)
    u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[7].g_group[1].u_mem/g_byte[3].u_sram/A[4]
                                 0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[0].u_sram/A[0]
+   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[0].u_sram/A[1]
                                 0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[1].u_sram/A[0]
+   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[0].u_sram/A[2]
                                 0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[2].u_sram/A[0]
+   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[0].u_sram/A[3]
                                 0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[3].u_sram/A[0]
+   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[0].u_sram/A[4]
                                 0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[0].u_sram/A[0]
+   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[1].u_sram/A[1]
                                 0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[1].u_sram/A[0]
+   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[1].u_sram/A[2]
                                 0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[2].u_sram/A[0]
+   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[1].u_sram/A[3]
                                 0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[3].u_sram/A[0]
+   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[1].u_sram/A[4]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[2].u_sram/A[1]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[2].u_sram/A[2]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[2].u_sram/A[3]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[2].u_sram/A[4]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[3].u_sram/A[1]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[3].u_sram/A[2]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[3].u_sram/A[3]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[3].u_sram/A[4]
                                 0.10           0.07 r        -0.03  (VIOLATED)
    u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[2].g_group[1].u_mem/g_byte[0].u_sram/A[1]
                                 0.10           0.07 r        -0.03  (VIOLATED)
@@ -9789,21 +9757,37 @@ Date   : Tue Jul 28 17:35:43 2026
                                 0.10           0.07 r        -0.03  (VIOLATED)
    u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[7].g_group[1].u_mem/g_byte[3].u_sram/A[4]
                                 0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[0].u_sram/A[0]
+   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[0].u_sram/A[1]
                                 0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[1].u_sram/A[0]
+   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[0].u_sram/A[2]
                                 0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[2].u_sram/A[0]
+   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[0].u_sram/A[3]
                                 0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[3].u_sram/A[0]
+   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[0].u_sram/A[4]
                                 0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[0].u_sram/A[0]
+   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[1].u_sram/A[1]
                                 0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[1].u_sram/A[0]
+   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[1].u_sram/A[2]
                                 0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[2].u_sram/A[0]
+   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[1].u_sram/A[3]
                                 0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[3].u_sram/A[0]
+   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[1].u_sram/A[4]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[2].u_sram/A[1]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[2].u_sram/A[2]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[2].u_sram/A[3]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[2].u_sram/A[4]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[3].u_sram/A[1]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[3].u_sram/A[2]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[3].u_sram/A[3]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[3].u_sram/A[4]
                                 0.10           0.07 r        -0.03  (VIOLATED)
    u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[2].g_group[1].u_mem/g_byte[0].u_sram/A[1]
                                 0.10           0.07 r        -0.03  (VIOLATED)
@@ -9997,21 +9981,37 @@ Date   : Tue Jul 28 17:35:43 2026
                                 0.10           0.07 r        -0.03  (VIOLATED)
    u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[7].g_group[1].u_mem/g_byte[3].u_sram/A[4]
                                 0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[0].u_sram/A[0]
+   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[0].u_sram/A[1]
                                 0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[1].u_sram/A[0]
+   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[0].u_sram/A[2]
                                 0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[2].u_sram/A[0]
+   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[0].u_sram/A[3]
                                 0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[3].u_sram/A[0]
+   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[0].u_sram/A[4]
                                 0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[0].u_sram/A[0]
+   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[1].u_sram/A[1]
                                 0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[1].u_sram/A[0]
+   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[1].u_sram/A[2]
                                 0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[2].u_sram/A[0]
+   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[1].u_sram/A[3]
                                 0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[3].u_sram/A[0]
+   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[1].u_sram/A[4]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[2].u_sram/A[1]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[2].u_sram/A[2]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[2].u_sram/A[3]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[2].u_sram/A[4]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[3].u_sram/A[1]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[3].u_sram/A[2]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[3].u_sram/A[3]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[1].g_group[1].u_mem/g_byte[3].u_sram/A[4]
                                 0.10           0.07 r        -0.03  (VIOLATED)
    u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[2].g_group[1].u_mem/g_byte[0].u_sram/A[1]
                                 0.10           0.07 r        -0.03  (VIOLATED)
@@ -10175,6 +10175,12 @@ Date   : Tue Jul 28 17:35:43 2026
                                 0.10           0.07 r        -0.03  (VIOLATED)
    u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[7].g_group[0].u_mem/g_byte[0].u_sram/A[0]
                                 0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[7].g_group[0].u_mem/g_byte[1].u_sram/A[0]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[7].g_group[0].u_mem/g_byte[2].u_sram/A[0]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[7].g_group[0].u_mem/g_byte[3].u_sram/A[0]
+                                0.10           0.07 r        -0.03  (VIOLATED)
    u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[7].g_group[0].u_mem/g_byte[0].u_sram/A[1]
                                 0.10           0.07 r        -0.03  (VIOLATED)
    u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[7].g_group[0].u_mem/g_byte[0].u_sram/A[2]
@@ -10182,8 +10188,6 @@ Date   : Tue Jul 28 17:35:43 2026
    u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[7].g_group[0].u_mem/g_byte[0].u_sram/A[3]
                                 0.10           0.07 r        -0.03  (VIOLATED)
    u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[7].g_group[0].u_mem/g_byte[0].u_sram/A[4]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[7].g_group[0].u_mem/g_byte[1].u_sram/A[0]
                                 0.10           0.07 r        -0.03  (VIOLATED)
    u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[7].g_group[0].u_mem/g_byte[1].u_sram/A[1]
                                 0.10           0.07 r        -0.03  (VIOLATED)
@@ -10193,8 +10197,6 @@ Date   : Tue Jul 28 17:35:43 2026
                                 0.10           0.07 r        -0.03  (VIOLATED)
    u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[7].g_group[0].u_mem/g_byte[1].u_sram/A[4]
                                 0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[7].g_group[0].u_mem/g_byte[2].u_sram/A[0]
-                                0.10           0.07 r        -0.03  (VIOLATED)
    u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[7].g_group[0].u_mem/g_byte[2].u_sram/A[1]
                                 0.10           0.07 r        -0.03  (VIOLATED)
    u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[7].g_group[0].u_mem/g_byte[2].u_sram/A[2]
@@ -10202,8 +10204,6 @@ Date   : Tue Jul 28 17:35:43 2026
    u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[7].g_group[0].u_mem/g_byte[2].u_sram/A[3]
                                 0.10           0.07 r        -0.03  (VIOLATED)
    u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[7].g_group[0].u_mem/g_byte[2].u_sram/A[4]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[7].g_group[0].u_mem/g_byte[3].u_sram/A[0]
                                 0.10           0.07 r        -0.03  (VIOLATED)
    u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[7].g_group[0].u_mem/g_byte[3].u_sram/A[1]
                                 0.10           0.07 r        -0.03  (VIOLATED)
@@ -10215,6 +10215,12 @@ Date   : Tue Jul 28 17:35:43 2026
                                 0.10           0.07 r        -0.03  (VIOLATED)
    u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[7].g_group[1].u_mem/g_byte[0].u_sram/A[0]
                                 0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[7].g_group[1].u_mem/g_byte[1].u_sram/A[0]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[7].g_group[1].u_mem/g_byte[2].u_sram/A[0]
+                                0.10           0.07 r        -0.03  (VIOLATED)
+   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[7].g_group[1].u_mem/g_byte[3].u_sram/A[0]
+                                0.10           0.07 r        -0.03  (VIOLATED)
    u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[7].g_group[1].u_mem/g_byte[0].u_sram/A[1]
                                 0.10           0.07 r        -0.03  (VIOLATED)
    u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[7].g_group[1].u_mem/g_byte[0].u_sram/A[2]
@@ -10222,8 +10228,6 @@ Date   : Tue Jul 28 17:35:43 2026
    u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[7].g_group[1].u_mem/g_byte[0].u_sram/A[3]
                                 0.10           0.07 r        -0.03  (VIOLATED)
    u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[7].g_group[1].u_mem/g_byte[0].u_sram/A[4]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[7].g_group[1].u_mem/g_byte[1].u_sram/A[0]
                                 0.10           0.07 r        -0.03  (VIOLATED)
    u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[7].g_group[1].u_mem/g_byte[1].u_sram/A[1]
                                 0.10           0.07 r        -0.03  (VIOLATED)
@@ -10233,8 +10237,6 @@ Date   : Tue Jul 28 17:35:43 2026
                                 0.10           0.07 r        -0.03  (VIOLATED)
    u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[7].g_group[1].u_mem/g_byte[1].u_sram/A[4]
                                 0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[7].g_group[1].u_mem/g_byte[2].u_sram/A[0]
-                                0.10           0.07 r        -0.03  (VIOLATED)
    u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[7].g_group[1].u_mem/g_byte[2].u_sram/A[1]
                                 0.10           0.07 r        -0.03  (VIOLATED)
    u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[7].g_group[1].u_mem/g_byte[2].u_sram/A[2]
@@ -10242,8 +10244,6 @@ Date   : Tue Jul 28 17:35:43 2026
    u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[7].g_group[1].u_mem/g_byte[2].u_sram/A[3]
                                 0.10           0.07 r        -0.03  (VIOLATED)
    u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[7].g_group[1].u_mem/g_byte[2].u_sram/A[4]
-                                0.10           0.07 r        -0.03  (VIOLATED)
-   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[7].g_group[1].u_mem/g_byte[3].u_sram/A[0]
                                 0.10           0.07 r        -0.03  (VIOLATED)
    u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[7].g_group[1].u_mem/g_byte[3].u_sram/A[1]
                                 0.10           0.07 r        -0.03  (VIOLATED)
@@ -11579,14 +11579,6 @@ Date   : Tue Jul 28 17:35:43 2026
                                 0.09           0.09 r         0.00  (VIOLATED: increase significant digits)
    u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[3].u_sram/CEB
                                 0.09           0.09 r         0.00  (VIOLATED: increase significant digits)
-   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[0].u_sram/CEB
-                                0.09           0.09 r         0.00  (VIOLATED: increase significant digits)
-   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[1].u_sram/CEB
-                                0.09           0.09 r         0.00  (VIOLATED: increase significant digits)
-   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[2].u_sram/CEB
-                                0.09           0.09 r         0.00  (VIOLATED: increase significant digits)
-   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[3].u_sram/CEB
-                                0.09           0.09 r         0.00  (VIOLATED: increase significant digits)
    u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[0].u_sram/CEB
                                 0.09           0.09 r         0.00  (VIOLATED: increase significant digits)
    u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[1].u_sram/CEB
@@ -11594,14 +11586,6 @@ Date   : Tue Jul 28 17:35:43 2026
    u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[2].u_sram/CEB
                                 0.09           0.09 r         0.00  (VIOLATED: increase significant digits)
    u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[3].u_sram/CEB
-                                0.09           0.09 r         0.00  (VIOLATED: increase significant digits)
-   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[0].u_sram/CEB
-                                0.09           0.09 r         0.00  (VIOLATED: increase significant digits)
-   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[1].u_sram/CEB
-                                0.09           0.09 r         0.00  (VIOLATED: increase significant digits)
-   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[2].u_sram/CEB
-                                0.09           0.09 r         0.00  (VIOLATED: increase significant digits)
-   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[3].u_sram/CEB
                                 0.09           0.09 r         0.00  (VIOLATED: increase significant digits)
    u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[0].u_sram/CEB
                                 0.09           0.09 r         0.00  (VIOLATED: increase significant digits)
@@ -11611,14 +11595,6 @@ Date   : Tue Jul 28 17:35:43 2026
                                 0.09           0.09 r         0.00  (VIOLATED: increase significant digits)
    u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[3].u_sram/CEB
                                 0.09           0.09 r         0.00  (VIOLATED: increase significant digits)
-   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[0].u_sram/CEB
-                                0.09           0.09 r         0.00  (VIOLATED: increase significant digits)
-   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[1].u_sram/CEB
-                                0.09           0.09 r         0.00  (VIOLATED: increase significant digits)
-   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[2].u_sram/CEB
-                                0.09           0.09 r         0.00  (VIOLATED: increase significant digits)
-   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[3].u_sram/CEB
-                                0.09           0.09 r         0.00  (VIOLATED: increase significant digits)
    u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[0].u_sram/CEB
                                 0.09           0.09 r         0.00  (VIOLATED: increase significant digits)
    u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[1].u_sram/CEB
@@ -11627,13 +11603,13 @@ Date   : Tue Jul 28 17:35:43 2026
                                 0.09           0.09 r         0.00  (VIOLATED: increase significant digits)
    u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[0].g_group[0].u_mem/g_byte[3].u_sram/CEB
                                 0.09           0.09 r         0.00  (VIOLATED: increase significant digits)
-   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[0].u_sram/CEB
+   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[0].u_sram/CEB
                                 0.09           0.09 r         0.00  (VIOLATED: increase significant digits)
-   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[1].u_sram/CEB
+   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[1].u_sram/CEB
                                 0.09           0.09 r         0.00  (VIOLATED: increase significant digits)
-   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[2].u_sram/CEB
+   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[2].u_sram/CEB
                                 0.09           0.09 r         0.00  (VIOLATED: increase significant digits)
-   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[3].u_sram/CEB
+   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[3].u_sram/CEB
                                 0.09           0.09 r         0.00  (VIOLATED: increase significant digits)
    u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[2].g_group[0].u_mem/g_byte[0].u_sram/CEB
                                 0.09           0.09 r         0.00  (VIOLATED: increase significant digits)
@@ -11683,6 +11659,14 @@ Date   : Tue Jul 28 17:35:43 2026
                                 0.09           0.09 r         0.00  (VIOLATED: increase significant digits)
    u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[7].g_group[0].u_mem/g_byte[3].u_sram/CEB
                                 0.09           0.09 r         0.00  (VIOLATED: increase significant digits)
+   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[0].u_sram/CEB
+                                0.09           0.09 r         0.00  (VIOLATED: increase significant digits)
+   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[1].u_sram/CEB
+                                0.09           0.09 r         0.00  (VIOLATED: increase significant digits)
+   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[2].u_sram/CEB
+                                0.09           0.09 r         0.00  (VIOLATED: increase significant digits)
+   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[3].u_sram/CEB
+                                0.09           0.09 r         0.00  (VIOLATED: increase significant digits)
    u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[2].g_group[0].u_mem/g_byte[0].u_sram/CEB
                                 0.09           0.09 r         0.00  (VIOLATED: increase significant digits)
    u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[2].g_group[0].u_mem/g_byte[1].u_sram/CEB
@@ -11731,6 +11715,14 @@ Date   : Tue Jul 28 17:35:43 2026
                                 0.09           0.09 r         0.00  (VIOLATED: increase significant digits)
    u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[7].g_group[0].u_mem/g_byte[3].u_sram/CEB
                                 0.09           0.09 r         0.00  (VIOLATED: increase significant digits)
+   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[0].u_sram/CEB
+                                0.09           0.09 r         0.00  (VIOLATED: increase significant digits)
+   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[1].u_sram/CEB
+                                0.09           0.09 r         0.00  (VIOLATED: increase significant digits)
+   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[2].u_sram/CEB
+                                0.09           0.09 r         0.00  (VIOLATED: increase significant digits)
+   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[3].u_sram/CEB
+                                0.09           0.09 r         0.00  (VIOLATED: increase significant digits)
    u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[2].g_group[0].u_mem/g_byte[0].u_sram/CEB
                                 0.09           0.09 r         0.00  (VIOLATED: increase significant digits)
    u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[2].g_group[0].u_mem/g_byte[1].u_sram/CEB
@@ -11778,6 +11770,14 @@ Date   : Tue Jul 28 17:35:43 2026
    u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[7].g_group[0].u_mem/g_byte[2].u_sram/CEB
                                 0.09           0.09 r         0.00  (VIOLATED: increase significant digits)
    u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[7].g_group[0].u_mem/g_byte[3].u_sram/CEB
+                                0.09           0.09 r         0.00  (VIOLATED: increase significant digits)
+   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[0].u_sram/CEB
+                                0.09           0.09 r         0.00  (VIOLATED: increase significant digits)
+   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[1].u_sram/CEB
+                                0.09           0.09 r         0.00  (VIOLATED: increase significant digits)
+   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[2].u_sram/CEB
+                                0.09           0.09 r         0.00  (VIOLATED: increase significant digits)
+   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[1].g_group[0].u_mem/g_byte[3].u_sram/CEB
                                 0.09           0.09 r         0.00  (VIOLATED: increase significant digits)
    u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[2].g_group[0].u_mem/g_byte[0].u_sram/CEB
                                 0.09           0.09 r         0.00  (VIOLATED: increase significant digits)
@@ -11859,20 +11859,63 @@ Date   : Tue Jul 28 17:35:43 2026
                                 0.09           0.09 r         0.00  (VIOLATED: increase significant digits)
    u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[7].g_group[0].u_mem/g_byte[3].u_sram/CEB
                                 0.09           0.09 r         0.00  (VIOLATED: increase significant digits)
+   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[0].u_sram/WEB
+                                0.09           0.09 r         0.00  (VIOLATED: increase significant digits)
+   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[1].u_sram/WEB
+                                0.09           0.09 r         0.00  (VIOLATED: increase significant digits)
+   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[2].u_sram/WEB
+                                0.09           0.09 r         0.00  (VIOLATED: increase significant digits)
+   u_fused_array/g_stripe[0].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[3].u_sram/WEB
+                                0.09           0.09 r         0.00  (VIOLATED: increase significant digits)
+   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[0].u_sram/WEB
+                                0.09           0.09 r         0.00  (VIOLATED: increase significant digits)
+   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[1].u_sram/WEB
+                                0.09           0.09 r         0.00  (VIOLATED: increase significant digits)
+   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[2].u_sram/WEB
+                                0.09           0.09 r         0.00  (VIOLATED: increase significant digits)
+   u_fused_array/g_stripe[1].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[3].u_sram/WEB
+                                0.09           0.09 r         0.00  (VIOLATED: increase significant digits)
+   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[0].u_sram/WEB
+                                0.09           0.09 r         0.00  (VIOLATED: increase significant digits)
+   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[1].u_sram/WEB
+                                0.09           0.09 r         0.00  (VIOLATED: increase significant digits)
+   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[2].u_sram/WEB
+                                0.09           0.09 r         0.00  (VIOLATED: increase significant digits)
+   u_fused_array/g_stripe[2].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[3].u_sram/WEB
+                                0.09           0.09 r         0.00  (VIOLATED: increase significant digits)
+   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[0].u_sram/WEB
+                                0.09           0.09 r         0.00  (VIOLATED: increase significant digits)
+   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[1].u_sram/WEB
+                                0.09           0.09 r         0.00  (VIOLATED: increase significant digits)
+   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[2].u_sram/WEB
+                                0.09           0.09 r         0.00  (VIOLATED: increase significant digits)
+   u_fused_array/g_stripe[3].u_stripe/u_o_bank/g_row[0].g_group[1].u_mem/g_byte[3].u_sram/WEB
+                                0.09           0.09 r         0.00  (VIOLATED: increase significant digits)
 
+
+   max_fanout
+
+                             Required        Actual
+   Net                        Fanout         Fanout          Slack
+   -----------------------------------------------------------------
+   u_fused_array/g_stripe[1].u_stripe/n214776
+                               24.00          32.00          -8.00  (VIOLATED)
+
+   -----------------------------------------------------------------
+   Total                      1                  -8.00  
 
    min_capacitance
 
                              Required        Actual
    Net                      Capacitance    Capacitance       Slack
    -----------------------------------------------------------------
-   u_fused_array/n18409 (dont_touch)
+   u_fused_array/n18378 (dont_touch)
                                 0.00           0.00           0.00  (VIOLATED: increase significant digits)
-   u_fused_array/n119318 (dont_touch)
+   u_fused_array/n118991 (dont_touch)
                                 0.00           0.00           0.00  (VIOLATED: increase significant digits)
-   u_normalizer/n7322 (dont_touch)
+   u_normalizer/n7194 (dont_touch)
                                 0.00           0.00           0.00  (VIOLATED: increase significant digits)
-   u_normalizer/n39861 (dont_touch)
+   u_normalizer/n39818 (dont_touch)
                                 0.00           0.00           0.00  (VIOLATED: increase significant digits)
 
    -----------------------------------------------------------------
@@ -11883,7 +11926,7 @@ Date   : Tue Jul 28 17:35:43 2026
                              Required        Actual
    Design                   Leakage Power  Leakage Power     Slack
    -----------------------------------------------------------------
-   attention_accel_top          0.00       11044162.00    -11044162.00
+   attention_accel_top          0.00       11041711.00    -11041711.00
                                                                     (VIOLATED)
 
 

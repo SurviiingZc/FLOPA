@@ -3,7 +3,7 @@
 Report : resources
 Design : attention_accel_top
 Version: V-2023.12-SP5
-Date   : Tue Jul 28 17:36:26 2026
+Date   : Thu Jul 30 16:13:47 2026
 ****************************************
 
 
@@ -12,11 +12,11 @@ Resource Report for this hierarchy in file
 =============================================================================
 | Cell           | Module         | Parameters | Contained Operations       |
 =============================================================================
-| sub_x_2        | DW01_dec       | width=16   | sub_366 (attention_accel_top.v:366) |
-| lte_x_17       | DW_cmp         | width=16   | lte_567 (attention_accel_top.v:567) |
-| sub_x_18       | DW01_sub       | width=16   | sub_573 (attention_accel_top.v:573) |
-| add_x_22       | DW01_add       | width=32   | add_660 (attention_accel_top.v:660) |
-| add_x_24       | DW01_inc       | width=2    | add_713 (attention_accel_top.v:713) |
+| sub_x_2        | DW01_dec       | width=16   | sub_361 (attention_accel_top.v:361) |
+| lte_x_17       | DW_cmp         | width=16   | lte_562 (attention_accel_top.v:562) |
+| sub_x_18       | DW01_sub       | width=16   | sub_568 (attention_accel_top.v:568) |
+| add_x_22       | DW01_add       | width=32   | add_655 (attention_accel_top.v:655) |
+| add_x_24       | DW01_inc       | width=2    | add_708 (attention_accel_top.v:708) |
 | ne_x_75        | DW_cmp         | width=8    | u_scheduler/ne_67 (accel_scheduler.v:67) |
 | add_x_76       | DW01_add       | width=17   | u_scheduler/add_74 (accel_scheduler.v:74) |
 | add_x_78       | DW01_add       | width=17   | u_scheduler/add_76 (accel_scheduler.v:76) |
@@ -43,10 +43,10 @@ Resource Report for this hierarchy in file
       | B_width=32 |                            |
 | lt_x_236       | DW_cmp         | width=8    | u_qk_engine/lt_135 (fsa_qk_engine.v:135) |
    |                |            | u_qk_engine/lt_76 (fsa_qk_engine.v:76) |
-| add_x_21       | DW01_add       | width=32   | add_657 (attention_accel_top.v:657) |
-        |                |            | add_658 (attention_accel_top.v:658) |
-| add_x_23       | DW01_inc       | width=6    | add_703 (attention_accel_top.v:703) |
-        |                |            | add_717 (attention_accel_top.v:717) |
+| add_x_21       | DW01_add       | width=32   | add_652 (attention_accel_top.v:652) |
+        |                |            | add_653 (attention_accel_top.v:653) |
+| add_x_23       | DW01_inc       | width=6    | add_698 (attention_accel_top.v:698) |
+        |                |            | add_712 (attention_accel_top.v:712) |
 | DP_OP_338J10_122_4917           |            |                            |
 |                | DP_OP_338J10_122_4917 |     |                            |
 | DP_OP_339J10_123_2869           |            |                            |
@@ -63,10 +63,10 @@ Datapath Report for DP_OP_338J10_122_4917
 ==============================================================================
 | Cell                 | Contained Operations                                |
 ==============================================================================
-| DP_OP_338J10_122_4917 | add_569 (attention_accel_top.v:569)                |
-|                      | add_656 (attention_accel_top.v:656)                 |
-|                      | gte_569 (attention_accel_top.v:569)                 |
-|                      | gte_656 (attention_accel_top.v:656)                 |
+| DP_OP_338J10_122_4917 | add_564 (attention_accel_top.v:564)                |
+|                      | add_651 (attention_accel_top.v:651)                 |
+|                      | gte_564 (attention_accel_top.v:564)                 |
+|                      | gte_651 (attention_accel_top.v:651)                 |
 ==============================================================================
 
 ==============================================================================
@@ -75,9 +75,9 @@ Datapath Report for DP_OP_338J10_122_4917
 ==============================================================================
 | I1    | PI   | Unsigned | 16    |                                          |
 | I2    | PI   | Unsigned | 16    |                                          |
-| T17   | IFO  | Unsigned | 17    | I1 + $unsigned(6'b100000) ( attention_accel_top.v:569 attention_accel_top.v:656 ) |
-| O1    | PO   | Unsigned | 1     | I2 >= T17 (attention_accel_top.v:569)    |
-| O2    | PO   | Unsigned | 1     | T17 >= I2 (attention_accel_top.v:656)    |
+| T17   | IFO  | Unsigned | 17    | I1 + $unsigned(6'b100000) ( attention_accel_top.v:564 attention_accel_top.v:651 ) |
+| O1    | PO   | Unsigned | 1     | I2 >= T17 (attention_accel_top.v:564)    |
+| O2    | PO   | Unsigned | 1     | T17 >= I2 (attention_accel_top.v:651)    |
 ==============================================================================
 
 Datapath Report for DP_OP_339J10_123_2869
@@ -157,6 +157,15 @@ Datapath Report for DP_OP_342J10_126_3876
 ==============================================================================
 
 
+Resource Report for Ungrouped Hierarchy u_regfile in file
+        /data/workspaces/zhangcheng/flash_attention/rtl/control/accel_regfile.v
+=============================================================================
+| Cell           | Module         | Parameters | Contained Operations       |
+=============================================================================
+| eq_x_5         | DW_cmp         | width=8    | eq_110_4 (accel_regfile.v:110) |
+=============================================================================
+
+
 Datapath Extraction Report
 
 Information: Cell 'u_writeback_bytes_multiplier/u_dw_mult (fa_mult_comb.v:43)' in design 'attention_accel_top' cannot be extracted because it instantiates 'DW02_mult', which could be inferred with operator '*' instead.  (HDL-125)
@@ -199,6 +208,7 @@ Implementation Report
 | lt_x_236           | DW_cmp           | apparch (area)     |                |
 | add_x_21           | DW01_add         | apparch (area)     |                |
 | add_x_23           | DW01_inc         | apparch (area)     |                |
+| eq_x_5             | DW_cmp           | apparch (area)     |                |
 | DP_OP_338J10_122_4917                 |                    |                |
 |                    | DP_OP_338J10_122_4917 | str (area)    |                |
 | DP_OP_339J10_123_2869                 |                    |                |

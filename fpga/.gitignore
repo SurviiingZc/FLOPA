@@ -1,4 +1,6 @@
-/vivado/build/
+/vivado/build/*
+!/vivado/build/reports/
+!/vivado/build/reports/**
 /vitis/build*/
 /vitis/.Xil/
 /vitis/.ipcache/

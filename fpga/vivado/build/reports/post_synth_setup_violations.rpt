@@ -1,0 +1,18 @@
+Copyright 1986-2022 Xilinx, Inc. All Rights Reserved. Copyright 2022-2023 Advanced Micro Devices, Inc. All Rights Reserved.
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+| Tool Version      : Vivado v.2023.1 (lin64) Build 3865809 Sun May  7 15:04:56 MDT 2023
+| Date              : Thu Jul 30 14:36:35 2026
+| Host              : xidianhyy-HP-Pro-Tower-ZHAN-99-G9-Desktop-PC running 64-bit Ubuntu 20.04.6 LTS
+| Command           : report_timing -delay_type max -slack_lesser_than 0.0 -max_paths 2000 -nworst 20 -file /home/project/zhangcheng/DIT-FA/fpga/vivado/build/reports/post_synth_setup_violations.rpt
+| Design            : system_wrapper
+| Device            : xcvc1902-vsva2197
+| Speed File        : -2MP  PRODUCTION 2.11 2022-11-23
+| Design State      : Synthesized
+| Temperature Grade : E
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Timing Report
+
+No timing paths found.
+
+

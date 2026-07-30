@@ -22,8 +22,10 @@ summary table must be regenerated.
 | Document | Role |
 | --- | --- |
 | [ASIC Flow](../asic/README.md) | synthesis, equivalence, SAIF, and Power Compiler commands |
+| [DC Reports](../asic/dc/work/synth/tt/system/attention_accel_top/reports/) | accepted QoR, area, timing, resource, power, and design-check reports |
 | [FPGA Evaluation](../fpga/docs/final_report_material.md) | final VCK190 and SmolLM2 result tables |
 | [FPGA Flow Index](../fpga/docs/README.md) | Vivado/Vitis, board, and remaining Re10K work |
+| [Vivado Reports](../fpga/vivado/build/reports/) | synthesis and routed timing, utilization, DRC, methodology, clock, and power container |
 | [Module Tests](../tb/module_tb/README.md) | directed-test inventory and FSDB convention |
 | [Coverage Waivers](../tb/sim/coverage/README.md) | reviewed structural exclusions and sign-off scores |
 

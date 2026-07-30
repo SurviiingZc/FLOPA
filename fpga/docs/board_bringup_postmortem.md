@@ -17,7 +17,7 @@ module, WIC, and replacement rootfs flows are outside this supported path.
 
 ## Final Result
 
-The current 170 MHz runtime records Git commit
+The current nominal-170 MHz runtime records Git commit
 `cce5158aa2fc699cc2ae2e25991d8627ebd75aac` and source-diff digest
 `1e215eaf5568dd6cd9814041090673499102560e154c5f8a3fbccdbd6b11c434`. After installing the
 matched runtime and rebooting, the deterministic `seq=64`, `head_dim=64`, four-compute-tile test
@@ -49,6 +49,11 @@ Attention replacement is PS adaptation. At seq1024, quantization, packing, GQA e
 output conversion add `968.89 ms` around a `679.18 ms` PL interval. These software stages are the
 first optimization target; the separate non-Attention PS graph dominates the remaining complete
 prefill time.
+
+The retained routed reports record a 170.019 MHz clock, setup WNS/TNS of
+`0.012/0.000 ns`, and top-level use of 294,718 LUTs, 295,111 FFs, 6.5 BRAM
+tiles, 96 URAMs, and 1,220 DSP58s. They are stored under
+`fpga/vivado/build/reports/`.
 
 The historical full SmolLM2 qualification executed all 30 attention nodes and 270 Q heads
 through PL. Local attention comparison against llama.cpp reported MAE `0.016733` and RMSE

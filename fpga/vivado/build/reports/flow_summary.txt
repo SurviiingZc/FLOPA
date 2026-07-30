@@ -1,0 +1,8 @@
+requested_pl_freq_mhz=170
+synth_setup_wns_ns=1.206
+synth_hold_whs_ns=-0.281
+synth_min_wns_ns=0.0
+dsp58_used=1220
+dsp58_available=1968
+route_setup_wns_ns=0.012
+route_hold_whs_ns=0.013
