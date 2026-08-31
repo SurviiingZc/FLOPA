@@ -14,6 +14,7 @@ summary table must be regenerated.
 | verification plan, tests, coverage, and waveform guidance | [Verification Report](verification_report.md) |
 | requirement traceability and packaging | [Submission Checklist](submission_checklist.md) |
 | detailed RTL implementation walkthrough | [RTL Code Guide](rtl.md) |
+| preliminary-review answers and P0 evidence | [Review Response](respond.md) |
 | repository layout and reproduction | [Root README](../README.md) |
 | presentation structure | [Defense Outline](../ppt/defense_outline.md) |
 
@@ -28,6 +29,8 @@ summary table must be regenerated.
 | [Vivado Reports](../fpga/vivado/build/reports/) | synthesis and routed timing, utilization, DRC, methodology, clock, and power container |
 | [Module Tests](../tb/module_tb/README.md) | directed-test inventory and FSDB convention |
 | [Coverage Waivers](../tb/sim/coverage/README.md) | reviewed structural exclusions and sign-off scores |
+| [Precision Results](results/precision_analysis.md) | 64x64 fixed-point/FP32 and PWL error workflow |
+| [PPA Breakdown](results/ppa_breakdown.md) | parsed DC area and Vivado hierarchy evidence |
 
 ## Maintained Figures
 

@@ -65,6 +65,9 @@ syn/
 dc_out/
 reports/
 results/
+!docs/results/
+!docs/results/*.json
+!docs/results/*.md
 !fpga/model/results/
 !fpga/model/results/SHA256SUMS
 !fpga/model/results/compare-seq64-20260729.json

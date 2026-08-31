@@ -95,7 +95,8 @@ PHYSICAL_OPTIONAL_ENV = $(if $(PHYSICAL_TLUPLUS_MAP),FA_TLUPLUS_MAP="$(PHYSICAL_
 	$(if $(PHYSICAL_FLOORPLAN_FILE),FA_FLOORPLAN_FILE="$(PHYSICAL_FLOORPLAN_FILE)")
 
 .PHONY: help synth synth-config synth-physical prects-hold postcts-hold \
-	formality uvm-test uvm-regression gate-saif gate-saif-power gate-timing clean-synth
+	formality uvm-test uvm-regression gate-saif gate-saif-power gate-timing \
+	precision-check pwl-error ppa-breakdown clean-synth
 
 help:
 	@echo "Targets:"
@@ -110,6 +111,9 @@ help:
 	@echo "  make gate-saif - run 64x64 mapped-netlist SAIF simulation"
 	@echo "  make gate-saif-power - run gate-saif and mapped-DDC power readback"
 	@echo "  make gate-timing GATE_NETLIST=<physical.v> GATE_SDF=<physical.sdf> - timing gate after physical hold closure"
+	@echo "  make precision-check [PRECISION_SEED=301] - 64x64 FP32/fixed-point error and scale search"
+	@echo "  make pwl-error - exhaustive PWL exp error scan over the implemented Q8 domain"
+	@echo "  make ppa-breakdown - extract DC area and Vivado hierarchy breakdown"
 	@echo "  make clean-synth - remove synthesis results and synthesis logs"
 
 synth:
@@ -212,6 +216,21 @@ gate-timing:
 	SEQ_KV=$(GATE_TIMING_SEQ_KV) OUT_DIR=$(GATE_TIMING_OUT_DIR) POWER_READBACK=0 \
 	TIMING_CHECKS=1 ANNOTATE_SDF=1 CAPTURE_SAIF=0 \
 	$(GATE_SAIF_SCRIPT)
+
+PRECISION_SEED ?= 301
+PRECISION_OUT ?= docs/results/precision_64x64.json
+PWL_ERROR_OUT ?= docs/results/pwl_error.json
+PPA_BREAKDOWN_OUT ?= docs/results/ppa_breakdown.json
+
+precision-check:
+	python3 scripts/precision/attention_precision.py --seed $(PRECISION_SEED) \
+		--rows 64 --dim 64 --out $(PRECISION_OUT)
+
+pwl-error:
+	python3 scripts/precision/pwl_error.py --out $(PWL_ERROR_OUT)
+
+ppa-breakdown:
+	python3 scripts/report/ppa_breakdown.py --root . --out $(PPA_BREAKDOWN_OUT)
 
 clean-synth:
 	rm -rf asic/dc/work/synth

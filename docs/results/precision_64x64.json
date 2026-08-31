@@ -1,0 +1,38 @@
+{
+  "numeric_contract": "INT8 Q/K/V, Q1.15 P, INT32 state, PWL exp",
+  "reference_backend": "python-ieee754-fallback",
+  "results": [
+    {
+      "causal": false,
+      "cosine": 0.9999433928228637,
+      "mae": 1.947998046875,
+      "max_abs": 4.0,
+      "out_mantissa": 1,
+      "out_scale": "0x000f0001",
+      "out_shift": 15,
+      "rmse": 2.325606859644381,
+      "score_mantissa": 1024,
+      "score_scale": "0x00080400",
+      "score_shift": 8
+    },
+    {
+      "causal": true,
+      "cosine": 0.9999414979158228,
+      "mae": 1.9741210937479554,
+      "max_abs": 4.0,
+      "out_mantissa": 1,
+      "out_scale": "0x000f0001",
+      "out_shift": 15,
+      "rmse": 2.349056492771763,
+      "score_mantissa": 2048,
+      "score_scale": "0x00080800",
+      "score_shift": 8
+    }
+  ],
+  "seed": 301,
+  "shape": [
+    64,
+    64,
+    64
+  ]
+}
