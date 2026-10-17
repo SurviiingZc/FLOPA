@@ -73,6 +73,8 @@ class fa_random_qkv_test extends fa_base_test;
       cfg.seq_kv = value;
     if ($value$plusargs("FA_READY_LOW_PCT=%d", value))
       cfg.ready_low_pct = value;
+    if ($value$plusargs("FA_SCORE_SCALE=%h", value))
+      cfg.score_scale = value;
     if ($value$plusargs("FA_CAUSAL_EN=%d", value)) begin
       if (value > 1)
         `uvm_fatal("RANDOM_CFG", "+FA_CAUSAL_EN must be 0 or 1")

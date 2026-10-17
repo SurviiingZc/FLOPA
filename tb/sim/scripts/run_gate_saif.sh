@@ -23,10 +23,15 @@ CAPTURE_SAIF="${CAPTURE_SAIF:-1}"
 SEQ_Q="${SEQ_Q:-64}"
 SEQ_KV="${SEQ_KV:-64}"
 READY_LOW_PCT="${READY_LOW_PCT:-0}"
+SCORE_SCALE_HEX="${SCORE_SCALE_HEX:-}"
 EXPECTED_RTL_ICGS="${EXPECTED_RTL_ICGS:-0}"
 
 if [[ ! "$SEED" =~ ^[0-9]+$ ]]; then
   echo "SEED must be a non-negative integer" >&2
+  exit 2
+fi
+if [[ -n "$SCORE_SCALE_HEX" && ! "$SCORE_SCALE_HEX" =~ ^[0-9A-Fa-f]{1,8}$ ]]; then
+  echo "SCORE_SCALE_HEX must be one to eight hexadecimal digits" >&2
   exit 2
 fi
 if [[ ! "$EXPECTED_RTL_ICGS" =~ ^[0-9]+$ ]]; then
@@ -190,6 +195,9 @@ runtime_args=(
   +FA_SEQ_Q="$SEQ_Q" +FA_SEQ_KV="$SEQ_KV" +FA_READY_LOW_PCT="$READY_LOW_PCT"
   +CLK_PERIOD_NS="$SIM_CLOCK_PERIOD_NS"
 )
+if [[ -n "$SCORE_SCALE_HEX" ]]; then
+  runtime_args+=(+FA_SCORE_SCALE="$SCORE_SCALE_HEX")
+fi
 if [[ "$CAPTURE_SAIF" == "1" ]]; then
   runtime_args+=(+SAIF_ENABLE +SAIF_FILE="$partial_saif")
 fi
@@ -257,6 +265,11 @@ tensor_checksum=$({ grep -E '\[FCOV_MATH\]|\[FCOV_SUMMARY\]' "$log" || true; } |
   printf '  "sampled_cycles": %s,\n' "$((stop_cycle - start_cycle))"
   printf '  "sequence": {"seq_q": %s, "seq_kv": %s, "num_q_heads": 1, "num_kv_heads": 1, "head_dim": 64, "tile_q": 32, "tile_k": 32},\n' "$SEQ_Q" "$SEQ_KV"
   printf '  "ready_low_pct": %s,\n' "$READY_LOW_PCT"
+  if [[ -n "$SCORE_SCALE_HEX" ]]; then
+    printf '  "score_scale_hex": "0x%s",\n' "$SCORE_SCALE_HEX"
+  else
+    printf '  "score_scale_hex": "default",\n'
+  fi
   printf '  "window": "gate_level_random_%sx%s_load+pingpong_refill+compute+normalization+axi_writeback",\n' "$SEQ_Q" "$SEQ_KV"
   printf '  "tensor_log_checksum": "%s",\n' "$tensor_checksum"
   printf '  "status": "pass"\n'
