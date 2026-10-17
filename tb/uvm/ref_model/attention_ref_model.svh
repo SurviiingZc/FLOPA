@@ -321,7 +321,7 @@ class attention_ref_model extends uvm_object;
                 for (int unsigned dim = 0; dim < cfg.head_dim; dim++)
                     acc_state[row][dim] = 0;
                 for (int unsigned block_start = 0; block_start < cols_to_process;
-                          block_start += `ATTN_TILE_K) begin
+                    block_start += `ATTN_TILE_K) begin
                     int unsigned block_end;
                     block_end = ((block_start + `ATTN_TILE_K) < cols_to_process) ?
                                 (block_start + `ATTN_TILE_K) : cols_to_process;

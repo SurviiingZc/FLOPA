@@ -62,10 +62,10 @@ result = {
     'completed_functional_jobs': validation['completed_jobs'],
     'checked_output_bytes': validation['checked_bytes'],
     'report_sha256': {path.name: hashlib.sha256(path.read_bytes()).hexdigest()
-                      for path in sorted(reports.glob('*.rpt'))},
+        for path in sorted(reports.glob('*.rpt'))},
     'reports': str(reports.relative_to(root)),
 }
 destination = root / 'paper_test/synthesis_summary.json'
 destination.write_text(json.dumps(result, indent=4) + '\n')
 print(json.dumps({key: value for key, value in result.items()
-                  if key != 'report_sha256'}, indent=2))
+    if key != 'report_sha256'}, indent=2))

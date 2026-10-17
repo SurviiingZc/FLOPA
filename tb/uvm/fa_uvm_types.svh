@@ -44,8 +44,8 @@ class fa_qkv_tensor extends uvm_object;
     // A different complete tensor is presented to every head. XOR preserves the
     // INT8 domain and detects accidentally replaying head zero at head boundaries.
     function byte signed value_at(fa_tile_kind_e kind, int unsigned head,
-                                                                  int unsigned row, int unsigned
-                                                                      dim);
+        int unsigned row, int unsigned
+        dim);
         byte unsigned value;
         case (kind)
             FA_TILE_Q: value = q[row][dim];
@@ -66,8 +66,8 @@ class fa_qkv_tensor extends uvm_object;
     endfunction
 
     function void fill_random_full_range(int unsigned active_q_rows,
-                                                                              int unsigned
-                                                                                  active_kv_rows);
+        int unsigned
+        active_kv_rows);
         int signed anchor_values [0:5];
         for (int unsigned row = 0; row < FA_MAX_SEQ; row++)
             for (int unsigned dim = 0; dim < `ATTN_HEAD_DIM; dim++) begin
@@ -146,8 +146,8 @@ class fa_qkv_tensor extends uvm_object;
     endfunction
 
     function void fill_pattern(fa_stimulus_e stimulus,
-                                                          int unsigned active_q_rows = FA_MAX_SEQ,
-                                                          int unsigned active_kv_rows = FA_MAX_SEQ);
+        int unsigned active_q_rows = FA_MAX_SEQ,
+        int unsigned active_kv_rows = FA_MAX_SEQ);
         case (stimulus)
             FA_STIM_CANONICAL: fill_constant(8'sd0, 8'sd0, 8'sd1);
             FA_STIM_RANDOM_FULL_RANGE: fill_random_full_range(active_q_rows, active_kv_rows);
@@ -244,13 +244,13 @@ class fa_axil_item extends uvm_sequence_item;
     rand bit [31:0] addr;
     rand bit [31:0] data;
     rand bit [3:0]  strb;
-              int unsigned aw_delay_cycles;
-              int unsigned w_delay_cycles;
-              int unsigned bready_delay_cycles;
-              int unsigned ar_delay_cycles;
-              int unsigned rready_delay_cycles;
-              bit [31:0] rdata;
-              bit [1:0]  resp;
+    int unsigned aw_delay_cycles;
+    int unsigned w_delay_cycles;
+    int unsigned bready_delay_cycles;
+    int unsigned ar_delay_cycles;
+    int unsigned rready_delay_cycles;
+    bit [31:0] rdata;
+    bit [1:0]  resp;
 
     `uvm_object_utils_begin(fa_axil_item)
         `uvm_field_int(is_read, UVM_DEFAULT)
@@ -279,7 +279,7 @@ class fa_tile_item extends uvm_sequence_item;
     rand bit            is_commit;
     rand bit            upper_half_only;
     rand bit            lower_half_only;
-              fa_tile_protocol_e protocol_error;
+    fa_tile_protocol_e protocol_error;
 
     `uvm_object_utils_begin(fa_tile_item)
         `uvm_field_enum(fa_tile_kind_e, kind, UVM_DEFAULT)

@@ -56,7 +56,7 @@ for test in tests:
     test['log_sha256'] = hashlib.sha256(log.read_bytes()).hexdigest()
 
 commit = subprocess.check_output(['git', '-C', str(root), 'rev-parse', 'HEAD'],
-                                 universal_newlines=True).strip()
+    universal_newlines=True).strip()
 result = {
     'status': 'pass', 'timestamp_utc': datetime.now(timezone.utc).isoformat(),
     'git_commit': commit, 'expected_sram_macros': 480, 'expected_rtl_icgs': 28,

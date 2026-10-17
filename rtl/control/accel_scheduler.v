@@ -40,7 +40,7 @@ module accel_scheduler (
   output [15:0] q_tile_base_o,
   output [15:0] kv_tile_base_o,
   output       tile_last_o,
-  output       run_last_o
+    output       run_last_o
 );
 
   reg [3:0] next_state_w;
@@ -53,8 +53,8 @@ module accel_scheduler (
 
   assign illegal_start_busy_w = start_i && busy_o;
   assign illegal_dimensions_w = start_i &&
-      (seq_q_i == 0 || seq_kv_i == 0 || num_q_heads_i == 0);
-  assign q_tile_count_calc_w = ({1'b0, seq_q_i} + 17'd31) >> 5;
+            (seq_q_i == 0 || seq_kv_i == 0 || num_q_heads_i == 0);
+    assign q_tile_count_calc_w = ({1'b0, seq_q_i} + 17'd31) >> 5;
   assign kv_tile_count_calc_w = ({1'b0, seq_kv_i} + 17'd31) >> 5;
   assign q_tile_base_o = {q_tile_index_o, 5'b0};
   assign kv_tile_base_o = {kv_tile_index_o, 5'b0};
@@ -67,7 +67,8 @@ module accel_scheduler (
   always @(*) begin
     next_state_w = state_o;
     case (state_o)
-      `ATTN_STATE_IDLE: if (start_i && !illegal_dimensions_w) next_state_w = `ATTN_STATE_LOAD_Q;
+            `ATTN_STATE_IDLE: if (start_i && !illegal_dimensions_w) next_state_w =
+                `ATTN_STATE_LOAD_Q;
       `ATTN_STATE_LOAD_Q: if (load_q_done_i) next_state_w = `ATTN_STATE_LOAD_KV;
       `ATTN_STATE_LOAD_KV: if (load_kv_done_i) next_state_w = `ATTN_STATE_QK;
       `ATTN_STATE_QK: if (qk_done_i) next_state_w = `ATTN_STATE_SOFTMAX;
@@ -80,12 +81,12 @@ module accel_scheduler (
       end
       `ATTN_STATE_DONE: begin
         if (clear_done_i) next_state_w = `ATTN_STATE_IDLE;
-        else if (start_i && !illegal_dimensions_w) next_state_w = `ATTN_STATE_LOAD_Q;
+                else if (start_i && !illegal_dimensions_w) next_state_w = `ATTN_STATE_LOAD_Q;
       end
       `ATTN_STATE_ERROR: if (clear_error_i) next_state_w = `ATTN_STATE_IDLE;
       default: next_state_w = `ATTN_STATE_ERROR;
     endcase
-    if (fatal_error_i || illegal_start_busy_w || illegal_dimensions_w)
+        if (fatal_error_i || illegal_start_busy_w || illegal_dimensions_w)
       next_state_w = `ATTN_STATE_ERROR;
     if (soft_reset_i) next_state_w = `ATTN_STATE_IDLE;
   end
@@ -116,7 +117,7 @@ module accel_scheduler (
         kv_tile_count_q <= 12'd0;
       end else begin
         if (start_i && (state_o == `ATTN_STATE_IDLE || state_o == `ATTN_STATE_DONE) &&
-            !illegal_dimensions_w) begin
+                        !illegal_dimensions_w) begin
           head_index_o <= 8'd0;
           q_tile_index_o <= 11'd0;
           kv_tile_index_o <= 11'd0;
@@ -143,7 +144,7 @@ module accel_scheduler (
         if (fatal_error_i) begin
           error_o <= 1'b1;
           error_code_o <= `ATTN_ERR_FATAL;
-        end else if (illegal_start_busy_w || illegal_dimensions_w) begin
+                end else if (illegal_start_busy_w || illegal_dimensions_w) begin
           error_o <= 1'b1;
           error_code_o <= `ATTN_ERR_BAD_CFG;
         end else if (clear_error_i) begin

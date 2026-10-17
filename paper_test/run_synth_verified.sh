@@ -22,7 +22,7 @@ manifest = Path(sys.argv[2]).resolve()
 data = json.loads(manifest.read_text())
 assert data['status'] == 'pass', 'Functional validation has not passed'
 commit = subprocess.check_output(['git', '-C', str(root), 'rev-parse', 'HEAD'],
-                                 universal_newlines=True).strip()
+    universal_newlines=True).strip()
 assert commit == data['git_commit'], 'Validation belongs to a different commit'
 for path in ('rtl', 'tb', 'asic/scripts', 'asic/constraints', 'Makefile'):
     changed = subprocess.check_output(

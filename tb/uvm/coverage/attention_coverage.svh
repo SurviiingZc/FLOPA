@@ -175,9 +175,9 @@ class fa_phase_coverage extends uvm_component;
             ignore_bins error_low = binsof(cp_state.error) && binsof(cp_irq.low);
             ignore_bins nonterminal_high = binsof(cp_irq.high) &&
                 (binsof(cp_state.idle) || binsof(cp_state.load_q) ||
-                  binsof(cp_state.load_kv) || binsof(cp_state.qk) ||
-                  binsof(cp_state.softmax) || binsof(cp_state.pv) ||
-                  binsof(cp_state.writeback));
+                    binsof(cp_state.load_kv) || binsof(cp_state.qk) ||
+                    binsof(cp_state.softmax) || binsof(cp_state.pv) ||
+                    binsof(cp_state.writeback));
         }
     endgroup
 

@@ -1,0 +1,50 @@
+{
+  "source_commit": "fc9e921069a6f9e6aa41921857143418a9ba13a4",
+  "files": [
+    {
+      "path": "asic/scripts/synth_group.tcl",
+      "staged": true,
+      "changed_lines": [
+        152,
+        153,
+        234,
+        262,
+        263,
+        264,
+        265,
+        266,
+        271,
+        272,
+        273,
+        274,
+        275,
+        276
+      ],
+      "original_non_whitespace_sha256": "59d1cb14c5790e612679b482bfc374588c3a52fe9de752bb21bf8312675d8e73",
+      "formatted_non_whitespace_sha256": "59d1cb14c5790e612679b482bfc374588c3a52fe9de752bb21bf8312675d8e73",
+      "non_whitespace_equal": true,
+      "all_line_content_except_leading_indentation_identical": true,
+      "unchanged_history_lines_identical": true
+    },
+    {
+      "path": "asic/scripts/run_synth.sh",
+      "staged": false,
+      "changed_lines": [],
+      "original_non_whitespace_sha256": "eee6182c903ae7f8a925798e52395ab64b6cc3ab9d3493eeb53f3f5e6b82cd96",
+      "formatted_non_whitespace_sha256": "eee6182c903ae7f8a925798e52395ab64b6cc3ab9d3493eeb53f3f5e6b82cd96",
+      "non_whitespace_equal": true,
+      "all_line_content_except_leading_indentation_identical": true,
+      "unchanged_history_lines_identical": true
+    },
+    {
+      "path": "Makefile",
+      "staged": false,
+      "changed_lines": [],
+      "original_non_whitespace_sha256": "9072ae8cbf7320b546b5788fd1009d41956af4501c5abae6d09d2ea121d1d9be",
+      "formatted_non_whitespace_sha256": "9072ae8cbf7320b546b5788fd1009d41956af4501c5abae6d09d2ea121d1d9be",
+      "non_whitespace_equal": true,
+      "all_line_content_except_leading_indentation_identical": true,
+      "unchanged_history_lines_identical": true
+    }
+  ]
+}

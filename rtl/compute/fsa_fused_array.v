@@ -36,7 +36,7 @@ module fsa_fused_array #(
   input      [15:0]                  k_base_i,
   input      [15:0]                  seq_q_i,
   input      [15:0]                  seq_kv_i,
-  input      [7:0]                   head_dim_i,
+    input      [7:0]                   head_dim_i,
   output reg                         softmax_pv_ready_o,
   output reg                         softmax_done_o,
   output reg                         softmax_busy_o,
@@ -73,7 +73,7 @@ module fsa_fused_array #(
   localparam integer QK_COMPLETION_DEPTH = ROWS + COLS;
   localparam [ROW_IDX_W-1:0] ROW_LAST = ROWS - 1;
   localparam [COL_IDX_W-1:0] COL_LAST = COLS - 1;
-  wire [7:0] feature_last_w = head_dim_i - 1'b1;
+    wire [7:0] feature_last_w = head_dim_i - 1'b1;
 
   // Online-softmax control overlaps the reverse delta wave, column exp, rowsum,
   // serialized l update, and the start of WS-PV.
@@ -114,11 +114,11 @@ module fsa_fused_array #(
   wire [COLS*DATA_W-1:0] k_boundary_data_w;
   wire [COLS-1:0] k_boundary_valid_w;
   wire [ROWS-1:0] qk_row_done_w;
-  wire [ROWS*COLS-1:0] lane_valid_q;
-  reg [ROWS-1:0] row_valid_q;
-  reg [COLS-1:0] col_valid_q;
-  reg [ROWS-1:0] row_valid_next_w;
-  reg [COLS-1:0] col_valid_next_w;
+    wire [ROWS*COLS-1:0] lane_valid_q;
+    reg [ROWS-1:0] row_valid_q;
+    reg [COLS-1:0] col_valid_q;
+    reg [ROWS-1:0] row_valid_next_w;
+    reg [COLS-1:0] col_valid_next_w;
   wire [ROWS-1:0] row_has_valid_w;
   wire [ROWS*SCORE_W-1:0] max_right_data_w;
   wire [ROWS-1:0] max_right_valid_w;
@@ -425,27 +425,28 @@ module fsa_fused_array #(
   assign delta_col_index_w = stripe_delta_col_index_w[0];
   assign prob_write_col_w = prob_col_tag_q[EXP_LATENCY-1];
 
-  // Dense padding masks factor exactly into one valid bit per row/column.
-  // Capture at the same QK clear boundary as the former 1024-bit lane mask.
-  always @* begin
-    row_valid_next_w = {ROWS{1'b0}};
-    col_valid_next_w = {COLS{1'b0}};
-    for (mask_row = 0; mask_row < ROWS; mask_row = mask_row + 1)
-      row_valid_next_w[mask_row] =
-          ({1'b0, q_base_i} + mask_row) < {1'b0, seq_q_i};
-    for (mask_col = 0; mask_col < COLS; mask_col = mask_col + 1)
-      col_valid_next_w[mask_col] =
-          ({1'b0, k_base_i} + mask_col) < {1'b0, seq_kv_i};
-  end
-  generate
-    genvar mask_r;
-    genvar mask_c;
-    for (mask_r = 0; mask_r < ROWS; mask_r = mask_r + 1) begin : g_dense_mask_row
-      for (mask_c = 0; mask_c < COLS; mask_c = mask_c + 1) begin : g_col
-        assign lane_valid_q[mask_r*COLS+mask_c] = row_valid_q[mask_r] && col_valid_q[mask_c];
+    // Dense padding masks factor exactly into one valid bit per row/column.
+    // Capture at the same QK clear boundary as the former 1024-bit lane mask.
+    always @* begin
+        row_valid_next_w = {ROWS{1'b0}};
+        col_valid_next_w = {COLS{1'b0}};
+        for (mask_row = 0; mask_row < ROWS; mask_row = mask_row + 1)
+            row_valid_next_w[mask_row] =
+                    ({1'b0, q_base_i} + mask_row) < {1'b0, seq_q_i};
+        for (mask_col = 0; mask_col < COLS; mask_col = mask_col + 1)
+            col_valid_next_w[mask_col] =
+                    ({1'b0, k_base_i} + mask_col) < {1'b0, seq_kv_i};
+    end
+    generate
+        genvar mask_r;
+        genvar mask_c;
+        for (mask_r = 0; mask_r < ROWS; mask_r = mask_r + 1) begin : g_dense_mask_row
+            for (mask_c = 0; mask_c < COLS; mask_c = mask_c + 1) begin : g_col
+                assign lane_valid_q[mask_r*COLS+mask_c] = row_valid_q[mask_r] &&
+                    col_valid_q[mask_c];
       end
     end
-  endgenerate
+    endgenerate
 
   // Row skew aligns Q with K during QK. The second delay line receives the
   // stripe-local registered/rescaled O seed and its feature tag while the
@@ -572,8 +573,8 @@ module fsa_fused_array #(
         .pv_seed_valid_o(stripe_pv_seed_valid_w[stripe]),
         .pv_seed_data_o(stripe_pv_seed_data_w[stripe]),
         .pv_seed_feature_o(stripe_pv_seed_feature_w[stripe]),
-        .o_pass_start_i(pv_start_i), .o_first_pass_i(pv_seed_zero_i),
-        .o_rd_current_i(norm_rd_en_i),
+                .o_pass_start_i(pv_start_i), .o_first_pass_i(pv_seed_zero_i),
+                .o_rd_current_i(norm_rd_en_i),
         .o_rd_en_i(stripe_o_rd_en_w[stripe]),
         .o_rd_feature_i(stripe_o_rd_feature_w[stripe]),
         .o_rd_valid_o(stripe_o_rd_valid_w[stripe]),
@@ -664,8 +665,8 @@ module fsa_fused_array #(
       softmax_busy_o <= 1'b0;
       pv_ready_o <= 1'b0;
       pv_done_o <= 1'b0;
-      row_valid_q <= {ROWS{1'b0}};
-      col_valid_q <= {COLS{1'b0}};
+            row_valid_q <= {ROWS{1'b0}};
+            col_valid_q <= {COLS{1'b0}};
       pv_issue_valid_q <= 1'b0;
       pv_issue_seed_zero_q <= 1'b0;
       norm_request_q <= 1'b0;
@@ -744,8 +745,8 @@ module fsa_fused_array #(
       end
       if (qk_clear_i) begin
         mac_phase_pv_q <= 1'b0;
-        row_valid_q <= row_valid_next_w;
-        col_valid_q <= col_valid_next_w;
+                row_valid_q <= row_valid_next_w;
+                col_valid_q <= col_valid_next_w;
       end
       else if (pv_start_i) mac_phase_pv_q <= 1'b1;
 
@@ -859,7 +860,7 @@ module fsa_fused_array #(
 
       if (sum_right_valid_w[ROWS-1] &&
           sum_right_tag_w[(ROWS-1)*FEATURE_IDX_W +: FEATURE_IDX_W] ==
-          feature_last_w)
+                    feature_last_w)
         pv_done_o <= 1'b1;
     end
   end

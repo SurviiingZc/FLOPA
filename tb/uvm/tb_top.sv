@@ -148,7 +148,7 @@ module tb_top;
                 $fatal(1, "+SAIF_ENABLE requires +SAIF_FILE=<absolute-path>");
             $set_toggle_region(dut);
             $display("[SAIF_CAPTURE] ARMED strip_path=tb_top/dut clock_period_ns=%0.3f file=%s",
-                              clk_period_ns, saif_file);
+                clk_period_ns, saif_file);
         end
     end
 

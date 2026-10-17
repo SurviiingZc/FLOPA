@@ -48,7 +48,7 @@ module tb_runtime_arithmetic;
     end
 
     task automatic drive_mult(input reg signed [31:0] a,
-                               input reg signed [30:0] b, input bit valid);
+        input reg signed [30:0] b, input bit valid);
         @(negedge clk);
         mult_a = a;
         mult_b = b;
@@ -115,7 +115,7 @@ module tb_runtime_arithmetic;
     // With l=32768, the published reciprocal LUT returns exactly 32767.
     // Independent 64-bit arithmetic preserves the RTL's signed rounding rule.
     function automatic [7:0] golden_norm(input reg signed [31:0] acc,
-                                          input reg [31:0] scale);
+        input reg [31:0] scale);
         reg signed [63:0] value;
         reg signed [63:0] rounded;
         reg guard_bit;
@@ -173,7 +173,7 @@ module tb_runtime_arithmetic;
         norm_valid_i = valid;
         norm_tag_i = index;
         norm_scale = (index % 3 == 0) ? 32'h0000_0001 :
-                     (index % 3 == 1) ? 32'h0004_0003 : 32'h0002_0001;
+            (index % 3 == 1) ? 32'h0004_0003 : 32'h0002_0001;
         for (int lane = 0; lane < 8; lane++) begin
             norm_acc[lane*32 +: 32] = (index * 13 + lane * 31 - 513);
             norm_l[lane*32 +: 32] = 32768;

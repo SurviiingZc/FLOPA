@@ -250,7 +250,7 @@ class attention_scoreboard extends uvm_component;
         checked_bytes += output_bytes;
         `uvm_info("RUNTIME_JOB", $sformatf(
             {"job=%0d d=%0d q=%0d kv=%0d heads=%0d bytes=%0d cycles=%0d ",
-             "qk=%0d pv=%0d norm=%0d useful_macs=%0d loader_beats=%0d"},
+                "qk=%0d pv=%0d norm=%0d useful_macs=%0d loader_beats=%0d"},
             completed_jobs, cfg.head_dim, cfg.seq_q, cfg.seq_kv, cfg.num_q_heads,
             output_bytes, vif.cycles - start_cycles, vif.qk_features - start_qk,
             vif.pv_features - start_pv, vif.norm_features - start_norm,

@@ -59,9 +59,9 @@
   output     [STRIPE_ROWS*SUM_W-1:0]     pv_seed_data_o,
   output     [TAG_W-1:0]                 pv_seed_feature_o,
 
-  input                                  o_pass_start_i,
-  input                                  o_first_pass_i,
-  input                                  o_rd_current_i,
+    input                                  o_pass_start_i,
+    input                                  o_first_pass_i,
+    input                                  o_rd_current_i,
   input                                  o_rd_en_i,
   input      [TAG_W-1:0]                 o_rd_feature_i,
   output                                 o_rd_valid_o,
@@ -178,7 +178,8 @@
 
   assign pe_gate_enable_w = !rst_n || clear_i || clear_score_i ||
       (|clear_score_group_w) || pe_launch_w || (|pe_drain_count_q);
-  assign o_bank_gate_enable_w = !rst_n || clear_i || o_pass_start_i || o_rd_en_i || o_rd_valid_o ||
+    assign o_bank_gate_enable_w = !rst_n || clear_i || o_pass_start_i || o_rd_en_i ||
+        o_rd_valid_o ||
       (|o_wr_valid_w);
   assign pv_seed_gate_enable_w = !rst_n || clear_i || pv_seed_operand_valid_i ||
       pv_seed_operand_valid_q || pv_seed_metadata_valid_s1_q ||
@@ -378,8 +379,8 @@
     .DATA_W(SUM_W), .FEATURE_IDX_W(TAG_W)
   ) u_o_bank (
     .clk(o_bank_clk_w), .rst_n(rst_n), .clear_i(clear_i),
-    .pass_start_i(o_pass_start_i), .first_pass_i(o_first_pass_i),
-    .rd_current_i(o_rd_current_i),
+        .pass_start_i(o_pass_start_i), .first_pass_i(o_first_pass_i),
+        .rd_current_i(o_rd_current_i),
     .rd_en_i(o_rd_en_i), .rd_feature_i(o_rd_feature_i),
     .rd_valid_o(o_rd_valid_o), .rd_data_o(o_rd_data_o),
     .wr_valid_i(o_wr_valid_w), .wr_feature_i(o_wr_feature_w),

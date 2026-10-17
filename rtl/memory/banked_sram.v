@@ -10,7 +10,7 @@ module banked_sram #(
 )(
   input                         clk,
   input                         rst_n,
-  input                         clear_i,
+    input                         clear_i,
   input                         wr_en_i,
   input      [ADDR_W-1:0]       wr_addr_i,
   input      [BANKS*BANK_W-1:0] wr_data_i,
@@ -28,12 +28,12 @@ module banked_sram #(
   reg rd_en_q;
   reg [ADDR_W-1:0] rd_addr_q;
   wire any_write_w;
-  wire bank_clk_w;
-  fa_clock_gate u_clock_gate (
-    .clk_i(clk), .enable_i(!rst_n || clear_i || wr_en_i || rd_en_i ||
-        wr_en_q || rd_en_q || rd_valid_o),
-    .test_enable_i(1'b0), .clk_o(bank_clk_w)
-  );
+    wire bank_clk_w;
+    fa_clock_gate u_clock_gate (
+        .clk_i(clk), .enable_i(!rst_n || clear_i || wr_en_i || rd_en_i ||
+                wr_en_q || rd_en_q || rd_valid_o),
+        .test_enable_i(1'b0), .clk_o(bank_clk_w)
+    );
 
   // The physical backend is single-port: a write cycle suppresses the shared read.
   assign any_write_w = wr_en_q && (|wr_bank_en_q);
@@ -59,14 +59,14 @@ module banked_sram #(
       wire bank_enable_w;
       wire [ADDR_W-1:0] bank_addr_w;
 
-      assign bank_write_w = !clear_i && wr_en_q && wr_bank_en_q[bank_idx];
+            assign bank_write_w = !clear_i && wr_en_q && wr_bank_en_q[bank_idx];
       // Non-selected banks keep enable low during partial writes for lower power.
-      assign bank_enable_w = !clear_i && (any_write_w ? bank_write_w : rd_en_q);
+            assign bank_enable_w = !clear_i && (any_write_w ? bank_write_w : rd_en_q);
       assign bank_addr_w = bank_write_w ? wr_addr_q : rd_addr_q;
 
       if (ADDR_W <= 8) begin : g_shallow
         asic_sram_256xwide #(.WIDTH(BANK_W)) u_bank (
-          .clk(bank_clk_w),
+                    .clk(bank_clk_w),
           .en_i(bank_enable_w),
           .wr_en_i(bank_write_w),
           .addr_i({{(8-ADDR_W){1'b0}}, bank_addr_w}),
@@ -75,7 +75,7 @@ module banked_sram #(
         );
       end else begin : g_deep
         asic_sram_1024x16 u_bank (
-          .clk(bank_clk_w),
+                    .clk(bank_clk_w),
           .en_i(bank_enable_w),
           .wr_en_i(bank_write_w),
           .addr_i({{(10-ADDR_W){1'b0}}, bank_addr_w}),
@@ -95,14 +95,14 @@ module banked_sram #(
   assign rd_data_o = rd_data_q;
 
   // FPGA model preserves single-port arbitration and independent bank write masks.
-  always @(posedge bank_clk_w) begin
-    if (!clear_i && any_write_w) begin
+    always @(posedge bank_clk_w) begin
+        if (!clear_i && any_write_w) begin
       for (bank_iter = 0; bank_iter < BANKS; bank_iter = bank_iter + 1) begin
         if (wr_bank_en_q[bank_iter]) begin
           mem[bank_iter][wr_addr_q] <= wr_data_q[bank_iter*BANK_W +: BANK_W];
         end
       end
-    end else if (!clear_i && rd_en_q) begin
+        end else if (!clear_i && rd_en_q) begin
       for (bank_iter = 0; bank_iter < BANKS; bank_iter = bank_iter + 1) begin
         rd_data_q[bank_iter*BANK_W +: BANK_W] <= mem[bank_iter][rd_addr_q];
       end
@@ -111,7 +111,7 @@ module banked_sram #(
 `endif
 
   // Register request payloads and align rd_valid_o with returned memory data.
-  always @(posedge bank_clk_w or negedge rst_n) begin
+    always @(posedge bank_clk_w or negedge rst_n) begin
     if (!rst_n) begin
       wr_en_q <= 1'b0;
       wr_addr_q <= {ADDR_W{1'b0}};
@@ -120,10 +120,10 @@ module banked_sram #(
       rd_en_q <= 1'b0;
       rd_addr_q <= {ADDR_W{1'b0}};
       rd_valid_o <= 1'b0;
-    end else if (clear_i) begin
-      wr_en_q <= 1'b0;
-      rd_en_q <= 1'b0;
-      rd_valid_o <= 1'b0;
+        end else if (clear_i) begin
+            wr_en_q <= 1'b0;
+            rd_en_q <= 1'b0;
+            rd_valid_o <= 1'b0;
     end else begin
       wr_en_q <= wr_en_i;
       rd_en_q <= rd_en_i;
