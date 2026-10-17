@@ -271,6 +271,9 @@ foreach top_name $top_list {
   if {[info exists env(FA_VALIDATION_MANIFEST_HASH)]} {
     puts $config_fp "validation_manifest_sha256=$env(FA_VALIDATION_MANIFEST_HASH)"
   }
+  if {[info exists env(FA_VALIDATED_MAX_D)]} {
+    puts $config_fp "validated_max_d=$env(FA_VALIDATED_MAX_D)"
+  }
   # Collections captured before compile_ultra are invalid after optimization;
   # write the stable integer recorded before compile instead of reusing _sel IDs.
   puts $config_fp "preserved_clear_replica_instances=$clear_replica_count"

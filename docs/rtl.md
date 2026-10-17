@@ -1,5 +1,7 @@
 # FLOPA RTL Code Guide
 
+> Runtime-d branch note: This walkthrough describes the historical fixed-d=64 implementation. Use [runtime-d RTL](rtl_runtime_d.md) for current module/ABI changes.
+
 ## 1. Document Purpose
 
 本文从 `rtl/attention_accel_top.v` 开始，按照一次 Attention prefill

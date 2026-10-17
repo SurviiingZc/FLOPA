@@ -1,19 +1,34 @@
-# FLOPA ISCAS Evaluation 测试计划（待审核）
+# FLOPA ISCAS 实施与 Evaluation 测试计划
 
-更新：2026-10-17。当前等待作者审核 RTL 优化方案，不启动 RTL 修改或新测试。
+更新：2026-10-17。作者已批准按优化文档实施 RTL/UVM 修改、短序列验证和后续综合。
 已完成 Fig. 1 的 PixArt-Sigma、DFoT-MCRAFT、Wan2.1 三模型同口径 GPU profiling；
-原生模型 ASIC/CPU/GPU 延迟对比和优化后 PPA 尚未开始。
+原生模型 ASIC/CPU/GPU 延迟对比尚未开始；本轮首先完成新硬件功能与综合。
 RTL 裁剪与 PPA 优化实施计划见 [RTL_OPTIMIZATION_PLAN_ZH.md](RTL_OPTIMIZATION_PLAN_ZH.md)。
 
 2026-10-17 最新决定：物理容量编译期 MAX_D=128，同一实例由 regfile 配置实际 d，
 覆盖原生 64/72/128；QK、PV、归一化、loader、输出打包和计数器同步按 d 执行。
 撤销分别编译固定 d=64/72 的旧建议。合法范围、job 锁存、72 字节跨行/多头对齐、
 SRAM 物理容量代价及验收项已列入优化文档第 4–5 节。
-原 N=512 仿真/功耗自动监控已取消；审核前不恢复作业。
+原 N=512 仿真/功耗自动监控已取消，不恢复旧作业。本轮进度与结果见
+[IMPLEMENTATION_REPORT.md](IMPLEMENTATION_REPORT.md)，不运行长序列回归或长 gate-SAIF。
+
+## 本轮代码实施与入口
+
+- 分支：`codex/diffusion-runtime-d`。基线冻结 `4e84950`，构建门槛 `f5a8f0b`，
+  RTL 候选 `ee22914`，dense 掩码分解 `021b746`。
+- 同一 MAX_D=128 实例支持 d=1–128；native 64/72/128 切换、tail、多头、
+  控制/复位及算术共六类短 UVM 已通过：157 个 job、66,312 字节逐字节检查，
+  error/fatal 均 0。最终定向模块检查及源码/日志 hash 审计后才启动综合。
+- 源码接口与存储：`docs/rtl_runtime_d.md`；UVM 范围：`docs/uvm_runtime_d.md`。
+- `make runtime-d-smoke` 复用一个 simv 跑短套件；`make synth-verified` 校验
+  已通过日志、源码提交和 hash 后综合。新结果写 diffusion_runtime_d group，
+  旧 system group 保留，不覆盖历史基线。
+- 新版预期 480 SRAM 宏、28 个真实 ICG，O 为两个完整版本。实际数值以 DC 为准。
+  未注入新活动的 `power.rpt` 是 vectorless 估计，不能当作模型 gate-SAIF 功耗。
 
 2026-10-16 模型筛选更新：作者允许按模型原生 workload 调整 head dimension、
 缓存容量和分块参数。当前完成模型选择、Fig. 1 profiling 和优化计划；
-硬件修改、新综合和原生模型 ASIC 测试尚未启动。
+这是模型选择时的历史状态；当前 RTL/UVM 已开始优化，原生模型 ASIC 性能测试尚未启动。
 
 Fig. 1 新测量使用同一张 A6000、同一 PyTorch 2.9 环境、batch=1、FP16 autocast，
 固定噪声层级的 Gaussian latent，3 个输入种子，每种子 10 warmup + 10 实测。
@@ -183,17 +198,18 @@ ASIC UVM 摘要、周期边界和误差结果。只用通过这些检查的行�
 
 按作者要求，2026-10-17 删除 `paper_test` 除 README.md 和
 RTL_OPTIMIZATION_PLAN_ZH.md 外全部内容，清理前约 101 MB。
-旧实验脚本、编译目录、日志和本目录内摘要不再保留；新流程待方案通过后重建。
+旧实验脚本、编译目录、日志和本目录内摘要不再保留；本轮只重建短验证与综合流程。
 工程其他目录的 RTL、DDC、库和综合报告未动。论文目录中的历史结果仅代表旧版，
 不能作为新 RTL 的测试结果。自动监控已删除，当前不运行测试。
 
 ## 7. 待作者审核的决定
 
 1. 已确定同一 MAX_D=128 实例、regfile 运行时 d；重点覆盖 64/72/128。
-   具体实现和验证计划仍待作者审核后开工。
+   本轮已获批准开工，尚未决定的模型性能图范围不阻碍 RTL/UVM 基础验证。
 2. 是否接受**单 head**算子作为三设备延迟图的比较单位？
 3. 先做 N=256/512/1024 pilot，较长 N 仅按可行性逐点追加，是否合适？
 4. 新 RTL 的 PPA 必须重新综合；是否另加同工艺 P-buffer 对照，直接证明
    P/SRAM 优势，仍待作者确定。
 
-审核完成前，不启动 RTL 修改或下一轮模型性能实验，也不把待测格补成估计值。
+本轮先完成已授权的 RTL/UVM 基础验证与综合；模型性能图实验另行确认，
+不把待测格补成估计值。

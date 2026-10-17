@@ -1,5 +1,7 @@
 # FLOPA Verification Plan, Test Cases, and Coverage Report
 
+> Runtime-d branch note: The regression and coverage figures here belong to the historical design. Current short-sequence evidence is in [runtime-d UVM](uvm_runtime_d.md); old coverage percentages are not transferred to the new RTL.
+
 ## 1. Objective and Verified Scope
 
 The verification environment checks the current fixed-point RTL against a

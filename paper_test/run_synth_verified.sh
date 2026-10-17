@@ -3,7 +3,11 @@ set -euo pipefail
 
 ROOT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 MANIFEST="${VALIDATION_MANIFEST:-$ROOT_DIR/paper_test/validation_manifest.json}"
-test -s "$MANIFEST"
+if [[ ! -s "$MANIFEST" ]]; then
+    echo "Missing passing validation manifest: $MANIFEST" >&2
+    echo "Run the short functional suite and bind the committed source first." >&2
+    exit 2
+fi
 
 VALIDATED_ENV=$(python3 - "$ROOT_DIR" "$MANIFEST" <<'PY'
 import hashlib
@@ -27,6 +31,8 @@ for path in ('rtl', 'tb', 'asic/scripts', 'asic/constraints', 'Makefile'):
     )
     assert not changed, 'Uncommitted source/config changes: ' + path
 assert data['tests'] and all(test['status'] == 'pass' for test in data['tests'])
+assert data['max_d'] == 128
+print('export FA_VALIDATED_MAX_D=128')
 for test in data['tests']:
     log = (root / test['log']).resolve()
     assert root in log.parents and log.is_file(), 'Missing validation log'
