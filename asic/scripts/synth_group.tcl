@@ -149,9 +149,8 @@ foreach top_name $top_list {
     set_dont_touch $macro_cells
   }
 
-  # Enforce the selected RTL ICG count before compile. The current baseline is
-  # zero; retaining this check also prevents a stale characterized gate from
-  # being hidden by later optimization.
+  # Validate explicit characterized RTL gates before optimization. Automatic
+  # insertion remains disabled; the approved design supplies the expected count.
   set rtl_icg_cells [get_cells -quiet -hierarchical \
       -filter "ref_name =~ CKLNQD*BWP12T30P140"]
   set rtl_icg_count [sizeof_collection $rtl_icg_cells]
@@ -232,8 +231,7 @@ foreach top_name $top_list {
   redirect -file [file join $report_dir qor.rpt] {report_qor}
   redirect -file [file join $report_dir area.rpt] {report_area -hierarchy}
   redirect -file [file join $report_dir power.rpt] {report_power}
-  # Automatic fine-grained insertion is not part of this flow. The current
-  # report must contain zero pre-existing and zero tool-inserted ICGs.
+  # Report explicit RTL ICGs separately from any accidental tool insertion.
   identify_clock_gating
   redirect -file [file join $report_dir clock_gating.rpt] {
     report_clock_gating -multi_stage -verbose
@@ -261,11 +259,18 @@ foreach top_name $top_list {
   puts $config_fp "multiplier_wrapper_count=$mult_wrapper_count"
   puts $config_fp "linked_dw02_mult_count=$dw_multiplier_count"
   puts $config_fp "logical_hold_repair=$logical_hold_repair"
-  puts $config_fp "clock_gating=none"
+  if {$rtl_icg_count > 0} {
+    puts $config_fp "clock_gating=explicit_characterized_rtl_icg"
+  } else {
+    puts $config_fp "clock_gating=none"
+  }
   puts $config_fp "expected_top_rtl_icgs=$expected_top_rtl_icgs"
   puts $config_fp "rtl_icg_count=$rtl_icg_count"
   puts $config_fp "automatic_clock_gating=0"
   puts $config_fp "automatic_clock_gating_whitelist_count=0"
+  if {[info exists env(FA_VALIDATION_MANIFEST_HASH)]} {
+    puts $config_fp "validation_manifest_sha256=$env(FA_VALIDATION_MANIFEST_HASH)"
+  }
   # Collections captured before compile_ultra are invalid after optimization;
   # write the stable integer recorded before compile instead of reusing _sel IDs.
   puts $config_fp "preserved_clear_replica_instances=$clear_replica_count"

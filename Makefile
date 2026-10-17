@@ -11,8 +11,8 @@ INPUT_TRANSITION ?= 0.050
 OUTPUT_LOAD ?= 0.020
 MAX_TRANSITION ?= 0.300
 MAX_FANOUT ?= 24
-# The current implementation is an explicit zero-ICG baseline. DC automatic
-# insertion is intentionally unavailable in this flow.
+# The characterized RTL ICG count is supplied by the selected validated design.
+# Automatic insertion remains disabled.
 DC_CORES ?= 32
 EXPECTED_TOP_SRAM_MACROS ?= 480
 EXPECTED_TOP_RTL_ICGS ?= 0
@@ -30,9 +30,9 @@ POSTCTS_SDC ?=
 POSTCTS_SPEF ?=
 
 SYSTEM_TOP := attention_accel_top
-# The default result is the zero-ICG baseline consumed by gate simulation and
-# DC power reporting.
-SYNTH_RESULT_DIR = asic/dc/work/synth/$(CORNER)/system/$(SYSTEM_TOP)/results
+# Keep historical system/ results separate from the diffusion runtime-d design.
+SYNTH_GROUP ?= diffusion_runtime_d
+SYNTH_RESULT_DIR = asic/dc/work/synth/$(CORNER)/$(SYNTH_GROUP)/$(SYSTEM_TOP)/results
 
 GATE_SAIF_SEED ?= 301
 GATE_SEQ_Q ?= 64
@@ -96,11 +96,13 @@ PHYSICAL_OPTIONAL_ENV = $(if $(PHYSICAL_TLUPLUS_MAP),FA_TLUPLUS_MAP="$(PHYSICAL_
 
 .PHONY: help synth synth-config synth-physical prects-hold postcts-hold \
 	formality uvm-test uvm-regression gate-saif gate-saif-power gate-timing \
-	precision-check pwl-error ppa-breakdown clean-synth
+	precision-check pwl-error ppa-breakdown runtime-d-smoke synth-verified clean-synth
 
 help:
 	@echo "Targets:"
-	@echo "  make synth [CORNER=tt] [CLOCK_PERIOD=1.6] - mapped top with no ICG insertion"
+	@echo "  make synth [CORNER=tt] [CLOCK_PERIOD=1.6] - map selected synthesis group"
+	@echo "  make runtime-d-smoke - short runtime dimension and protocol checks"
+	@echo "  make synth-verified - synthesize the committed, functionally verified source"
 	@echo "  make synth-config - show the active top-synthesis configuration"
 	@echo "  make formality - prove RTL equivalence of the selected mapped netlist/SVF"
 	@echo "  make synth-physical PHYSICAL_MW_LIB=<dir> PHYSICAL_TLUPLUS_MAX=<file> PHYSICAL_TLUPLUS_MIN=<file> - physical-aware synthesis"
@@ -117,7 +119,14 @@ help:
 	@echo "  make clean-synth - remove synthesis results and synthesis logs"
 
 synth:
-	$(SYNTH_ENV) $(SYNTH_SCRIPT) system $(SYSTEM_TOP)
+	$(SYNTH_ENV) $(SYNTH_SCRIPT) $(SYNTH_GROUP) $(SYSTEM_TOP)
+
+runtime-d-smoke:
+	bash tb/sim/scripts/run_runtime_d_short.sh
+
+synth-verified:
+	CLOCK_PERIOD=$(CLOCK_PERIOD) DC_CORES=$(DC_CORES) \
+		bash paper_test/run_synth_verified.sh
 
 # Run this after every synthesis that will be used by gate simulation or power
 # analysis, including a synthesis with logical hold repair. A failing or aborted
@@ -161,8 +170,8 @@ postcts-hold:
 synth-config:
 	@echo "CORNER=$(CORNER)"
 	@echo "CLOCK_PERIOD=$(CLOCK_PERIOD) ns"
-	@echo "SYNTH_GROUP=system"
-	@echo "CLOCK_GATING=none; expected ICG count is zero"
+	@echo "SYNTH_GROUP=$(SYNTH_GROUP)"
+	@echo "CLOCK_GATING=explicit RTL; automatic insertion disabled"
 	@echo "EXPECTED_TOP_RTL_ICGS=$(EXPECTED_TOP_RTL_ICGS)"
 	@echo "DC_CORES=$(DC_CORES)"
 
