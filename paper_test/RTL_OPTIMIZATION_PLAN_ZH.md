@@ -1,9 +1,11 @@
 # 面向高分辨率扩散 Transformer 的 FLOPA RTL 优化计划
 
-更新：2026-10-17。状态：作者已批准实施 RTL/UVM 优化、短序列验证及后续综合。
-首版优化 RTL 已提交 ee22914，dense 掩码分解已提交 021b746；
-六类短 UVM 已通过，新增乘法流水的模块定向检查与最终来源审计正在收尾。
-综合尚未开始，新 PPA 以 paper_test/IMPLEMENTATION_REPORT.md 的实际报告为准。
+更新：2026-10-18。状态：获批的 RTL/UVM 优化、短序列验证及映射综合已完成。
+实际综合输入为 fc9e921；格式版 1382d3e 已快进合入主工程，HDL 语义未变。
+六类短 UVM、乘法/normalizer/ICG 定向检查与最终来源审计全部通过。
+28 nm TT、1.60 ns 新综合：总面积 2.452364 mm²，SRAM 0.656747 mm²，
+480 宏、28 ICG、setup 违例 0；hold −0.0971 ns / 6409 个端点未物理修复。
+详细 PPA、功耗边界与 DDC 只读回查以 paper_test/IMPLEMENTATION_REPORT.md 为准。
 
 本次决定：采用同一物理实例的运行时 d，编译期 MAX_D=128；
 撤销旧版“分别编译固定 d=64/72”的方案。当前授权已经包含实施与基本验证，
@@ -12,7 +14,8 @@
 ## 1. Workload 与硬件边界
 
 模型覆盖 PixArt-Sigma、DFoT-MCRAFT 与 Wan2.1-T2V-1.3B。
-三者同口径 GPU profiling 已完成；原生 ASIC 回放与优化后 PPA 均待实施。
+三者同口径 GPU profiling 已完成；原生模型 ASIC 回放尚未开始，
+优化 RTL 的基础功能验证和新 PPA 映射综合已完成；模型活动功耗尚未测量。
 本轮硬件目标是 batch-1、双向、稠密、多头 self-attention 的 QK/softmax/PV 核。
 模型 QKV projection、RoPE、文本编码、VAE 和完整 denoising loop 在核外完成。
 导出的 Q/K/V 必须位于模型规定的 QK normalization/RoPE 之后。
@@ -88,9 +91,9 @@
   输出打包与 tag 状态。用 valid/代际管理隔离旧数据，不要求清零整个 SRAM。
   新 query/head 的首个 KV tile 仍以零 O seed 开始，并初始化在线 m/l 状态。
 
-### 4.2 当前代码审计与修改清单
+### 4.2 优化前代码审计与本轮修改清单
 
-| 路径 | 当前事实 | 计划修改 |
+| 路径 | B0 代码事实 | 本轮修改 |
 | --- | --- | --- |
 | regfile | 已有 prog/cfg_head_dim，但 START 强制等于 HEAD_DIM 参数 | 校验范围并保留 job 快照，容量参数更名/区分为 MAX_D |
 | QK engine | 已用 head_dim_i 控制 issue/receive，仍受 HEAD_DIM_LIMIT 限制 | 按 MAX_D 配宽度，确认仅发 d 个 feature 并在 d−1 收尾 |
@@ -101,10 +104,11 @@
 | output buffer | GROUPS、末组填充和流地址均依赖编译期 HEAD_DIM | 最大物理布局固定；实际有效长度、末组与输出字节流按 active d |
 | top/loader/计数器 | OUTPUT_ROW_BYTES 编译常量，外部 loader 提供 tile | 同步实际 d 的装载长度、字节数、head 步长和 MAC 统计 |
 
-现有 QK 的局部支持不能作为整个芯片已支持运行时 d 的证据。
+优化前 QK 的局部支持不能作为整个芯片已支持运行时 d 的证据。
 所有请求、返回和写回 tag 必须同一 job；不按当前配置重新解释在途数据。
-START 阶段预计算 d−1、末组有效数、输出长度和 stride，避免把这些计算放到
-逐 feature 关键路径；32-feature group 继续用位切分寻址，不引入通用除法。
+控制尽量预存末组有效数和输出长度；32-feature group 使用位切分寻址，
+不引入通用除法。当前 QK/PV 仍有动态终止比较和 d−1 逻辑，
+不能直接宣称运行时维度不影响关键路径；实际影响以新综合时序为准。
 softmax 的概率列 tag 仍对应 32 个 PE 列，不因 MAX_D 改成 128 列。
 
 ### 4.3 SRAM 与外部数据布局
@@ -112,9 +116,12 @@ softmax 的概率列 tag 仍对应 32 个 PE 列，不因 MAX_D 改成 128 列�
 - Q/K/V cache 仍按 feature-major 存储：每个 feature 地址装 32 个 INT8 lane。
   每个 tensor/tile 只装载 d 个 256-bit word，即 2d 个 128-bit loader beat。
   N 尾 tile 的无效 token lane 单独屏蔽，不补充 d 到 128 的传输。
-- 若暂沿用当前 O 分组，MAX_D=128 对应四个 32-feature 物理 group。
+- 例如 d=72，每个 tensor/tile 为 72 word、144 beat、2304 byte。
+  N 尾 tile 仍传 32-lane word，只屏蔽无效 token，没有压缩这些 token 字节。
+- 若直接沿用优化前 O 分组，MAX_D=128 对应四个 32-feature 物理 group。
   d=64 仅访问前两个，d=72 访问前两个加第三个的 8 个位置，d=128 访问全部。
   不把“实际访问 3 组”误称为物理上只有 3 组，不能越界读写未初始化维度。
+  本轮实际已改为两个完整 O 版本，单口读旧/写新，见第 5 节。
 - 输出物理槽可先固定为每行 128 字节，但外部逻辑输出必须只含实际 d 字节。
   d=72 时跳过物理填充，用小型字节拼接缓冲跨行组成 AXI beat；
   禁止把内部 128 字节槽直接连续导出为每行 72 字节的张量。
@@ -139,12 +146,16 @@ d=128 检查 QK 累加范围，PV 跨 tile 的重缩放和误差也需回归。
 
 1. 同一仿真实例连续跑 d=64→72→128→72→64，不重新 elaboration，不换网表。
    用不同数据及未用地址的脏数据，检查无旧 cache/O/输出字节泄漏。
-2. 三种原生 d 覆盖 N=1/31/32/33/65、小 N 多头、跨 KV tile、AXI 随机停顿。
+2. 三种原生 d 覆盖 N=31/32/33/65、小 N 多头、跨 KV tile、AXI 随机停顿。
+   单行 query 场景使用 Nq=1/Nkv=3，不将它描述为已测试 Nq=Nkv=1。
    72 维重点检查跨行拼接、最后 beat、奇数 N 时的多头对齐。
 3. 小 N 遍历全部合法 d=1–128；重点检查 d=31/32/33、63/64/65、
    71/72/73、96、127/128，以及 d=0、129、255 的错误行为。
 4. 覆盖 busy 写配置、busy START、soft reset、最后一维返回与流水 drain。
-   各模块发出/接收/写回计数严格等于 d，无第 d 个越界 feature 地址。
+   直接 probe 核验 loader 握手、QK/PV feature issue 和 norm issue；
+   QK/PV 每次 tile 运算发射 d 个 feature，norm 每个 query tile 按 4×8 行分组发射 4d 次。
+   返回 tag/数据及 AXI 写回由逐字节参考模型和协议检查共同验收；
+   没有宣称逐个模块都独立统计了 return/writeback 次数。
 5. 统计实际 loader 字节、QK/PV feature 次数、归一化元素和输出有效字节。
    d=64/72 不得执行满 128；总周期保留固定填充/排空/softmax 成本，
    不预设总耗时正比 d。有效 MAC 数与物理尾 tile 空转分开记录。
@@ -185,9 +196,9 @@ MAX_D=128 实例运行 d=64 时，闲置 SRAM 不会物理消失，也不自动�
 PV 从旧版本读取、向新版本写入，上一 pass 写回排空后才在下一 PV 开始切换；
 最终归一化读取最近写完的版本。两套单口存储消除同 bank 同周期读写冲突，
 不需要把每个 32-feature group 独立实例化。O 逻辑分配容量为 32 KiB，
-O 物理宏仍为 256 个；加 Q/K/V 192 个与输出 32 个，预期总数为 480。
+O 物理宏仍为 256 个；加 Q/K/V 192 个与输出 32 个，总数为 480。
 总逻辑分配容量为 60 KiB，物理容量为 120 KiB；这是双版本存储的分配口径，
-不能把其中一份 O 漏计。实际 macro count/area 仍待本轮 DC 报告核对。
+不能把其中一份 O 漏计。最终 DC 已确认总宏数 480、宏面积 0.656746699 mm²。
 
 候选按以下顺序评估：
 
@@ -205,8 +216,9 @@ load/compute/writeback 周期以及同输入能量。宏容量利用率不是面
 
 ## 6. 重点三：有效时钟门控和无效数据翻转
 
-`rtl/common/fa_clock_gate.v:4` 当前明确直接透传根时钟，因此现有 enable
-信号并不代表硬件已门控。这是优先于继续加 mode 参数的功耗优化候选。
+B0 的 `fa_clock_gate` 直接透传根时钟，原 enable 不代表实际门控。
+本轮已实现低相位锁存的仿真模型与 28 个显式工艺 ICG，并通过短测试。
+以下约束继续用于验收；最终 DC 确认 28 个显式 ICG，功耗须区分活动与默认估计。
 
 - 分区：PE、Q/K/V skew、O bank、PV seed、normalizer、output buffer。
 - 使用工艺 ICG 或受约束的标准综合门控流程，禁止组合逻辑直接 AND 时钟。
@@ -227,7 +239,7 @@ load/compute/writeback 周期以及同输入能量。宏容量利用率不是面
 新增一级流水若可保持 II=1，应报告每 tile 的 drain 成本及算子总周期。
 不能用未经数值验证的位宽截断、PWL 改动或 false-path 隐藏来达标。
 
-同时处理 PE→O SRAM 最短路径的 hold 约束。改变宏映射、门控或流水后，
+已检查 SRAM 最短路径的 hold 约束，本轮未执行物理 hold 修复。改变宏映射、门控或流水后，
 必须复查 setup/hold、transition/fanout 和 SRAM 读写时序。
 优先最小化 C/f 与每次 Attention 的能量，不把频率单独作为优化结果。
 

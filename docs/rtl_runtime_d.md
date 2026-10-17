@@ -1,7 +1,9 @@
 # 运行时 head dimension 的扩散 Attention 实现
 
-日期：2026-10-17。分支：`codex/diffusion-runtime-d`。旧基线：`4e84950`。
-本文件描述当前 RTL 候选实现；功能测试、综合面积和时序须以对应报告为准。
+日期：2026-10-18。分支：`codex/diffusion-runtime-d`。旧基线：`4e84950`。
+当前实现已通过 157 个短 UVM job 和定向模块测试，并完成 28 nm TT 映射综合。
+总面积 2.452364 mm²，1.60 ns 目标下 setup 无违例；hold 尚未物理修复或签核。
+详细来源、测试边界和 PPA 见 [实施报告](../paper_test/IMPLEMENTATION_REPORT.md)。
 
 ## 容量与 job 合约
 

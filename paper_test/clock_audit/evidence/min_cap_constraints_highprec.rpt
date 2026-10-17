@@ -1,0 +1,23 @@
+ 
+****************************************
+Report : constraint
+        -all_violators
+        -min_capacitance
+Design : attention_accel_top
+Version: V-2023.12-SP5
+Date   : Sun Oct 18 01:10:35 2026
+****************************************
+
+
+   min_capacitance
+
+                             Required        Actual
+   Net                      Capacitance    Capacitance       Slack
+   -----------------------------------------------------------------
+   u_fused_array/n25936 (dont_touch) 0.00041000 0.00000000 -0.00041000 (VIOLATED)
+   u_fused_array/n113247 (dont_touch) 0.00041000 0.00000000 -0.00041000 (VIOLATED)
+
+   -----------------------------------------------------------------
+   Total                      2               -0.00082000
+
+1

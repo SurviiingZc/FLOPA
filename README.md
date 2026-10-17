@@ -14,6 +14,12 @@ not this new ASIC implementation. See [runtime-d RTL](docs/rtl_runtime_d.md)
 for the current ABI and [implementation report](paper_test/IMPLEMENTATION_REPORT.md)
 for validation and synthesis evidence.
 
+The new instance passes 157 short UVM jobs and 66,312 byte checks. Its 28 nm TT
+mapped cell area is 2.452364 mm², including 0.656747 mm² of SRAM (480 macros).
+It has 28 explicit ICGs and no setup violations at the 1.60 ns target. Pre-CTS
+SRAM-interface hold violations remain; this is not routed timing signoff.
+Workload power and model latency for this version have not yet been measured.
+
 ## Design Point
 
 | Item | Current implementation |
@@ -136,10 +142,11 @@ Compiler V-2023.12-SP5, Vivado/Vitis 2023.1 for VCK190, GNU Make, and the
 Run the short functional suite from the repository root:
 
 ```bash
-make runtime-d-smoke
+RUNTIME_D_OUT_DIR="$PWD/tb/sim/build/runtime_d_current" make runtime-d-smoke
 ```
 
-The suite uses one compiled simulator and short sequences. It checks native
+Use a fresh output directory to preserve the archived synthesis-authorizing
+build and logs. The suite uses one compiled simulator and short sequences. It checks native
 dimensions, configuration switches, tails, multiple heads, output strobes,
 and numerical data. See `docs/uvm_runtime_d.md` for exact coverage and logs.
 The old 21-run/23-module results below belong to the historical ABI.
@@ -154,7 +161,7 @@ make synth-verified CLOCK_PERIOD=1.6
 The manifest binds passing logs to their SHA256 and source commit. New results
 are stored in `asic/dc/work/synth/tt/diffusion_runtime_d/attention_accel_top/`;
 the old `system/` reports are retained as the historical baseline. Automatic
-clock-gate insertion remains disabled; 28 characterized RTL ICGs are expected.
+clock-gate insertion remains disabled; the final mapped design has 28 RTL ICGs.
 `power.rpt` without a new activity trace is a vectorless estimate, not gate-SAIF
 workload power. No new long-sequence gate simulation is required by this suite.
 

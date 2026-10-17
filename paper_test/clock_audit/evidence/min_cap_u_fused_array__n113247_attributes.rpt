@@ -1,0 +1,15 @@
+ 
+****************************************
+Report : Attribute
+Design : attention_accel_top
+Version: V-2023.12-SP5
+Date   : Sun Oct 18 01:10:35 2026
+****************************************
+
+Design          Object             Type      Attribute Name            Value
+--------------------------------------------------------------------------------
+attention_accel_top u_fused_array/n113247 net static_probability       0.500000
+attention_accel_top u_fused_array/n113247 net switching_activity       0.062500
+attention_accel_top u_fused_array/n113247 net calc_sa_tuples_mask      7
+
+1

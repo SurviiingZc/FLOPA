@@ -1,0 +1,91 @@
+ 
+****************************************
+Report : timing
+        -path full_clock_expanded
+        -delay max
+        -nets
+        -max_paths 1
+        -transition_time
+Design : attention_accel_top
+Version: V-2023.12-SP5
+Date   : Sun Oct 18 01:10:13 2026
+****************************************
+
+ # A fanout number of 1000 was used for high fanout net computations.
+
+Operating Conditions: tt0p9v25c   Library: tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+Wire Load Model Mode: segmented
+
+  Startpoint: u_regfile_cfg_head_dim_o_reg_1_
+              (rising edge-triggered flip-flop clocked by core_clk)
+  Endpoint: u_tile_cache/u_q1_u_clock_gate_u_icg
+            (gating element for clock core_clk)
+  Path Group: core_clk
+  Path Type: max
+
+  Des/Clust/Port     Wire Load Model       Library
+  ------------------------------------------------
+  fsa_stripe_STRIPE_ROWS8_COLS32_HEAD_DIM128_DATA_W8_SCORE_W32_PROB_W16_SUM_W32_TAG_W7_LOCAL_ROW_IDX_W3_0 ZeroWireload tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+  fsa_stripe_STRIPE_ROWS8_COLS32_HEAD_DIM128_DATA_W8_SCORE_W32_PROB_W16_SUM_W32_TAG_W7_LOCAL_ROW_IDX_W3_1 ZeroWireload tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+  fsa_stripe_STRIPE_ROWS8_COLS32_HEAD_DIM128_DATA_W8_SCORE_W32_PROB_W16_SUM_W32_TAG_W7_LOCAL_ROW_IDX_W3_2 ZeroWireload tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+  fsa_stripe_STRIPE_ROWS8_COLS32_HEAD_DIM128_DATA_W8_SCORE_W32_PROB_W16_SUM_W32_TAG_W7_LOCAL_ROW_IDX_W3_3 ZeroWireload tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+  output_buffer_ROWS32_NORM_LANES8_HEAD_DIM128_OUT_W8_GROUP_SIZE32 ZeroWireload tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+  online_normalizer_LANES8_ACC_W32_LSE_W32_OUT_W8_TAG_W9 ZeroWireload tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+  fsa_fused_array_ROWS32_STRIPE_ROWS8_COLS32_DATA_W8_SCORE_W32_PROB_W16_ACC_W32_LSE_W32_HEAD_DIM128_FEATURE_IDX_W7 ZeroWireload tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+  attention_accel_top ZeroWireload         tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+  qkv_tile_cache_ADDR_W7 ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+
+  Point                                                 Fanout     Trans      Incr       Path
+  ----------------------------------------------------------------------------------------------
+  clock core_clk (rise edge)                                                  0.00       0.00
+  clock network delay (ideal)                                                 0.00       0.00
+  u_regfile_cfg_head_dim_o_reg_1_/CP (DFCNQD1BWP12T30P140)          0.05      0.00 #     0.00 r
+  u_regfile_cfg_head_dim_o_reg_1_/Q (DFCNQD1BWP12T30P140)           0.01      0.04       0.04 r
+  cfg_head_dim_w[1] (net)                                 1                   0.00       0.04 r
+  U2050/ZN (INVD0BWP12T30P140)                                      0.05      0.03       0.08 f
+  intadd_3_A_1_ (net)                                    13                   0.00       0.08 f
+  U2058/ZN (INVD0BWP12T30P140)                                      0.12      0.09       0.16 r
+  intadd_2_B_0_ (net)                                    24                   0.00       0.16 r
+  U2318/ZN (MAOI222D0BWP12T30P140)                                  0.05      0.03       0.19 f
+  n1299 (net)                                             1                   0.00       0.19 f
+  U2319/ZN (MAOI222D0BWP12T30P140)                                  0.03      0.03       0.23 r
+  n1301 (net)                                             1                   0.00       0.23 r
+  U2321/ZN (MAOI222D0BWP12T30P140)                                  0.04      0.03       0.25 f
+  n1302 (net)                                             1                   0.00       0.25 f
+  U2323/ZN (MAOI222D0BWP12T30P140)                                  0.03      0.03       0.28 r
+  n1303 (net)                                             1                   0.00       0.28 r
+  U2325/ZN (MAOI222D0BWP12T30P140)                                  0.05      0.02       0.30 f
+  n1304 (net)                                             1                   0.00       0.30 f
+  U2326/ZN (MAOI222D0BWP12T30P140)                                  0.03      0.03       0.34 r
+  n1305 (net)                                             1                   0.00       0.34 r
+  U2328/ZN (MAOI222D0BWP12T30P140)                                  0.03      0.02       0.36 f
+  n1306 (net)                                             1                   0.00       0.36 f
+  U2329/ZN (NR2D0BWP12T30P140)                                      0.02      0.02       0.38 r
+  u_qk_engine_N15 (net)                                   2                   0.00       0.38 r
+  u_tile_cache/q_rd_en_i (qkv_tile_cache_ADDR_W7)                             0.00       0.38 r
+  u_tile_cache/q_rd_en_i (net)                                                0.00       0.38 r
+  u_tile_cache/U165/ZN (ND2D0BWP12T30P140)                          0.03      0.02       0.40 f
+  u_tile_cache/n34 (net)                                  4                   0.00       0.40 f
+  u_tile_cache/U171/ZN (NR2D0BWP12T30P140)                          0.06      0.05       0.45 r
+  u_tile_cache/u_q1_N87 (net)                             9                   0.00       0.45 r
+  u_tile_cache/U1151/ZN (INVD0BWP12T30P140)                         0.05      0.04       0.49 f
+  u_tile_cache/n660 (net)                                 8                   0.00       0.49 f
+  u_tile_cache/U1154/ZN (ND3D1BWP12T30P140)                         0.02      0.01       0.50 r
+  u_tile_cache/u_q1__0_net_ (net)                         1                   0.00       0.50 r
+  u_tile_cache/u_q1_u_clock_gate_u_icg/E (CKLNQD1BWP12T30P140)      0.02      0.00       0.50 r
+  data arrival time                                                                      0.50
+
+  clock core_clk (rise edge)                                                  1.60       1.60
+  clock network delay (ideal)                                                 0.00       1.60
+  clock uncertainty                                                          -0.10       1.50
+  u_tile_cache/u_q1_u_clock_gate_u_icg/CP (CKLNQD1BWP12T30P140)               0.00       1.50 r
+  clock gating setup time                                                    -0.03       1.47
+  data required time                                                                     1.47
+  ----------------------------------------------------------------------------------------------
+  data required time                                                                     1.47
+  data arrival time                                                                     -0.50
+  ----------------------------------------------------------------------------------------------
+  slack (MET)                                                                            0.97
+
+
+1

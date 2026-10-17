@@ -1,0 +1,69 @@
+ 
+****************************************
+Report : timing
+        -path full_clock_expanded
+        -delay min
+        -nets
+        -max_paths 1
+        -transition_time
+Design : attention_accel_top
+Version: V-2023.12-SP5
+Date   : Sun Oct 18 01:10:19 2026
+****************************************
+
+ # A fanout number of 1000 was used for high fanout net computations.
+
+Operating Conditions: tt0p9v25c   Library: tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+Wire Load Model Mode: segmented
+
+  Startpoint: pv_flow_state_q_reg_0_
+              (rising edge-triggered flip-flop clocked by core_clk)
+  Endpoint: u_normalizer/u_clock_gate_u_icg
+            (gating element for clock core_clk)
+  Path Group: core_clk
+  Path Type: min
+
+  Des/Clust/Port     Wire Load Model       Library
+  ------------------------------------------------
+  fsa_stripe_STRIPE_ROWS8_COLS32_HEAD_DIM128_DATA_W8_SCORE_W32_PROB_W16_SUM_W32_TAG_W7_LOCAL_ROW_IDX_W3_0 ZeroWireload tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+  fsa_stripe_STRIPE_ROWS8_COLS32_HEAD_DIM128_DATA_W8_SCORE_W32_PROB_W16_SUM_W32_TAG_W7_LOCAL_ROW_IDX_W3_1 ZeroWireload tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+  fsa_stripe_STRIPE_ROWS8_COLS32_HEAD_DIM128_DATA_W8_SCORE_W32_PROB_W16_SUM_W32_TAG_W7_LOCAL_ROW_IDX_W3_2 ZeroWireload tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+  fsa_stripe_STRIPE_ROWS8_COLS32_HEAD_DIM128_DATA_W8_SCORE_W32_PROB_W16_SUM_W32_TAG_W7_LOCAL_ROW_IDX_W3_3 ZeroWireload tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+  output_buffer_ROWS32_NORM_LANES8_HEAD_DIM128_OUT_W8_GROUP_SIZE32 ZeroWireload tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+  online_normalizer_LANES8_ACC_W32_LSE_W32_OUT_W8_TAG_W9 ZeroWireload tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+  fsa_fused_array_ROWS32_STRIPE_ROWS8_COLS32_DATA_W8_SCORE_W32_PROB_W16_ACC_W32_LSE_W32_HEAD_DIM128_FEATURE_IDX_W7 ZeroWireload tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+  attention_accel_top ZeroWireload         tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+  qkv_tile_cache_ADDR_W7 ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+
+  Point                                                                     Fanout     Trans      Incr       Path
+  ------------------------------------------------------------------------------------------------------------------
+  clock core_clk (rise edge)                                                                      0.00       0.00
+  clock network delay (ideal)                                                                     0.00       0.00
+  pv_flow_state_q_reg_0_/CP (DFCNQD1BWP12T30P140)                                       0.05      0.00 #     0.00 r
+  pv_flow_state_q_reg_0_/Q (DFCNQD1BWP12T30P140)                                        0.01      0.05       0.05 f
+  pv_flow_state_q[0] (net)                                                    5                   0.00       0.05 f
+  U2379/ZN (ND2D0BWP12T30P140)                                                          0.02      0.01       0.07 r
+  n3167 (net)                                                                 4                   0.00       0.07 r
+  U6113/ZN (ND3D1BWP12T30P140)                                                          0.02      0.02       0.08 f
+  normalizer_clock_en_w (net)                                                 2                   0.00       0.08 f
+  u_normalizer/clock_en_i (online_normalizer_LANES8_ACC_W32_LSE_W32_OUT_W8_TAG_W9)                0.00       0.08 f
+  u_normalizer/clock_en_i (net)                                                                   0.00       0.08 f
+  u_normalizer/U32984/Z (OR2D1BWP12T30P140)                                             0.01      0.02       0.10 f
+  u_normalizer/n_0_net_ (net)                                                 1                   0.00       0.10 f
+  u_normalizer/u_clock_gate_u_icg/E (CKLNQD1BWP12T30P140)                               0.01      0.00       0.10 f
+  data arrival time                                                                                          0.10
+
+  clock core_clk (rise edge)                                                                      0.00       0.00
+  clock network delay (ideal)                                                                     0.00       0.00
+  clock uncertainty                                                                               0.02       0.02
+  u_normalizer/u_clock_gate_u_icg/CP (CKLNQD1BWP12T30P140)                                        0.00       0.02 r
+  clock gating hold time                                                                          0.00       0.02
+  data required time                                                                                         0.02
+  ------------------------------------------------------------------------------------------------------------------
+  data required time                                                                                         0.02
+  data arrival time                                                                                         -0.10
+  ------------------------------------------------------------------------------------------------------------------
+  slack (MET)                                                                                                0.08
+
+
+1

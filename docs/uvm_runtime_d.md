@@ -1,18 +1,21 @@
 # Runtime-d RTL/UVM 短序列验证
 
-更新：2026-10-17。验证对象为同一 `MAX_D=128` 物理实例，ABI 版本 3。
+更新：2026-10-18。验证对象为同一 `MAX_D=128` 物理实例，ABI 版本 3。
 本轮只做短序列功能验证；不把旧版 21/23 项或历史覆盖率算作新版结果。
 
 ## 入口与产物
 
 ```bash
-make runtime-d-smoke
+RUNTIME_D_OUT_DIR="$PWD/tb/sim/build/runtime_d_current" make runtime-d-smoke
 # 或等价入口
-bash tb/sim/scripts/run_uvm_regression.sh
+RUNTIME_D_OUT_DIR="$PWD/tb/sim/build/runtime_d_current" \
+    bash tb/sim/scripts/run_uvm_regression.sh
 ```
 
 仅编译一份 UVM `simv`，所有 d 和连续 job 复用它；另外有一份很小的算术
-module 测试可执行文件。默认输出 `tb/sim/build/runtime_d`，不生成波形或 SAIF。
+module 测试可执行文件。命令显式选用新输出目录，不覆盖历史验收证据。
+脚本不指定目录时默认 `tb/sim/build/runtime_d`；本次实际保留了该原综合输入构建
+以及 `tb/sim/build/runtime_d_formatted` 格式版构建。均不生成波形或 SAIF。
 可用 `RUNTIME_D_TESTS` 选择单项调试。`RUNTIME_D_SKIP_COMPILE=1` 只有在源码、
 ASIC SRAM 模型、VCS 路径和两份可执行文件的哈希均匹配时才允许复用。
 

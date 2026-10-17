@@ -1,0 +1,57 @@
+ 
+****************************************
+Report : timing
+        -path full_clock_expanded
+        -delay min
+        -nets
+        -max_paths 1
+        -transition_time
+Design : attention_accel_top
+Version: V-2023.12-SP5
+Date   : Sun Oct 18 01:10:13 2026
+****************************************
+
+ # A fanout number of 1000 was used for high fanout net computations.
+
+Operating Conditions: tt0p9v25c   Library: tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+Wire Load Model Mode: segmented
+
+  Startpoint: u_tile_cache/u_q0_wr_en_q_reg
+              (rising edge-triggered flip-flop clocked by core_clk)
+  Endpoint: u_tile_cache/u_q0_u_clock_gate_u_icg
+            (gating element for clock core_clk)
+  Path Group: core_clk
+  Path Type: min
+
+  Des/Clust/Port     Wire Load Model       Library
+  ------------------------------------------------
+  qkv_tile_cache_ADDR_W7 ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+
+  Point                                                 Fanout     Trans      Incr       Path
+  ----------------------------------------------------------------------------------------------
+  clock core_clk (rise edge)                                                  0.00       0.00
+  clock network delay (ideal)                                                 0.00       0.00
+  u_tile_cache/u_q0_wr_en_q_reg/CP (DFCNQD1BWP12T30P140)            0.05      0.00       0.00 r
+  u_tile_cache/u_q0_wr_en_q_reg/Q (DFCNQD1BWP12T30P140)             0.01      0.05       0.05 r
+  u_tile_cache/u_q0_wr_en_q (net)                         3                   0.00       0.05 r
+  u_tile_cache/U1134/ZN (NR4D0BWP12T30P140)                         0.01      0.01       0.06 f
+  u_tile_cache/n101 (net)                                 1                   0.00       0.06 f
+  u_tile_cache/U1136/ZN (IND3D1BWP12T30P140)                        0.01      0.01       0.07 r
+  u_tile_cache/u_q0__0_net_ (net)                         1                   0.00       0.07 r
+  u_tile_cache/u_q0_u_clock_gate_u_icg/E (CKLNQD1BWP12T30P140)      0.01      0.00       0.07 r
+  data arrival time                                                                      0.07
+
+  clock core_clk (rise edge)                                                  0.00       0.00
+  clock network delay (ideal)                                                 0.00       0.00
+  clock uncertainty                                                           0.02       0.02
+  u_tile_cache/u_q0_u_clock_gate_u_icg/CP (CKLNQD1BWP12T30P140)               0.00       0.02 r
+  clock gating hold time                                                     -0.01       0.01
+  data required time                                                                     0.01
+  ----------------------------------------------------------------------------------------------
+  data required time                                                                     0.01
+  data arrival time                                                                     -0.07
+  ----------------------------------------------------------------------------------------------
+  slack (MET)                                                                            0.06
+
+
+1

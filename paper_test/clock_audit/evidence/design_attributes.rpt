@@ -1,0 +1,66 @@
+ 
+****************************************
+Report : Attribute
+Design : attention_accel_top
+Version: V-2023.12-SP5
+Date   : Sun Oct 18 01:10:08 2026
+****************************************
+
+Design          Object             Type      Attribute Name            Value
+--------------------------------------------------------------------------------
+attention_accel_top attention_accel_top design temperature_from_min_lib 25.000000
+attention_accel_top attention_accel_top design temperature_from_max_lib 25.000000
+attention_accel_top attention_accel_top design max_fanout              24.000000
+attention_accel_top attention_accel_top design max_transition          0.300000
+attention_accel_top attention_accel_top design map_effort_option       3
+attention_accel_top attention_accel_top design instance_name_suffix    
+attention_accel_top attention_accel_top design testdb_meth_sig_usage_option 98307
+attention_accel_top attention_accel_top design testdb_meth_sig_usage   106499
+attention_accel_top attention_accel_top design testdb_meth_name        multiplexed_flip_flop
+attention_accel_top attention_accel_top design leakage_power_model     4
+attention_accel_top attention_accel_top design multibit_mode           non_timing_driven
+attention_accel_top attention_accel_top design map                     true
+attention_accel_top attention_accel_top design pads_thru_hier          false
+attention_accel_top attention_accel_top design pads_respect_hier       false
+attention_accel_top attention_accel_top design ungroup_all_option      false
+attention_accel_top attention_accel_top design redundancy_removal      true
+attention_accel_top attention_accel_top design power_info_requested    true
+attention_accel_top attention_accel_top design pwr_cg_design_has_clock_gating true
+attention_accel_top attention_accel_top design dft_done_attr           false
+attention_accel_top attention_accel_top design icc2link_placer_compile false
+attention_accel_top attention_accel_top design register_merging        17
+attention_accel_top attention_accel_top design compile_tdrs_cpu_time   490.664062
+attention_accel_top attention_accel_top design compile_lib_cpu_time    0.001801
+attention_accel_top attention_accel_top design compile_tot_cpu_time    20114.119141
+attention_accel_top attention_accel_top design compile_rbo_cpu_time    8958.445312
+attention_accel_top attention_accel_top design compile_abo_cpu_time    2674.100586
+attention_accel_top attention_accel_top design compile_tot_wall_time   4517.745117
+attention_accel_top attention_accel_top design fix_multiple_port_nets  feedthroughs constants outputs buffer_constants
+attention_accel_top attention_accel_top design design_voltage_unit     1000.000000
+attention_accel_top attention_accel_top design design_current_unit     1.000000
+attention_accel_top attention_accel_top design design_resistance_unit  1.000000
+attention_accel_top attention_accel_top design design_cap_unit         1.000000
+attention_accel_top attention_accel_top design design_time_unit        1.000000
+attention_accel_top attention_accel_top design scan_state_type         1
+attention_accel_top attention_accel_top design min_wire_load_selection_type 0
+attention_accel_top attention_accel_top design wire_load_selection_type 3
+attention_accel_top attention_accel_top design hdl_library             WORK
+attention_accel_top attention_accel_top design hdl_template            attention_accel_top
+attention_accel_top attention_accel_top design hdl_canonical_default_params ACC_W=32'h00000020,ARRAY_COLS=32'h00000020,ARRAY_DATA_W=32'h00000008,ARRAY_ROWS=32'h00000020,BETA_W=32'h00000010,CACHE_ADDR_W=32'h00000007,CACHE_WORD_W=32'h00000100,HEAD_DIM=32'h00000080,LSE_W=32'h00000020,MAX_D=32'h00000080,OUT_W=32'h00000008,STRIPE_ROWS=32'h00000008
+attention_accel_top attention_accel_top design hdl_default_parameters  ARRAY_ROWS => 32, ARRAY_COLS => 32, ARRAY_DATA_W => 8, ACC_W => 32, BETA_W => 16, LSE_W => 32, OUT_W => 8, MAX_D => 128, HEAD_DIM => 128, CACHE_WORD_W => 256, CACHE_ADDR_W => 7, STRIPE_ROWS => 8
+attention_accel_top attention_accel_top design hdl_canonical_params    
+attention_accel_top attention_accel_top design hdl_parameters          
+attention_accel_top attention_accel_top design link_design_libraries   WORK, DEFAULT
+attention_accel_top attention_accel_top design presto_gtech_count      2391
+attention_accel_top attention_accel_top design ice_canonical_nand2_delay 0.008467
+attention_accel_top attention_accel_top design ice_canonical_xor2_delay 0.023074
+attention_accel_top attention_accel_top design compile_cpu_hostname    edaserver
+attention_accel_top attention_accel_top design exact_sequential_map    false
+attention_accel_top attention_accel_top design compiled_with_ultra     true
+attention_accel_top attention_accel_top design scan_state_route_serial false
+attention_accel_top attention_accel_top design scan_state_route_clocks false
+attention_accel_top attention_accel_top design scan_state_route_enables false
+attention_accel_top attention_accel_top design leakage_power_opto      true
+attention_accel_top attention_accel_top design pwr_cg_identification_was_executed true
+
+1

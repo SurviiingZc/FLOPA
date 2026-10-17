@@ -1,0 +1,677 @@
+ 
+****************************************
+Report : timing
+        -path full_clock_expanded
+        -delay min
+        -max_paths 20
+Design : attention_accel_top
+Version: V-2023.12-SP5
+Date   : Sun Oct 18 01:10:19 2026
+****************************************
+
+ # A fanout number of 1000 was used for high fanout net computations.
+
+Operating Conditions: tt0p9v25c   Library: tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+Wire Load Model Mode: segmented
+
+  Startpoint: u_output_buffer/pack_q_reg_0__0_
+              (rising edge-triggered flip-flop clocked by core_clk)
+  Endpoint: u_output_buffer/u_out_mem_g_byte_0__u_sram
+            (rising edge-triggered flip-flop clocked by core_clk)
+  Path Group: core_clk
+  Path Type: min
+
+  Des/Clust/Port     Wire Load Model       Library
+  ------------------------------------------------
+  output_buffer_ROWS32_NORM_LANES8_HEAD_DIM128_OUT_W8_GROUP_SIZE32 ZeroWireload tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+
+  Point                                                                 Incr       Path
+  ----------------------------------------------------------------------------------------
+  clock core_clk (rise edge)                                            0.00       0.00
+  clock network delay (ideal)                                           0.00       0.00
+  u_output_buffer/pack_q_reg_0__0_/CP (DFQD1BWP12T30P140)               0.00 #     0.00 r
+  u_output_buffer/pack_q_reg_0__0_/Q (DFQD1BWP12T30P140)                0.04       0.04 r
+  u_output_buffer/u_out_mem_g_byte_0__u_sram/D[0] (uhdsp_256x8m4s)      0.00       0.04 r
+  data arrival time                                                                0.04
+
+  clock core_clk (rise edge)                                            0.00       0.00
+  clock network delay (ideal)                                           0.00       0.00
+  clock uncertainty                                                     0.02       0.02
+  u_output_buffer/u_out_mem_g_byte_0__u_sram/CLK (uhdsp_256x8m4s)       0.00       0.02 r
+  library hold time                                                     0.12       0.14
+  data required time                                                               0.14
+  ----------------------------------------------------------------------------------------
+  data required time                                                               0.14
+  data arrival time                                                               -0.04
+  ----------------------------------------------------------------------------------------
+  slack (VIOLATED)                                                                -0.10
+
+
+  Startpoint: u_output_buffer/pack_q_reg_0__1_
+              (rising edge-triggered flip-flop clocked by core_clk)
+  Endpoint: u_output_buffer/u_out_mem_g_byte_0__u_sram
+            (rising edge-triggered flip-flop clocked by core_clk)
+  Path Group: core_clk
+  Path Type: min
+
+  Des/Clust/Port     Wire Load Model       Library
+  ------------------------------------------------
+  output_buffer_ROWS32_NORM_LANES8_HEAD_DIM128_OUT_W8_GROUP_SIZE32 ZeroWireload tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+
+  Point                                                                 Incr       Path
+  ----------------------------------------------------------------------------------------
+  clock core_clk (rise edge)                                            0.00       0.00
+  clock network delay (ideal)                                           0.00       0.00
+  u_output_buffer/pack_q_reg_0__1_/CP (DFQD1BWP12T30P140)               0.00 #     0.00 r
+  u_output_buffer/pack_q_reg_0__1_/Q (DFQD1BWP12T30P140)                0.04       0.04 r
+  u_output_buffer/u_out_mem_g_byte_0__u_sram/D[1] (uhdsp_256x8m4s)      0.00       0.04 r
+  data arrival time                                                                0.04
+
+  clock core_clk (rise edge)                                            0.00       0.00
+  clock network delay (ideal)                                           0.00       0.00
+  clock uncertainty                                                     0.02       0.02
+  u_output_buffer/u_out_mem_g_byte_0__u_sram/CLK (uhdsp_256x8m4s)       0.00       0.02 r
+  library hold time                                                     0.12       0.14
+  data required time                                                               0.14
+  ----------------------------------------------------------------------------------------
+  data required time                                                               0.14
+  data arrival time                                                               -0.04
+  ----------------------------------------------------------------------------------------
+  slack (VIOLATED)                                                                -0.10
+
+
+  Startpoint: u_output_buffer/pack_q_reg_0__2_
+              (rising edge-triggered flip-flop clocked by core_clk)
+  Endpoint: u_output_buffer/u_out_mem_g_byte_0__u_sram
+            (rising edge-triggered flip-flop clocked by core_clk)
+  Path Group: core_clk
+  Path Type: min
+
+  Des/Clust/Port     Wire Load Model       Library
+  ------------------------------------------------
+  output_buffer_ROWS32_NORM_LANES8_HEAD_DIM128_OUT_W8_GROUP_SIZE32 ZeroWireload tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+
+  Point                                                                 Incr       Path
+  ----------------------------------------------------------------------------------------
+  clock core_clk (rise edge)                                            0.00       0.00
+  clock network delay (ideal)                                           0.00       0.00
+  u_output_buffer/pack_q_reg_0__2_/CP (DFQD1BWP12T30P140)               0.00 #     0.00 r
+  u_output_buffer/pack_q_reg_0__2_/Q (DFQD1BWP12T30P140)                0.04       0.04 r
+  u_output_buffer/u_out_mem_g_byte_0__u_sram/D[2] (uhdsp_256x8m4s)      0.00       0.04 r
+  data arrival time                                                                0.04
+
+  clock core_clk (rise edge)                                            0.00       0.00
+  clock network delay (ideal)                                           0.00       0.00
+  clock uncertainty                                                     0.02       0.02
+  u_output_buffer/u_out_mem_g_byte_0__u_sram/CLK (uhdsp_256x8m4s)       0.00       0.02 r
+  library hold time                                                     0.12       0.14
+  data required time                                                               0.14
+  ----------------------------------------------------------------------------------------
+  data required time                                                               0.14
+  data arrival time                                                               -0.04
+  ----------------------------------------------------------------------------------------
+  slack (VIOLATED)                                                                -0.10
+
+
+  Startpoint: u_output_buffer/pack_q_reg_0__3_
+              (rising edge-triggered flip-flop clocked by core_clk)
+  Endpoint: u_output_buffer/u_out_mem_g_byte_0__u_sram
+            (rising edge-triggered flip-flop clocked by core_clk)
+  Path Group: core_clk
+  Path Type: min
+
+  Des/Clust/Port     Wire Load Model       Library
+  ------------------------------------------------
+  output_buffer_ROWS32_NORM_LANES8_HEAD_DIM128_OUT_W8_GROUP_SIZE32 ZeroWireload tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+
+  Point                                                                 Incr       Path
+  ----------------------------------------------------------------------------------------
+  clock core_clk (rise edge)                                            0.00       0.00
+  clock network delay (ideal)                                           0.00       0.00
+  u_output_buffer/pack_q_reg_0__3_/CP (DFQD1BWP12T30P140)               0.00 #     0.00 r
+  u_output_buffer/pack_q_reg_0__3_/Q (DFQD1BWP12T30P140)                0.04       0.04 r
+  u_output_buffer/u_out_mem_g_byte_0__u_sram/D[3] (uhdsp_256x8m4s)      0.00       0.04 r
+  data arrival time                                                                0.04
+
+  clock core_clk (rise edge)                                            0.00       0.00
+  clock network delay (ideal)                                           0.00       0.00
+  clock uncertainty                                                     0.02       0.02
+  u_output_buffer/u_out_mem_g_byte_0__u_sram/CLK (uhdsp_256x8m4s)       0.00       0.02 r
+  library hold time                                                     0.12       0.14
+  data required time                                                               0.14
+  ----------------------------------------------------------------------------------------
+  data required time                                                               0.14
+  data arrival time                                                               -0.04
+  ----------------------------------------------------------------------------------------
+  slack (VIOLATED)                                                                -0.10
+
+
+  Startpoint: u_output_buffer/pack_q_reg_0__4_
+              (rising edge-triggered flip-flop clocked by core_clk)
+  Endpoint: u_output_buffer/u_out_mem_g_byte_0__u_sram
+            (rising edge-triggered flip-flop clocked by core_clk)
+  Path Group: core_clk
+  Path Type: min
+
+  Des/Clust/Port     Wire Load Model       Library
+  ------------------------------------------------
+  output_buffer_ROWS32_NORM_LANES8_HEAD_DIM128_OUT_W8_GROUP_SIZE32 ZeroWireload tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+
+  Point                                                                 Incr       Path
+  ----------------------------------------------------------------------------------------
+  clock core_clk (rise edge)                                            0.00       0.00
+  clock network delay (ideal)                                           0.00       0.00
+  u_output_buffer/pack_q_reg_0__4_/CP (DFQD1BWP12T30P140)               0.00 #     0.00 r
+  u_output_buffer/pack_q_reg_0__4_/Q (DFQD1BWP12T30P140)                0.04       0.04 r
+  u_output_buffer/u_out_mem_g_byte_0__u_sram/D[4] (uhdsp_256x8m4s)      0.00       0.04 r
+  data arrival time                                                                0.04
+
+  clock core_clk (rise edge)                                            0.00       0.00
+  clock network delay (ideal)                                           0.00       0.00
+  clock uncertainty                                                     0.02       0.02
+  u_output_buffer/u_out_mem_g_byte_0__u_sram/CLK (uhdsp_256x8m4s)       0.00       0.02 r
+  library hold time                                                     0.12       0.14
+  data required time                                                               0.14
+  ----------------------------------------------------------------------------------------
+  data required time                                                               0.14
+  data arrival time                                                               -0.04
+  ----------------------------------------------------------------------------------------
+  slack (VIOLATED)                                                                -0.10
+
+
+  Startpoint: u_output_buffer/pack_q_reg_0__5_
+              (rising edge-triggered flip-flop clocked by core_clk)
+  Endpoint: u_output_buffer/u_out_mem_g_byte_0__u_sram
+            (rising edge-triggered flip-flop clocked by core_clk)
+  Path Group: core_clk
+  Path Type: min
+
+  Des/Clust/Port     Wire Load Model       Library
+  ------------------------------------------------
+  output_buffer_ROWS32_NORM_LANES8_HEAD_DIM128_OUT_W8_GROUP_SIZE32 ZeroWireload tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+
+  Point                                                                 Incr       Path
+  ----------------------------------------------------------------------------------------
+  clock core_clk (rise edge)                                            0.00       0.00
+  clock network delay (ideal)                                           0.00       0.00
+  u_output_buffer/pack_q_reg_0__5_/CP (DFQD1BWP12T30P140)               0.00 #     0.00 r
+  u_output_buffer/pack_q_reg_0__5_/Q (DFQD1BWP12T30P140)                0.04       0.04 r
+  u_output_buffer/u_out_mem_g_byte_0__u_sram/D[5] (uhdsp_256x8m4s)      0.00       0.04 r
+  data arrival time                                                                0.04
+
+  clock core_clk (rise edge)                                            0.00       0.00
+  clock network delay (ideal)                                           0.00       0.00
+  clock uncertainty                                                     0.02       0.02
+  u_output_buffer/u_out_mem_g_byte_0__u_sram/CLK (uhdsp_256x8m4s)       0.00       0.02 r
+  library hold time                                                     0.12       0.14
+  data required time                                                               0.14
+  ----------------------------------------------------------------------------------------
+  data required time                                                               0.14
+  data arrival time                                                               -0.04
+  ----------------------------------------------------------------------------------------
+  slack (VIOLATED)                                                                -0.10
+
+
+  Startpoint: u_output_buffer/pack_q_reg_0__6_
+              (rising edge-triggered flip-flop clocked by core_clk)
+  Endpoint: u_output_buffer/u_out_mem_g_byte_0__u_sram
+            (rising edge-triggered flip-flop clocked by core_clk)
+  Path Group: core_clk
+  Path Type: min
+
+  Des/Clust/Port     Wire Load Model       Library
+  ------------------------------------------------
+  output_buffer_ROWS32_NORM_LANES8_HEAD_DIM128_OUT_W8_GROUP_SIZE32 ZeroWireload tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+
+  Point                                                                 Incr       Path
+  ----------------------------------------------------------------------------------------
+  clock core_clk (rise edge)                                            0.00       0.00
+  clock network delay (ideal)                                           0.00       0.00
+  u_output_buffer/pack_q_reg_0__6_/CP (DFQD1BWP12T30P140)               0.00 #     0.00 r
+  u_output_buffer/pack_q_reg_0__6_/Q (DFQD1BWP12T30P140)                0.04       0.04 r
+  u_output_buffer/u_out_mem_g_byte_0__u_sram/D[6] (uhdsp_256x8m4s)      0.00       0.04 r
+  data arrival time                                                                0.04
+
+  clock core_clk (rise edge)                                            0.00       0.00
+  clock network delay (ideal)                                           0.00       0.00
+  clock uncertainty                                                     0.02       0.02
+  u_output_buffer/u_out_mem_g_byte_0__u_sram/CLK (uhdsp_256x8m4s)       0.00       0.02 r
+  library hold time                                                     0.12       0.14
+  data required time                                                               0.14
+  ----------------------------------------------------------------------------------------
+  data required time                                                               0.14
+  data arrival time                                                               -0.04
+  ----------------------------------------------------------------------------------------
+  slack (VIOLATED)                                                                -0.10
+
+
+  Startpoint: u_output_buffer/pack_q_reg_0__7_
+              (rising edge-triggered flip-flop clocked by core_clk)
+  Endpoint: u_output_buffer/u_out_mem_g_byte_0__u_sram
+            (rising edge-triggered flip-flop clocked by core_clk)
+  Path Group: core_clk
+  Path Type: min
+
+  Des/Clust/Port     Wire Load Model       Library
+  ------------------------------------------------
+  output_buffer_ROWS32_NORM_LANES8_HEAD_DIM128_OUT_W8_GROUP_SIZE32 ZeroWireload tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+
+  Point                                                                 Incr       Path
+  ----------------------------------------------------------------------------------------
+  clock core_clk (rise edge)                                            0.00       0.00
+  clock network delay (ideal)                                           0.00       0.00
+  u_output_buffer/pack_q_reg_0__7_/CP (DFQD1BWP12T30P140)               0.00 #     0.00 r
+  u_output_buffer/pack_q_reg_0__7_/Q (DFQD1BWP12T30P140)                0.04       0.04 r
+  u_output_buffer/u_out_mem_g_byte_0__u_sram/D[7] (uhdsp_256x8m4s)      0.00       0.04 r
+  data arrival time                                                                0.04
+
+  clock core_clk (rise edge)                                            0.00       0.00
+  clock network delay (ideal)                                           0.00       0.00
+  clock uncertainty                                                     0.02       0.02
+  u_output_buffer/u_out_mem_g_byte_0__u_sram/CLK (uhdsp_256x8m4s)       0.00       0.02 r
+  library hold time                                                     0.12       0.14
+  data required time                                                               0.14
+  ----------------------------------------------------------------------------------------
+  data required time                                                               0.14
+  data arrival time                                                               -0.04
+  ----------------------------------------------------------------------------------------
+  slack (VIOLATED)                                                                -0.10
+
+
+  Startpoint: u_output_buffer/pack_q_reg_0__112_
+              (rising edge-triggered flip-flop clocked by core_clk)
+  Endpoint: u_output_buffer/u_out_mem_g_byte_14__u_sram
+            (rising edge-triggered flip-flop clocked by core_clk)
+  Path Group: core_clk
+  Path Type: min
+
+  Des/Clust/Port     Wire Load Model       Library
+  ------------------------------------------------
+  output_buffer_ROWS32_NORM_LANES8_HEAD_DIM128_OUT_W8_GROUP_SIZE32 ZeroWireload tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+
+  Point                                                                  Incr       Path
+  -----------------------------------------------------------------------------------------
+  clock core_clk (rise edge)                                             0.00       0.00
+  clock network delay (ideal)                                            0.00       0.00
+  u_output_buffer/pack_q_reg_0__112_/CP (DFQD1BWP12T30P140)              0.00 #     0.00 r
+  u_output_buffer/pack_q_reg_0__112_/Q (DFQD1BWP12T30P140)               0.04       0.04 r
+  u_output_buffer/u_out_mem_g_byte_14__u_sram/D[0] (uhdsp_256x8m4s)      0.00       0.04 r
+  data arrival time                                                                 0.04
+
+  clock core_clk (rise edge)                                             0.00       0.00
+  clock network delay (ideal)                                            0.00       0.00
+  clock uncertainty                                                      0.02       0.02
+  u_output_buffer/u_out_mem_g_byte_14__u_sram/CLK (uhdsp_256x8m4s)       0.00       0.02 r
+  library hold time                                                      0.12       0.14
+  data required time                                                                0.14
+  -----------------------------------------------------------------------------------------
+  data required time                                                                0.14
+  data arrival time                                                                -0.04
+  -----------------------------------------------------------------------------------------
+  slack (VIOLATED)                                                                 -0.10
+
+
+  Startpoint: u_output_buffer/pack_q_reg_0__116_
+              (rising edge-triggered flip-flop clocked by core_clk)
+  Endpoint: u_output_buffer/u_out_mem_g_byte_14__u_sram
+            (rising edge-triggered flip-flop clocked by core_clk)
+  Path Group: core_clk
+  Path Type: min
+
+  Des/Clust/Port     Wire Load Model       Library
+  ------------------------------------------------
+  output_buffer_ROWS32_NORM_LANES8_HEAD_DIM128_OUT_W8_GROUP_SIZE32 ZeroWireload tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+
+  Point                                                                  Incr       Path
+  -----------------------------------------------------------------------------------------
+  clock core_clk (rise edge)                                             0.00       0.00
+  clock network delay (ideal)                                            0.00       0.00
+  u_output_buffer/pack_q_reg_0__116_/CP (DFQD1BWP12T30P140)              0.00 #     0.00 r
+  u_output_buffer/pack_q_reg_0__116_/Q (DFQD1BWP12T30P140)               0.04       0.04 r
+  u_output_buffer/u_out_mem_g_byte_14__u_sram/D[4] (uhdsp_256x8m4s)      0.00       0.04 r
+  data arrival time                                                                 0.04
+
+  clock core_clk (rise edge)                                             0.00       0.00
+  clock network delay (ideal)                                            0.00       0.00
+  clock uncertainty                                                      0.02       0.02
+  u_output_buffer/u_out_mem_g_byte_14__u_sram/CLK (uhdsp_256x8m4s)       0.00       0.02 r
+  library hold time                                                      0.12       0.14
+  data required time                                                                0.14
+  -----------------------------------------------------------------------------------------
+  data required time                                                                0.14
+  data arrival time                                                                -0.04
+  -----------------------------------------------------------------------------------------
+  slack (VIOLATED)                                                                 -0.10
+
+
+  Startpoint: u_output_buffer/pack_q_reg_0__117_
+              (rising edge-triggered flip-flop clocked by core_clk)
+  Endpoint: u_output_buffer/u_out_mem_g_byte_14__u_sram
+            (rising edge-triggered flip-flop clocked by core_clk)
+  Path Group: core_clk
+  Path Type: min
+
+  Des/Clust/Port     Wire Load Model       Library
+  ------------------------------------------------
+  output_buffer_ROWS32_NORM_LANES8_HEAD_DIM128_OUT_W8_GROUP_SIZE32 ZeroWireload tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+
+  Point                                                                  Incr       Path
+  -----------------------------------------------------------------------------------------
+  clock core_clk (rise edge)                                             0.00       0.00
+  clock network delay (ideal)                                            0.00       0.00
+  u_output_buffer/pack_q_reg_0__117_/CP (DFQD1BWP12T30P140)              0.00 #     0.00 r
+  u_output_buffer/pack_q_reg_0__117_/Q (DFQD1BWP12T30P140)               0.04       0.04 r
+  u_output_buffer/u_out_mem_g_byte_14__u_sram/D[5] (uhdsp_256x8m4s)      0.00       0.04 r
+  data arrival time                                                                 0.04
+
+  clock core_clk (rise edge)                                             0.00       0.00
+  clock network delay (ideal)                                            0.00       0.00
+  clock uncertainty                                                      0.02       0.02
+  u_output_buffer/u_out_mem_g_byte_14__u_sram/CLK (uhdsp_256x8m4s)       0.00       0.02 r
+  library hold time                                                      0.12       0.14
+  data required time                                                                0.14
+  -----------------------------------------------------------------------------------------
+  data required time                                                                0.14
+  data arrival time                                                                -0.04
+  -----------------------------------------------------------------------------------------
+  slack (VIOLATED)                                                                 -0.10
+
+
+  Startpoint: u_output_buffer/pack_q_reg_0__118_
+              (rising edge-triggered flip-flop clocked by core_clk)
+  Endpoint: u_output_buffer/u_out_mem_g_byte_14__u_sram
+            (rising edge-triggered flip-flop clocked by core_clk)
+  Path Group: core_clk
+  Path Type: min
+
+  Des/Clust/Port     Wire Load Model       Library
+  ------------------------------------------------
+  output_buffer_ROWS32_NORM_LANES8_HEAD_DIM128_OUT_W8_GROUP_SIZE32 ZeroWireload tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+
+  Point                                                                  Incr       Path
+  -----------------------------------------------------------------------------------------
+  clock core_clk (rise edge)                                             0.00       0.00
+  clock network delay (ideal)                                            0.00       0.00
+  u_output_buffer/pack_q_reg_0__118_/CP (DFQD1BWP12T30P140)              0.00 #     0.00 r
+  u_output_buffer/pack_q_reg_0__118_/Q (DFQD1BWP12T30P140)               0.04       0.04 r
+  u_output_buffer/u_out_mem_g_byte_14__u_sram/D[6] (uhdsp_256x8m4s)      0.00       0.04 r
+  data arrival time                                                                 0.04
+
+  clock core_clk (rise edge)                                             0.00       0.00
+  clock network delay (ideal)                                            0.00       0.00
+  clock uncertainty                                                      0.02       0.02
+  u_output_buffer/u_out_mem_g_byte_14__u_sram/CLK (uhdsp_256x8m4s)       0.00       0.02 r
+  library hold time                                                      0.12       0.14
+  data required time                                                                0.14
+  -----------------------------------------------------------------------------------------
+  data required time                                                                0.14
+  data arrival time                                                                -0.04
+  -----------------------------------------------------------------------------------------
+  slack (VIOLATED)                                                                 -0.10
+
+
+  Startpoint: u_output_buffer/pack_q_reg_0__96_
+              (rising edge-triggered flip-flop clocked by core_clk)
+  Endpoint: u_output_buffer/u_out_mem_g_byte_12__u_sram
+            (rising edge-triggered flip-flop clocked by core_clk)
+  Path Group: core_clk
+  Path Type: min
+
+  Des/Clust/Port     Wire Load Model       Library
+  ------------------------------------------------
+  output_buffer_ROWS32_NORM_LANES8_HEAD_DIM128_OUT_W8_GROUP_SIZE32 ZeroWireload tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+
+  Point                                                                  Incr       Path
+  -----------------------------------------------------------------------------------------
+  clock core_clk (rise edge)                                             0.00       0.00
+  clock network delay (ideal)                                            0.00       0.00
+  u_output_buffer/pack_q_reg_0__96_/CP (DFQD1BWP12T30P140)               0.00 #     0.00 r
+  u_output_buffer/pack_q_reg_0__96_/Q (DFQD1BWP12T30P140)                0.04       0.04 r
+  u_output_buffer/u_out_mem_g_byte_12__u_sram/D[0] (uhdsp_256x8m4s)      0.00       0.04 r
+  data arrival time                                                                 0.04
+
+  clock core_clk (rise edge)                                             0.00       0.00
+  clock network delay (ideal)                                            0.00       0.00
+  clock uncertainty                                                      0.02       0.02
+  u_output_buffer/u_out_mem_g_byte_12__u_sram/CLK (uhdsp_256x8m4s)       0.00       0.02 r
+  library hold time                                                      0.12       0.14
+  data required time                                                                0.14
+  -----------------------------------------------------------------------------------------
+  data required time                                                                0.14
+  data arrival time                                                                -0.04
+  -----------------------------------------------------------------------------------------
+  slack (VIOLATED)                                                                 -0.10
+
+
+  Startpoint: u_output_buffer/pack_q_reg_0__97_
+              (rising edge-triggered flip-flop clocked by core_clk)
+  Endpoint: u_output_buffer/u_out_mem_g_byte_12__u_sram
+            (rising edge-triggered flip-flop clocked by core_clk)
+  Path Group: core_clk
+  Path Type: min
+
+  Des/Clust/Port     Wire Load Model       Library
+  ------------------------------------------------
+  output_buffer_ROWS32_NORM_LANES8_HEAD_DIM128_OUT_W8_GROUP_SIZE32 ZeroWireload tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+
+  Point                                                                  Incr       Path
+  -----------------------------------------------------------------------------------------
+  clock core_clk (rise edge)                                             0.00       0.00
+  clock network delay (ideal)                                            0.00       0.00
+  u_output_buffer/pack_q_reg_0__97_/CP (DFQD1BWP12T30P140)               0.00 #     0.00 r
+  u_output_buffer/pack_q_reg_0__97_/Q (DFQD1BWP12T30P140)                0.04       0.04 r
+  u_output_buffer/u_out_mem_g_byte_12__u_sram/D[1] (uhdsp_256x8m4s)      0.00       0.04 r
+  data arrival time                                                                 0.04
+
+  clock core_clk (rise edge)                                             0.00       0.00
+  clock network delay (ideal)                                            0.00       0.00
+  clock uncertainty                                                      0.02       0.02
+  u_output_buffer/u_out_mem_g_byte_12__u_sram/CLK (uhdsp_256x8m4s)       0.00       0.02 r
+  library hold time                                                      0.12       0.14
+  data required time                                                                0.14
+  -----------------------------------------------------------------------------------------
+  data required time                                                                0.14
+  data arrival time                                                                -0.04
+  -----------------------------------------------------------------------------------------
+  slack (VIOLATED)                                                                 -0.10
+
+
+  Startpoint: u_output_buffer/pack_q_reg_0__98_
+              (rising edge-triggered flip-flop clocked by core_clk)
+  Endpoint: u_output_buffer/u_out_mem_g_byte_12__u_sram
+            (rising edge-triggered flip-flop clocked by core_clk)
+  Path Group: core_clk
+  Path Type: min
+
+  Des/Clust/Port     Wire Load Model       Library
+  ------------------------------------------------
+  output_buffer_ROWS32_NORM_LANES8_HEAD_DIM128_OUT_W8_GROUP_SIZE32 ZeroWireload tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+
+  Point                                                                  Incr       Path
+  -----------------------------------------------------------------------------------------
+  clock core_clk (rise edge)                                             0.00       0.00
+  clock network delay (ideal)                                            0.00       0.00
+  u_output_buffer/pack_q_reg_0__98_/CP (DFQD1BWP12T30P140)               0.00 #     0.00 r
+  u_output_buffer/pack_q_reg_0__98_/Q (DFQD1BWP12T30P140)                0.04       0.04 r
+  u_output_buffer/u_out_mem_g_byte_12__u_sram/D[2] (uhdsp_256x8m4s)      0.00       0.04 r
+  data arrival time                                                                 0.04
+
+  clock core_clk (rise edge)                                             0.00       0.00
+  clock network delay (ideal)                                            0.00       0.00
+  clock uncertainty                                                      0.02       0.02
+  u_output_buffer/u_out_mem_g_byte_12__u_sram/CLK (uhdsp_256x8m4s)       0.00       0.02 r
+  library hold time                                                      0.12       0.14
+  data required time                                                                0.14
+  -----------------------------------------------------------------------------------------
+  data required time                                                                0.14
+  data arrival time                                                                -0.04
+  -----------------------------------------------------------------------------------------
+  slack (VIOLATED)                                                                 -0.10
+
+
+  Startpoint: u_output_buffer/pack_q_reg_0__99_
+              (rising edge-triggered flip-flop clocked by core_clk)
+  Endpoint: u_output_buffer/u_out_mem_g_byte_12__u_sram
+            (rising edge-triggered flip-flop clocked by core_clk)
+  Path Group: core_clk
+  Path Type: min
+
+  Des/Clust/Port     Wire Load Model       Library
+  ------------------------------------------------
+  output_buffer_ROWS32_NORM_LANES8_HEAD_DIM128_OUT_W8_GROUP_SIZE32 ZeroWireload tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+
+  Point                                                                  Incr       Path
+  -----------------------------------------------------------------------------------------
+  clock core_clk (rise edge)                                             0.00       0.00
+  clock network delay (ideal)                                            0.00       0.00
+  u_output_buffer/pack_q_reg_0__99_/CP (DFQD1BWP12T30P140)               0.00 #     0.00 r
+  u_output_buffer/pack_q_reg_0__99_/Q (DFQD1BWP12T30P140)                0.04       0.04 r
+  u_output_buffer/u_out_mem_g_byte_12__u_sram/D[3] (uhdsp_256x8m4s)      0.00       0.04 r
+  data arrival time                                                                 0.04
+
+  clock core_clk (rise edge)                                             0.00       0.00
+  clock network delay (ideal)                                            0.00       0.00
+  clock uncertainty                                                      0.02       0.02
+  u_output_buffer/u_out_mem_g_byte_12__u_sram/CLK (uhdsp_256x8m4s)       0.00       0.02 r
+  library hold time                                                      0.12       0.14
+  data required time                                                                0.14
+  -----------------------------------------------------------------------------------------
+  data required time                                                                0.14
+  data arrival time                                                                -0.04
+  -----------------------------------------------------------------------------------------
+  slack (VIOLATED)                                                                 -0.10
+
+
+  Startpoint: u_output_buffer/pack_q_reg_0__100_
+              (rising edge-triggered flip-flop clocked by core_clk)
+  Endpoint: u_output_buffer/u_out_mem_g_byte_12__u_sram
+            (rising edge-triggered flip-flop clocked by core_clk)
+  Path Group: core_clk
+  Path Type: min
+
+  Des/Clust/Port     Wire Load Model       Library
+  ------------------------------------------------
+  output_buffer_ROWS32_NORM_LANES8_HEAD_DIM128_OUT_W8_GROUP_SIZE32 ZeroWireload tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+
+  Point                                                                  Incr       Path
+  -----------------------------------------------------------------------------------------
+  clock core_clk (rise edge)                                             0.00       0.00
+  clock network delay (ideal)                                            0.00       0.00
+  u_output_buffer/pack_q_reg_0__100_/CP (DFQD1BWP12T30P140)              0.00 #     0.00 r
+  u_output_buffer/pack_q_reg_0__100_/Q (DFQD1BWP12T30P140)               0.04       0.04 r
+  u_output_buffer/u_out_mem_g_byte_12__u_sram/D[4] (uhdsp_256x8m4s)      0.00       0.04 r
+  data arrival time                                                                 0.04
+
+  clock core_clk (rise edge)                                             0.00       0.00
+  clock network delay (ideal)                                            0.00       0.00
+  clock uncertainty                                                      0.02       0.02
+  u_output_buffer/u_out_mem_g_byte_12__u_sram/CLK (uhdsp_256x8m4s)       0.00       0.02 r
+  library hold time                                                      0.12       0.14
+  data required time                                                                0.14
+  -----------------------------------------------------------------------------------------
+  data required time                                                                0.14
+  data arrival time                                                                -0.04
+  -----------------------------------------------------------------------------------------
+  slack (VIOLATED)                                                                 -0.10
+
+
+  Startpoint: u_output_buffer/pack_q_reg_0__101_
+              (rising edge-triggered flip-flop clocked by core_clk)
+  Endpoint: u_output_buffer/u_out_mem_g_byte_12__u_sram
+            (rising edge-triggered flip-flop clocked by core_clk)
+  Path Group: core_clk
+  Path Type: min
+
+  Des/Clust/Port     Wire Load Model       Library
+  ------------------------------------------------
+  output_buffer_ROWS32_NORM_LANES8_HEAD_DIM128_OUT_W8_GROUP_SIZE32 ZeroWireload tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+
+  Point                                                                  Incr       Path
+  -----------------------------------------------------------------------------------------
+  clock core_clk (rise edge)                                             0.00       0.00
+  clock network delay (ideal)                                            0.00       0.00
+  u_output_buffer/pack_q_reg_0__101_/CP (DFQD1BWP12T30P140)              0.00 #     0.00 r
+  u_output_buffer/pack_q_reg_0__101_/Q (DFQD1BWP12T30P140)               0.04       0.04 r
+  u_output_buffer/u_out_mem_g_byte_12__u_sram/D[5] (uhdsp_256x8m4s)      0.00       0.04 r
+  data arrival time                                                                 0.04
+
+  clock core_clk (rise edge)                                             0.00       0.00
+  clock network delay (ideal)                                            0.00       0.00
+  clock uncertainty                                                      0.02       0.02
+  u_output_buffer/u_out_mem_g_byte_12__u_sram/CLK (uhdsp_256x8m4s)       0.00       0.02 r
+  library hold time                                                      0.12       0.14
+  data required time                                                                0.14
+  -----------------------------------------------------------------------------------------
+  data required time                                                                0.14
+  data arrival time                                                                -0.04
+  -----------------------------------------------------------------------------------------
+  slack (VIOLATED)                                                                 -0.10
+
+
+  Startpoint: u_output_buffer/pack_q_reg_0__102_
+              (rising edge-triggered flip-flop clocked by core_clk)
+  Endpoint: u_output_buffer/u_out_mem_g_byte_12__u_sram
+            (rising edge-triggered flip-flop clocked by core_clk)
+  Path Group: core_clk
+  Path Type: min
+
+  Des/Clust/Port     Wire Load Model       Library
+  ------------------------------------------------
+  output_buffer_ROWS32_NORM_LANES8_HEAD_DIM128_OUT_W8_GROUP_SIZE32 ZeroWireload tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+
+  Point                                                                  Incr       Path
+  -----------------------------------------------------------------------------------------
+  clock core_clk (rise edge)                                             0.00       0.00
+  clock network delay (ideal)                                            0.00       0.00
+  u_output_buffer/pack_q_reg_0__102_/CP (DFQD1BWP12T30P140)              0.00 #     0.00 r
+  u_output_buffer/pack_q_reg_0__102_/Q (DFQD1BWP12T30P140)               0.04       0.04 r
+  u_output_buffer/u_out_mem_g_byte_12__u_sram/D[6] (uhdsp_256x8m4s)      0.00       0.04 r
+  data arrival time                                                                 0.04
+
+  clock core_clk (rise edge)                                             0.00       0.00
+  clock network delay (ideal)                                            0.00       0.00
+  clock uncertainty                                                      0.02       0.02
+  u_output_buffer/u_out_mem_g_byte_12__u_sram/CLK (uhdsp_256x8m4s)       0.00       0.02 r
+  library hold time                                                      0.12       0.14
+  data required time                                                                0.14
+  -----------------------------------------------------------------------------------------
+  data required time                                                                0.14
+  data arrival time                                                                -0.04
+  -----------------------------------------------------------------------------------------
+  slack (VIOLATED)                                                                 -0.10
+
+
+  Startpoint: u_output_buffer/pack_q_reg_0__103_
+              (rising edge-triggered flip-flop clocked by core_clk)
+  Endpoint: u_output_buffer/u_out_mem_g_byte_12__u_sram
+            (rising edge-triggered flip-flop clocked by core_clk)
+  Path Group: core_clk
+  Path Type: min
+
+  Des/Clust/Port     Wire Load Model       Library
+  ------------------------------------------------
+  output_buffer_ROWS32_NORM_LANES8_HEAD_DIM128_OUT_W8_GROUP_SIZE32 ZeroWireload tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+
+  Point                                                                  Incr       Path
+  -----------------------------------------------------------------------------------------
+  clock core_clk (rise edge)                                             0.00       0.00
+  clock network delay (ideal)                                            0.00       0.00
+  u_output_buffer/pack_q_reg_0__103_/CP (DFQD1BWP12T30P140)              0.00 #     0.00 r
+  u_output_buffer/pack_q_reg_0__103_/Q (DFQD1BWP12T30P140)               0.04       0.04 r
+  u_output_buffer/u_out_mem_g_byte_12__u_sram/D[7] (uhdsp_256x8m4s)      0.00       0.04 r
+  data arrival time                                                                 0.04
+
+  clock core_clk (rise edge)                                             0.00       0.00
+  clock network delay (ideal)                                            0.00       0.00
+  clock uncertainty                                                      0.02       0.02
+  u_output_buffer/u_out_mem_g_byte_12__u_sram/CLK (uhdsp_256x8m4s)       0.00       0.02 r
+  library hold time                                                      0.12       0.14
+  data required time                                                                0.14
+  -----------------------------------------------------------------------------------------
+  data required time                                                                0.14
+  data arrival time                                                                -0.04
+  -----------------------------------------------------------------------------------------
+  slack (VIOLATED)                                                                 -0.10
+
+
+1

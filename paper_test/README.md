@@ -1,6 +1,6 @@
 # FLOPA ISCAS 实施与 Evaluation 测试计划
 
-更新：2026-10-17。作者已批准按优化文档实施 RTL/UVM 修改、短序列验证和后续综合。
+更新：2026-10-18。已完成获批的 RTL/UVM 修改、短序列验证和新版本映射综合。
 已完成 Fig. 1 的 PixArt-Sigma、DFoT-MCRAFT、Wan2.1 三模型同口径 GPU profiling；
 原生模型 ASIC/CPU/GPU 延迟对比尚未开始；本轮首先完成新硬件功能与综合。
 RTL 裁剪与 PPA 优化实施计划见 [RTL_OPTIMIZATION_PLAN_ZH.md](RTL_OPTIMIZATION_PLAN_ZH.md)。
@@ -15,15 +15,21 @@ SRAM 物理容量代价及验收项已列入优化文档第 4–5 节。
 ## 本轮代码实施与入口
 
 - 分支：`codex/diffusion-runtime-d`。基线冻结 `4e84950`，构建门槛 `f5a8f0b`，
-  RTL 候选 `ee22914`，dense 掩码分解 `021b746`。
+  RTL 候选 `ee22914`，dense 掩码分解 `021b746`，最终功能输入 `fc9e921`。
 - 同一 MAX_D=128 实例支持 d=1–128；native 64/72/128 切换、tail、多头、
   控制/复位及算术共六类短 UVM 已通过：157 个 job、66,312 字节逐字节检查，
-  error/fatal 均 0。最终定向模块检查及源码/日志 hash 审计后才启动综合。
+  error/fatal 均 0。乘法/normalizer/ICG 定向检查与源码/日志 hash 审计亦已通过，
+  28 nm TT、1.60 ns 新综合已完成，格式版已快进合入并通过独立来源复核。
+  总 cell area 2.452364 mm²，SRAM 0.656747 mm²；setup 违例 0。
+  Hold WNS −0.0971 ns、6409 个 SRAM A/D 端点违例，尚未物理修复或签核。
+  功耗分类和门控时钟的只读 DDC 回查见实施报告，不混用旧 gate-SAIF 数据。
 - 源码接口与存储：`docs/rtl_runtime_d.md`；UVM 范围：`docs/uvm_runtime_d.md`。
-- `make runtime-d-smoke` 复用一个 simv 跑短套件；`make synth-verified` 校验
+- `RUNTIME_D_OUT_DIR="$PWD/tb/sim/build/runtime_d_current" make runtime-d-smoke`
+  在新目录构建一个 simv 跑短套件，避免覆盖保留的原构建与日志。
+  `make synth-verified` 校验
   已通过日志、源码提交和 hash 后综合。新结果写 diffusion_runtime_d group，
   旧 system group 保留，不覆盖历史基线。
-- 新版预期 480 SRAM 宏、28 个真实 ICG，O 为两个完整版本。实际数值以 DC 为准。
+- 最终 DC 确认 480 SRAM 宏、28 个真实 ICG、0 个自动插入 ICG，O 为两个完整版本。
   未注入新活动的 `power.rpt` 是 vectorless 估计，不能当作模型 gate-SAIF 功耗。
 
 2026-10-16 模型筛选更新：作者允许按模型原生 workload 调整 head dimension、
@@ -55,7 +61,7 @@ FLOPA 的单次算子周期和 CPU/GPU 时间如何变化；PE 内 P 驻留、O 
 ## 2. 模型和硬件盘点
 
 - 13 服务器：Xeon Gold 6133 CPU、两张 RTX A6000。主图只使用一张 GPU。
-- 33 服务器：现有 FLOPA 为 32×32 PE、INT8 Q/K/V、每头 d=64；
+- 33 服务器：历史基线 FLOPA 为 32×32 PE、INT8 Q/K/V、固定每头 d=64；
   28 nm TT/0.9 V/25°C 映射面积 2.436075 mm²，含 0.656747 mm² SRAM。
   1.60 ns 是综合目标，不是布局布线后的实测最高频率。
 - 现有 DiT-XL/2、PixArt-Sigma 的每头 d=72；既有 PixArt 回放把 72 维裁成
@@ -133,8 +139,8 @@ denoising step、prompt 和随机种子。横轴为实际参与该调用的总 t
   记录计算 start 到最后输出的周期；同时单列 Q/K/V 装载到写回的周期。
   图中时间 = 实测周期 × 1.60 ns 综合目标，并直接标注为
   “RTL cycles at synthesis target”，不得称为芯片实测延迟。
-  1.60 ns 仅对应当前既有 d=64 网表；硬件调整后的模型必须绑定新的实际约束和
-  PPA 报告，不能直接把旧网表数字视为新配置测量。
+  新运行时 d 实例已完成同一 1.60 ns 目标的映射综合，相关模型必须绑定
+  diffusion_runtime_d 的实际报告与新周期，不使用旧固定 d=64 网表的数据。
 - CPU FP32、GPU BF16/FP16、FLOPA INT8 的算术精度不同；输入张量、
   掩码与输出形状一致，并相对 FP32 参考报告输出误差。若误差不合格，
   该点不进入速度主图。精度门槛建议在首个 pilot 后、正式扫点前固定。
@@ -160,17 +166,17 @@ denoising step、prompt 和随机种子。横轴为实际参与该调用的总 t
 | P 留在 PE 内 | PE P 写次数；无共享 P SRAM 端口 | 可写本设计存储结构；跨设计 SRAM 节省尚未实测 |
 | O bank 跨 KV tile 保留输出 | O bank 宏面积 0.350265 mm²、逻辑端口读写计数 | 端口流量不是 DDR 流量，也不是相对别人的节省量 |
 | QK/softmax/PV 调度重叠 | row-update/PV 重叠周期和 RTL 串行变体 | 保留一两句量化结果；不再重复架构时序图 |
-| ASIC PPA | 已映射面积、N=32–512 gate-SAIF 功耗和周期 | 布局前、综合目标频率、随机 INT8 活动 |
+| ASIC PPA | 新实例映射面积和 setup/hold；工作负载功耗待测 | 旧 N=32–512 SAIF 属历史基线，不转用到新版 |
 | 实际模型可用性 | 待补真实模型 Q/K/V 回放与数值误差 | 通过后才能与主图相互支持 |
 
 横向对比优先用 H-FA-1-4、H-FA-4-4 和 FSA 原论文数据。
 H-FA 的总面积/功耗包含**估算** KV SRAM，但论文没有单列可直接抄用
 的 SRAM 面积；FSA 报告的阵列面积**排除** SRAM 和 DMA。因此相关格
 写“未单列/不含”，不填 0，也不宣称 FLOPA 的 SRAM 面积小于这些工作。
-FLOPA 的 0.656747 mm² SRAM 含 O bank、Q/K/V cache 和输出缓冲；
-N=512 gate-SAIF 为 720.4334 mW、4.752 pJ/MAC、0.303186 TOPS，
+FLOPA 新实例的 0.656747 mm² SRAM 含 O bank、Q/K/V cache 和输出缓冲；
+旧版 N=512 gate-SAIF 为 720.4334 mW、4.752 pJ/MAC、0.303186 TOPS，
 频率按 625 MHz 综合目标。三者工艺、精度、并行度和 PPA 阶段不同，
-不算跨论文速度比或能效排名。
+不算跨论文速度比或能效排名。旧版活动数据不作为新 RTL 的功耗、吞吐或能效。
 
 要**直接证明** P 驻留使 SRAM 面积和功耗下降，需要同一 RTL 数据通路、
 同一工艺/约束/工作负载的 P-buffer 对照实现，重新综合并做相同 SAIF
@@ -199,8 +205,9 @@ ASIC UVM 摘要、周期边界和误差结果。只用通过这些检查的行�
 按作者要求，2026-10-17 删除 `paper_test` 除 README.md 和
 RTL_OPTIMIZATION_PLAN_ZH.md 外全部内容，清理前约 101 MB。
 旧实验脚本、编译目录、日志和本目录内摘要不再保留；本轮只重建短验证与综合流程。
-工程其他目录的 RTL、DDC、库和综合报告未动。论文目录中的历史结果仅代表旧版，
-不能作为新 RTL 的测试结果。自动监控已删除，当前不运行测试。
+清理操作未改动工程其他目录的 RTL、DDC、库和综合报告。此后按作者授权实施
+本轮 RTL/UVM 与新综合。论文目录中的历史结果仅代表旧版，不能作为新 RTL 的
+测试结果。自动监控已删除，不恢复旧 N=512 作业。
 
 ## 7. 待作者审核的决定
 

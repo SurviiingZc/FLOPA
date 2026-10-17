@@ -1,0 +1,6 @@
+PASS fa_runtime_d_smoke_test errors=0 fatals=0 jobs=5 bytes=2976 log=/data/workspaces/zhangcheng/flash_attention/tb/sim/build/runtime_d_formatted/fa_runtime_d_smoke_test.log
+PASS fa_runtime_d_range_test errors=0 fatals=0 jobs=128 bytes=8256 log=/data/workspaces/zhangcheng/flash_attention/tb/sim/build/runtime_d_formatted/fa_runtime_d_range_test.log
+PASS fa_runtime_d_boundary_test errors=0 fatals=0 jobs=12 bytes=42504 log=/data/workspaces/zhangcheng/flash_attention/tb/sim/build/runtime_d_formatted/fa_runtime_d_boundary_test.log
+PASS fa_runtime_d_multihead_test errors=0 fatals=0 jobs=3 bytes=10368 log=/data/workspaces/zhangcheng/flash_attention/tb/sim/build/runtime_d_formatted/fa_runtime_d_multihead_test.log
+PASS fa_runtime_d_control_test errors=0 fatals=0 jobs=3 bytes=624 log=/data/workspaces/zhangcheng/flash_attention/tb/sim/build/runtime_d_formatted/fa_runtime_d_control_test.log
+PASS fa_runtime_d_arith_test errors=0 fatals=0 jobs=6 bytes=1584 log=/data/workspaces/zhangcheng/flash_attention/tb/sim/build/runtime_d_formatted/fa_runtime_d_arith_test.log

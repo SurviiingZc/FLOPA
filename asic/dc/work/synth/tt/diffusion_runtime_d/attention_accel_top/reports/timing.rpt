@@ -1,0 +1,2251 @@
+ 
+****************************************
+Report : timing
+        -path full_clock_expanded
+        -delay max
+        -nworst 4
+        -max_paths 20
+Design : attention_accel_top
+Version: V-2023.12-SP5
+Date   : Sun Oct 18 00:59:13 2026
+****************************************
+
+ # A fanout number of 1000 was used for high fanout net computations.
+
+Operating Conditions: tt0p9v25c   Library: tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+Wire Load Model Mode: segmented
+
+  Startpoint: u_fused_array/g_exp_lane[1].u_scale/scale_s0_q_reg[13]
+              (rising edge-triggered flip-flop clocked by core_clk)
+  Endpoint: u_fused_array/g_exp_lane[23].u_scale/u_scale_multiplier/lo_product_s1_q_reg[40]
+            (rising edge-triggered flip-flop clocked by core_clk)
+  Path Group: core_clk
+  Path Type: max
+
+  Des/Clust/Port     Wire Load Model       Library
+  ------------------------------------------------
+  fsa_fused_array_ROWS32_STRIPE_ROWS8_COLS32_DATA_W8_SCORE_W32_PROB_W16_ACC_W32_LSE_W32_HEAD_DIM128_FEATURE_IDX_W7
+                     ZeroWireload          tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+
+  Point                                                   Incr       Path
+  --------------------------------------------------------------------------
+  clock core_clk (rise edge)                            0.0000     0.0000
+  clock network delay (ideal)                           0.0000     0.0000
+  u_fused_array/g_exp_lane[1].u_scale/scale_s0_q_reg[13]/CP (DFQD1BWP12T30P140)
+                                                        0.0000 #   0.0000 r
+  u_fused_array/g_exp_lane[1].u_scale/scale_s0_q_reg[13]/Q (DFQD1BWP12T30P140)
+                                                        0.0547     0.0547 f
+  u_fused_array/U12024/Z (BUFFD2BWP12T30P140)           0.0254     0.0800 f
+  u_fused_array/U10/Z (BUFFD1BWP12T30P140)              0.0311     0.1112 f
+  u_fused_array/U6888/Z (BUFFD1BWP12T30P140)            0.0402     0.1514 f
+  u_fused_array/U69530/ZN (OAI21D1BWP12T30P140)         0.0484     0.1998 r
+  u_fused_array/U6833/ZN (INVD1BWP12T30P140)            0.0557     0.2555 f
+  u_fused_array/U69531/Z (BUFFD1BWP12T30P140)           0.0306     0.2861 f
+  u_fused_array/U74430/ZN (INVD1BWP12T30P140)           0.0359     0.3220 r
+  u_fused_array/U521/ZN (CKND2D1BWP12T30P140)           0.0533     0.3753 f
+  u_fused_array/U77957/Z (BUFFD1BWP12T30P140)           0.0418     0.4171 f
+  u_fused_array/U80144/ZN (OAI21D0BWP12T30P140)         0.0231     0.4402 r
+  u_fused_array/U129/ZN (ND2D0BWP12T30P140)             0.0294     0.4696 f
+  u_fused_array/U80145/ZN (OAI21D0BWP12T30P140)         0.0250     0.4946 r
+  u_fused_array/intadd_182/U4/S (FA1D1BWP12T30P140)     0.0464     0.5410 r
+  u_fused_array/intadd_183/U3/S (FA1D1BWP12T30P140)     0.0486     0.5896 f
+  u_fused_array/intadd_184/U2/S (FA1D1BWP12T30P140)     0.0515     0.6410 r
+  u_fused_array/U1961/ZN (INVD0BWP12T30P140)            0.0111     0.6521 f
+  u_fused_array/U109769/ZN (MAOI222D0BWP12T30P140)      0.0315     0.6836 r
+  u_fused_array/U109780/ZN (MAOI222D1BWP12T30P140)      0.0338     0.7175 f
+  u_fused_array/U109793/ZN (MAOI222D1BWP12T30P140)      0.0279     0.7453 r
+  u_fused_array/U109804/ZN (MAOI222D0BWP12T30P140)      0.0323     0.7777 f
+  u_fused_array/U109817/ZN (MAOI222D0BWP12T30P140)      0.0390     0.8166 r
+  u_fused_array/U109828/ZN (MAOI222D1BWP12T30P140)      0.0338     0.8505 f
+  u_fused_array/U109841/ZN (MAOI222D1BWP12T30P140)      0.0279     0.8783 r
+  u_fused_array/U109853/ZN (MAOI222D0BWP12T30P140)      0.0324     0.9107 f
+  u_fused_array/U109864/ZN (MAOI222D0BWP12T30P140)      0.0390     0.9497 r
+  u_fused_array/U109872/ZN (MAOI222D1BWP12T30P140)      0.0321     0.9817 f
+  u_fused_array/U109883/ZN (MAOI222D0BWP12T30P140)      0.0369     1.0186 r
+  u_fused_array/U109893/ZN (MAOI222D1BWP12T30P140)      0.0337     1.0523 f
+  u_fused_array/U109901/ZN (MAOI222D1BWP12T30P140)      0.0278     1.0802 r
+  u_fused_array/U109910/ZN (MAOI222D0BWP12T30P140)      0.0324     1.1125 f
+  u_fused_array/U109921/ZN (MAOI222D0BWP12T30P140)      0.0390     1.1515 r
+  u_fused_array/U109930/ZN (MAOI222D1BWP12T30P140)      0.0338     1.1853 f
+  u_fused_array/U109940/ZN (MAOI222D1BWP12T30P140)      0.0279     1.2132 r
+  u_fused_array/U109949/ZN (MAOI222D0BWP12T30P140)      0.0324     1.2456 f
+  u_fused_array/U109955/ZN (MAOI222D0BWP12T30P140)      0.0390     1.2845 r
+  u_fused_array/U109971/ZN (MAOI222D1BWP12T30P140)      0.0338     1.3184 f
+  u_fused_array/U109980/ZN (MAOI222D1BWP12T30P140)      0.0279     1.3462 r
+  u_fused_array/U109990/ZN (MAOI222D0BWP12T30P140)      0.0351     1.3813 f
+  u_fused_array/U109996/ZN (MAOI222D1BWP12T30P140)      0.0305     1.4117 r
+  u_fused_array/U110001/ZN (MAOI222D0BWP12T30P140)      0.0267     1.4385 f
+  u_fused_array/U110002/ZN (OAI31D0BWP12T30P140)        0.0234     1.4619 r
+  u_fused_array/U110003/ZN (IOA21D0BWP12T30P140)        0.0151     1.4769 f
+  u_fused_array/U110005/ZN (OAI21D0BWP12T30P140)        0.0126     1.4895 r
+  u_fused_array/g_exp_lane[23].u_scale/u_scale_multiplier/lo_product_s1_q_reg[40]/D (DFQD1BWP12T30P140)
+                                                        0.0000     1.4895 r
+  data arrival time                                                1.4895
+
+  clock core_clk (rise edge)                            1.6000     1.6000
+  clock network delay (ideal)                           0.0000     1.6000
+  clock uncertainty                                    -0.1000     1.5000
+  u_fused_array/g_exp_lane[23].u_scale/u_scale_multiplier/lo_product_s1_q_reg[40]/CP (DFQD1BWP12T30P140)
+                                                        0.0000     1.5000 r
+  library setup time                                   -0.0104     1.4896
+  data required time                                               1.4896
+  --------------------------------------------------------------------------
+  data required time                                               1.4896
+  data arrival time                                               -1.4895
+  --------------------------------------------------------------------------
+  slack (MET)                                                      0.0000
+
+
+  Startpoint: u_fused_array/g_stripe[2].u_stripe/ws_pv_q_reg
+              (rising edge-triggered flip-flop clocked by core_clk)
+  Endpoint: u_fused_array/g_stripe[2].u_stripe/g_pe_row[0].g_pe_col[31].u_pe/accum_q_reg[31]
+            (rising edge-triggered flip-flop clocked by core_clk)
+  Path Group: core_clk
+  Path Type: max
+
+  Des/Clust/Port     Wire Load Model       Library
+  ------------------------------------------------
+  fa_clear_replica_7 ZeroWireload          tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+  fa_clear_replica_6 ZeroWireload          tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+  fa_clear_replica_5 ZeroWireload          tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+  fa_clear_replica_4 ZeroWireload          tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+  fsa_stripe_STRIPE_ROWS8_COLS32_HEAD_DIM128_DATA_W8_SCORE_W32_PROB_W16_SUM_W32_TAG_W7_LOCAL_ROW_IDX_W3_1
+                     ZeroWireload          tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+
+  Point                                                   Incr       Path
+  --------------------------------------------------------------------------
+  clock core_clk (rise edge)                            0.0000     0.0000
+  clock network delay (ideal)                           0.0000     0.0000
+  u_fused_array/g_stripe[2].u_stripe/ws_pv_q_reg/CP (DFCNQD1BWP12T30P140)
+                                                        0.0000 #   0.0000 r
+  u_fused_array/g_stripe[2].u_stripe/ws_pv_q_reg/Q (DFCNQD1BWP12T30P140)
+                                                        0.0835     0.0835 f
+  u_fused_array/g_stripe[2].u_stripe/U19161/Z (CKBD4BWP12T30P140)
+                                                        0.0312     0.1147 f
+  u_fused_array/g_stripe[2].u_stripe/U2628/ZN (ND2D0BWP12T30P140)
+                                                        0.0251     0.1398 r
+  u_fused_array/g_stripe[2].u_stripe/U46691/ZN (INVD1BWP12T30P140)
+                                                        0.0285     0.1683 f
+  u_fused_array/g_stripe[2].u_stripe/U46715/ZN (OAI21D1BWP12T30P140)
+                                                        0.0657     0.2341 r
+  u_fused_array/g_stripe[2].u_stripe/U46716/ZN (INVD1BWP12T30P140)
+                                                        0.0523     0.2864 f
+  u_fused_array/g_stripe[2].u_stripe/U46731/ZN (OAI22D1BWP12T30P140)
+                                                        0.0326     0.3191 r
+  u_fused_array/g_stripe[2].u_stripe/U46732/ZN (INVD1BWP12T30P140)
+                                                        0.0345     0.3536 f
+  u_fused_array/g_stripe[2].u_stripe/U46733/ZN (AOI221D1BWP12T30P140)
+                                                        0.0714     0.4250 r
+  u_fused_array/g_stripe[2].u_stripe/U168827/ZN (AOI22D1BWP12T30P140)
+                                                        0.0270     0.4520 f
+  u_fused_array/g_stripe[2].u_stripe/U15390/ZN (NR2D0BWP12T30P140)
+                                                        0.0240     0.4760 r
+  u_fused_array/g_stripe[2].u_stripe/U14201/ZN (AOI21D0BWP12T30P140)
+                                                        0.0182     0.4942 f
+  u_fused_array/g_stripe[2].u_stripe/U10850/CO (FA1D0BWP12T30P140)
+                                                        0.0363     0.5305 f
+  u_fused_array/g_stripe[2].u_stripe/U168839/ZN (NR2D0BWP12T30P140)
+                                                        0.0165     0.5470 r
+  u_fused_array/g_stripe[2].u_stripe/U168840/ZN (IAO21D1BWP12T30P140)
+                                                        0.0234     0.5704 r
+  u_fused_array/g_stripe[2].u_stripe/U6659/CO (FA1D0BWP12T30P140)
+                                                        0.0340     0.6044 r
+  u_fused_array/g_stripe[2].u_stripe/U6489/ZN (NR2D0BWP12T30P140)
+                                                        0.0109     0.6153 f
+  u_fused_array/g_stripe[2].u_stripe/U6262/ZN (OAI21D0BWP12T30P140)
+                                                        0.0207     0.6361 r
+  u_fused_array/g_stripe[2].u_stripe/intadd_3732/U12/CO (FA1D0BWP12T30P140)
+                                                        0.0387     0.6748 r
+  u_fused_array/g_stripe[2].u_stripe/intadd_3732/U11/CO (FA1D1BWP12T30P140)
+                                                        0.0253     0.7001 r
+  u_fused_array/g_stripe[2].u_stripe/intadd_3732/U10/CO (FA1D1BWP12T30P140)
+                                                        0.0236     0.7237 r
+  u_fused_array/g_stripe[2].u_stripe/intadd_3732/U9/CO (FA1D1BWP12T30P140)
+                                                        0.0236     0.7472 r
+  u_fused_array/g_stripe[2].u_stripe/intadd_3732/U8/CO (FA1D1BWP12T30P140)
+                                                        0.0236     0.7708 r
+  u_fused_array/g_stripe[2].u_stripe/intadd_3732/U7/CO (FA1D1BWP12T30P140)
+                                                        0.0236     0.7943 r
+  u_fused_array/g_stripe[2].u_stripe/intadd_3732/U6/CO (FA1D1BWP12T30P140)
+                                                        0.0236     0.8179 r
+  u_fused_array/g_stripe[2].u_stripe/intadd_3732/U5/CO (FA1D1BWP12T30P140)
+                                                        0.0236     0.8414 r
+  u_fused_array/g_stripe[2].u_stripe/intadd_3732/U4/CO (FA1D1BWP12T30P140)
+                                                        0.0236     0.8650 r
+  u_fused_array/g_stripe[2].u_stripe/intadd_3732/U3/CO (FA1D1BWP12T30P140)
+                                                        0.0236     0.8886 r
+  u_fused_array/g_stripe[2].u_stripe/U256009/CO (FA1D1BWP12T30P140)
+                                                        0.0230     0.9115 r
+  u_fused_array/g_stripe[2].u_stripe/U5608/ZN (NR2D0BWP12T30P140)
+                                                        0.0096     0.9212 f
+  u_fused_array/g_stripe[2].u_stripe/U1033/ZN (AOI21D0BWP12T30P140)
+                                                        0.0263     0.9474 r
+  u_fused_array/g_stripe[2].u_stripe/U197014/CO (FA1D1BWP12T30P140)
+                                                        0.0292     0.9766 r
+  u_fused_array/g_stripe[2].u_stripe/U4865/ZN (NR2D0BWP12T30P140)
+                                                        0.0098     0.9864 f
+  u_fused_array/g_stripe[2].u_stripe/U4425/ZN (OAI21D0BWP12T30P140)
+                                                        0.0198     1.0062 r
+  u_fused_array/g_stripe[2].u_stripe/U4296/CO (FA1D0BWP12T30P140)
+                                                        0.0340     1.0402 r
+  u_fused_array/g_stripe[2].u_stripe/U3793/ZN (INVD0BWP12T30P140)
+                                                        0.0097     1.0500 f
+  u_fused_array/g_stripe[2].u_stripe/U3615/ZN (MAOI222D0BWP12T30P140)
+                                                        0.0190     1.0690 r
+  u_fused_array/g_stripe[2].u_stripe/U1675/ZN (AOI21D0BWP12T30P140)
+                                                        0.1176     1.1866 f
+  u_fused_array/g_stripe[2].u_stripe/intadd_3437/U9/CO (FA1D1BWP12T30P140)
+                                                        0.0727     1.2593 f
+  u_fused_array/g_stripe[2].u_stripe/intadd_3437/U8/CO (FA1D1BWP12T30P140)
+                                                        0.0268     1.2861 f
+  u_fused_array/g_stripe[2].u_stripe/intadd_3437/U7/CO (FA1D1BWP12T30P140)
+                                                        0.0268     1.3129 f
+  u_fused_array/g_stripe[2].u_stripe/intadd_3437/U6/CO (FA1D1BWP12T30P140)
+                                                        0.0268     1.3398 f
+  u_fused_array/g_stripe[2].u_stripe/intadd_3437/U5/CO (FA1D1BWP12T30P140)
+                                                        0.0268     1.3666 f
+  u_fused_array/g_stripe[2].u_stripe/intadd_3437/U4/CO (FA1D1BWP12T30P140)
+                                                        0.0268     1.3935 f
+  u_fused_array/g_stripe[2].u_stripe/intadd_3437/U3/CO (FA1D1BWP12T30P140)
+                                                        0.0268     1.4203 f
+  u_fused_array/g_stripe[2].u_stripe/U256008/CO (FA1D1BWP12T30P140)
+                                                        0.0263     1.4466 f
+  u_fused_array/g_stripe[2].u_stripe/U20001/ZN (XNR2D1BWP12T30P140)
+                                                        0.0249     1.4715 r
+  u_fused_array/g_stripe[2].u_stripe/U2861/ZN (OAI222D0BWP12T30P140)
+                                                        0.0265     1.4980 f
+  u_fused_array/g_stripe[2].u_stripe/g_pe_row[0].g_pe_col[31].u_pe/accum_q_reg[31]/D (DFQD1BWP12T30P140)
+                                                        0.0000     1.4980 f
+  data arrival time                                                1.4980
+
+  clock core_clk (rise edge)                            1.6000     1.6000
+  clock network delay (ideal)                           0.0000     1.6000
+  clock uncertainty                                    -0.1000     1.5000
+  u_fused_array/g_stripe[2].u_stripe/g_pe_row[0].g_pe_col[31].u_pe/accum_q_reg[31]/CP (DFQD1BWP12T30P140)
+                                                        0.0000     1.5000 r
+  library setup time                                   -0.0020     1.4980
+  data required time                                               1.4980
+  --------------------------------------------------------------------------
+  data required time                                               1.4980
+  data arrival time                                               -1.4980
+  --------------------------------------------------------------------------
+  slack (MET)                                                      0.0000
+
+
+  Startpoint: u_fused_array/g_exp_lane[1].u_scale/scale_s0_q_reg[13]
+              (rising edge-triggered flip-flop clocked by core_clk)
+  Endpoint: u_fused_array/g_exp_lane[23].u_scale/u_scale_multiplier/lo_product_s1_q_reg[40]
+            (rising edge-triggered flip-flop clocked by core_clk)
+  Path Group: core_clk
+  Path Type: max
+
+  Des/Clust/Port     Wire Load Model       Library
+  ------------------------------------------------
+  fsa_fused_array_ROWS32_STRIPE_ROWS8_COLS32_DATA_W8_SCORE_W32_PROB_W16_ACC_W32_LSE_W32_HEAD_DIM128_FEATURE_IDX_W7
+                     ZeroWireload          tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+
+  Point                                                   Incr       Path
+  --------------------------------------------------------------------------
+  clock core_clk (rise edge)                            0.0000     0.0000
+  clock network delay (ideal)                           0.0000     0.0000
+  u_fused_array/g_exp_lane[1].u_scale/scale_s0_q_reg[13]/CP (DFQD1BWP12T30P140)
+                                                        0.0000 #   0.0000 r
+  u_fused_array/g_exp_lane[1].u_scale/scale_s0_q_reg[13]/Q (DFQD1BWP12T30P140)
+                                                        0.0547     0.0547 f
+  u_fused_array/U12024/Z (BUFFD2BWP12T30P140)           0.0254     0.0800 f
+  u_fused_array/U10/Z (BUFFD1BWP12T30P140)              0.0311     0.1112 f
+  u_fused_array/U6888/Z (BUFFD1BWP12T30P140)            0.0402     0.1514 f
+  u_fused_array/U69530/ZN (OAI21D1BWP12T30P140)         0.0484     0.1998 r
+  u_fused_array/U6833/ZN (INVD1BWP12T30P140)            0.0557     0.2555 f
+  u_fused_array/U69531/Z (BUFFD1BWP12T30P140)           0.0306     0.2861 f
+  u_fused_array/U74430/ZN (INVD1BWP12T30P140)           0.0359     0.3220 r
+  u_fused_array/U521/ZN (CKND2D1BWP12T30P140)           0.0533     0.3753 f
+  u_fused_array/U77957/Z (BUFFD1BWP12T30P140)           0.0418     0.4171 f
+  u_fused_array/U80144/ZN (OAI21D0BWP12T30P140)         0.0231     0.4402 r
+  u_fused_array/U129/ZN (ND2D0BWP12T30P140)             0.0294     0.4696 f
+  u_fused_array/U80145/ZN (OAI21D0BWP12T30P140)         0.0250     0.4946 r
+  u_fused_array/intadd_182/U4/S (FA1D1BWP12T30P140)     0.0464     0.5410 r
+  u_fused_array/intadd_183/U3/S (FA1D1BWP12T30P140)     0.0486     0.5896 f
+  u_fused_array/intadd_184/U2/S (FA1D1BWP12T30P140)     0.0515     0.6410 r
+  u_fused_array/U1961/ZN (INVD0BWP12T30P140)            0.0111     0.6521 f
+  u_fused_array/U109769/ZN (MAOI222D0BWP12T30P140)      0.0315     0.6836 r
+  u_fused_array/U109780/ZN (MAOI222D1BWP12T30P140)      0.0338     0.7175 f
+  u_fused_array/U109793/ZN (MAOI222D1BWP12T30P140)      0.0279     0.7453 r
+  u_fused_array/U109804/ZN (MAOI222D0BWP12T30P140)      0.0323     0.7777 f
+  u_fused_array/U109817/ZN (MAOI222D0BWP12T30P140)      0.0390     0.8166 r
+  u_fused_array/U109828/ZN (MAOI222D1BWP12T30P140)      0.0338     0.8505 f
+  u_fused_array/U109841/ZN (MAOI222D1BWP12T30P140)      0.0279     0.8783 r
+  u_fused_array/U109853/ZN (MAOI222D0BWP12T30P140)      0.0324     0.9107 f
+  u_fused_array/U109864/ZN (MAOI222D0BWP12T30P140)      0.0390     0.9497 r
+  u_fused_array/U109872/ZN (MAOI222D1BWP12T30P140)      0.0321     0.9817 f
+  u_fused_array/U109883/ZN (MAOI222D0BWP12T30P140)      0.0369     1.0186 r
+  u_fused_array/U109893/ZN (MAOI222D1BWP12T30P140)      0.0337     1.0523 f
+  u_fused_array/U109901/ZN (MAOI222D1BWP12T30P140)      0.0278     1.0802 r
+  u_fused_array/U109910/ZN (MAOI222D0BWP12T30P140)      0.0324     1.1125 f
+  u_fused_array/U109921/ZN (MAOI222D0BWP12T30P140)      0.0390     1.1515 r
+  u_fused_array/U109930/ZN (MAOI222D1BWP12T30P140)      0.0338     1.1853 f
+  u_fused_array/U109940/ZN (MAOI222D1BWP12T30P140)      0.0279     1.2132 r
+  u_fused_array/U109949/ZN (MAOI222D0BWP12T30P140)      0.0324     1.2456 f
+  u_fused_array/U109955/ZN (MAOI222D0BWP12T30P140)      0.0390     1.2845 r
+  u_fused_array/U109971/ZN (MAOI222D1BWP12T30P140)      0.0338     1.3184 f
+  u_fused_array/U109980/ZN (MAOI222D1BWP12T30P140)      0.0279     1.3462 r
+  u_fused_array/U109990/ZN (MAOI222D0BWP12T30P140)      0.0351     1.3813 f
+  u_fused_array/U109996/ZN (MAOI222D1BWP12T30P140)      0.0305     1.4117 r
+  u_fused_array/U110001/ZN (MAOI222D0BWP12T30P140)      0.0267     1.4385 f
+  u_fused_array/U110002/ZN (OAI31D0BWP12T30P140)        0.0234     1.4619 r
+  u_fused_array/U110003/ZN (IOA21D0BWP12T30P140)        0.0151     1.4769 f
+  u_fused_array/U110005/ZN (OAI21D0BWP12T30P140)        0.0126     1.4895 r
+  u_fused_array/g_exp_lane[23].u_scale/u_scale_multiplier/lo_product_s1_q_reg[40]/D (DFQD1BWP12T30P140)
+                                                        0.0000     1.4895 r
+  data arrival time                                                1.4895
+
+  clock core_clk (rise edge)                            1.6000     1.6000
+  clock network delay (ideal)                           0.0000     1.6000
+  clock uncertainty                                    -0.1000     1.5000
+  u_fused_array/g_exp_lane[23].u_scale/u_scale_multiplier/lo_product_s1_q_reg[40]/CP (DFQD1BWP12T30P140)
+                                                        0.0000     1.5000 r
+  library setup time                                   -0.0104     1.4896
+  data required time                                               1.4896
+  --------------------------------------------------------------------------
+  data required time                                               1.4896
+  data arrival time                                               -1.4895
+  --------------------------------------------------------------------------
+  slack (MET)                                                      0.0000
+
+
+  Startpoint: u_fused_array/g_exp_lane[1].u_scale/scale_s0_q_reg[13]
+              (rising edge-triggered flip-flop clocked by core_clk)
+  Endpoint: u_fused_array/g_exp_lane[23].u_scale/u_scale_multiplier/lo_product_s1_q_reg[40]
+            (rising edge-triggered flip-flop clocked by core_clk)
+  Path Group: core_clk
+  Path Type: max
+
+  Des/Clust/Port     Wire Load Model       Library
+  ------------------------------------------------
+  fsa_fused_array_ROWS32_STRIPE_ROWS8_COLS32_DATA_W8_SCORE_W32_PROB_W16_ACC_W32_LSE_W32_HEAD_DIM128_FEATURE_IDX_W7
+                     ZeroWireload          tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+
+  Point                                                   Incr       Path
+  --------------------------------------------------------------------------
+  clock core_clk (rise edge)                            0.0000     0.0000
+  clock network delay (ideal)                           0.0000     0.0000
+  u_fused_array/g_exp_lane[1].u_scale/scale_s0_q_reg[13]/CP (DFQD1BWP12T30P140)
+                                                        0.0000 #   0.0000 r
+  u_fused_array/g_exp_lane[1].u_scale/scale_s0_q_reg[13]/Q (DFQD1BWP12T30P140)
+                                                        0.0547     0.0547 f
+  u_fused_array/U12024/Z (BUFFD2BWP12T30P140)           0.0254     0.0800 f
+  u_fused_array/U10/Z (BUFFD1BWP12T30P140)              0.0311     0.1112 f
+  u_fused_array/U6888/Z (BUFFD1BWP12T30P140)            0.0402     0.1514 f
+  u_fused_array/U69530/ZN (OAI21D1BWP12T30P140)         0.0484     0.1998 r
+  u_fused_array/U6833/ZN (INVD1BWP12T30P140)            0.0557     0.2555 f
+  u_fused_array/U69531/Z (BUFFD1BWP12T30P140)           0.0306     0.2861 f
+  u_fused_array/U74430/ZN (INVD1BWP12T30P140)           0.0359     0.3220 r
+  u_fused_array/U521/ZN (CKND2D1BWP12T30P140)           0.0533     0.3753 f
+  u_fused_array/U77957/Z (BUFFD1BWP12T30P140)           0.0418     0.4171 f
+  u_fused_array/U80144/ZN (OAI21D0BWP12T30P140)         0.0231     0.4402 r
+  u_fused_array/U129/ZN (ND2D0BWP12T30P140)             0.0294     0.4696 f
+  u_fused_array/U80145/ZN (OAI21D0BWP12T30P140)         0.0250     0.4946 r
+  u_fused_array/intadd_182/U4/S (FA1D1BWP12T30P140)     0.0464     0.5410 r
+  u_fused_array/intadd_183/U3/S (FA1D1BWP12T30P140)     0.0486     0.5896 f
+  u_fused_array/intadd_184/U2/S (FA1D1BWP12T30P140)     0.0515     0.6410 r
+  u_fused_array/U1961/ZN (INVD0BWP12T30P140)            0.0111     0.6521 f
+  u_fused_array/U109769/ZN (MAOI222D0BWP12T30P140)      0.0315     0.6836 r
+  u_fused_array/U109780/ZN (MAOI222D1BWP12T30P140)      0.0338     0.7175 f
+  u_fused_array/U109793/ZN (MAOI222D1BWP12T30P140)      0.0279     0.7453 r
+  u_fused_array/U109804/ZN (MAOI222D0BWP12T30P140)      0.0323     0.7777 f
+  u_fused_array/U109817/ZN (MAOI222D0BWP12T30P140)      0.0390     0.8166 r
+  u_fused_array/U109828/ZN (MAOI222D1BWP12T30P140)      0.0338     0.8505 f
+  u_fused_array/U109841/ZN (MAOI222D1BWP12T30P140)      0.0279     0.8783 r
+  u_fused_array/U109853/ZN (MAOI222D0BWP12T30P140)      0.0324     0.9107 f
+  u_fused_array/U109864/ZN (MAOI222D0BWP12T30P140)      0.0390     0.9497 r
+  u_fused_array/U109872/ZN (MAOI222D1BWP12T30P140)      0.0321     0.9817 f
+  u_fused_array/U109883/ZN (MAOI222D0BWP12T30P140)      0.0369     1.0186 r
+  u_fused_array/U109893/ZN (MAOI222D1BWP12T30P140)      0.0337     1.0523 f
+  u_fused_array/U109901/ZN (MAOI222D1BWP12T30P140)      0.0278     1.0802 r
+  u_fused_array/U109910/ZN (MAOI222D0BWP12T30P140)      0.0324     1.1125 f
+  u_fused_array/U109921/ZN (MAOI222D0BWP12T30P140)      0.0390     1.1515 r
+  u_fused_array/U109930/ZN (MAOI222D1BWP12T30P140)      0.0338     1.1853 f
+  u_fused_array/U109940/ZN (MAOI222D1BWP12T30P140)      0.0279     1.2132 r
+  u_fused_array/U109949/ZN (MAOI222D0BWP12T30P140)      0.0324     1.2456 f
+  u_fused_array/U109955/ZN (MAOI222D0BWP12T30P140)      0.0390     1.2845 r
+  u_fused_array/U109971/ZN (MAOI222D1BWP12T30P140)      0.0338     1.3184 f
+  u_fused_array/U109980/ZN (MAOI222D1BWP12T30P140)      0.0279     1.3462 r
+  u_fused_array/U109990/ZN (MAOI222D0BWP12T30P140)      0.0351     1.3813 f
+  u_fused_array/U109996/ZN (MAOI222D1BWP12T30P140)      0.0305     1.4117 r
+  u_fused_array/U110001/ZN (MAOI222D0BWP12T30P140)      0.0267     1.4385 f
+  u_fused_array/U110002/ZN (OAI31D0BWP12T30P140)        0.0234     1.4619 r
+  u_fused_array/U110003/ZN (IOA21D0BWP12T30P140)        0.0151     1.4769 f
+  u_fused_array/U110005/ZN (OAI21D0BWP12T30P140)        0.0126     1.4895 r
+  u_fused_array/g_exp_lane[23].u_scale/u_scale_multiplier/lo_product_s1_q_reg[40]/D (DFQD1BWP12T30P140)
+                                                        0.0000     1.4895 r
+  data arrival time                                                1.4895
+
+  clock core_clk (rise edge)                            1.6000     1.6000
+  clock network delay (ideal)                           0.0000     1.6000
+  clock uncertainty                                    -0.1000     1.5000
+  u_fused_array/g_exp_lane[23].u_scale/u_scale_multiplier/lo_product_s1_q_reg[40]/CP (DFQD1BWP12T30P140)
+                                                        0.0000     1.5000 r
+  library setup time                                   -0.0104     1.4896
+  data required time                                               1.4896
+  --------------------------------------------------------------------------
+  data required time                                               1.4896
+  data arrival time                                               -1.4895
+  --------------------------------------------------------------------------
+  slack (MET)                                                      0.0000
+
+
+  Startpoint: u_fused_array/g_stripe[1].u_stripe/ws_pv_q_reg
+              (rising edge-triggered flip-flop clocked by core_clk)
+  Endpoint: u_fused_array/g_stripe[1].u_stripe/g_pe_row[1].g_pe_col[27].u_pe/accum_q_reg[31]
+            (rising edge-triggered flip-flop clocked by core_clk)
+  Path Group: core_clk
+  Path Type: max
+
+  Des/Clust/Port     Wire Load Model       Library
+  ------------------------------------------------
+  fa_clear_replica_11
+                     ZeroWireload          tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+  fa_clear_replica_10
+                     ZeroWireload          tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+  fa_clear_replica_9 ZeroWireload          tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+  fa_clear_replica_8 ZeroWireload          tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+  fsa_stripe_STRIPE_ROWS8_COLS32_HEAD_DIM128_DATA_W8_SCORE_W32_PROB_W16_SUM_W32_TAG_W7_LOCAL_ROW_IDX_W3_2
+                     ZeroWireload          tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+
+  Point                                                   Incr       Path
+  --------------------------------------------------------------------------
+  clock core_clk (rise edge)                            0.0000     0.0000
+  clock network delay (ideal)                           0.0000     0.0000
+  u_fused_array/g_stripe[1].u_stripe/ws_pv_q_reg/CP (DFCNQD1BWP12T30P140)
+                                                        0.0000 #   0.0000 r
+  u_fused_array/g_stripe[1].u_stripe/ws_pv_q_reg/Q (DFCNQD1BWP12T30P140)
+                                                        0.0818     0.0818 f
+  u_fused_array/g_stripe[1].u_stripe/U1895/Z (BUFFD0BWP12T30P140)
+                                                        0.0761     0.1578 f
+  u_fused_array/g_stripe[1].u_stripe/U37/ZN (CKND2D1BWP12T30P140)
+                                                        0.0467     0.2045 r
+  u_fused_array/g_stripe[1].u_stripe/U1030/ZN (INVD0BWP12T30P140)
+                                                        0.0459     0.2504 f
+  u_fused_array/g_stripe[1].u_stripe/U47624/ZN (OAI21D1BWP12T30P140)
+                                                        0.0728     0.3232 r
+  u_fused_array/g_stripe[1].u_stripe/U47625/ZN (INVD1BWP12T30P140)
+                                                        0.0520     0.3751 f
+  u_fused_array/g_stripe[1].u_stripe/U249/ZN (OAI33D0BWP12T30P140)
+                                                        0.0952     0.4704 r
+  u_fused_array/g_stripe[1].u_stripe/U47648/ZN (INVD0BWP12T30P140)
+                                                        0.0273     0.4977 f
+  u_fused_array/g_stripe[1].u_stripe/U172978/ZN (AOI221D1BWP12T30P140)
+                                                        0.0286     0.5263 r
+  u_fused_array/g_stripe[1].u_stripe/U172979/ZN (AOI21D0BWP12T30P140)
+                                                        0.0173     0.5436 f
+  u_fused_array/g_stripe[1].u_stripe/intadd_3149/U14/S (FA1D0BWP12T30P140)
+                                                        0.0638     0.6075 r
+  u_fused_array/g_stripe[1].u_stripe/U6404/CO (FA1D0BWP12T30P140)
+                                                        0.0365     0.6439 r
+  u_fused_array/g_stripe[1].u_stripe/U172940/ZN (NR2D0BWP12T30P140)
+                                                        0.0109     0.6549 f
+  u_fused_array/g_stripe[1].u_stripe/U6048/ZN (OAI21D0BWP12T30P140)
+                                                        0.0207     0.6756 r
+  u_fused_array/g_stripe[1].u_stripe/intadd_3149/U12/CO (FA1D0BWP12T30P140)
+                                                        0.0382     0.7137 r
+  u_fused_array/g_stripe[1].u_stripe/intadd_3149/U11/CO (FA1D0BWP12T30P140)
+                                                        0.0348     0.7486 r
+  u_fused_array/g_stripe[1].u_stripe/intadd_3149/U10/CO (FA1D1BWP12T30P140)
+                                                        0.0253     0.7739 r
+  u_fused_array/g_stripe[1].u_stripe/intadd_3149/U9/CO (FA1D1BWP12T30P140)
+                                                        0.0236     0.7974 r
+  u_fused_array/g_stripe[1].u_stripe/intadd_3149/U8/CO (FA1D1BWP12T30P140)
+                                                        0.0236     0.8210 r
+  u_fused_array/g_stripe[1].u_stripe/intadd_3149/U7/CO (FA1D1BWP12T30P140)
+                                                        0.0236     0.8446 r
+  u_fused_array/g_stripe[1].u_stripe/intadd_3149/U6/CO (FA1D1BWP12T30P140)
+                                                        0.0236     0.8681 r
+  u_fused_array/g_stripe[1].u_stripe/intadd_3149/U5/CO (FA1D1BWP12T30P140)
+                                                        0.0236     0.8917 r
+  u_fused_array/g_stripe[1].u_stripe/intadd_3149/U4/CO (FA1D1BWP12T30P140)
+                                                        0.0236     0.9152 r
+  u_fused_array/g_stripe[1].u_stripe/intadd_3149/U3/CO (FA1D1BWP12T30P140)
+                                                        0.0236     0.9388 r
+  u_fused_array/g_stripe[1].u_stripe/U256107/CO (FA1D1BWP12T30P140)
+                                                        0.0230     0.9618 r
+  u_fused_array/g_stripe[1].u_stripe/U5234/ZN (NR2D0BWP12T30P140)
+                                                        0.0096     0.9714 f
+  u_fused_array/g_stripe[1].u_stripe/U4898/ZN (AOI21D0BWP12T30P140)
+                                                        0.0241     0.9955 r
+  u_fused_array/g_stripe[1].u_stripe/U4726/CO (FA1D0BWP12T30P140)
+                                                        0.0364     1.0318 r
+  u_fused_array/g_stripe[1].u_stripe/U4332/ZN (NR2D0BWP12T30P140)
+                                                        0.0109     1.0427 f
+  u_fused_array/g_stripe[1].u_stripe/U4027/ZN (OAI21D0BWP12T30P140)
+                                                        0.0199     1.0626 r
+  u_fused_array/g_stripe[1].u_stripe/U3618/CO (FA1D0BWP12T30P140)
+                                                        0.0341     1.0967 r
+  u_fused_array/g_stripe[1].u_stripe/U3404/ZN (INVD0BWP12T30P140)
+                                                        0.0098     1.1064 f
+  u_fused_array/g_stripe[1].u_stripe/U3298/ZN (MAOI222D0BWP12T30P140)
+                                                        0.0203     1.1267 r
+  u_fused_array/g_stripe[1].u_stripe/U19402/ZN (AOI21D1BWP12T30P140)
+                                                        0.0756     1.2023 f
+  u_fused_array/g_stripe[1].u_stripe/intadd_2862/U9/CO (FA1D0BWP12T30P140)
+                                                        0.0611     1.2634 f
+  u_fused_array/g_stripe[1].u_stripe/intadd_2862/U8/CO (FA1D1BWP12T30P140)
+                                                        0.0276     1.2910 f
+  u_fused_array/g_stripe[1].u_stripe/intadd_2862/U7/CO (FA1D1BWP12T30P140)
+                                                        0.0262     1.3172 f
+  u_fused_array/g_stripe[1].u_stripe/intadd_2862/U6/CO (FA1D1BWP12T30P140)
+                                                        0.0262     1.3434 f
+  u_fused_array/g_stripe[1].u_stripe/intadd_2862/U5/CO (FA1D1BWP12T30P140)
+                                                        0.0262     1.3695 f
+  u_fused_array/g_stripe[1].u_stripe/intadd_2862/U4/CO (FA1D1BWP12T30P140)
+                                                        0.0262     1.3957 f
+  u_fused_array/g_stripe[1].u_stripe/intadd_2862/U3/CO (FA1D1BWP12T30P140)
+                                                        0.0262     1.4219 f
+  u_fused_array/g_stripe[1].u_stripe/U256106/CO (FA1D1BWP12T30P140)
+                                                        0.0256     1.4475 f
+  u_fused_array/g_stripe[1].u_stripe/U172891/ZN (XNR2D1BWP12T30P140)
+                                                        0.0242     1.4716 r
+  u_fused_array/g_stripe[1].u_stripe/U2811/ZN (OAI222D0BWP12T30P140)
+                                                        0.0264     1.4980 f
+  u_fused_array/g_stripe[1].u_stripe/g_pe_row[1].g_pe_col[27].u_pe/accum_q_reg[31]/D (DFQD1BWP12T30P140)
+                                                        0.0000     1.4980 f
+  data arrival time                                                1.4980
+
+  clock core_clk (rise edge)                            1.6000     1.6000
+  clock network delay (ideal)                           0.0000     1.6000
+  clock uncertainty                                    -0.1000     1.5000
+  u_fused_array/g_stripe[1].u_stripe/g_pe_row[1].g_pe_col[27].u_pe/accum_q_reg[31]/CP (DFQD1BWP12T30P140)
+                                                        0.0000     1.5000 r
+  library setup time                                   -0.0019     1.4981
+  data required time                                               1.4981
+  --------------------------------------------------------------------------
+  data required time                                               1.4981
+  data arrival time                                               -1.4980
+  --------------------------------------------------------------------------
+  slack (MET)                                                      0.0000
+
+
+  Startpoint: u_fused_array/g_stripe[1].u_stripe/ws_pv_q_reg
+              (rising edge-triggered flip-flop clocked by core_clk)
+  Endpoint: u_fused_array/g_stripe[1].u_stripe/g_pe_row[1].g_pe_col[27].u_pe/accum_q_reg[31]
+            (rising edge-triggered flip-flop clocked by core_clk)
+  Path Group: core_clk
+  Path Type: max
+
+  Des/Clust/Port     Wire Load Model       Library
+  ------------------------------------------------
+  fa_clear_replica_11
+                     ZeroWireload          tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+  fa_clear_replica_10
+                     ZeroWireload          tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+  fa_clear_replica_9 ZeroWireload          tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+  fa_clear_replica_8 ZeroWireload          tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+  fsa_stripe_STRIPE_ROWS8_COLS32_HEAD_DIM128_DATA_W8_SCORE_W32_PROB_W16_SUM_W32_TAG_W7_LOCAL_ROW_IDX_W3_2
+                     ZeroWireload          tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+
+  Point                                                   Incr       Path
+  --------------------------------------------------------------------------
+  clock core_clk (rise edge)                            0.0000     0.0000
+  clock network delay (ideal)                           0.0000     0.0000
+  u_fused_array/g_stripe[1].u_stripe/ws_pv_q_reg/CP (DFCNQD1BWP12T30P140)
+                                                        0.0000 #   0.0000 r
+  u_fused_array/g_stripe[1].u_stripe/ws_pv_q_reg/Q (DFCNQD1BWP12T30P140)
+                                                        0.0818     0.0818 f
+  u_fused_array/g_stripe[1].u_stripe/U1895/Z (BUFFD0BWP12T30P140)
+                                                        0.0761     0.1578 f
+  u_fused_array/g_stripe[1].u_stripe/U37/ZN (CKND2D1BWP12T30P140)
+                                                        0.0467     0.2045 r
+  u_fused_array/g_stripe[1].u_stripe/U1030/ZN (INVD0BWP12T30P140)
+                                                        0.0459     0.2504 f
+  u_fused_array/g_stripe[1].u_stripe/U47624/ZN (OAI21D1BWP12T30P140)
+                                                        0.0728     0.3232 r
+  u_fused_array/g_stripe[1].u_stripe/U47625/ZN (INVD1BWP12T30P140)
+                                                        0.0520     0.3751 f
+  u_fused_array/g_stripe[1].u_stripe/U249/ZN (OAI33D0BWP12T30P140)
+                                                        0.0952     0.4704 r
+  u_fused_array/g_stripe[1].u_stripe/U47648/ZN (INVD0BWP12T30P140)
+                                                        0.0273     0.4977 f
+  u_fused_array/g_stripe[1].u_stripe/U172978/ZN (AOI221D1BWP12T30P140)
+                                                        0.0286     0.5263 r
+  u_fused_array/g_stripe[1].u_stripe/U172979/ZN (AOI21D0BWP12T30P140)
+                                                        0.0173     0.5436 f
+  u_fused_array/g_stripe[1].u_stripe/intadd_3149/U14/S (FA1D0BWP12T30P140)
+                                                        0.0638     0.6075 r
+  u_fused_array/g_stripe[1].u_stripe/U6404/CO (FA1D0BWP12T30P140)
+                                                        0.0365     0.6439 r
+  u_fused_array/g_stripe[1].u_stripe/U172940/ZN (NR2D0BWP12T30P140)
+                                                        0.0109     0.6548 f
+  u_fused_array/g_stripe[1].u_stripe/U6048/ZN (OAI21D0BWP12T30P140)
+                                                        0.0207     0.6756 r
+  u_fused_array/g_stripe[1].u_stripe/intadd_3149/U12/CO (FA1D0BWP12T30P140)
+                                                        0.0382     0.7137 r
+  u_fused_array/g_stripe[1].u_stripe/intadd_3149/U11/CO (FA1D0BWP12T30P140)
+                                                        0.0348     0.7486 r
+  u_fused_array/g_stripe[1].u_stripe/intadd_3149/U10/CO (FA1D1BWP12T30P140)
+                                                        0.0253     0.7739 r
+  u_fused_array/g_stripe[1].u_stripe/intadd_3149/U9/CO (FA1D1BWP12T30P140)
+                                                        0.0236     0.7974 r
+  u_fused_array/g_stripe[1].u_stripe/intadd_3149/U8/CO (FA1D1BWP12T30P140)
+                                                        0.0236     0.8210 r
+  u_fused_array/g_stripe[1].u_stripe/intadd_3149/U7/CO (FA1D1BWP12T30P140)
+                                                        0.0236     0.8445 r
+  u_fused_array/g_stripe[1].u_stripe/intadd_3149/U6/CO (FA1D1BWP12T30P140)
+                                                        0.0236     0.8681 r
+  u_fused_array/g_stripe[1].u_stripe/intadd_3149/U5/CO (FA1D1BWP12T30P140)
+                                                        0.0236     0.8916 r
+  u_fused_array/g_stripe[1].u_stripe/intadd_3149/U4/CO (FA1D1BWP12T30P140)
+                                                        0.0236     0.9152 r
+  u_fused_array/g_stripe[1].u_stripe/intadd_3149/U3/CO (FA1D1BWP12T30P140)
+                                                        0.0236     0.9388 r
+  u_fused_array/g_stripe[1].u_stripe/U256107/CO (FA1D1BWP12T30P140)
+                                                        0.0230     0.9617 r
+  u_fused_array/g_stripe[1].u_stripe/U5234/ZN (NR2D0BWP12T30P140)
+                                                        0.0096     0.9714 f
+  u_fused_array/g_stripe[1].u_stripe/U4898/ZN (AOI21D0BWP12T30P140)
+                                                        0.0241     0.9955 r
+  u_fused_array/g_stripe[1].u_stripe/U4726/CO (FA1D0BWP12T30P140)
+                                                        0.0364     1.0318 r
+  u_fused_array/g_stripe[1].u_stripe/U4332/ZN (NR2D0BWP12T30P140)
+                                                        0.0109     1.0427 f
+  u_fused_array/g_stripe[1].u_stripe/U4027/ZN (OAI21D0BWP12T30P140)
+                                                        0.0199     1.0626 r
+  u_fused_array/g_stripe[1].u_stripe/U3618/CO (FA1D0BWP12T30P140)
+                                                        0.0341     1.0966 r
+  u_fused_array/g_stripe[1].u_stripe/U3404/ZN (INVD0BWP12T30P140)
+                                                        0.0098     1.1064 f
+  u_fused_array/g_stripe[1].u_stripe/U3298/ZN (MAOI222D0BWP12T30P140)
+                                                        0.0203     1.1267 r
+  u_fused_array/g_stripe[1].u_stripe/U19402/ZN (AOI21D1BWP12T30P140)
+                                                        0.0756     1.2023 f
+  u_fused_array/g_stripe[1].u_stripe/intadd_2862/U9/CO (FA1D0BWP12T30P140)
+                                                        0.0611     1.2634 f
+  u_fused_array/g_stripe[1].u_stripe/intadd_2862/U8/CO (FA1D1BWP12T30P140)
+                                                        0.0276     1.2910 f
+  u_fused_array/g_stripe[1].u_stripe/intadd_2862/U7/CO (FA1D1BWP12T30P140)
+                                                        0.0262     1.3172 f
+  u_fused_array/g_stripe[1].u_stripe/intadd_2862/U6/CO (FA1D1BWP12T30P140)
+                                                        0.0262     1.3434 f
+  u_fused_array/g_stripe[1].u_stripe/intadd_2862/U5/CO (FA1D1BWP12T30P140)
+                                                        0.0262     1.3695 f
+  u_fused_array/g_stripe[1].u_stripe/intadd_2862/U4/CO (FA1D1BWP12T30P140)
+                                                        0.0262     1.3957 f
+  u_fused_array/g_stripe[1].u_stripe/intadd_2862/U3/CO (FA1D1BWP12T30P140)
+                                                        0.0262     1.4219 f
+  u_fused_array/g_stripe[1].u_stripe/U256106/CO (FA1D1BWP12T30P140)
+                                                        0.0256     1.4474 f
+  u_fused_array/g_stripe[1].u_stripe/U172891/ZN (XNR2D1BWP12T30P140)
+                                                        0.0242     1.4716 r
+  u_fused_array/g_stripe[1].u_stripe/U2811/ZN (OAI222D0BWP12T30P140)
+                                                        0.0264     1.4980 f
+  u_fused_array/g_stripe[1].u_stripe/g_pe_row[1].g_pe_col[27].u_pe/accum_q_reg[31]/D (DFQD1BWP12T30P140)
+                                                        0.0000     1.4980 f
+  data arrival time                                                1.4980
+
+  clock core_clk (rise edge)                            1.6000     1.6000
+  clock network delay (ideal)                           0.0000     1.6000
+  clock uncertainty                                    -0.1000     1.5000
+  u_fused_array/g_stripe[1].u_stripe/g_pe_row[1].g_pe_col[27].u_pe/accum_q_reg[31]/CP (DFQD1BWP12T30P140)
+                                                        0.0000     1.5000 r
+  library setup time                                   -0.0019     1.4981
+  data required time                                               1.4981
+  --------------------------------------------------------------------------
+  data required time                                               1.4981
+  data arrival time                                               -1.4980
+  --------------------------------------------------------------------------
+  slack (MET)                                                      0.0001
+
+
+  Startpoint: u_fused_array/g_stripe[1].u_stripe/ws_pv_q_reg
+              (rising edge-triggered flip-flop clocked by core_clk)
+  Endpoint: u_fused_array/g_stripe[1].u_stripe/g_pe_row[1].g_pe_col[27].u_pe/accum_q_reg[31]
+            (rising edge-triggered flip-flop clocked by core_clk)
+  Path Group: core_clk
+  Path Type: max
+
+  Des/Clust/Port     Wire Load Model       Library
+  ------------------------------------------------
+  fa_clear_replica_11
+                     ZeroWireload          tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+  fa_clear_replica_10
+                     ZeroWireload          tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+  fa_clear_replica_9 ZeroWireload          tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+  fa_clear_replica_8 ZeroWireload          tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+  fsa_stripe_STRIPE_ROWS8_COLS32_HEAD_DIM128_DATA_W8_SCORE_W32_PROB_W16_SUM_W32_TAG_W7_LOCAL_ROW_IDX_W3_2
+                     ZeroWireload          tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+
+  Point                                                   Incr       Path
+  --------------------------------------------------------------------------
+  clock core_clk (rise edge)                            0.0000     0.0000
+  clock network delay (ideal)                           0.0000     0.0000
+  u_fused_array/g_stripe[1].u_stripe/ws_pv_q_reg/CP (DFCNQD1BWP12T30P140)
+                                                        0.0000 #   0.0000 r
+  u_fused_array/g_stripe[1].u_stripe/ws_pv_q_reg/Q (DFCNQD1BWP12T30P140)
+                                                        0.0818     0.0818 f
+  u_fused_array/g_stripe[1].u_stripe/U1895/Z (BUFFD0BWP12T30P140)
+                                                        0.0761     0.1578 f
+  u_fused_array/g_stripe[1].u_stripe/U37/ZN (CKND2D1BWP12T30P140)
+                                                        0.0467     0.2045 r
+  u_fused_array/g_stripe[1].u_stripe/U1030/ZN (INVD0BWP12T30P140)
+                                                        0.0459     0.2504 f
+  u_fused_array/g_stripe[1].u_stripe/U47624/ZN (OAI21D1BWP12T30P140)
+                                                        0.0728     0.3232 r
+  u_fused_array/g_stripe[1].u_stripe/U47625/ZN (INVD1BWP12T30P140)
+                                                        0.0520     0.3751 f
+  u_fused_array/g_stripe[1].u_stripe/U249/ZN (OAI33D0BWP12T30P140)
+                                                        0.0952     0.4703 r
+  u_fused_array/g_stripe[1].u_stripe/U47648/ZN (INVD0BWP12T30P140)
+                                                        0.0273     0.4977 f
+  u_fused_array/g_stripe[1].u_stripe/U172978/ZN (AOI221D1BWP12T30P140)
+                                                        0.0286     0.5263 r
+  u_fused_array/g_stripe[1].u_stripe/U172979/ZN (AOI21D0BWP12T30P140)
+                                                        0.0173     0.5436 f
+  u_fused_array/g_stripe[1].u_stripe/intadd_3149/U14/S (FA1D0BWP12T30P140)
+                                                        0.0638     0.6074 r
+  u_fused_array/g_stripe[1].u_stripe/U6404/CO (FA1D0BWP12T30P140)
+                                                        0.0365     0.6439 r
+  u_fused_array/g_stripe[1].u_stripe/U172940/ZN (NR2D0BWP12T30P140)
+                                                        0.0109     0.6548 f
+  u_fused_array/g_stripe[1].u_stripe/U6048/ZN (OAI21D0BWP12T30P140)
+                                                        0.0207     0.6755 r
+  u_fused_array/g_stripe[1].u_stripe/intadd_3149/U12/CO (FA1D0BWP12T30P140)
+                                                        0.0382     0.7137 r
+  u_fused_array/g_stripe[1].u_stripe/intadd_3149/U11/CO (FA1D0BWP12T30P140)
+                                                        0.0348     0.7485 r
+  u_fused_array/g_stripe[1].u_stripe/intadd_3149/U10/CO (FA1D1BWP12T30P140)
+                                                        0.0253     0.7738 r
+  u_fused_array/g_stripe[1].u_stripe/intadd_3149/U9/CO (FA1D1BWP12T30P140)
+                                                        0.0236     0.7974 r
+  u_fused_array/g_stripe[1].u_stripe/intadd_3149/U8/CO (FA1D1BWP12T30P140)
+                                                        0.0236     0.8210 r
+  u_fused_array/g_stripe[1].u_stripe/intadd_3149/U7/CO (FA1D1BWP12T30P140)
+                                                        0.0236     0.8445 r
+  u_fused_array/g_stripe[1].u_stripe/intadd_3149/U6/CO (FA1D1BWP12T30P140)
+                                                        0.0236     0.8681 r
+  u_fused_array/g_stripe[1].u_stripe/intadd_3149/U5/CO (FA1D1BWP12T30P140)
+                                                        0.0236     0.8916 r
+  u_fused_array/g_stripe[1].u_stripe/intadd_3149/U4/CO (FA1D1BWP12T30P140)
+                                                        0.0236     0.9152 r
+  u_fused_array/g_stripe[1].u_stripe/intadd_3149/U3/CO (FA1D1BWP12T30P140)
+                                                        0.0236     0.9387 r
+  u_fused_array/g_stripe[1].u_stripe/U256107/CO (FA1D1BWP12T30P140)
+                                                        0.0230     0.9617 r
+  u_fused_array/g_stripe[1].u_stripe/U5234/ZN (NR2D0BWP12T30P140)
+                                                        0.0096     0.9713 f
+  u_fused_array/g_stripe[1].u_stripe/U4898/ZN (AOI21D0BWP12T30P140)
+                                                        0.0241     0.9954 r
+  u_fused_array/g_stripe[1].u_stripe/U4726/CO (FA1D0BWP12T30P140)
+                                                        0.0364     1.0318 r
+  u_fused_array/g_stripe[1].u_stripe/U4332/ZN (NR2D0BWP12T30P140)
+                                                        0.0109     1.0427 f
+  u_fused_array/g_stripe[1].u_stripe/U4027/ZN (OAI21D0BWP12T30P140)
+                                                        0.0199     1.0626 r
+  u_fused_array/g_stripe[1].u_stripe/U3618/CO (FA1D0BWP12T30P140)
+                                                        0.0341     1.0966 r
+  u_fused_array/g_stripe[1].u_stripe/U3404/ZN (INVD0BWP12T30P140)
+                                                        0.0098     1.1064 f
+  u_fused_array/g_stripe[1].u_stripe/U3298/ZN (MAOI222D0BWP12T30P140)
+                                                        0.0203     1.1267 r
+  u_fused_array/g_stripe[1].u_stripe/U19402/ZN (AOI21D1BWP12T30P140)
+                                                        0.0756     1.2023 f
+  u_fused_array/g_stripe[1].u_stripe/intadd_2862/U9/CO (FA1D0BWP12T30P140)
+                                                        0.0611     1.2634 f
+  u_fused_array/g_stripe[1].u_stripe/intadd_2862/U8/CO (FA1D1BWP12T30P140)
+                                                        0.0276     1.2910 f
+  u_fused_array/g_stripe[1].u_stripe/intadd_2862/U7/CO (FA1D1BWP12T30P140)
+                                                        0.0262     1.3172 f
+  u_fused_array/g_stripe[1].u_stripe/intadd_2862/U6/CO (FA1D1BWP12T30P140)
+                                                        0.0262     1.3433 f
+  u_fused_array/g_stripe[1].u_stripe/intadd_2862/U5/CO (FA1D1BWP12T30P140)
+                                                        0.0262     1.3695 f
+  u_fused_array/g_stripe[1].u_stripe/intadd_2862/U4/CO (FA1D1BWP12T30P140)
+                                                        0.0262     1.3957 f
+  u_fused_array/g_stripe[1].u_stripe/intadd_2862/U3/CO (FA1D1BWP12T30P140)
+                                                        0.0262     1.4218 f
+  u_fused_array/g_stripe[1].u_stripe/U256106/CO (FA1D1BWP12T30P140)
+                                                        0.0256     1.4474 f
+  u_fused_array/g_stripe[1].u_stripe/U172891/ZN (XNR2D1BWP12T30P140)
+                                                        0.0242     1.4716 r
+  u_fused_array/g_stripe[1].u_stripe/U2811/ZN (OAI222D0BWP12T30P140)
+                                                        0.0264     1.4980 f
+  u_fused_array/g_stripe[1].u_stripe/g_pe_row[1].g_pe_col[27].u_pe/accum_q_reg[31]/D (DFQD1BWP12T30P140)
+                                                        0.0000     1.4980 f
+  data arrival time                                                1.4980
+
+  clock core_clk (rise edge)                            1.6000     1.6000
+  clock network delay (ideal)                           0.0000     1.6000
+  clock uncertainty                                    -0.1000     1.5000
+  u_fused_array/g_stripe[1].u_stripe/g_pe_row[1].g_pe_col[27].u_pe/accum_q_reg[31]/CP (DFQD1BWP12T30P140)
+                                                        0.0000     1.5000 r
+  library setup time                                   -0.0019     1.4981
+  data required time                                               1.4981
+  --------------------------------------------------------------------------
+  data required time                                               1.4981
+  data arrival time                                               -1.4980
+  --------------------------------------------------------------------------
+  slack (MET)                                                      0.0001
+
+
+  Startpoint: u_fused_array/g_stripe[1].u_stripe/ws_pv_q_reg
+              (rising edge-triggered flip-flop clocked by core_clk)
+  Endpoint: u_fused_array/g_stripe[1].u_stripe/g_pe_row[1].g_pe_col[27].u_pe/accum_q_reg[31]
+            (rising edge-triggered flip-flop clocked by core_clk)
+  Path Group: core_clk
+  Path Type: max
+
+  Des/Clust/Port     Wire Load Model       Library
+  ------------------------------------------------
+  fa_clear_replica_11
+                     ZeroWireload          tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+  fa_clear_replica_10
+                     ZeroWireload          tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+  fa_clear_replica_9 ZeroWireload          tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+  fa_clear_replica_8 ZeroWireload          tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+  fsa_stripe_STRIPE_ROWS8_COLS32_HEAD_DIM128_DATA_W8_SCORE_W32_PROB_W16_SUM_W32_TAG_W7_LOCAL_ROW_IDX_W3_2
+                     ZeroWireload          tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+
+  Point                                                   Incr       Path
+  --------------------------------------------------------------------------
+  clock core_clk (rise edge)                            0.0000     0.0000
+  clock network delay (ideal)                           0.0000     0.0000
+  u_fused_array/g_stripe[1].u_stripe/ws_pv_q_reg/CP (DFCNQD1BWP12T30P140)
+                                                        0.0000 #   0.0000 r
+  u_fused_array/g_stripe[1].u_stripe/ws_pv_q_reg/Q (DFCNQD1BWP12T30P140)
+                                                        0.0818     0.0818 f
+  u_fused_array/g_stripe[1].u_stripe/U1895/Z (BUFFD0BWP12T30P140)
+                                                        0.0761     0.1578 f
+  u_fused_array/g_stripe[1].u_stripe/U37/ZN (CKND2D1BWP12T30P140)
+                                                        0.0467     0.2045 r
+  u_fused_array/g_stripe[1].u_stripe/U1030/ZN (INVD0BWP12T30P140)
+                                                        0.0459     0.2504 f
+  u_fused_array/g_stripe[1].u_stripe/U47624/ZN (OAI21D1BWP12T30P140)
+                                                        0.0728     0.3232 r
+  u_fused_array/g_stripe[1].u_stripe/U47625/ZN (INVD1BWP12T30P140)
+                                                        0.0520     0.3751 f
+  u_fused_array/g_stripe[1].u_stripe/U249/ZN (OAI33D0BWP12T30P140)
+                                                        0.0952     0.4704 r
+  u_fused_array/g_stripe[1].u_stripe/U47648/ZN (INVD0BWP12T30P140)
+                                                        0.0273     0.4977 f
+  u_fused_array/g_stripe[1].u_stripe/U172978/ZN (AOI221D1BWP12T30P140)
+                                                        0.0286     0.5263 r
+  u_fused_array/g_stripe[1].u_stripe/U172979/ZN (AOI21D0BWP12T30P140)
+                                                        0.0173     0.5436 f
+  u_fused_array/g_stripe[1].u_stripe/intadd_3149/U14/S (FA1D0BWP12T30P140)
+                                                        0.0638     0.6075 r
+  u_fused_array/g_stripe[1].u_stripe/U6404/CO (FA1D0BWP12T30P140)
+                                                        0.0365     0.6439 r
+  u_fused_array/g_stripe[1].u_stripe/U172940/ZN (NR2D0BWP12T30P140)
+                                                        0.0109     0.6549 f
+  u_fused_array/g_stripe[1].u_stripe/U6048/ZN (OAI21D0BWP12T30P140)
+                                                        0.0207     0.6756 r
+  u_fused_array/g_stripe[1].u_stripe/intadd_3149/U12/CO (FA1D0BWP12T30P140)
+                                                        0.0382     0.7137 r
+  u_fused_array/g_stripe[1].u_stripe/intadd_3149/U11/CO (FA1D0BWP12T30P140)
+                                                        0.0348     0.7485 r
+  u_fused_array/g_stripe[1].u_stripe/intadd_3149/U10/CO (FA1D1BWP12T30P140)
+                                                        0.0253     0.7738 r
+  u_fused_array/g_stripe[1].u_stripe/intadd_3149/U9/CO (FA1D1BWP12T30P140)
+                                                        0.0236     0.7974 r
+  u_fused_array/g_stripe[1].u_stripe/intadd_3149/U8/CO (FA1D1BWP12T30P140)
+                                                        0.0236     0.8210 r
+  u_fused_array/g_stripe[1].u_stripe/intadd_3149/U7/CO (FA1D1BWP12T30P140)
+                                                        0.0236     0.8445 r
+  u_fused_array/g_stripe[1].u_stripe/intadd_3149/U6/CO (FA1D1BWP12T30P140)
+                                                        0.0236     0.8681 r
+  u_fused_array/g_stripe[1].u_stripe/intadd_3149/U5/CO (FA1D1BWP12T30P140)
+                                                        0.0236     0.8916 r
+  u_fused_array/g_stripe[1].u_stripe/intadd_3149/U4/CO (FA1D1BWP12T30P140)
+                                                        0.0236     0.9152 r
+  u_fused_array/g_stripe[1].u_stripe/intadd_3149/U3/CO (FA1D1BWP12T30P140)
+                                                        0.0236     0.9387 r
+  u_fused_array/g_stripe[1].u_stripe/U256107/CO (FA1D1BWP12T30P140)
+                                                        0.0230     0.9617 r
+  u_fused_array/g_stripe[1].u_stripe/U5234/ZN (NR2D0BWP12T30P140)
+                                                        0.0096     0.9713 f
+  u_fused_array/g_stripe[1].u_stripe/U4898/ZN (AOI21D0BWP12T30P140)
+                                                        0.0241     0.9954 r
+  u_fused_array/g_stripe[1].u_stripe/U4726/CO (FA1D0BWP12T30P140)
+                                                        0.0364     1.0318 r
+  u_fused_array/g_stripe[1].u_stripe/U4332/ZN (NR2D0BWP12T30P140)
+                                                        0.0109     1.0427 f
+  u_fused_array/g_stripe[1].u_stripe/U4027/ZN (OAI21D0BWP12T30P140)
+                                                        0.0199     1.0626 r
+  u_fused_array/g_stripe[1].u_stripe/U3618/CO (FA1D0BWP12T30P140)
+                                                        0.0341     1.0966 r
+  u_fused_array/g_stripe[1].u_stripe/U3404/ZN (INVD0BWP12T30P140)
+                                                        0.0098     1.1064 f
+  u_fused_array/g_stripe[1].u_stripe/U3298/ZN (MAOI222D0BWP12T30P140)
+                                                        0.0203     1.1267 r
+  u_fused_array/g_stripe[1].u_stripe/U19402/ZN (AOI21D1BWP12T30P140)
+                                                        0.0756     1.2023 f
+  u_fused_array/g_stripe[1].u_stripe/intadd_2862/U9/CO (FA1D0BWP12T30P140)
+                                                        0.0611     1.2634 f
+  u_fused_array/g_stripe[1].u_stripe/intadd_2862/U8/CO (FA1D1BWP12T30P140)
+                                                        0.0276     1.2910 f
+  u_fused_array/g_stripe[1].u_stripe/intadd_2862/U7/CO (FA1D1BWP12T30P140)
+                                                        0.0262     1.3172 f
+  u_fused_array/g_stripe[1].u_stripe/intadd_2862/U6/CO (FA1D1BWP12T30P140)
+                                                        0.0262     1.3433 f
+  u_fused_array/g_stripe[1].u_stripe/intadd_2862/U5/CO (FA1D1BWP12T30P140)
+                                                        0.0262     1.3695 f
+  u_fused_array/g_stripe[1].u_stripe/intadd_2862/U4/CO (FA1D1BWP12T30P140)
+                                                        0.0262     1.3957 f
+  u_fused_array/g_stripe[1].u_stripe/intadd_2862/U3/CO (FA1D1BWP12T30P140)
+                                                        0.0262     1.4218 f
+  u_fused_array/g_stripe[1].u_stripe/U256106/CO (FA1D1BWP12T30P140)
+                                                        0.0256     1.4474 f
+  u_fused_array/g_stripe[1].u_stripe/U172891/ZN (XNR2D1BWP12T30P140)
+                                                        0.0242     1.4716 r
+  u_fused_array/g_stripe[1].u_stripe/U2811/ZN (OAI222D0BWP12T30P140)
+                                                        0.0264     1.4980 f
+  u_fused_array/g_stripe[1].u_stripe/g_pe_row[1].g_pe_col[27].u_pe/accum_q_reg[31]/D (DFQD1BWP12T30P140)
+                                                        0.0000     1.4980 f
+  data arrival time                                                1.4980
+
+  clock core_clk (rise edge)                            1.6000     1.6000
+  clock network delay (ideal)                           0.0000     1.6000
+  clock uncertainty                                    -0.1000     1.5000
+  u_fused_array/g_stripe[1].u_stripe/g_pe_row[1].g_pe_col[27].u_pe/accum_q_reg[31]/CP (DFQD1BWP12T30P140)
+                                                        0.0000     1.5000 r
+  library setup time                                   -0.0019     1.4981
+  data required time                                               1.4981
+  --------------------------------------------------------------------------
+  data required time                                               1.4981
+  data arrival time                                               -1.4980
+  --------------------------------------------------------------------------
+  slack (MET)                                                      0.0001
+
+
+  Startpoint: u_normalizer/g_lane[7].scale_mant_s2_q_reg[3]
+              (rising edge-triggered flip-flop clocked by core_clk)
+  Endpoint: u_normalizer/g_lane[7].u_output_scale_multiplier/lo_product_s1_q_reg[39]
+            (rising edge-triggered flip-flop clocked by core_clk)
+  Path Group: core_clk
+  Path Type: max
+
+  Des/Clust/Port     Wire Load Model       Library
+  ------------------------------------------------
+  online_normalizer_LANES8_ACC_W32_LSE_W32_OUT_W8_TAG_W9
+                     ZeroWireload          tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+
+  Point                                                   Incr       Path
+  --------------------------------------------------------------------------
+  clock core_clk (rise edge)                            0.0000     0.0000
+  clock network delay (ideal)                           0.0000     0.0000
+  u_normalizer/g_lane[7].scale_mant_s2_q_reg[3]/CP (DFD1BWP12T30P140)
+                                                        0.0000 #   0.0000 r
+  u_normalizer/g_lane[7].scale_mant_s2_q_reg[3]/Q (DFD1BWP12T30P140)
+                                                        0.0838     0.0838 f
+  u_normalizer/U26103/Z (BUFFD1BWP12T30P140)            0.0504     0.1341 f
+  u_normalizer/U26104/ZN (OAI33D1BWP12T30P140)          0.0858     0.2199 r
+  u_normalizer/U26105/ZN (INVD1BWP12T30P140)            0.0412     0.2611 f
+  u_normalizer/U29902/ZN (AOI221D1BWP12T30P140)         0.0340     0.2951 r
+  u_normalizer/U29905/ZN (ND2D0BWP12T30P140)            0.0278     0.3229 f
+  u_normalizer/U29906/ZN (OAI21D0BWP12T30P140)          0.0213     0.3442 r
+  u_normalizer/U29910/CO (FA1D1BWP12T30P140)            0.0268     0.3710 r
+  u_normalizer/U29915/S (FA1D1BWP12T30P140)             0.0377     0.4086 r
+  u_normalizer/U29912/ZN (ND2D0BWP12T30P140)            0.0142     0.4228 f
+  u_normalizer/U29914/ZN (AOI21D0BWP12T30P140)          0.0248     0.4477 r
+  u_normalizer/U29916/ZN (MAOI222D0BWP12T30P140)        0.0358     0.4834 f
+  u_normalizer/U29918/ZN (MAOI222D1BWP12T30P140)        0.0317     0.5152 r
+  u_normalizer/U29920/ZN (MAOI222D1BWP12T30P140)        0.0312     0.5464 f
+  u_normalizer/U29922/ZN (MAOI222D1BWP12T30P140)        0.0289     0.5752 r
+  u_normalizer/U29923/ZN (MAOI222D1BWP12T30P140)        0.0310     0.6063 f
+  u_normalizer/U29925/ZN (MAOI222D1BWP12T30P140)        0.0290     0.6352 r
+  u_normalizer/U29926/ZN (MAOI222D1BWP12T30P140)        0.0310     0.6663 f
+  u_normalizer/U29928/ZN (MAOI222D1BWP12T30P140)        0.0290     0.6952 r
+  u_normalizer/U29929/ZN (MAOI222D1BWP12T30P140)        0.0310     0.7263 f
+  u_normalizer/U29931/ZN (MAOI222D1BWP12T30P140)        0.0290     0.7552 r
+  u_normalizer/U29932/ZN (MAOI222D1BWP12T30P140)        0.0310     0.7862 f
+  u_normalizer/U29934/ZN (MAOI222D1BWP12T30P140)        0.0290     0.8152 r
+  u_normalizer/U29935/ZN (MAOI222D1BWP12T30P140)        0.0310     0.8462 f
+  u_normalizer/U29937/ZN (MAOI222D1BWP12T30P140)        0.0290     0.8752 r
+  u_normalizer/U29938/ZN (MAOI222D1BWP12T30P140)        0.0310     0.9062 f
+  u_normalizer/U29940/ZN (MAOI222D1BWP12T30P140)        0.0290     0.9352 r
+  u_normalizer/U29941/ZN (MAOI222D1BWP12T30P140)        0.0310     0.9662 f
+  u_normalizer/U29943/ZN (MAOI222D1BWP12T30P140)        0.0290     0.9952 r
+  u_normalizer/U29944/ZN (MAOI222D1BWP12T30P140)        0.0310     1.0262 f
+  u_normalizer/U29946/ZN (MAOI222D1BWP12T30P140)        0.0290     1.0552 r
+  u_normalizer/U29947/ZN (MAOI222D1BWP12T30P140)        0.0310     1.0862 f
+  u_normalizer/U29949/ZN (MAOI222D1BWP12T30P140)        0.0290     1.1152 r
+  u_normalizer/U29950/ZN (MAOI222D1BWP12T30P140)        0.0310     1.1462 f
+  u_normalizer/U29952/ZN (MAOI222D1BWP12T30P140)        0.0290     1.1752 r
+  u_normalizer/U29953/ZN (MAOI222D1BWP12T30P140)        0.0310     1.2062 f
+  u_normalizer/U29955/ZN (MAOI222D1BWP12T30P140)        0.0290     1.2352 r
+  u_normalizer/U29956/ZN (MAOI222D1BWP12T30P140)        0.0310     1.2662 f
+  u_normalizer/U29958/ZN (MAOI222D1BWP12T30P140)        0.0290     1.2952 r
+  u_normalizer/U29959/ZN (MAOI222D1BWP12T30P140)        0.0310     1.3262 f
+  u_normalizer/U29961/ZN (MAOI222D1BWP12T30P140)        0.0290     1.3552 r
+  u_normalizer/U29962/ZN (MAOI222D1BWP12T30P140)        0.0310     1.3862 f
+  u_normalizer/U29964/ZN (MAOI222D1BWP12T30P140)        0.0256     1.4118 r
+  u_normalizer/U29966/Z (OA211D1BWP12T30P140)           0.0339     1.4457 r
+  u_normalizer/U29967/ZN (NR2D1BWP12T30P140)            0.0095     1.4552 f
+  u_normalizer/U29969/ZN (AOI21D1BWP12T30P140)          0.0093     1.4645 r
+  u_normalizer/U29970/ZN (OAI21D1BWP12T30P140)          0.0150     1.4795 f
+  u_normalizer/U29971/ZN (OAI21D1BWP12T30P140)          0.0100     1.4896 r
+  u_normalizer/g_lane[7].u_output_scale_multiplier/lo_product_s1_q_reg[39]/D (DFQD1BWP12T30P140)
+                                                        0.0000     1.4896 r
+  data arrival time                                                1.4896
+
+  clock core_clk (rise edge)                            1.6000     1.6000
+  clock network delay (ideal)                           0.0000     1.6000
+  clock uncertainty                                    -0.1000     1.5000
+  u_normalizer/g_lane[7].u_output_scale_multiplier/lo_product_s1_q_reg[39]/CP (DFQD1BWP12T30P140)
+                                                        0.0000     1.5000 r
+  library setup time                                   -0.0103     1.4897
+  data required time                                               1.4897
+  --------------------------------------------------------------------------
+  data required time                                               1.4897
+  data arrival time                                               -1.4896
+  --------------------------------------------------------------------------
+  slack (MET)                                                      0.0001
+
+
+  Startpoint: u_fused_array/g_stripe[1].u_stripe/ws_pv_q_reg
+              (rising edge-triggered flip-flop clocked by core_clk)
+  Endpoint: u_fused_array/g_stripe[1].u_stripe/g_pe_row[3].g_pe_col[29].u_pe/accum_q_reg[31]
+            (rising edge-triggered flip-flop clocked by core_clk)
+  Path Group: core_clk
+  Path Type: max
+
+  Des/Clust/Port     Wire Load Model       Library
+  ------------------------------------------------
+  fa_clear_replica_11
+                     ZeroWireload          tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+  fa_clear_replica_10
+                     ZeroWireload          tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+  fa_clear_replica_9 ZeroWireload          tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+  fa_clear_replica_8 ZeroWireload          tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+  fsa_stripe_STRIPE_ROWS8_COLS32_HEAD_DIM128_DATA_W8_SCORE_W32_PROB_W16_SUM_W32_TAG_W7_LOCAL_ROW_IDX_W3_2
+                     ZeroWireload          tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+
+  Point                                                   Incr       Path
+  --------------------------------------------------------------------------
+  clock core_clk (rise edge)                            0.0000     0.0000
+  clock network delay (ideal)                           0.0000     0.0000
+  u_fused_array/g_stripe[1].u_stripe/ws_pv_q_reg/CP (DFCNQD1BWP12T30P140)
+                                                        0.0000 #   0.0000 r
+  u_fused_array/g_stripe[1].u_stripe/ws_pv_q_reg/Q (DFCNQD1BWP12T30P140)
+                                                        0.0750     0.0750 r
+  u_fused_array/g_stripe[1].u_stripe/U18662/Z (BUFFD3BWP12T30P140)
+                                                        0.0328     0.1078 r
+  u_fused_array/g_stripe[1].u_stripe/U2562/ZN (ND2D0BWP12T30P140)
+                                                        0.0427     0.1505 f
+  u_fused_array/g_stripe[1].u_stripe/U18067/ZN (ND2D0BWP12T30P140)
+                                                        0.0294     0.1799 r
+  u_fused_array/g_stripe[1].u_stripe/U42131/ZN (ND2D1BWP12T30P140)
+                                                        0.0615     0.2415 f
+  u_fused_array/g_stripe[1].u_stripe/U1129/ZN (INVD0BWP12T30P140)
+                                                        0.0800     0.3214 r
+  u_fused_array/g_stripe[1].u_stripe/U42132/ZN (OAI22D1BWP12T30P140)
+                                                        0.0535     0.3750 f
+  u_fused_array/g_stripe[1].u_stripe/U42133/ZN (AOI221D1BWP12T30P140)
+                                                        0.0524     0.4274 r
+  u_fused_array/g_stripe[1].u_stripe/U42195/ZN (INVD1BWP12T30P140)
+                                                        0.0289     0.4563 f
+  u_fused_array/g_stripe[1].u_stripe/U160409/ZN (AOI221D1BWP12T30P140)
+                                                        0.0272     0.4835 r
+  u_fused_array/g_stripe[1].u_stripe/U160410/ZN (IAO21D1BWP12T30P140)
+                                                        0.0135     0.4970 f
+  u_fused_array/g_stripe[1].u_stripe/U11334/S (FA1D0BWP12T30P140)
+                                                        0.0569     0.5539 r
+  u_fused_array/g_stripe[1].u_stripe/U7841/S (FA1D0BWP12T30P140)
+                                                        0.0448     0.5987 r
+  u_fused_array/g_stripe[1].u_stripe/intadd_3343/U10/CO (FA1D0BWP12T30P140)
+                                                        0.0351     0.6339 r
+  u_fused_array/g_stripe[1].u_stripe/intadd_3343/U9/CO (FA1D0BWP12T30P140)
+                                                        0.0342     0.6681 r
+  u_fused_array/g_stripe[1].u_stripe/intadd_3343/U8/CO (FA1D0BWP12T30P140)
+                                                        0.0348     0.7029 r
+  u_fused_array/g_stripe[1].u_stripe/intadd_3343/U7/CO (FA1D1BWP12T30P140)
+                                                        0.0253     0.7282 r
+  u_fused_array/g_stripe[1].u_stripe/intadd_3343/U6/CO (FA1D1BWP12T30P140)
+                                                        0.0236     0.7518 r
+  u_fused_array/g_stripe[1].u_stripe/intadd_3343/U5/CO (FA1D1BWP12T30P140)
+                                                        0.0236     0.7754 r
+  u_fused_array/g_stripe[1].u_stripe/intadd_3343/U4/CO (FA1D1BWP12T30P140)
+                                                        0.0236     0.7989 r
+  u_fused_array/g_stripe[1].u_stripe/intadd_3343/U3/CO (FA1D1BWP12T30P140)
+                                                        0.0236     0.8225 r
+  u_fused_array/g_stripe[1].u_stripe/U255979/CO (FA1D1BWP12T30P140)
+                                                        0.0241     0.8466 r
+  u_fused_array/g_stripe[1].u_stripe/U5994/ZN (MAOI222D0BWP12T30P140)
+                                                        0.0287     0.8752 f
+  u_fused_array/g_stripe[1].u_stripe/U5877/ZN (MAOI222D0BWP12T30P140)
+                                                        0.0315     0.9067 r
+  u_fused_array/g_stripe[1].u_stripe/U5663/Z (CKAN2D0BWP12T30P140)
+                                                        0.0198     0.9265 r
+  u_fused_array/g_stripe[1].u_stripe/U42229/ZN (IAO21D1BWP12T30P140)
+                                                        0.0216     0.9481 r
+  u_fused_array/g_stripe[1].u_stripe/U5337/CO (FA1D0BWP12T30P140)
+                                                        0.0352     0.9832 r
+  u_fused_array/g_stripe[1].u_stripe/U4955/ZN (NR2D0BWP12T30P140)
+                                                        0.0111     0.9944 f
+  u_fused_array/g_stripe[1].u_stripe/U4878/ZN (OAI21D0BWP12T30P140)
+                                                        0.0200     1.0143 r
+  u_fused_array/g_stripe[1].u_stripe/U4363/CO (FA1D0BWP12T30P140)
+                                                        0.0339     1.0482 r
+  u_fused_array/g_stripe[1].u_stripe/U4184/ZN (INVD0BWP12T30P140)
+                                                        0.0097     1.0580 f
+  u_fused_array/g_stripe[1].u_stripe/U3699/ZN (AOI21D0BWP12T30P140)
+                                                        0.0128     1.0707 r
+  u_fused_array/g_stripe[1].u_stripe/U1780/ZN (AOI21D0BWP12T30P140)
+                                                        0.1125     1.1833 f
+  u_fused_array/g_stripe[1].u_stripe/intadd_2994/U9/CO (FA1D0BWP12T30P140)
+                                                        0.0747     1.2580 f
+  u_fused_array/g_stripe[1].u_stripe/intadd_2994/U8/CO (FA1D1BWP12T30P140)
+                                                        0.0284     1.2863 f
+  u_fused_array/g_stripe[1].u_stripe/intadd_2994/U7/CO (FA1D1BWP12T30P140)
+                                                        0.0268     1.3131 f
+  u_fused_array/g_stripe[1].u_stripe/intadd_2994/U6/CO (FA1D1BWP12T30P140)
+                                                        0.0268     1.3399 f
+  u_fused_array/g_stripe[1].u_stripe/intadd_2994/U5/CO (FA1D1BWP12T30P140)
+                                                        0.0268     1.3667 f
+  u_fused_array/g_stripe[1].u_stripe/intadd_2994/U4/CO (FA1D1BWP12T30P140)
+                                                        0.0268     1.3936 f
+  u_fused_array/g_stripe[1].u_stripe/intadd_2994/U3/CO (FA1D1BWP12T30P140)
+                                                        0.0268     1.4204 f
+  u_fused_array/g_stripe[1].u_stripe/U255978/CO (FA1D1BWP12T30P140)
+                                                        0.0262     1.4466 f
+  u_fused_array/g_stripe[1].u_stripe/U160305/ZN (XNR2D1BWP12T30P140)
+                                                        0.0249     1.4714 r
+  u_fused_array/g_stripe[1].u_stripe/U160311/ZN (OAI222D0BWP12T30P140)
+                                                        0.0265     1.4979 f
+  u_fused_array/g_stripe[1].u_stripe/g_pe_row[3].g_pe_col[29].u_pe/accum_q_reg[31]/D (DFQD1BWP12T30P140)
+                                                        0.0000     1.4979 f
+  data arrival time                                                1.4979
+
+  clock core_clk (rise edge)                            1.6000     1.6000
+  clock network delay (ideal)                           0.0000     1.6000
+  clock uncertainty                                    -0.1000     1.5000
+  u_fused_array/g_stripe[1].u_stripe/g_pe_row[3].g_pe_col[29].u_pe/accum_q_reg[31]/CP (DFQD1BWP12T30P140)
+                                                        0.0000     1.5000 r
+  library setup time                                   -0.0020     1.4980
+  data required time                                               1.4980
+  --------------------------------------------------------------------------
+  data required time                                               1.4980
+  data arrival time                                               -1.4979
+  --------------------------------------------------------------------------
+  slack (MET)                                                      0.0001
+
+
+  Startpoint: u_fused_array/g_stripe[1].u_stripe/ws_pv_q_reg
+              (rising edge-triggered flip-flop clocked by core_clk)
+  Endpoint: u_fused_array/g_stripe[1].u_stripe/g_pe_row[3].g_pe_col[29].u_pe/accum_q_reg[31]
+            (rising edge-triggered flip-flop clocked by core_clk)
+  Path Group: core_clk
+  Path Type: max
+
+  Des/Clust/Port     Wire Load Model       Library
+  ------------------------------------------------
+  fa_clear_replica_11
+                     ZeroWireload          tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+  fa_clear_replica_10
+                     ZeroWireload          tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+  fa_clear_replica_9 ZeroWireload          tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+  fa_clear_replica_8 ZeroWireload          tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+  fsa_stripe_STRIPE_ROWS8_COLS32_HEAD_DIM128_DATA_W8_SCORE_W32_PROB_W16_SUM_W32_TAG_W7_LOCAL_ROW_IDX_W3_2
+                     ZeroWireload          tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+
+  Point                                                   Incr       Path
+  --------------------------------------------------------------------------
+  clock core_clk (rise edge)                            0.0000     0.0000
+  clock network delay (ideal)                           0.0000     0.0000
+  u_fused_array/g_stripe[1].u_stripe/ws_pv_q_reg/CP (DFCNQD1BWP12T30P140)
+                                                        0.0000 #   0.0000 r
+  u_fused_array/g_stripe[1].u_stripe/ws_pv_q_reg/Q (DFCNQD1BWP12T30P140)
+                                                        0.0750     0.0750 r
+  u_fused_array/g_stripe[1].u_stripe/U18662/Z (BUFFD3BWP12T30P140)
+                                                        0.0328     0.1078 r
+  u_fused_array/g_stripe[1].u_stripe/U2562/ZN (ND2D0BWP12T30P140)
+                                                        0.0427     0.1505 f
+  u_fused_array/g_stripe[1].u_stripe/U18067/ZN (ND2D0BWP12T30P140)
+                                                        0.0294     0.1799 r
+  u_fused_array/g_stripe[1].u_stripe/U42131/ZN (ND2D1BWP12T30P140)
+                                                        0.0615     0.2415 f
+  u_fused_array/g_stripe[1].u_stripe/U1129/ZN (INVD0BWP12T30P140)
+                                                        0.0800     0.3214 r
+  u_fused_array/g_stripe[1].u_stripe/U42132/ZN (OAI22D1BWP12T30P140)
+                                                        0.0535     0.3750 f
+  u_fused_array/g_stripe[1].u_stripe/U42133/ZN (AOI221D1BWP12T30P140)
+                                                        0.0524     0.4274 r
+  u_fused_array/g_stripe[1].u_stripe/U42195/ZN (INVD1BWP12T30P140)
+                                                        0.0289     0.4563 f
+  u_fused_array/g_stripe[1].u_stripe/U160409/ZN (AOI221D1BWP12T30P140)
+                                                        0.0272     0.4835 r
+  u_fused_array/g_stripe[1].u_stripe/U160410/ZN (IAO21D1BWP12T30P140)
+                                                        0.0135     0.4970 f
+  u_fused_array/g_stripe[1].u_stripe/U11334/S (FA1D0BWP12T30P140)
+                                                        0.0569     0.5539 r
+  u_fused_array/g_stripe[1].u_stripe/U7841/S (FA1D0BWP12T30P140)
+                                                        0.0448     0.5987 r
+  u_fused_array/g_stripe[1].u_stripe/intadd_3343/U10/CO (FA1D0BWP12T30P140)
+                                                        0.0351     0.6339 r
+  u_fused_array/g_stripe[1].u_stripe/intadd_3343/U9/CO (FA1D0BWP12T30P140)
+                                                        0.0342     0.6681 r
+  u_fused_array/g_stripe[1].u_stripe/intadd_3343/U8/CO (FA1D0BWP12T30P140)
+                                                        0.0348     0.7029 r
+  u_fused_array/g_stripe[1].u_stripe/intadd_3343/U7/CO (FA1D1BWP12T30P140)
+                                                        0.0253     0.7282 r
+  u_fused_array/g_stripe[1].u_stripe/intadd_3343/U6/CO (FA1D1BWP12T30P140)
+                                                        0.0236     0.7518 r
+  u_fused_array/g_stripe[1].u_stripe/intadd_3343/U5/CO (FA1D1BWP12T30P140)
+                                                        0.0236     0.7754 r
+  u_fused_array/g_stripe[1].u_stripe/intadd_3343/U4/CO (FA1D1BWP12T30P140)
+                                                        0.0236     0.7989 r
+  u_fused_array/g_stripe[1].u_stripe/intadd_3343/U3/CO (FA1D1BWP12T30P140)
+                                                        0.0236     0.8225 r
+  u_fused_array/g_stripe[1].u_stripe/U255979/CO (FA1D1BWP12T30P140)
+                                                        0.0241     0.8466 r
+  u_fused_array/g_stripe[1].u_stripe/U5994/ZN (MAOI222D0BWP12T30P140)
+                                                        0.0287     0.8752 f
+  u_fused_array/g_stripe[1].u_stripe/U5877/ZN (MAOI222D0BWP12T30P140)
+                                                        0.0315     0.9067 r
+  u_fused_array/g_stripe[1].u_stripe/U5663/Z (CKAN2D0BWP12T30P140)
+                                                        0.0198     0.9265 r
+  u_fused_array/g_stripe[1].u_stripe/U42229/ZN (IAO21D1BWP12T30P140)
+                                                        0.0216     0.9481 r
+  u_fused_array/g_stripe[1].u_stripe/U5337/CO (FA1D0BWP12T30P140)
+                                                        0.0352     0.9832 r
+  u_fused_array/g_stripe[1].u_stripe/U4955/ZN (NR2D0BWP12T30P140)
+                                                        0.0111     0.9944 f
+  u_fused_array/g_stripe[1].u_stripe/U4878/ZN (OAI21D0BWP12T30P140)
+                                                        0.0200     1.0143 r
+  u_fused_array/g_stripe[1].u_stripe/U4363/CO (FA1D0BWP12T30P140)
+                                                        0.0339     1.0482 r
+  u_fused_array/g_stripe[1].u_stripe/U4184/ZN (INVD0BWP12T30P140)
+                                                        0.0097     1.0580 f
+  u_fused_array/g_stripe[1].u_stripe/U3699/ZN (AOI21D0BWP12T30P140)
+                                                        0.0128     1.0707 r
+  u_fused_array/g_stripe[1].u_stripe/U1780/ZN (AOI21D0BWP12T30P140)
+                                                        0.1125     1.1833 f
+  u_fused_array/g_stripe[1].u_stripe/intadd_2994/U9/CO (FA1D0BWP12T30P140)
+                                                        0.0747     1.2580 f
+  u_fused_array/g_stripe[1].u_stripe/intadd_2994/U8/CO (FA1D1BWP12T30P140)
+                                                        0.0284     1.2863 f
+  u_fused_array/g_stripe[1].u_stripe/intadd_2994/U7/CO (FA1D1BWP12T30P140)
+                                                        0.0268     1.3131 f
+  u_fused_array/g_stripe[1].u_stripe/intadd_2994/U6/CO (FA1D1BWP12T30P140)
+                                                        0.0268     1.3399 f
+  u_fused_array/g_stripe[1].u_stripe/intadd_2994/U5/CO (FA1D1BWP12T30P140)
+                                                        0.0268     1.3667 f
+  u_fused_array/g_stripe[1].u_stripe/intadd_2994/U4/CO (FA1D1BWP12T30P140)
+                                                        0.0268     1.3936 f
+  u_fused_array/g_stripe[1].u_stripe/intadd_2994/U3/CO (FA1D1BWP12T30P140)
+                                                        0.0268     1.4204 f
+  u_fused_array/g_stripe[1].u_stripe/U255978/CO (FA1D1BWP12T30P140)
+                                                        0.0262     1.4466 f
+  u_fused_array/g_stripe[1].u_stripe/U160305/ZN (XNR2D1BWP12T30P140)
+                                                        0.0249     1.4714 r
+  u_fused_array/g_stripe[1].u_stripe/U160311/ZN (OAI222D0BWP12T30P140)
+                                                        0.0265     1.4979 f
+  u_fused_array/g_stripe[1].u_stripe/g_pe_row[3].g_pe_col[29].u_pe/accum_q_reg[31]/D (DFQD1BWP12T30P140)
+                                                        0.0000     1.4979 f
+  data arrival time                                                1.4979
+
+  clock core_clk (rise edge)                            1.6000     1.6000
+  clock network delay (ideal)                           0.0000     1.6000
+  clock uncertainty                                    -0.1000     1.5000
+  u_fused_array/g_stripe[1].u_stripe/g_pe_row[3].g_pe_col[29].u_pe/accum_q_reg[31]/CP (DFQD1BWP12T30P140)
+                                                        0.0000     1.5000 r
+  library setup time                                   -0.0020     1.4980
+  data required time                                               1.4980
+  --------------------------------------------------------------------------
+  data required time                                               1.4980
+  data arrival time                                               -1.4979
+  --------------------------------------------------------------------------
+  slack (MET)                                                      0.0001
+
+
+  Startpoint: u_fused_array/g_stripe[1].u_stripe/ws_pv_q_reg
+              (rising edge-triggered flip-flop clocked by core_clk)
+  Endpoint: u_fused_array/g_stripe[1].u_stripe/g_pe_row[3].g_pe_col[29].u_pe/accum_q_reg[31]
+            (rising edge-triggered flip-flop clocked by core_clk)
+  Path Group: core_clk
+  Path Type: max
+
+  Des/Clust/Port     Wire Load Model       Library
+  ------------------------------------------------
+  fa_clear_replica_11
+                     ZeroWireload          tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+  fa_clear_replica_10
+                     ZeroWireload          tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+  fa_clear_replica_9 ZeroWireload          tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+  fa_clear_replica_8 ZeroWireload          tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+  fsa_stripe_STRIPE_ROWS8_COLS32_HEAD_DIM128_DATA_W8_SCORE_W32_PROB_W16_SUM_W32_TAG_W7_LOCAL_ROW_IDX_W3_2
+                     ZeroWireload          tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+
+  Point                                                   Incr       Path
+  --------------------------------------------------------------------------
+  clock core_clk (rise edge)                            0.0000     0.0000
+  clock network delay (ideal)                           0.0000     0.0000
+  u_fused_array/g_stripe[1].u_stripe/ws_pv_q_reg/CP (DFCNQD1BWP12T30P140)
+                                                        0.0000 #   0.0000 r
+  u_fused_array/g_stripe[1].u_stripe/ws_pv_q_reg/Q (DFCNQD1BWP12T30P140)
+                                                        0.0750     0.0750 r
+  u_fused_array/g_stripe[1].u_stripe/U18662/Z (BUFFD3BWP12T30P140)
+                                                        0.0328     0.1078 r
+  u_fused_array/g_stripe[1].u_stripe/U2562/ZN (ND2D0BWP12T30P140)
+                                                        0.0427     0.1505 f
+  u_fused_array/g_stripe[1].u_stripe/U18067/ZN (ND2D0BWP12T30P140)
+                                                        0.0294     0.1799 r
+  u_fused_array/g_stripe[1].u_stripe/U42131/ZN (ND2D1BWP12T30P140)
+                                                        0.0615     0.2415 f
+  u_fused_array/g_stripe[1].u_stripe/U1129/ZN (INVD0BWP12T30P140)
+                                                        0.0800     0.3214 r
+  u_fused_array/g_stripe[1].u_stripe/U42132/ZN (OAI22D1BWP12T30P140)
+                                                        0.0535     0.3750 f
+  u_fused_array/g_stripe[1].u_stripe/U42133/ZN (AOI221D1BWP12T30P140)
+                                                        0.0524     0.4274 r
+  u_fused_array/g_stripe[1].u_stripe/U42195/ZN (INVD1BWP12T30P140)
+                                                        0.0289     0.4563 f
+  u_fused_array/g_stripe[1].u_stripe/U160409/ZN (AOI221D1BWP12T30P140)
+                                                        0.0272     0.4835 r
+  u_fused_array/g_stripe[1].u_stripe/U160410/ZN (IAO21D1BWP12T30P140)
+                                                        0.0135     0.4970 f
+  u_fused_array/g_stripe[1].u_stripe/U11334/S (FA1D0BWP12T30P140)
+                                                        0.0569     0.5539 r
+  u_fused_array/g_stripe[1].u_stripe/U7841/S (FA1D0BWP12T30P140)
+                                                        0.0448     0.5987 r
+  u_fused_array/g_stripe[1].u_stripe/intadd_3343/U10/CO (FA1D0BWP12T30P140)
+                                                        0.0351     0.6339 r
+  u_fused_array/g_stripe[1].u_stripe/intadd_3343/U9/CO (FA1D0BWP12T30P140)
+                                                        0.0342     0.6681 r
+  u_fused_array/g_stripe[1].u_stripe/intadd_3343/U8/CO (FA1D0BWP12T30P140)
+                                                        0.0348     0.7029 r
+  u_fused_array/g_stripe[1].u_stripe/intadd_3343/U7/CO (FA1D1BWP12T30P140)
+                                                        0.0253     0.7282 r
+  u_fused_array/g_stripe[1].u_stripe/intadd_3343/U6/CO (FA1D1BWP12T30P140)
+                                                        0.0236     0.7518 r
+  u_fused_array/g_stripe[1].u_stripe/intadd_3343/U5/CO (FA1D1BWP12T30P140)
+                                                        0.0236     0.7754 r
+  u_fused_array/g_stripe[1].u_stripe/intadd_3343/U4/CO (FA1D1BWP12T30P140)
+                                                        0.0236     0.7989 r
+  u_fused_array/g_stripe[1].u_stripe/intadd_3343/U3/CO (FA1D1BWP12T30P140)
+                                                        0.0236     0.8225 r
+  u_fused_array/g_stripe[1].u_stripe/U255979/CO (FA1D1BWP12T30P140)
+                                                        0.0241     0.8466 r
+  u_fused_array/g_stripe[1].u_stripe/U5994/ZN (MAOI222D0BWP12T30P140)
+                                                        0.0287     0.8752 f
+  u_fused_array/g_stripe[1].u_stripe/U5877/ZN (MAOI222D0BWP12T30P140)
+                                                        0.0315     0.9067 r
+  u_fused_array/g_stripe[1].u_stripe/U5663/Z (CKAN2D0BWP12T30P140)
+                                                        0.0198     0.9265 r
+  u_fused_array/g_stripe[1].u_stripe/U42229/ZN (IAO21D1BWP12T30P140)
+                                                        0.0216     0.9481 r
+  u_fused_array/g_stripe[1].u_stripe/U5337/CO (FA1D0BWP12T30P140)
+                                                        0.0352     0.9832 r
+  u_fused_array/g_stripe[1].u_stripe/U4955/ZN (NR2D0BWP12T30P140)
+                                                        0.0111     0.9944 f
+  u_fused_array/g_stripe[1].u_stripe/U4878/ZN (OAI21D0BWP12T30P140)
+                                                        0.0200     1.0143 r
+  u_fused_array/g_stripe[1].u_stripe/U4363/CO (FA1D0BWP12T30P140)
+                                                        0.0339     1.0482 r
+  u_fused_array/g_stripe[1].u_stripe/U4184/ZN (INVD0BWP12T30P140)
+                                                        0.0097     1.0580 f
+  u_fused_array/g_stripe[1].u_stripe/U3699/ZN (AOI21D0BWP12T30P140)
+                                                        0.0128     1.0707 r
+  u_fused_array/g_stripe[1].u_stripe/U1780/ZN (AOI21D0BWP12T30P140)
+                                                        0.1125     1.1833 f
+  u_fused_array/g_stripe[1].u_stripe/intadd_2994/U9/CO (FA1D0BWP12T30P140)
+                                                        0.0747     1.2580 f
+  u_fused_array/g_stripe[1].u_stripe/intadd_2994/U8/CO (FA1D1BWP12T30P140)
+                                                        0.0284     1.2863 f
+  u_fused_array/g_stripe[1].u_stripe/intadd_2994/U7/CO (FA1D1BWP12T30P140)
+                                                        0.0268     1.3131 f
+  u_fused_array/g_stripe[1].u_stripe/intadd_2994/U6/CO (FA1D1BWP12T30P140)
+                                                        0.0268     1.3399 f
+  u_fused_array/g_stripe[1].u_stripe/intadd_2994/U5/CO (FA1D1BWP12T30P140)
+                                                        0.0268     1.3667 f
+  u_fused_array/g_stripe[1].u_stripe/intadd_2994/U4/CO (FA1D1BWP12T30P140)
+                                                        0.0268     1.3936 f
+  u_fused_array/g_stripe[1].u_stripe/intadd_2994/U3/CO (FA1D1BWP12T30P140)
+                                                        0.0268     1.4204 f
+  u_fused_array/g_stripe[1].u_stripe/U255978/CO (FA1D1BWP12T30P140)
+                                                        0.0262     1.4466 f
+  u_fused_array/g_stripe[1].u_stripe/U160305/ZN (XNR2D1BWP12T30P140)
+                                                        0.0249     1.4714 r
+  u_fused_array/g_stripe[1].u_stripe/U160311/ZN (OAI222D0BWP12T30P140)
+                                                        0.0265     1.4979 f
+  u_fused_array/g_stripe[1].u_stripe/g_pe_row[3].g_pe_col[29].u_pe/accum_q_reg[31]/D (DFQD1BWP12T30P140)
+                                                        0.0000     1.4979 f
+  data arrival time                                                1.4979
+
+  clock core_clk (rise edge)                            1.6000     1.6000
+  clock network delay (ideal)                           0.0000     1.6000
+  clock uncertainty                                    -0.1000     1.5000
+  u_fused_array/g_stripe[1].u_stripe/g_pe_row[3].g_pe_col[29].u_pe/accum_q_reg[31]/CP (DFQD1BWP12T30P140)
+                                                        0.0000     1.5000 r
+  library setup time                                   -0.0020     1.4980
+  data required time                                               1.4980
+  --------------------------------------------------------------------------
+  data required time                                               1.4980
+  data arrival time                                               -1.4979
+  --------------------------------------------------------------------------
+  slack (MET)                                                      0.0001
+
+
+  Startpoint: u_normalizer/g_lane[2].scale_mant_s2_q_reg[3]
+              (rising edge-triggered flip-flop clocked by core_clk)
+  Endpoint: u_normalizer/g_lane[2].u_output_scale_multiplier/lo_product_s1_q_reg[39]
+            (rising edge-triggered flip-flop clocked by core_clk)
+  Path Group: core_clk
+  Path Type: max
+
+  Des/Clust/Port     Wire Load Model       Library
+  ------------------------------------------------
+  online_normalizer_LANES8_ACC_W32_LSE_W32_OUT_W8_TAG_W9
+                     ZeroWireload          tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+
+  Point                                                   Incr       Path
+  --------------------------------------------------------------------------
+  clock core_clk (rise edge)                            0.0000     0.0000
+  clock network delay (ideal)                           0.0000     0.0000
+  u_normalizer/g_lane[2].scale_mant_s2_q_reg[3]/CP (DFD1BWP12T30P140)
+                                                        0.0000 #   0.0000 r
+  u_normalizer/g_lane[2].scale_mant_s2_q_reg[3]/Q (DFD1BWP12T30P140)
+                                                        0.0838     0.0838 f
+  u_normalizer/U26311/Z (BUFFD1BWP12T30P140)            0.0504     0.1341 f
+  u_normalizer/U26312/ZN (OAI33D1BWP12T30P140)          0.0858     0.2199 r
+  u_normalizer/U26313/ZN (INVD1BWP12T30P140)            0.0412     0.2611 f
+  u_normalizer/U32441/ZN (AOI221D1BWP12T30P140)         0.0340     0.2951 r
+  u_normalizer/U32444/ZN (ND2D0BWP12T30P140)            0.0278     0.3229 f
+  u_normalizer/U32445/ZN (OAI21D0BWP12T30P140)          0.0213     0.3442 r
+  u_normalizer/U32449/CO (FA1D1BWP12T30P140)            0.0268     0.3710 r
+  u_normalizer/U32454/S (FA1D1BWP12T30P140)             0.0377     0.4086 r
+  u_normalizer/U32451/ZN (ND2D0BWP12T30P140)            0.0142     0.4228 f
+  u_normalizer/U32453/ZN (AOI21D0BWP12T30P140)          0.0248     0.4477 r
+  u_normalizer/U32455/ZN (MAOI222D0BWP12T30P140)        0.0358     0.4834 f
+  u_normalizer/U32458/ZN (MAOI222D1BWP12T30P140)        0.0317     0.5152 r
+  u_normalizer/U32460/ZN (MAOI222D1BWP12T30P140)        0.0312     0.5464 f
+  u_normalizer/U32462/ZN (MAOI222D1BWP12T30P140)        0.0289     0.5752 r
+  u_normalizer/U32463/ZN (MAOI222D1BWP12T30P140)        0.0310     0.6063 f
+  u_normalizer/U32465/ZN (MAOI222D1BWP12T30P140)        0.0290     0.6352 r
+  u_normalizer/U32466/ZN (MAOI222D1BWP12T30P140)        0.0310     0.6663 f
+  u_normalizer/U32468/ZN (MAOI222D1BWP12T30P140)        0.0290     0.6952 r
+  u_normalizer/U32469/ZN (MAOI222D1BWP12T30P140)        0.0310     0.7263 f
+  u_normalizer/U32471/ZN (MAOI222D1BWP12T30P140)        0.0290     0.7552 r
+  u_normalizer/U32472/ZN (MAOI222D1BWP12T30P140)        0.0310     0.7862 f
+  u_normalizer/U32474/ZN (MAOI222D1BWP12T30P140)        0.0290     0.8152 r
+  u_normalizer/U32475/ZN (MAOI222D1BWP12T30P140)        0.0310     0.8462 f
+  u_normalizer/U32477/ZN (MAOI222D1BWP12T30P140)        0.0290     0.8752 r
+  u_normalizer/U32478/ZN (MAOI222D1BWP12T30P140)        0.0310     0.9062 f
+  u_normalizer/U32480/ZN (MAOI222D1BWP12T30P140)        0.0290     0.9352 r
+  u_normalizer/U32481/ZN (MAOI222D1BWP12T30P140)        0.0310     0.9662 f
+  u_normalizer/U32483/ZN (MAOI222D1BWP12T30P140)        0.0290     0.9952 r
+  u_normalizer/U32484/ZN (MAOI222D1BWP12T30P140)        0.0310     1.0262 f
+  u_normalizer/U32486/ZN (MAOI222D1BWP12T30P140)        0.0290     1.0552 r
+  u_normalizer/U32487/ZN (MAOI222D1BWP12T30P140)        0.0310     1.0862 f
+  u_normalizer/U32489/ZN (MAOI222D1BWP12T30P140)        0.0290     1.1152 r
+  u_normalizer/U32490/ZN (MAOI222D1BWP12T30P140)        0.0310     1.1462 f
+  u_normalizer/U32492/ZN (MAOI222D1BWP12T30P140)        0.0290     1.1752 r
+  u_normalizer/U32493/ZN (MAOI222D1BWP12T30P140)        0.0310     1.2062 f
+  u_normalizer/U32495/ZN (MAOI222D1BWP12T30P140)        0.0290     1.2352 r
+  u_normalizer/U32496/ZN (MAOI222D1BWP12T30P140)        0.0310     1.2662 f
+  u_normalizer/U32498/ZN (MAOI222D1BWP12T30P140)        0.0290     1.2952 r
+  u_normalizer/U32499/ZN (MAOI222D1BWP12T30P140)        0.0310     1.3262 f
+  u_normalizer/U32501/ZN (MAOI222D1BWP12T30P140)        0.0290     1.3552 r
+  u_normalizer/U32502/ZN (MAOI222D1BWP12T30P140)        0.0310     1.3862 f
+  u_normalizer/U32504/ZN (MAOI222D1BWP12T30P140)        0.0256     1.4118 r
+  u_normalizer/U32506/Z (OA211D1BWP12T30P140)           0.0339     1.4457 r
+  u_normalizer/U32507/ZN (NR2D1BWP12T30P140)            0.0095     1.4552 f
+  u_normalizer/U32509/ZN (AOI21D1BWP12T30P140)          0.0093     1.4645 r
+  u_normalizer/U32510/ZN (OAI21D1BWP12T30P140)          0.0152     1.4797 f
+  u_normalizer/U32511/ZN (OAI21D1BWP12T30P140)          0.0100     1.4897 r
+  u_normalizer/g_lane[2].u_output_scale_multiplier/lo_product_s1_q_reg[39]/D (DFQD1BWP12T30P140)
+                                                        0.0000     1.4897 r
+  data arrival time                                                1.4897
+
+  clock core_clk (rise edge)                            1.6000     1.6000
+  clock network delay (ideal)                           0.0000     1.6000
+  clock uncertainty                                    -0.1000     1.5000
+  u_normalizer/g_lane[2].u_output_scale_multiplier/lo_product_s1_q_reg[39]/CP (DFQD1BWP12T30P140)
+                                                        0.0000     1.5000 r
+  library setup time                                   -0.0102     1.4898
+  data required time                                               1.4898
+  --------------------------------------------------------------------------
+  data required time                                               1.4898
+  data arrival time                                               -1.4897
+  --------------------------------------------------------------------------
+  slack (MET)                                                      0.0001
+
+
+  Startpoint: u_fused_array/g_exp_lane[1].u_scale/scale_s0_q_reg[1]
+              (rising edge-triggered flip-flop clocked by core_clk)
+  Endpoint: u_fused_array/g_exp_lane[12].u_scale/u_scale_multiplier/lo_product_s1_q_reg[40]
+            (rising edge-triggered flip-flop clocked by core_clk)
+  Path Group: core_clk
+  Path Type: max
+
+  Des/Clust/Port     Wire Load Model       Library
+  ------------------------------------------------
+  fsa_fused_array_ROWS32_STRIPE_ROWS8_COLS32_DATA_W8_SCORE_W32_PROB_W16_ACC_W32_LSE_W32_HEAD_DIM128_FEATURE_IDX_W7
+                     ZeroWireload          tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+
+  Point                                                   Incr       Path
+  --------------------------------------------------------------------------
+  clock core_clk (rise edge)                            0.0000     0.0000
+  clock network delay (ideal)                           0.0000     0.0000
+  u_fused_array/g_exp_lane[1].u_scale/scale_s0_q_reg[1]/CP (DFQOPTMAD8BWP12T30P140)
+                                                        0.0000 #   0.0000 r
+  u_fused_array/g_exp_lane[1].u_scale/scale_s0_q_reg[1]/Q (DFQOPTMAD8BWP12T30P140)
+                                                        0.0318     0.0318 r
+  u_fused_array/U22/ZN (INVD4BWP12T30P140)              0.0065     0.0382 f
+  u_fused_array/U6924/Z (BUFFD2BWP12T30P140)            0.0199     0.0581 f
+  u_fused_array/U6463/Z (OR2D1BWP12T30P140)             0.0170     0.0751 f
+  u_fused_array/U20/ZN (OAI22OPTPBD1BWP12T30P140)       0.0166     0.0917 r
+  u_fused_array/U83758/ZN (ND2D0BWP12T30P140)           0.0187     0.1104 f
+  u_fused_array/U83759/Z (BUFFD2BWP12T30P140)           0.0280     0.1384 f
+  u_fused_array/U6900/Z (BUFFD1BWP12T30P140)            0.0412     0.1796 f
+  u_fused_array/U102665/ZN (OAI21D0BWP12T30P140)        0.0310     0.2105 r
+  u_fused_array/U5238/ZN (ND2D0BWP12T30P140)            0.0301     0.2407 f
+  u_fused_array/U102666/ZN (OAI21D0BWP12T30P140)        0.0172     0.2579 r
+  u_fused_array/U2606/Z (AN3D0BWP12T30P140)             0.0295     0.2873 r
+  u_fused_array/U2414/ZN (INR2D1BWP12T30P140)           0.0071     0.2944 f
+  u_fused_array/U2221/ZN (NR2D0BWP12T30P140)            0.0188     0.3132 r
+  u_fused_array/U102682/CO (FA1D0BWP12T30P140)          0.0338     0.3470 r
+  u_fused_array/U102693/ZN (ND2D0BWP12T30P140)          0.0146     0.3616 f
+  u_fused_array/U1816/ZN (AOI21D0BWP12T30P140)          0.0217     0.3832 r
+  u_fused_array/U102724/ZN (MAOI222D0BWP12T30P140)      0.0334     0.4166 f
+  u_fused_array/U102738/ZN (MAOI222D0BWP12T30P140)      0.0366     0.4532 r
+  u_fused_array/U102750/ZN (MAOI222D0BWP12T30P140)      0.0349     0.4881 f
+  u_fused_array/U1754/ZN (NR2D0BWP12T30P140)            0.0207     0.5088 r
+  u_fused_array/U1745/Z (OR2D1BWP12T30P140)             0.0182     0.5269 r
+  u_fused_array/U1733/ZN (AOI21D0BWP12T30P140)          0.0119     0.5388 f
+  u_fused_array/U1726/Z (OR2D1BWP12T30P140)             0.0195     0.5583 f
+  u_fused_array/U1687/ZN (NR2D0BWP12T30P140)            0.0128     0.5711 r
+  u_fused_array/U1667/Z (OR2D1BWP12T30P140)             0.0173     0.5884 r
+  u_fused_array/U1604/ZN (AOI21D0BWP12T30P140)          0.0120     0.6004 f
+  u_fused_array/U1593/Z (OR2D1BWP12T30P140)             0.0195     0.6199 f
+  u_fused_array/U102802/ZN (MAOI222D0BWP12T30P140)      0.0270     0.6469 r
+  u_fused_array/U102813/ZN (MAOI222D0BWP12T30P140)      0.0346     0.6814 f
+  u_fused_array/U1460/ZN (MAOI222D0BWP12T30P140)        0.0367     0.7181 r
+  u_fused_array/U102836/ZN (MAOI222D0BWP12T30P140)      0.0347     0.7529 f
+  u_fused_array/U1394/ZN (MAOI222D0BWP12T30P140)        0.0367     0.7896 r
+  u_fused_array/U510/ZN (MAOI222D0BWP12T30P140)         0.0378     0.8274 f
+  u_fused_array/U1294/ZN (NR2D1BWP12T30P140)            0.0165     0.8439 r
+  u_fused_array/U1270/Z (OR2D1BWP12T30P140)             0.0183     0.8622 r
+  u_fused_array/U1245/ZN (AOI21D1BWP12T30P140)          0.0102     0.8723 f
+  u_fused_array/U1220/Z (OR2D1BWP12T30P140)             0.0191     0.8914 f
+  u_fused_array/U358/ZN (AOI21D0BWP12T30P140)           0.0134     0.9047 r
+  u_fused_array/U1160/Z (OR2D1BWP12T30P140)             0.0168     0.9215 r
+  u_fused_array/U357/ZN (AOI21D0BWP12T30P140)           0.0120     0.9335 f
+  u_fused_array/U1118/Z (OR2D1BWP12T30P140)             0.0195     0.9530 f
+  u_fused_array/U102915/ZN (MAOI222D0BWP12T30P140)      0.0270     0.9800 r
+  u_fused_array/U102923/ZN (MAOI222D0BWP12T30P140)      0.0376     1.0176 f
+  u_fused_array/U1061/ZN (NR2D1BWP12T30P140)            0.0165     1.0340 r
+  u_fused_array/U1032/Z (OR2D1BWP12T30P140)             0.0183     1.0523 r
+  u_fused_array/U1012/ZN (AOI21D1BWP12T30P140)          0.0102     1.0625 f
+  u_fused_array/U976/Z (OR2D1BWP12T30P140)              0.0195     1.0820 f
+  u_fused_array/U972/ZN (AOI21D1BWP12T30P140)           0.0103     1.0923 r
+  u_fused_array/U960/Z (OR2D1BWP12T30P140)              0.0159     1.1082 r
+  u_fused_array/U356/ZN (AOI21D0BWP12T30P140)           0.0120     1.1202 f
+  u_fused_array/U923/Z (OR2D1BWP12T30P140)              0.0195     1.1397 f
+  u_fused_array/U917/ZN (MAOI222D0BWP12T30P140)         0.0270     1.1667 r
+  u_fused_array/U102976/ZN (MAOI222D0BWP12T30P140)      0.0362     1.2028 f
+  u_fused_array/U355/ZN (NR2D0BWP12T30P140)             0.0211     1.2239 r
+  u_fused_array/U890/Z (OR2D1BWP12T30P140)              0.0191     1.2429 r
+  u_fused_array/U888/ZN (AOI21D1BWP12T30P140)           0.0102     1.2531 f
+  u_fused_array/U879/Z (OR2D1BWP12T30P140)              0.0195     1.2726 f
+  u_fused_array/U870/ZN (AOI21D1BWP12T30P140)           0.0103     1.2830 r
+  u_fused_array/U866/Z (OR2D1BWP12T30P140)              0.0163     1.2992 r
+  u_fused_array/U862/ZN (AOI21D1BWP12T30P140)           0.0101     1.3094 f
+  u_fused_array/U853/Z (OR2D1BWP12T30P140)              0.0194     1.3288 f
+  u_fused_array/U103023/ZN (MAOI222D1BWP12T30P140)      0.0223     1.3511 r
+  u_fused_array/U103033/ZN (MAOI222D1BWP12T30P140)      0.0303     1.3814 f
+  u_fused_array/U354/ZN (NR2D0BWP12T30P140)             0.0188     1.4002 r
+  u_fused_array/U832/Z (OR2D1BWP12T30P140)              0.0180     1.4182 r
+  u_fused_array/U103040/ZN (MAOI222D0BWP12T30P140)      0.0237     1.4419 f
+  u_fused_array/U103041/ZN (OAI31D1BWP12T30P140)        0.0207     1.4626 r
+  u_fused_array/U103042/ZN (IOA21D0BWP12T30P140)        0.0143     1.4770 f
+  u_fused_array/U103044/ZN (OAI21D0BWP12T30P140)        0.0124     1.4893 r
+  u_fused_array/g_exp_lane[12].u_scale/u_scale_multiplier/lo_product_s1_q_reg[40]/D (DFQD1BWP12T30P140)
+                                                        0.0000     1.4893 r
+  data arrival time                                                1.4893
+
+  clock core_clk (rise edge)                            1.6000     1.6000
+  clock network delay (ideal)                           0.0000     1.6000
+  clock uncertainty                                    -0.1000     1.5000
+  u_fused_array/g_exp_lane[12].u_scale/u_scale_multiplier/lo_product_s1_q_reg[40]/CP (DFQD1BWP12T30P140)
+                                                        0.0000     1.5000 r
+  library setup time                                   -0.0105     1.4895
+  data required time                                               1.4895
+  --------------------------------------------------------------------------
+  data required time                                               1.4895
+  data arrival time                                               -1.4893
+  --------------------------------------------------------------------------
+  slack (MET)                                                      0.0001
+
+
+  Startpoint: u_fused_array/g_exp_lane[1].u_scale/scale_s0_q_reg[1]
+              (rising edge-triggered flip-flop clocked by core_clk)
+  Endpoint: u_fused_array/g_exp_lane[12].u_scale/u_scale_multiplier/lo_product_s1_q_reg[40]
+            (rising edge-triggered flip-flop clocked by core_clk)
+  Path Group: core_clk
+  Path Type: max
+
+  Des/Clust/Port     Wire Load Model       Library
+  ------------------------------------------------
+  fsa_fused_array_ROWS32_STRIPE_ROWS8_COLS32_DATA_W8_SCORE_W32_PROB_W16_ACC_W32_LSE_W32_HEAD_DIM128_FEATURE_IDX_W7
+                     ZeroWireload          tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+
+  Point                                                   Incr       Path
+  --------------------------------------------------------------------------
+  clock core_clk (rise edge)                            0.0000     0.0000
+  clock network delay (ideal)                           0.0000     0.0000
+  u_fused_array/g_exp_lane[1].u_scale/scale_s0_q_reg[1]/CP (DFQOPTMAD8BWP12T30P140)
+                                                        0.0000 #   0.0000 r
+  u_fused_array/g_exp_lane[1].u_scale/scale_s0_q_reg[1]/Q (DFQOPTMAD8BWP12T30P140)
+                                                        0.0318     0.0318 r
+  u_fused_array/U22/ZN (INVD4BWP12T30P140)              0.0065     0.0382 f
+  u_fused_array/U6924/Z (BUFFD2BWP12T30P140)            0.0199     0.0581 f
+  u_fused_array/U6463/Z (OR2D1BWP12T30P140)             0.0170     0.0751 f
+  u_fused_array/U20/ZN (OAI22OPTPBD1BWP12T30P140)       0.0166     0.0917 r
+  u_fused_array/U83758/ZN (ND2D0BWP12T30P140)           0.0187     0.1104 f
+  u_fused_array/U83759/Z (BUFFD2BWP12T30P140)           0.0280     0.1384 f
+  u_fused_array/U6900/Z (BUFFD1BWP12T30P140)            0.0412     0.1796 f
+  u_fused_array/U102665/ZN (OAI21D0BWP12T30P140)        0.0310     0.2105 r
+  u_fused_array/U5238/ZN (ND2D0BWP12T30P140)            0.0301     0.2407 f
+  u_fused_array/U102666/ZN (OAI21D0BWP12T30P140)        0.0172     0.2579 r
+  u_fused_array/U2606/Z (AN3D0BWP12T30P140)             0.0295     0.2873 r
+  u_fused_array/U2414/ZN (INR2D1BWP12T30P140)           0.0071     0.2944 f
+  u_fused_array/U2221/ZN (NR2D0BWP12T30P140)            0.0188     0.3132 r
+  u_fused_array/U102682/CO (FA1D0BWP12T30P140)          0.0338     0.3470 r
+  u_fused_array/U102693/ZN (ND2D0BWP12T30P140)          0.0146     0.3616 f
+  u_fused_array/U1816/ZN (AOI21D0BWP12T30P140)          0.0217     0.3832 r
+  u_fused_array/U102724/ZN (MAOI222D0BWP12T30P140)      0.0334     0.4166 f
+  u_fused_array/U102738/ZN (MAOI222D0BWP12T30P140)      0.0366     0.4532 r
+  u_fused_array/U102750/ZN (MAOI222D0BWP12T30P140)      0.0349     0.4881 f
+  u_fused_array/U1754/ZN (NR2D0BWP12T30P140)            0.0207     0.5088 r
+  u_fused_array/U1745/Z (OR2D1BWP12T30P140)             0.0182     0.5269 r
+  u_fused_array/U1733/ZN (AOI21D0BWP12T30P140)          0.0119     0.5388 f
+  u_fused_array/U1726/Z (OR2D1BWP12T30P140)             0.0195     0.5583 f
+  u_fused_array/U1687/ZN (NR2D0BWP12T30P140)            0.0128     0.5711 r
+  u_fused_array/U1667/Z (OR2D1BWP12T30P140)             0.0173     0.5884 r
+  u_fused_array/U1604/ZN (AOI21D0BWP12T30P140)          0.0120     0.6004 f
+  u_fused_array/U1593/Z (OR2D1BWP12T30P140)             0.0195     0.6199 f
+  u_fused_array/U102802/ZN (MAOI222D0BWP12T30P140)      0.0270     0.6469 r
+  u_fused_array/U102813/ZN (MAOI222D0BWP12T30P140)      0.0346     0.6814 f
+  u_fused_array/U1460/ZN (MAOI222D0BWP12T30P140)        0.0367     0.7181 r
+  u_fused_array/U102836/ZN (MAOI222D0BWP12T30P140)      0.0347     0.7529 f
+  u_fused_array/U1394/ZN (MAOI222D0BWP12T30P140)        0.0367     0.7896 r
+  u_fused_array/U510/ZN (MAOI222D0BWP12T30P140)         0.0378     0.8274 f
+  u_fused_array/U1294/ZN (NR2D1BWP12T30P140)            0.0165     0.8439 r
+  u_fused_array/U1270/Z (OR2D1BWP12T30P140)             0.0183     0.8622 r
+  u_fused_array/U1245/ZN (AOI21D1BWP12T30P140)          0.0102     0.8723 f
+  u_fused_array/U1220/Z (OR2D1BWP12T30P140)             0.0191     0.8914 f
+  u_fused_array/U358/ZN (AOI21D0BWP12T30P140)           0.0134     0.9047 r
+  u_fused_array/U1160/Z (OR2D1BWP12T30P140)             0.0168     0.9215 r
+  u_fused_array/U357/ZN (AOI21D0BWP12T30P140)           0.0120     0.9335 f
+  u_fused_array/U1118/Z (OR2D1BWP12T30P140)             0.0195     0.9530 f
+  u_fused_array/U102915/ZN (MAOI222D0BWP12T30P140)      0.0270     0.9800 r
+  u_fused_array/U102923/ZN (MAOI222D0BWP12T30P140)      0.0376     1.0176 f
+  u_fused_array/U1061/ZN (NR2D1BWP12T30P140)            0.0165     1.0340 r
+  u_fused_array/U1032/Z (OR2D1BWP12T30P140)             0.0183     1.0523 r
+  u_fused_array/U1012/ZN (AOI21D1BWP12T30P140)          0.0102     1.0625 f
+  u_fused_array/U976/Z (OR2D1BWP12T30P140)              0.0195     1.0820 f
+  u_fused_array/U972/ZN (AOI21D1BWP12T30P140)           0.0103     1.0923 r
+  u_fused_array/U960/Z (OR2D1BWP12T30P140)              0.0159     1.1082 r
+  u_fused_array/U356/ZN (AOI21D0BWP12T30P140)           0.0120     1.1202 f
+  u_fused_array/U923/Z (OR2D1BWP12T30P140)              0.0195     1.1397 f
+  u_fused_array/U917/ZN (MAOI222D0BWP12T30P140)         0.0270     1.1667 r
+  u_fused_array/U102976/ZN (MAOI222D0BWP12T30P140)      0.0362     1.2028 f
+  u_fused_array/U355/ZN (NR2D0BWP12T30P140)             0.0211     1.2239 r
+  u_fused_array/U890/Z (OR2D1BWP12T30P140)              0.0191     1.2429 r
+  u_fused_array/U888/ZN (AOI21D1BWP12T30P140)           0.0102     1.2531 f
+  u_fused_array/U879/Z (OR2D1BWP12T30P140)              0.0195     1.2726 f
+  u_fused_array/U870/ZN (AOI21D1BWP12T30P140)           0.0103     1.2830 r
+  u_fused_array/U866/Z (OR2D1BWP12T30P140)              0.0163     1.2992 r
+  u_fused_array/U862/ZN (AOI21D1BWP12T30P140)           0.0101     1.3094 f
+  u_fused_array/U853/Z (OR2D1BWP12T30P140)              0.0194     1.3288 f
+  u_fused_array/U103023/ZN (MAOI222D1BWP12T30P140)      0.0223     1.3511 r
+  u_fused_array/U103033/ZN (MAOI222D1BWP12T30P140)      0.0303     1.3814 f
+  u_fused_array/U354/ZN (NR2D0BWP12T30P140)             0.0188     1.4002 r
+  u_fused_array/U832/Z (OR2D1BWP12T30P140)              0.0180     1.4182 r
+  u_fused_array/U103040/ZN (MAOI222D0BWP12T30P140)      0.0237     1.4419 f
+  u_fused_array/U103041/ZN (OAI31D1BWP12T30P140)        0.0207     1.4626 r
+  u_fused_array/U103042/ZN (IOA21D0BWP12T30P140)        0.0143     1.4770 f
+  u_fused_array/U103044/ZN (OAI21D0BWP12T30P140)        0.0124     1.4893 r
+  u_fused_array/g_exp_lane[12].u_scale/u_scale_multiplier/lo_product_s1_q_reg[40]/D (DFQD1BWP12T30P140)
+                                                        0.0000     1.4893 r
+  data arrival time                                                1.4893
+
+  clock core_clk (rise edge)                            1.6000     1.6000
+  clock network delay (ideal)                           0.0000     1.6000
+  clock uncertainty                                    -0.1000     1.5000
+  u_fused_array/g_exp_lane[12].u_scale/u_scale_multiplier/lo_product_s1_q_reg[40]/CP (DFQD1BWP12T30P140)
+                                                        0.0000     1.5000 r
+  library setup time                                   -0.0105     1.4895
+  data required time                                               1.4895
+  --------------------------------------------------------------------------
+  data required time                                               1.4895
+  data arrival time                                               -1.4893
+  --------------------------------------------------------------------------
+  slack (MET)                                                      0.0001
+
+
+  Startpoint: u_fused_array/g_exp_lane[1].u_scale/scale_s0_q_reg[1]
+              (rising edge-triggered flip-flop clocked by core_clk)
+  Endpoint: u_fused_array/g_exp_lane[12].u_scale/u_scale_multiplier/lo_product_s1_q_reg[40]
+            (rising edge-triggered flip-flop clocked by core_clk)
+  Path Group: core_clk
+  Path Type: max
+
+  Des/Clust/Port     Wire Load Model       Library
+  ------------------------------------------------
+  fsa_fused_array_ROWS32_STRIPE_ROWS8_COLS32_DATA_W8_SCORE_W32_PROB_W16_ACC_W32_LSE_W32_HEAD_DIM128_FEATURE_IDX_W7
+                     ZeroWireload          tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+
+  Point                                                   Incr       Path
+  --------------------------------------------------------------------------
+  clock core_clk (rise edge)                            0.0000     0.0000
+  clock network delay (ideal)                           0.0000     0.0000
+  u_fused_array/g_exp_lane[1].u_scale/scale_s0_q_reg[1]/CP (DFQOPTMAD8BWP12T30P140)
+                                                        0.0000 #   0.0000 r
+  u_fused_array/g_exp_lane[1].u_scale/scale_s0_q_reg[1]/Q (DFQOPTMAD8BWP12T30P140)
+                                                        0.0318     0.0318 r
+  u_fused_array/U22/ZN (INVD4BWP12T30P140)              0.0065     0.0382 f
+  u_fused_array/U6924/Z (BUFFD2BWP12T30P140)            0.0199     0.0581 f
+  u_fused_array/U6463/Z (OR2D1BWP12T30P140)             0.0170     0.0751 f
+  u_fused_array/U20/ZN (OAI22OPTPBD1BWP12T30P140)       0.0166     0.0917 r
+  u_fused_array/U83758/ZN (ND2D0BWP12T30P140)           0.0187     0.1104 f
+  u_fused_array/U83759/Z (BUFFD2BWP12T30P140)           0.0280     0.1384 f
+  u_fused_array/U6900/Z (BUFFD1BWP12T30P140)            0.0412     0.1796 f
+  u_fused_array/U102665/ZN (OAI21D0BWP12T30P140)        0.0310     0.2105 r
+  u_fused_array/U5238/ZN (ND2D0BWP12T30P140)            0.0301     0.2407 f
+  u_fused_array/U102666/ZN (OAI21D0BWP12T30P140)        0.0172     0.2579 r
+  u_fused_array/U2606/Z (AN3D0BWP12T30P140)             0.0295     0.2873 r
+  u_fused_array/U2414/ZN (INR2D1BWP12T30P140)           0.0071     0.2944 f
+  u_fused_array/U2221/ZN (NR2D0BWP12T30P140)            0.0188     0.3132 r
+  u_fused_array/U102682/CO (FA1D0BWP12T30P140)          0.0338     0.3470 r
+  u_fused_array/U102693/ZN (ND2D0BWP12T30P140)          0.0146     0.3616 f
+  u_fused_array/U1816/ZN (AOI21D0BWP12T30P140)          0.0217     0.3832 r
+  u_fused_array/U102724/ZN (MAOI222D0BWP12T30P140)      0.0334     0.4166 f
+  u_fused_array/U102738/ZN (MAOI222D0BWP12T30P140)      0.0366     0.4532 r
+  u_fused_array/U102750/ZN (MAOI222D0BWP12T30P140)      0.0349     0.4881 f
+  u_fused_array/U1754/ZN (NR2D0BWP12T30P140)            0.0207     0.5088 r
+  u_fused_array/U1745/Z (OR2D1BWP12T30P140)             0.0182     0.5269 r
+  u_fused_array/U1733/ZN (AOI21D0BWP12T30P140)          0.0119     0.5388 f
+  u_fused_array/U1726/Z (OR2D1BWP12T30P140)             0.0195     0.5583 f
+  u_fused_array/U1687/ZN (NR2D0BWP12T30P140)            0.0128     0.5711 r
+  u_fused_array/U1667/Z (OR2D1BWP12T30P140)             0.0173     0.5884 r
+  u_fused_array/U1604/ZN (AOI21D0BWP12T30P140)          0.0120     0.6004 f
+  u_fused_array/U1593/Z (OR2D1BWP12T30P140)             0.0195     0.6199 f
+  u_fused_array/U102802/ZN (MAOI222D0BWP12T30P140)      0.0270     0.6469 r
+  u_fused_array/U102813/ZN (MAOI222D0BWP12T30P140)      0.0346     0.6814 f
+  u_fused_array/U1460/ZN (MAOI222D0BWP12T30P140)        0.0367     0.7181 r
+  u_fused_array/U102836/ZN (MAOI222D0BWP12T30P140)      0.0347     0.7529 f
+  u_fused_array/U1394/ZN (MAOI222D0BWP12T30P140)        0.0367     0.7896 r
+  u_fused_array/U510/ZN (MAOI222D0BWP12T30P140)         0.0378     0.8274 f
+  u_fused_array/U1294/ZN (NR2D1BWP12T30P140)            0.0165     0.8439 r
+  u_fused_array/U1270/Z (OR2D1BWP12T30P140)             0.0183     0.8622 r
+  u_fused_array/U1245/ZN (AOI21D1BWP12T30P140)          0.0102     0.8723 f
+  u_fused_array/U1220/Z (OR2D1BWP12T30P140)             0.0191     0.8914 f
+  u_fused_array/U358/ZN (AOI21D0BWP12T30P140)           0.0134     0.9047 r
+  u_fused_array/U1160/Z (OR2D1BWP12T30P140)             0.0168     0.9215 r
+  u_fused_array/U357/ZN (AOI21D0BWP12T30P140)           0.0120     0.9335 f
+  u_fused_array/U1118/Z (OR2D1BWP12T30P140)             0.0195     0.9530 f
+  u_fused_array/U102915/ZN (MAOI222D0BWP12T30P140)      0.0270     0.9800 r
+  u_fused_array/U102923/ZN (MAOI222D0BWP12T30P140)      0.0376     1.0176 f
+  u_fused_array/U1061/ZN (NR2D1BWP12T30P140)            0.0165     1.0340 r
+  u_fused_array/U1032/Z (OR2D1BWP12T30P140)             0.0183     1.0523 r
+  u_fused_array/U1012/ZN (AOI21D1BWP12T30P140)          0.0102     1.0625 f
+  u_fused_array/U976/Z (OR2D1BWP12T30P140)              0.0195     1.0820 f
+  u_fused_array/U972/ZN (AOI21D1BWP12T30P140)           0.0103     1.0923 r
+  u_fused_array/U960/Z (OR2D1BWP12T30P140)              0.0159     1.1082 r
+  u_fused_array/U356/ZN (AOI21D0BWP12T30P140)           0.0120     1.1202 f
+  u_fused_array/U923/Z (OR2D1BWP12T30P140)              0.0195     1.1397 f
+  u_fused_array/U917/ZN (MAOI222D0BWP12T30P140)         0.0270     1.1667 r
+  u_fused_array/U102976/ZN (MAOI222D0BWP12T30P140)      0.0362     1.2028 f
+  u_fused_array/U355/ZN (NR2D0BWP12T30P140)             0.0211     1.2239 r
+  u_fused_array/U890/Z (OR2D1BWP12T30P140)              0.0191     1.2429 r
+  u_fused_array/U888/ZN (AOI21D1BWP12T30P140)           0.0102     1.2531 f
+  u_fused_array/U879/Z (OR2D1BWP12T30P140)              0.0195     1.2726 f
+  u_fused_array/U870/ZN (AOI21D1BWP12T30P140)           0.0103     1.2830 r
+  u_fused_array/U866/Z (OR2D1BWP12T30P140)              0.0163     1.2992 r
+  u_fused_array/U862/ZN (AOI21D1BWP12T30P140)           0.0101     1.3094 f
+  u_fused_array/U853/Z (OR2D1BWP12T30P140)              0.0194     1.3288 f
+  u_fused_array/U103023/ZN (MAOI222D1BWP12T30P140)      0.0223     1.3511 r
+  u_fused_array/U103033/ZN (MAOI222D1BWP12T30P140)      0.0303     1.3814 f
+  u_fused_array/U354/ZN (NR2D0BWP12T30P140)             0.0188     1.4002 r
+  u_fused_array/U832/Z (OR2D1BWP12T30P140)              0.0180     1.4182 r
+  u_fused_array/U103040/ZN (MAOI222D0BWP12T30P140)      0.0237     1.4419 f
+  u_fused_array/U103041/ZN (OAI31D1BWP12T30P140)        0.0207     1.4626 r
+  u_fused_array/U103042/ZN (IOA21D0BWP12T30P140)        0.0143     1.4770 f
+  u_fused_array/U103044/ZN (OAI21D0BWP12T30P140)        0.0124     1.4893 r
+  u_fused_array/g_exp_lane[12].u_scale/u_scale_multiplier/lo_product_s1_q_reg[40]/D (DFQD1BWP12T30P140)
+                                                        0.0000     1.4893 r
+  data arrival time                                                1.4893
+
+  clock core_clk (rise edge)                            1.6000     1.6000
+  clock network delay (ideal)                           0.0000     1.6000
+  clock uncertainty                                    -0.1000     1.5000
+  u_fused_array/g_exp_lane[12].u_scale/u_scale_multiplier/lo_product_s1_q_reg[40]/CP (DFQD1BWP12T30P140)
+                                                        0.0000     1.5000 r
+  library setup time                                   -0.0105     1.4895
+  data required time                                               1.4895
+  --------------------------------------------------------------------------
+  data required time                                               1.4895
+  data arrival time                                               -1.4893
+  --------------------------------------------------------------------------
+  slack (MET)                                                      0.0001
+
+
+  Startpoint: u_fused_array/g_exp_lane[1].u_scale/scale_s0_q_reg[1]
+              (rising edge-triggered flip-flop clocked by core_clk)
+  Endpoint: u_fused_array/g_exp_lane[23].u_scale/u_scale_multiplier/lo_product_s1_q_reg[40]
+            (rising edge-triggered flip-flop clocked by core_clk)
+  Path Group: core_clk
+  Path Type: max
+
+  Des/Clust/Port     Wire Load Model       Library
+  ------------------------------------------------
+  fsa_fused_array_ROWS32_STRIPE_ROWS8_COLS32_DATA_W8_SCORE_W32_PROB_W16_ACC_W32_LSE_W32_HEAD_DIM128_FEATURE_IDX_W7
+                     ZeroWireload          tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+
+  Point                                                   Incr       Path
+  --------------------------------------------------------------------------
+  clock core_clk (rise edge)                            0.0000     0.0000
+  clock network delay (ideal)                           0.0000     0.0000
+  u_fused_array/g_exp_lane[1].u_scale/scale_s0_q_reg[1]/CP (DFQOPTMAD8BWP12T30P140)
+                                                        0.0000 #   0.0000 r
+  u_fused_array/g_exp_lane[1].u_scale/scale_s0_q_reg[1]/Q (DFQOPTMAD8BWP12T30P140)
+                                                        0.0318     0.0318 r
+  u_fused_array/U22/ZN (INVD4BWP12T30P140)              0.0065     0.0382 f
+  u_fused_array/U6924/Z (BUFFD2BWP12T30P140)            0.0199     0.0581 f
+  u_fused_array/U6438/ZN (AOI21OPTREPBD1BWP12T30P140)   0.0177     0.0758 r
+  u_fused_array/U6383/Z (BUFFXD3BWP12T30P140)           0.0203     0.0961 r
+  u_fused_array/U71754/Z (BUFFD0BWP12T30P140)           0.0483     0.1444 r
+  u_fused_array/U109590/ZN (AOI22D1BWP12T30P140)        0.0218     0.1662 f
+  u_fused_array/U109591/ZN (OAI21D0BWP12T30P140)        0.0199     0.1861 r
+  u_fused_array/U109592/ZN (ND2D1BWP12T30P140)          0.0227     0.2088 f
+  u_fused_array/U109593/ZN (OAI21D0BWP12T30P140)        0.0152     0.2240 r
+  u_fused_array/U109594/ZN (OAI211D1BWP12T30P140)       0.0218     0.2458 f
+  u_fused_array/U109602/ZN (AOI21D0BWP12T30P140)        0.0256     0.2715 r
+  u_fused_array/U109612/CO (FA1D0BWP12T30P140)          0.0346     0.3060 r
+  u_fused_array/U109623/ZN (ND2D0BWP12T30P140)          0.0146     0.3206 f
+  u_fused_array/U109629/ZN (AOI21D0BWP12T30P140)        0.0239     0.3445 r
+  u_fused_array/U109659/ZN (MAOI222D1BWP12T30P140)      0.0308     0.3753 f
+  u_fused_array/U109675/ZN (MAOI222D1BWP12T30P140)      0.0277     0.4030 r
+  u_fused_array/U109688/ZN (MAOI222D0BWP12T30P140)      0.0323     0.4354 f
+  u_fused_array/U109699/ZN (MAOI222D0BWP12T30P140)      0.0390     0.4744 r
+  u_fused_array/U109713/ZN (MAOI222D1BWP12T30P140)      0.0321     0.5064 f
+  u_fused_array/U109726/ZN (MAOI222D0BWP12T30P140)      0.0369     0.5433 r
+  u_fused_array/U109737/ZN (MAOI222D1BWP12T30P140)      0.0320     0.5753 f
+  u_fused_array/U109745/ZN (MAOI222D0BWP12T30P140)      0.0342     0.6095 r
+  u_fused_array/U109756/ZN (MAOI222D0BWP12T30P140)      0.0346     0.6441 f
+  u_fused_array/U109769/ZN (MAOI222D0BWP12T30P140)      0.0394     0.6835 r
+  u_fused_array/U109780/ZN (MAOI222D1BWP12T30P140)      0.0338     0.7173 f
+  u_fused_array/U109793/ZN (MAOI222D1BWP12T30P140)      0.0279     0.7452 r
+  u_fused_array/U109804/ZN (MAOI222D0BWP12T30P140)      0.0323     0.7775 f
+  u_fused_array/U109817/ZN (MAOI222D0BWP12T30P140)      0.0390     0.8165 r
+  u_fused_array/U109828/ZN (MAOI222D1BWP12T30P140)      0.0338     0.8503 f
+  u_fused_array/U109841/ZN (MAOI222D1BWP12T30P140)      0.0279     0.8782 r
+  u_fused_array/U109853/ZN (MAOI222D0BWP12T30P140)      0.0324     0.9105 f
+  u_fused_array/U109864/ZN (MAOI222D0BWP12T30P140)      0.0390     0.9495 r
+  u_fused_array/U109872/ZN (MAOI222D1BWP12T30P140)      0.0321     0.9816 f
+  u_fused_array/U109883/ZN (MAOI222D0BWP12T30P140)      0.0369     1.0185 r
+  u_fused_array/U109893/ZN (MAOI222D1BWP12T30P140)      0.0337     1.0522 f
+  u_fused_array/U109901/ZN (MAOI222D1BWP12T30P140)      0.0278     1.0800 r
+  u_fused_array/U109910/ZN (MAOI222D0BWP12T30P140)      0.0324     1.1124 f
+  u_fused_array/U109921/ZN (MAOI222D0BWP12T30P140)      0.0390     1.1514 r
+  u_fused_array/U109930/ZN (MAOI222D1BWP12T30P140)      0.0338     1.1852 f
+  u_fused_array/U109940/ZN (MAOI222D1BWP12T30P140)      0.0279     1.2131 r
+  u_fused_array/U109949/ZN (MAOI222D0BWP12T30P140)      0.0324     1.2454 f
+  u_fused_array/U109955/ZN (MAOI222D0BWP12T30P140)      0.0390     1.2844 r
+  u_fused_array/U109971/ZN (MAOI222D1BWP12T30P140)      0.0338     1.3182 f
+  u_fused_array/U109980/ZN (MAOI222D1BWP12T30P140)      0.0279     1.3461 r
+  u_fused_array/U109990/ZN (MAOI222D0BWP12T30P140)      0.0351     1.3811 f
+  u_fused_array/U109996/ZN (MAOI222D1BWP12T30P140)      0.0305     1.4116 r
+  u_fused_array/U110001/ZN (MAOI222D0BWP12T30P140)      0.0267     1.4383 f
+  u_fused_array/U110002/ZN (OAI31D0BWP12T30P140)        0.0234     1.4617 r
+  u_fused_array/U110003/ZN (IOA21D0BWP12T30P140)        0.0151     1.4768 f
+  u_fused_array/U110005/ZN (OAI21D0BWP12T30P140)        0.0126     1.4894 r
+  u_fused_array/g_exp_lane[23].u_scale/u_scale_multiplier/lo_product_s1_q_reg[40]/D (DFQD1BWP12T30P140)
+                                                        0.0000     1.4894 r
+  data arrival time                                                1.4894
+
+  clock core_clk (rise edge)                            1.6000     1.6000
+  clock network delay (ideal)                           0.0000     1.6000
+  clock uncertainty                                    -0.1000     1.5000
+  u_fused_array/g_exp_lane[23].u_scale/u_scale_multiplier/lo_product_s1_q_reg[40]/CP (DFQD1BWP12T30P140)
+                                                        0.0000     1.5000 r
+  library setup time                                   -0.0104     1.4896
+  data required time                                               1.4896
+  --------------------------------------------------------------------------
+  data required time                                               1.4896
+  data arrival time                                               -1.4894
+  --------------------------------------------------------------------------
+  slack (MET)                                                      0.0001
+
+
+  Startpoint: u_fused_array/g_stripe[1].u_stripe/ws_pv_q_reg
+              (rising edge-triggered flip-flop clocked by core_clk)
+  Endpoint: u_fused_array/g_stripe[1].u_stripe/g_pe_row[3].g_pe_col[29].u_pe/accum_q_reg[31]
+            (rising edge-triggered flip-flop clocked by core_clk)
+  Path Group: core_clk
+  Path Type: max
+
+  Des/Clust/Port     Wire Load Model       Library
+  ------------------------------------------------
+  fa_clear_replica_11
+                     ZeroWireload          tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+  fa_clear_replica_10
+                     ZeroWireload          tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+  fa_clear_replica_9 ZeroWireload          tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+  fa_clear_replica_8 ZeroWireload          tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+  fsa_stripe_STRIPE_ROWS8_COLS32_HEAD_DIM128_DATA_W8_SCORE_W32_PROB_W16_SUM_W32_TAG_W7_LOCAL_ROW_IDX_W3_2
+                     ZeroWireload          tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+
+  Point                                                   Incr       Path
+  --------------------------------------------------------------------------
+  clock core_clk (rise edge)                            0.0000     0.0000
+  clock network delay (ideal)                           0.0000     0.0000
+  u_fused_array/g_stripe[1].u_stripe/ws_pv_q_reg/CP (DFCNQD1BWP12T30P140)
+                                                        0.0000 #   0.0000 r
+  u_fused_array/g_stripe[1].u_stripe/ws_pv_q_reg/Q (DFCNQD1BWP12T30P140)
+                                                        0.0750     0.0750 r
+  u_fused_array/g_stripe[1].u_stripe/U18662/Z (BUFFD3BWP12T30P140)
+                                                        0.0328     0.1078 r
+  u_fused_array/g_stripe[1].u_stripe/U2562/ZN (ND2D0BWP12T30P140)
+                                                        0.0427     0.1505 f
+  u_fused_array/g_stripe[1].u_stripe/U18067/ZN (ND2D0BWP12T30P140)
+                                                        0.0294     0.1799 r
+  u_fused_array/g_stripe[1].u_stripe/U42131/ZN (ND2D1BWP12T30P140)
+                                                        0.0615     0.2415 f
+  u_fused_array/g_stripe[1].u_stripe/U1129/ZN (INVD0BWP12T30P140)
+                                                        0.0800     0.3214 r
+  u_fused_array/g_stripe[1].u_stripe/U42132/ZN (OAI22D1BWP12T30P140)
+                                                        0.0535     0.3750 f
+  u_fused_array/g_stripe[1].u_stripe/U42133/ZN (AOI221D1BWP12T30P140)
+                                                        0.0524     0.4274 r
+  u_fused_array/g_stripe[1].u_stripe/U42195/ZN (INVD1BWP12T30P140)
+                                                        0.0289     0.4563 f
+  u_fused_array/g_stripe[1].u_stripe/U160409/ZN (AOI221D1BWP12T30P140)
+                                                        0.0272     0.4835 r
+  u_fused_array/g_stripe[1].u_stripe/U160410/ZN (IAO21D1BWP12T30P140)
+                                                        0.0135     0.4970 f
+  u_fused_array/g_stripe[1].u_stripe/U11334/S (FA1D0BWP12T30P140)
+                                                        0.0569     0.5539 r
+  u_fused_array/g_stripe[1].u_stripe/U7841/S (FA1D0BWP12T30P140)
+                                                        0.0448     0.5987 r
+  u_fused_array/g_stripe[1].u_stripe/intadd_3343/U10/CO (FA1D0BWP12T30P140)
+                                                        0.0351     0.6339 r
+  u_fused_array/g_stripe[1].u_stripe/intadd_3343/U9/CO (FA1D0BWP12T30P140)
+                                                        0.0342     0.6681 r
+  u_fused_array/g_stripe[1].u_stripe/intadd_3343/U8/CO (FA1D0BWP12T30P140)
+                                                        0.0348     0.7029 r
+  u_fused_array/g_stripe[1].u_stripe/intadd_3343/U7/CO (FA1D1BWP12T30P140)
+                                                        0.0253     0.7282 r
+  u_fused_array/g_stripe[1].u_stripe/intadd_3343/U6/CO (FA1D1BWP12T30P140)
+                                                        0.0236     0.7518 r
+  u_fused_array/g_stripe[1].u_stripe/intadd_3343/U5/CO (FA1D1BWP12T30P140)
+                                                        0.0236     0.7754 r
+  u_fused_array/g_stripe[1].u_stripe/intadd_3343/U4/CO (FA1D1BWP12T30P140)
+                                                        0.0236     0.7989 r
+  u_fused_array/g_stripe[1].u_stripe/intadd_3343/U3/CO (FA1D1BWP12T30P140)
+                                                        0.0236     0.8225 r
+  u_fused_array/g_stripe[1].u_stripe/U255979/CO (FA1D1BWP12T30P140)
+                                                        0.0241     0.8465 r
+  u_fused_array/g_stripe[1].u_stripe/U5994/ZN (MAOI222D0BWP12T30P140)
+                                                        0.0287     0.8752 f
+  u_fused_array/g_stripe[1].u_stripe/U5877/ZN (MAOI222D0BWP12T30P140)
+                                                        0.0315     0.9067 r
+  u_fused_array/g_stripe[1].u_stripe/U5663/Z (CKAN2D0BWP12T30P140)
+                                                        0.0198     0.9264 r
+  u_fused_array/g_stripe[1].u_stripe/U42229/ZN (IAO21D1BWP12T30P140)
+                                                        0.0216     0.9480 r
+  u_fused_array/g_stripe[1].u_stripe/U5337/CO (FA1D0BWP12T30P140)
+                                                        0.0352     0.9832 r
+  u_fused_array/g_stripe[1].u_stripe/U4955/ZN (NR2D0BWP12T30P140)
+                                                        0.0111     0.9943 f
+  u_fused_array/g_stripe[1].u_stripe/U4878/ZN (OAI21D0BWP12T30P140)
+                                                        0.0200     1.0143 r
+  u_fused_array/g_stripe[1].u_stripe/U4363/CO (FA1D0BWP12T30P140)
+                                                        0.0339     1.0482 r
+  u_fused_array/g_stripe[1].u_stripe/U4184/ZN (INVD0BWP12T30P140)
+                                                        0.0097     1.0579 f
+  u_fused_array/g_stripe[1].u_stripe/U3699/ZN (AOI21D0BWP12T30P140)
+                                                        0.0128     1.0707 r
+  u_fused_array/g_stripe[1].u_stripe/U1780/ZN (AOI21D0BWP12T30P140)
+                                                        0.1125     1.1832 f
+  u_fused_array/g_stripe[1].u_stripe/intadd_2994/U9/CO (FA1D0BWP12T30P140)
+                                                        0.0747     1.2579 f
+  u_fused_array/g_stripe[1].u_stripe/intadd_2994/U8/CO (FA1D1BWP12T30P140)
+                                                        0.0284     1.2863 f
+  u_fused_array/g_stripe[1].u_stripe/intadd_2994/U7/CO (FA1D1BWP12T30P140)
+                                                        0.0268     1.3131 f
+  u_fused_array/g_stripe[1].u_stripe/intadd_2994/U6/CO (FA1D1BWP12T30P140)
+                                                        0.0268     1.3399 f
+  u_fused_array/g_stripe[1].u_stripe/intadd_2994/U5/CO (FA1D1BWP12T30P140)
+                                                        0.0268     1.3667 f
+  u_fused_array/g_stripe[1].u_stripe/intadd_2994/U4/CO (FA1D1BWP12T30P140)
+                                                        0.0268     1.3935 f
+  u_fused_array/g_stripe[1].u_stripe/intadd_2994/U3/CO (FA1D1BWP12T30P140)
+                                                        0.0268     1.4203 f
+  u_fused_array/g_stripe[1].u_stripe/U255978/CO (FA1D1BWP12T30P140)
+                                                        0.0262     1.4466 f
+  u_fused_array/g_stripe[1].u_stripe/U160305/ZN (XNR2D1BWP12T30P140)
+                                                        0.0249     1.4714 r
+  u_fused_array/g_stripe[1].u_stripe/U160311/ZN (OAI222D0BWP12T30P140)
+                                                        0.0265     1.4979 f
+  u_fused_array/g_stripe[1].u_stripe/g_pe_row[3].g_pe_col[29].u_pe/accum_q_reg[31]/D (DFQD1BWP12T30P140)
+                                                        0.0000     1.4979 f
+  data arrival time                                                1.4979
+
+  clock core_clk (rise edge)                            1.6000     1.6000
+  clock network delay (ideal)                           0.0000     1.6000
+  clock uncertainty                                    -0.1000     1.5000
+  u_fused_array/g_stripe[1].u_stripe/g_pe_row[3].g_pe_col[29].u_pe/accum_q_reg[31]/CP (DFQD1BWP12T30P140)
+                                                        0.0000     1.5000 r
+  library setup time                                   -0.0020     1.4980
+  data required time                                               1.4980
+  --------------------------------------------------------------------------
+  data required time                                               1.4980
+  data arrival time                                               -1.4979
+  --------------------------------------------------------------------------
+  slack (MET)                                                      0.0001
+
+
+  Startpoint: u_fused_array/g_exp_lane[1].u_scale/scale_s0_q_reg[1]
+              (rising edge-triggered flip-flop clocked by core_clk)
+  Endpoint: u_fused_array/g_exp_lane[12].u_scale/u_scale_multiplier/lo_product_s1_q_reg[40]
+            (rising edge-triggered flip-flop clocked by core_clk)
+  Path Group: core_clk
+  Path Type: max
+
+  Des/Clust/Port     Wire Load Model       Library
+  ------------------------------------------------
+  fsa_fused_array_ROWS32_STRIPE_ROWS8_COLS32_DATA_W8_SCORE_W32_PROB_W16_ACC_W32_LSE_W32_HEAD_DIM128_FEATURE_IDX_W7
+                     ZeroWireload          tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+
+  Point                                                   Incr       Path
+  --------------------------------------------------------------------------
+  clock core_clk (rise edge)                            0.0000     0.0000
+  clock network delay (ideal)                           0.0000     0.0000
+  u_fused_array/g_exp_lane[1].u_scale/scale_s0_q_reg[1]/CP (DFQOPTMAD8BWP12T30P140)
+                                                        0.0000 #   0.0000 r
+  u_fused_array/g_exp_lane[1].u_scale/scale_s0_q_reg[1]/Q (DFQOPTMAD8BWP12T30P140)
+                                                        0.0318     0.0318 r
+  u_fused_array/U22/ZN (INVD4BWP12T30P140)              0.0065     0.0382 f
+  u_fused_array/U6924/Z (BUFFD2BWP12T30P140)            0.0199     0.0581 f
+  u_fused_array/U6463/Z (OR2D1BWP12T30P140)             0.0170     0.0751 f
+  u_fused_array/U20/ZN (OAI22OPTPBD1BWP12T30P140)       0.0166     0.0917 r
+  u_fused_array/U83758/ZN (ND2D0BWP12T30P140)           0.0187     0.1104 f
+  u_fused_array/U83759/Z (BUFFD2BWP12T30P140)           0.0280     0.1384 f
+  u_fused_array/U6900/Z (BUFFD1BWP12T30P140)            0.0412     0.1796 f
+  u_fused_array/U102665/ZN (OAI21D0BWP12T30P140)        0.0310     0.2105 r
+  u_fused_array/U5238/ZN (ND2D0BWP12T30P140)            0.0301     0.2407 f
+  u_fused_array/U102666/ZN (OAI21D0BWP12T30P140)        0.0172     0.2579 r
+  u_fused_array/U2606/Z (AN3D0BWP12T30P140)             0.0295     0.2873 r
+  u_fused_array/U2414/ZN (INR2D1BWP12T30P140)           0.0071     0.2944 f
+  u_fused_array/U2221/ZN (NR2D0BWP12T30P140)            0.0188     0.3132 r
+  u_fused_array/U102682/CO (FA1D0BWP12T30P140)          0.0338     0.3470 r
+  u_fused_array/U102693/ZN (ND2D0BWP12T30P140)          0.0146     0.3616 f
+  u_fused_array/U1816/ZN (AOI21D0BWP12T30P140)          0.0217     0.3832 r
+  u_fused_array/U102724/ZN (MAOI222D0BWP12T30P140)      0.0334     0.4166 f
+  u_fused_array/U102738/ZN (MAOI222D0BWP12T30P140)      0.0366     0.4532 r
+  u_fused_array/U102750/ZN (MAOI222D0BWP12T30P140)      0.0349     0.4881 f
+  u_fused_array/U1754/ZN (NR2D0BWP12T30P140)            0.0207     0.5088 r
+  u_fused_array/U1745/Z (OR2D1BWP12T30P140)             0.0182     0.5269 r
+  u_fused_array/U1733/ZN (AOI21D0BWP12T30P140)          0.0119     0.5388 f
+  u_fused_array/U1726/Z (OR2D1BWP12T30P140)             0.0195     0.5583 f
+  u_fused_array/U1687/ZN (NR2D0BWP12T30P140)            0.0128     0.5711 r
+  u_fused_array/U1667/Z (OR2D1BWP12T30P140)             0.0173     0.5884 r
+  u_fused_array/U1604/ZN (AOI21D0BWP12T30P140)          0.0120     0.6004 f
+  u_fused_array/U1593/Z (OR2D1BWP12T30P140)             0.0195     0.6199 f
+  u_fused_array/U102802/ZN (MAOI222D0BWP12T30P140)      0.0270     0.6469 r
+  u_fused_array/U102813/ZN (MAOI222D0BWP12T30P140)      0.0346     0.6814 f
+  u_fused_array/U1460/ZN (MAOI222D0BWP12T30P140)        0.0367     0.7181 r
+  u_fused_array/U102836/ZN (MAOI222D0BWP12T30P140)      0.0347     0.7529 f
+  u_fused_array/U1394/ZN (MAOI222D0BWP12T30P140)        0.0367     0.7896 r
+  u_fused_array/U510/ZN (MAOI222D0BWP12T30P140)         0.0378     0.8274 f
+  u_fused_array/U1294/ZN (NR2D1BWP12T30P140)            0.0165     0.8439 r
+  u_fused_array/U1270/Z (OR2D1BWP12T30P140)             0.0183     0.8622 r
+  u_fused_array/U1245/ZN (AOI21D1BWP12T30P140)          0.0102     0.8723 f
+  u_fused_array/U1220/Z (OR2D1BWP12T30P140)             0.0191     0.8914 f
+  u_fused_array/U358/ZN (AOI21D0BWP12T30P140)           0.0134     0.9047 r
+  u_fused_array/U1160/Z (OR2D1BWP12T30P140)             0.0168     0.9215 r
+  u_fused_array/U357/ZN (AOI21D0BWP12T30P140)           0.0120     0.9335 f
+  u_fused_array/U1118/Z (OR2D1BWP12T30P140)             0.0195     0.9530 f
+  u_fused_array/U102915/ZN (MAOI222D0BWP12T30P140)      0.0270     0.9800 r
+  u_fused_array/U102923/ZN (MAOI222D0BWP12T30P140)      0.0376     1.0176 f
+  u_fused_array/U1061/ZN (NR2D1BWP12T30P140)            0.0165     1.0340 r
+  u_fused_array/U1032/Z (OR2D1BWP12T30P140)             0.0183     1.0523 r
+  u_fused_array/U1012/ZN (AOI21D1BWP12T30P140)          0.0102     1.0625 f
+  u_fused_array/U976/Z (OR2D1BWP12T30P140)              0.0195     1.0820 f
+  u_fused_array/U971/ZN (NR2D1BWP12T30P140)             0.0100     1.0920 r
+  u_fused_array/U960/Z (OR2D1BWP12T30P140)              0.0162     1.1082 r
+  u_fused_array/U356/ZN (AOI21D0BWP12T30P140)           0.0120     1.1202 f
+  u_fused_array/U923/Z (OR2D1BWP12T30P140)              0.0195     1.1397 f
+  u_fused_array/U917/ZN (MAOI222D0BWP12T30P140)         0.0270     1.1666 r
+  u_fused_array/U102976/ZN (MAOI222D0BWP12T30P140)      0.0362     1.2028 f
+  u_fused_array/U355/ZN (NR2D0BWP12T30P140)             0.0211     1.2239 r
+  u_fused_array/U890/Z (OR2D1BWP12T30P140)              0.0191     1.2429 r
+  u_fused_array/U888/ZN (AOI21D1BWP12T30P140)           0.0102     1.2531 f
+  u_fused_array/U879/Z (OR2D1BWP12T30P140)              0.0195     1.2726 f
+  u_fused_array/U870/ZN (AOI21D1BWP12T30P140)           0.0103     1.2829 r
+  u_fused_array/U866/Z (OR2D1BWP12T30P140)              0.0163     1.2992 r
+  u_fused_array/U862/ZN (AOI21D1BWP12T30P140)           0.0101     1.3093 f
+  u_fused_array/U853/Z (OR2D1BWP12T30P140)              0.0194     1.3288 f
+  u_fused_array/U103023/ZN (MAOI222D1BWP12T30P140)      0.0223     1.3511 r
+  u_fused_array/U103033/ZN (MAOI222D1BWP12T30P140)      0.0303     1.3814 f
+  u_fused_array/U354/ZN (NR2D0BWP12T30P140)             0.0188     1.4002 r
+  u_fused_array/U832/Z (OR2D1BWP12T30P140)              0.0180     1.4182 r
+  u_fused_array/U103040/ZN (MAOI222D0BWP12T30P140)      0.0237     1.4419 f
+  u_fused_array/U103041/ZN (OAI31D1BWP12T30P140)        0.0207     1.4626 r
+  u_fused_array/U103042/ZN (IOA21D0BWP12T30P140)        0.0143     1.4770 f
+  u_fused_array/U103044/ZN (OAI21D0BWP12T30P140)        0.0124     1.4893 r
+  u_fused_array/g_exp_lane[12].u_scale/u_scale_multiplier/lo_product_s1_q_reg[40]/D (DFQD1BWP12T30P140)
+                                                        0.0000     1.4893 r
+  data arrival time                                                1.4893
+
+  clock core_clk (rise edge)                            1.6000     1.6000
+  clock network delay (ideal)                           0.0000     1.6000
+  clock uncertainty                                    -0.1000     1.5000
+  u_fused_array/g_exp_lane[12].u_scale/u_scale_multiplier/lo_product_s1_q_reg[40]/CP (DFQD1BWP12T30P140)
+                                                        0.0000     1.5000 r
+  library setup time                                   -0.0105     1.4895
+  data required time                                               1.4895
+  --------------------------------------------------------------------------
+  data required time                                               1.4895
+  data arrival time                                               -1.4893
+  --------------------------------------------------------------------------
+  slack (MET)                                                      0.0002
+
+
+  Startpoint: u_fused_array/g_stripe[3].u_stripe/ws_pv_q_reg
+              (rising edge-triggered flip-flop clocked by core_clk)
+  Endpoint: u_fused_array/g_stripe[3].u_stripe/g_pe_row[3].g_pe_col[3].u_pe/accum_q_reg[31]
+            (rising edge-triggered flip-flop clocked by core_clk)
+  Path Group: core_clk
+  Path Type: max
+
+  Des/Clust/Port     Wire Load Model       Library
+  ------------------------------------------------
+  fa_clear_replica_3 ZeroWireload          tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+  fa_clear_replica_2 ZeroWireload          tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+  fa_clear_replica_1 ZeroWireload          tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+  fa_clear_replica_0 ZeroWireload          tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+  fsa_stripe_STRIPE_ROWS8_COLS32_HEAD_DIM128_DATA_W8_SCORE_W32_PROB_W16_SUM_W32_TAG_W7_LOCAL_ROW_IDX_W3_0
+                     ZeroWireload          tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+
+  Point                                                   Incr       Path
+  --------------------------------------------------------------------------
+  clock core_clk (rise edge)                            0.0000     0.0000
+  clock network delay (ideal)                           0.0000     0.0000
+  u_fused_array/g_stripe[3].u_stripe/ws_pv_q_reg/CP (DFCNQD1BWP12T30P140)
+                                                        0.0000 #   0.0000 r
+  u_fused_array/g_stripe[3].u_stripe/ws_pv_q_reg/Q (DFCNQD1BWP12T30P140)
+                                                        0.0793     0.0793 r
+  u_fused_array/g_stripe[3].u_stripe/U19124/Z (CKBD4BWP12T30P140)
+                                                        0.0277     0.1070 r
+  u_fused_array/g_stripe[3].u_stripe/U27/ZN (CKND2D1BWP12T30P140)
+                                                        0.0228     0.1298 f
+  u_fused_array/g_stripe[3].u_stripe/U54056/ZN (INVD1BWP12T30P140)
+                                                        0.0280     0.1578 r
+  u_fused_array/g_stripe[3].u_stripe/U841/Z (OA21D0BWP12T30P140)
+                                                        0.0662     0.2240 r
+  u_fused_array/g_stripe[3].u_stripe/U54095/ZN (INVD1BWP12T30P140)
+                                                        0.0550     0.2790 f
+  u_fused_array/g_stripe[3].u_stripe/U54096/ZN (OAI22D1BWP12T30P140)
+                                                        0.0325     0.3115 r
+  u_fused_array/g_stripe[3].u_stripe/U54097/ZN (INVD1BWP12T30P140)
+                                                        0.0348     0.3463 f
+  u_fused_array/g_stripe[3].u_stripe/U54098/ZN (AOI221D1BWP12T30P140)
+                                                        0.0714     0.4178 r
+  u_fused_array/g_stripe[3].u_stripe/U176249/ZN (AOI22D1BWP12T30P140)
+                                                        0.0267     0.4445 f
+  u_fused_array/g_stripe[3].u_stripe/U176250/ZN (NR2D0BWP12T30P140)
+                                                        0.0239     0.4683 r
+  u_fused_array/g_stripe[3].u_stripe/U176251/ZN (AOI21D0BWP12T30P140)
+                                                        0.0181     0.4865 f
+  u_fused_array/g_stripe[3].u_stripe/U11124/CO (FA1D0BWP12T30P140)
+                                                        0.0363     0.5228 f
+  u_fused_array/g_stripe[3].u_stripe/U176263/ZN (NR2D0BWP12T30P140)
+                                                        0.0165     0.5393 r
+  u_fused_array/g_stripe[3].u_stripe/U176265/ZN (IAO21D1BWP12T30P140)
+                                                        0.0234     0.5627 r
+  u_fused_array/g_stripe[3].u_stripe/U6739/CO (FA1D0BWP12T30P140)
+                                                        0.0340     0.5967 r
+  u_fused_array/g_stripe[3].u_stripe/U176267/ZN (NR2D0BWP12T30P140)
+                                                        0.0109     0.6076 f
+  u_fused_array/g_stripe[3].u_stripe/U6318/ZN (OAI21D0BWP12T30P140)
+                                                        0.0207     0.6284 r
+  u_fused_array/g_stripe[3].u_stripe/intadd_4520/U12/CO (FA1D0BWP12T30P140)
+                                                        0.0387     0.6671 r
+  u_fused_array/g_stripe[3].u_stripe/intadd_4520/U11/CO (FA1D1BWP12T30P140)
+                                                        0.0253     0.6924 r
+  u_fused_array/g_stripe[3].u_stripe/intadd_4520/U10/CO (FA1D1BWP12T30P140)
+                                                        0.0236     0.7160 r
+  u_fused_array/g_stripe[3].u_stripe/intadd_4520/U9/CO (FA1D1BWP12T30P140)
+                                                        0.0236     0.7395 r
+  u_fused_array/g_stripe[3].u_stripe/intadd_4520/U8/CO (FA1D1BWP12T30P140)
+                                                        0.0236     0.7631 r
+  u_fused_array/g_stripe[3].u_stripe/intadd_4520/U7/CO (FA1D1BWP12T30P140)
+                                                        0.0236     0.7866 r
+  u_fused_array/g_stripe[3].u_stripe/intadd_4520/U6/CO (FA1D1BWP12T30P140)
+                                                        0.0236     0.8102 r
+  u_fused_array/g_stripe[3].u_stripe/intadd_4520/U5/CO (FA1D1BWP12T30P140)
+                                                        0.0236     0.8337 r
+  u_fused_array/g_stripe[3].u_stripe/intadd_4520/U4/CO (FA1D1BWP12T30P140)
+                                                        0.0236     0.8573 r
+  u_fused_array/g_stripe[3].u_stripe/intadd_4520/U3/CO (FA1D1BWP12T30P140)
+                                                        0.0236     0.8808 r
+  u_fused_array/g_stripe[3].u_stripe/U254833/CO (FA1D1BWP12T30P140)
+                                                        0.0230     0.9038 r
+  u_fused_array/g_stripe[3].u_stripe/U5936/ZN (NR2D0BWP12T30P140)
+                                                        0.0096     0.9135 f
+  u_fused_array/g_stripe[3].u_stripe/U5496/ZN (AOI21D0BWP12T30P140)
+                                                        0.0241     0.9376 r
+  u_fused_array/g_stripe[3].u_stripe/U5144/CO (FA1D0BWP12T30P140)
+                                                        0.0364     0.9739 r
+  u_fused_array/g_stripe[3].u_stripe/U5073/ZN (NR2D0BWP12T30P140)
+                                                        0.0109     0.9848 f
+  u_fused_array/g_stripe[3].u_stripe/U4630/ZN (OAI21D0BWP12T30P140)
+                                                        0.0199     1.0047 r
+  u_fused_array/g_stripe[3].u_stripe/U4562/CO (FA1D0BWP12T30P140)
+                                                        0.0341     1.0387 r
+  u_fused_array/g_stripe[3].u_stripe/U4210/ZN (INVD0BWP12T30P140)
+                                                        0.0097     1.0485 f
+  u_fused_array/g_stripe[3].u_stripe/U3789/ZN (MAOI222D0BWP12T30P140)
+                                                        0.0190     1.0675 r
+  u_fused_array/g_stripe[3].u_stripe/U1830/ZN (AOI21D0BWP12T30P140)
+                                                        0.1156     1.1831 f
+  u_fused_array/g_stripe[3].u_stripe/intadd_4236/U9/CO (FA1D0BWP12T30P140)
+                                                        0.0748     1.2579 f
+  u_fused_array/g_stripe[3].u_stripe/intadd_4236/U8/CO (FA1D1BWP12T30P140)
+                                                        0.0284     1.2863 f
+  u_fused_array/g_stripe[3].u_stripe/intadd_4236/U7/CO (FA1D1BWP12T30P140)
+                                                        0.0268     1.3131 f
+  u_fused_array/g_stripe[3].u_stripe/intadd_4236/U6/CO (FA1D1BWP12T30P140)
+                                                        0.0268     1.3399 f
+  u_fused_array/g_stripe[3].u_stripe/intadd_4236/U5/CO (FA1D1BWP12T30P140)
+                                                        0.0268     1.3667 f
+  u_fused_array/g_stripe[3].u_stripe/intadd_4236/U4/CO (FA1D1BWP12T30P140)
+                                                        0.0268     1.3935 f
+  u_fused_array/g_stripe[3].u_stripe/intadd_4236/U3/CO (FA1D1BWP12T30P140)
+                                                        0.0268     1.4203 f
+  u_fused_array/g_stripe[3].u_stripe/U254832/CO (FA1D1BWP12T30P140)
+                                                        0.0262     1.4465 f
+  u_fused_array/g_stripe[3].u_stripe/U176217/ZN (XNR2D1BWP12T30P140)
+                                                        0.0249     1.4714 r
+  u_fused_array/g_stripe[3].u_stripe/U3056/ZN (OAI222D0BWP12T30P140)
+                                                        0.0265     1.4979 f
+  u_fused_array/g_stripe[3].u_stripe/g_pe_row[3].g_pe_col[3].u_pe/accum_q_reg[31]/D (DFQD1BWP12T30P140)
+                                                        0.0000     1.4979 f
+  data arrival time                                                1.4979
+
+  clock core_clk (rise edge)                            1.6000     1.6000
+  clock network delay (ideal)                           0.0000     1.6000
+  clock uncertainty                                    -0.1000     1.5000
+  u_fused_array/g_stripe[3].u_stripe/g_pe_row[3].g_pe_col[3].u_pe/accum_q_reg[31]/CP (DFQD1BWP12T30P140)
+                                                        0.0000     1.5000 r
+  library setup time                                   -0.0020     1.4980
+  data required time                                               1.4980
+  --------------------------------------------------------------------------
+  data required time                                               1.4980
+  data arrival time                                               -1.4979
+  --------------------------------------------------------------------------
+  slack (MET)                                                      0.0002
+
+
+1

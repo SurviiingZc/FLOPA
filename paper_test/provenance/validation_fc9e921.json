@@ -1,0 +1,317 @@
+{
+    "status": "pass",
+    "timestamp_utc": "2026-10-17T15:39:47.587540+00:00",
+    "git_commit": "fc9e921069a6f9e6aa41921857143418a9ba13a4",
+    "expected_sram_macros": 480,
+    "expected_rtl_icgs": 28,
+    "max_d": 128,
+    "tests": [
+        {
+            "name": "fa_runtime_d_smoke_test",
+            "status": "pass",
+            "log": "tb/sim/build/runtime_d/fa_runtime_d_smoke_test.log",
+            "completed_jobs": 5,
+            "checked_bytes": 2976,
+            "log_sha256": "1495714d5726592fdfc0912b588aa2774759599c8ff681ef85484794da378a63"
+        },
+        {
+            "name": "fa_runtime_d_range_test",
+            "status": "pass",
+            "log": "tb/sim/build/runtime_d/fa_runtime_d_range_test.log",
+            "completed_jobs": 128,
+            "checked_bytes": 8256,
+            "log_sha256": "c82b576084f856707da09efb013ba0185485d2d2fd2bac70f014870cbc77abf8"
+        },
+        {
+            "name": "fa_runtime_d_boundary_test",
+            "status": "pass",
+            "log": "tb/sim/build/runtime_d/fa_runtime_d_boundary_test.log",
+            "completed_jobs": 12,
+            "checked_bytes": 42504,
+            "log_sha256": "2154f6736bdc5f1d1c606ffbd170075d1ac144dd6399b2b3d1083e4221e6fc9b"
+        },
+        {
+            "name": "fa_runtime_d_multihead_test",
+            "status": "pass",
+            "log": "tb/sim/build/runtime_d/fa_runtime_d_multihead_test.log",
+            "completed_jobs": 3,
+            "checked_bytes": 10368,
+            "log_sha256": "c08c3cce3742a7e0f77ae908d67a024d6cf7c7b226f793836a003574e53bb6a0"
+        },
+        {
+            "name": "fa_runtime_d_control_test",
+            "status": "pass",
+            "log": "tb/sim/build/runtime_d/fa_runtime_d_control_test.log",
+            "completed_jobs": 3,
+            "checked_bytes": 624,
+            "log_sha256": "d907fb2045b0a548a1bd2364282bc206c79a7432b075dde1fb5c3451cd3c3d37"
+        },
+        {
+            "name": "fa_runtime_d_arith_test",
+            "status": "pass",
+            "log": "tb/sim/build/runtime_d/fa_runtime_d_arith_test.log",
+            "completed_jobs": 6,
+            "checked_bytes": 1584,
+            "log_sha256": "98b54761aa35bfd7844c5607dc6628478e90ee098a1b89ef683fa15c932ac99d"
+        },
+        {
+            "name": "signed_mult_pipe3",
+            "status": "pass",
+            "log": "tb/sim/build/runtime_d/arithmetic_module.log",
+            "log_sha256": "bb1300e26b7c367164fd069373440fbd5d6b3efe249375da4e4efb7a67ab34dc"
+        },
+        {
+            "name": "online_normalizer",
+            "status": "pass",
+            "log": "tb/sim/build/runtime_d/arithmetic_module.log",
+            "log_sha256": "bb1300e26b7c367164fd069373440fbd5d6b3efe249375da4e4efb7a67ab34dc"
+        },
+        {
+            "name": "clock_gate",
+            "status": "pass",
+            "log": "tb/sim/build/runtime_d/arithmetic_module.log",
+            "log_sha256": "bb1300e26b7c367164fd069373440fbd5d6b3efe249375da4e4efb7a67ab34dc"
+        }
+    ],
+    "compile_manifest": {
+        "source_sha256": "fef8c73fc62151bb6b439b9fd03dac17dd4f768ef1db6b3d27d380bf9b7c6761",
+        "files": [
+            {
+                "path": "fpga/rtl/axis_tile_loader.v",
+                "sha256": "c4037a9c68e929c806e2ad4bafa4a6e8488a9d4acf28b64a03909ad108f28dc3"
+            },
+            {
+                "path": "rtl/attention_accel_top.v",
+                "sha256": "392cf62d8d2e919167b44bc5f5bbcb2391c4cc0ee9012a27a917e51e997a9155"
+            },
+            {
+                "path": "rtl/axi/axi4_master_write.v",
+                "sha256": "12dc5422ad82d3e04131b3db6b049ee4b7317e8bbe223e4cab88942345a8a4e7"
+            },
+            {
+                "path": "rtl/axi/axi4_slave_if.v",
+                "sha256": "cc12ea24da51066c03b2c7079e412d402d9293635f09768a898861ec4b2f60c4"
+            },
+            {
+                "path": "rtl/common/attention_defines.vh",
+                "sha256": "232aac0036d25f3e721dc8fa406129b212ec6b402954723d804fd9d17f1ea4c0"
+            },
+            {
+                "path": "rtl/common/fa_clear_replica.v",
+                "sha256": "e9cd30853d888a6605f0666f24a91ec93e88ddf2a4a061f2b1b10b2cd73033aa"
+            },
+            {
+                "path": "rtl/common/fa_clock_gate.v",
+                "sha256": "6e6f9a191026b1a54f8c2b7ff7072bb599d363773e2760eca1d0b7e8813890f7"
+            },
+            {
+                "path": "rtl/common/fa_mult_comb.v",
+                "sha256": "64ea71b5ead456739b4498a114dcc07ec1993b229f1c68c39a0755486134f2f9"
+            },
+            {
+                "path": "rtl/common/fa_signed_mult_pipe2.v",
+                "sha256": "1d7c628aae04b56d170457a3375a4879a873e1777457c447e80243965d390fed"
+            },
+            {
+                "path": "rtl/common/fa_unsigned_mult_pipe2.v",
+                "sha256": "1303ab8d8f91336f5cafc20b33b2ca52c0ab6ad6a53f08935fb733d2adea7eae"
+            },
+            {
+                "path": "rtl/common/fixed_defs.vh",
+                "sha256": "09c2b36bd07a819672a4bac1c7e509645546af079e39f7ae97fb497132000c32"
+            },
+            {
+                "path": "rtl/compute/fsa_controller.v",
+                "sha256": "6f247c6a50a4c6619c26c1fff56ee052a174a2b4262260e34007b98636460807"
+            },
+            {
+                "path": "rtl/compute/fsa_delay_line.v",
+                "sha256": "822c5f2b1cee35b00bd0acae30f083a1b64e09fc6a1dd8b1e324f2821e3d3ab8"
+            },
+            {
+                "path": "rtl/compute/fsa_fused_array.v",
+                "sha256": "f1fe432a99a46220e93d56a3d96b89da451b3bfacbb56edd9919f25f7754f940"
+            },
+            {
+                "path": "rtl/compute/fsa_fused_pe.v",
+                "sha256": "85f681901bce360c5e2e39abbded68a9f1aefe83d568441d19387086e9083eca"
+            },
+            {
+                "path": "rtl/compute/fsa_pv_engine.v",
+                "sha256": "644d5632c50312bd567349babd2a2dd3195845b329899a5feb90e121ed263a8b"
+            },
+            {
+                "path": "rtl/compute/fsa_qk_engine.v",
+                "sha256": "57950caaaaffddd0fc2228fec9f9dcc05ec2aaf8e0fc78520dcf96fe475ce2b0"
+            },
+            {
+                "path": "rtl/compute/fsa_stripe.v",
+                "sha256": "500e85c5354c957500bf6dfab9aae8ee03d90f2384a5f784648b3812826aa527"
+            },
+            {
+                "path": "rtl/compute/score_scale_pipe.v",
+                "sha256": "2c71f45fc34e7210d758af6ae7096ef34b4b5e902d5a48f30ce55232f38a444f"
+            },
+            {
+                "path": "rtl/control/accel_regfile.v",
+                "sha256": "8f8d00f74c9f7a224b1aa62f81fef90e2e3bd2103be4dcfb1196623f1da9a5d6"
+            },
+            {
+                "path": "rtl/control/accel_scheduler.v",
+                "sha256": "150284b2cf54af33c5a3ba086ebfcca82eeb4f2798c346763769a8f4f21f8ea7"
+            },
+            {
+                "path": "rtl/control/perf_counter.v",
+                "sha256": "55df84813617611d13df293d85852dadc8face50e5d971b18f948d1d784ea407"
+            },
+            {
+                "path": "rtl/memory/asic_sram_1024x16.v",
+                "sha256": "e0f70cd09a312996887dd80cda0daadeaca883c1536e97ea5e1bb622d70488ab"
+            },
+            {
+                "path": "rtl/memory/asic_sram_256xwide.v",
+                "sha256": "684984baadec4f84ef0fbc8cbac6cb5d26d69ba5e9a25ed65950ade6a926c5ce"
+            },
+            {
+                "path": "rtl/memory/banked_sram.v",
+                "sha256": "d81c73fe57d747196572cf223634841433406d8539d452d6c58f00af02e0fb69"
+            },
+            {
+                "path": "rtl/memory/o_accumulator_bank.v",
+                "sha256": "f5b9c6e7b948eb8e1aabbf2e362723cf90ec879d72f7fb0da95521496bc9be9a"
+            },
+            {
+                "path": "rtl/memory/output_buffer.v",
+                "sha256": "55859a3c4e53b0fff00f278c153bd0d128849e77b0fe0160d1bdbc6f597b8d39"
+            },
+            {
+                "path": "rtl/memory/pingpong_buffer.v",
+                "sha256": "621252322cab3b8039e0bc93fe9bd32ffac233e31b5a4d72dd45553348fdf7b0"
+            },
+            {
+                "path": "rtl/memory/qkv_tile_cache.v",
+                "sha256": "69edc7c804769db2ff2a9433cb90e0d5e05bc2e40cbcb1360fed61b6d468521f"
+            },
+            {
+                "path": "rtl/softmax/online_normalizer.v",
+                "sha256": "834fe816d1eb2d1eda19315a3d4426e91db1a0a28cfc3a52d6a16e343b93a7a6"
+            },
+            {
+                "path": "rtl/softmax/pwl_exp_unit.v",
+                "sha256": "1aaf3e2daac3c5e08e1ba1a9af7931592216b32bac439ec510a87fcb6cb7b5c4"
+            },
+            {
+                "path": "rtl/softmax/reciprocal_lut.v",
+                "sha256": "61d30b21d30f21aae29e7d66cd98b9beec6f98bc9acd4a2ab82c20128fd82aef"
+            },
+            {
+                "path": "tb/module_tb/compute/tb_runtime_arithmetic.sv",
+                "sha256": "418e5d5917fefbe44038fe7070dddb961b87ef873fadbec6a116f4040ebbd1b6"
+            },
+            {
+                "path": "tb/sim/filelists/asic_models.f",
+                "sha256": "e98916eecb79abc89ca7fb385a54aa580173d31c9fa8c74c97ea55304ceca5bf"
+            },
+            {
+                "path": "tb/sim/filelists/rtl.f",
+                "sha256": "daa01f9255bb528bc1711bf67104beccb761e6092058df6e87589c6b87e5f284"
+            },
+            {
+                "path": "tb/sim/filelists/uvm.f",
+                "sha256": "19eae821e1b953e055a4f04ee5944f8f3fabdf5349b334ce848302bdefaa7be6"
+            },
+            {
+                "path": "tb/sim/scripts/run_runtime_d_short.sh",
+                "sha256": "3b70b4d2a3a0f8cc77726985a6afa06afdd1794ada89a15591ae4a9f15626e70"
+            },
+            {
+                "path": "tb/sim/scripts/runtime_d_manifest.py",
+                "sha256": "12e7401245c14fafd641db0f5a8ad752570987b087b74e1fa98e7ae0162af966"
+            },
+            {
+                "path": "tb/sim/scripts/summarize_runtime_d.py",
+                "sha256": "5ddbd066c84db44602416b2221fba7d40b4175dd4585913f81b50372ed065782"
+            },
+            {
+                "path": "tb/uvm/agents/fa_axi_write_agent.svh",
+                "sha256": "d997dcbc0458e5e09c0448828dde712c93beb6755b092872fb4cac5b95cd34c9"
+            },
+            {
+                "path": "tb/uvm/agents/fa_axil_agent.svh",
+                "sha256": "d4f2b2e8d1cf293f5652aed245859224062171c5c9bcfcf9192ba9c8f3a8f3d3"
+            },
+            {
+                "path": "tb/uvm/agents/fa_tile_agent.svh",
+                "sha256": "781b558c67563fa017286c3031733c1945ebbea39a1fbb8782802868dab1ea96"
+            },
+            {
+                "path": "tb/uvm/attention_uvm_if.sv",
+                "sha256": "31a1cb4bd79d59e305ad275292681f0f422ab085ba260005537549cc35ffc50a"
+            },
+            {
+                "path": "tb/uvm/attention_uvm_pkg.sv",
+                "sha256": "82189fc2d49ca4890b76d22eb9fa4bb6a25f712db4fd34f2a0bec04c02cc8f52"
+            },
+            {
+                "path": "tb/uvm/coverage/attention_coverage.svh",
+                "sha256": "751573b783188fbd1707d71104bf51d10ab66bbfa81f99ecbeff8247785c6b71"
+            },
+            {
+                "path": "tb/uvm/env/attention_env.svh",
+                "sha256": "f1beb0935efaf5e1054ff310efb30a6658af5d806d767a1a5d6cd369481a15dc"
+            },
+            {
+                "path": "tb/uvm/fa_uvm_types.svh",
+                "sha256": "0c719ee077dc38756d294b70e0e58644c36a59039a27e35e23b260a2b1a86e97"
+            },
+            {
+                "path": "tb/uvm/ref_model/attention_ref_model.svh",
+                "sha256": "900916cfc3e41e83d86aed6614303015dbe88739f72c2c90605a054aadba65b8"
+            },
+            {
+                "path": "tb/uvm/scoreboard/attention_scoreboard.svh",
+                "sha256": "4728cf343b977d33e848fc4bf5b5a8483b3ae2eafbae2bb647dda9bb9c1e82d7"
+            },
+            {
+                "path": "tb/uvm/sequences/attention_sequences.svh",
+                "sha256": "6b380cd9ee56bc495e3d0192bb0b1c8d3322f5661dd30b7e965fd7c9a9f660a1"
+            },
+            {
+                "path": "tb/uvm/sequences/runtime_d_sequences.svh",
+                "sha256": "aee4be25628b0a5227af2a7ffb9eceed05867bba83cb912fa65fe33617aeaed6"
+            },
+            {
+                "path": "tb/uvm/tb_top.sv",
+                "sha256": "d90bd7cd3a21fa0d21168599d4643711ac960feeb2b1f1cfae9ecf70feea05e9"
+            },
+            {
+                "path": "tb/uvm/tests/attention_tests.svh",
+                "sha256": "787c58b8c1b8f214588906a9dbac90b3d7dfade3f9ac0ca9477112c095a3d841"
+            }
+        ],
+        "sram_models": [
+            {
+                "path": "/data/public/STD/tcbn28hpcplusbwp12t30p140_190a/tcbn28hpcplusbwp12t30p140_170a_vlg/TSMCHOME/digital/Front_End/verilog/tcbn28hpcplusbwp12t30p140_170a/tcbn28hpcplusbwp12t30p140.v",
+                "sha256": "925bb6c571366997bb7738c1e4f0953fa589ed72cff4127a41c66c73f7e2d65d"
+            },
+            {
+                "path": "/data/apps/synopsys/syn/V-2023.12-SP5/dw/sim_ver/DW02_mult.v",
+                "sha256": "0bef01281c0311043f7d79389bbfad20bb171190efe08154eb1eab76ae8d94b6"
+            },
+            {
+                "path": "/data/public/SRAM/uhdsp_256x8m4s/VERILOG/uhdsp_256x8m4s_tt0p9v25c.v",
+                "sha256": "d094ad1e9e7d32f382fa17f4ad6382d0c5b22ece12b0fe8e5e5e45762313b222"
+            }
+        ],
+        "vcs_path": "/data/apps/synopsys/vcs/V-2023.12-SP2/bin/vcs",
+        "compile_before_sha256": "fef8c73fc62151bb6b439b9fd03dac17dd4f768ef1db6b3d27d380bf9b7c6761",
+        "compile_after_sha256": "fef8c73fc62151bb6b439b9fd03dac17dd4f768ef1db6b3d27d380bf9b7c6761",
+        "simv_sha256": "ce5e957159104e8dca7dd739ed0f45865964982e03d56d2536c14ceff9bf3605",
+        "arithmetic_simv_sha256": "4a879a898f215e88e631bd1624fc225c094cf73d653c890235a5c4040bc52db8",
+        "compile_log_sha256": "c3167927e29c34fd15d1796aa8f3fbae18d6df0662135e328b9eb8556d95113a",
+        "arithmetic_compile_log_sha256": "eb4719ee1ec2bc2a6d706d4765b109cc56780576139fb0d481ad16ff7da35fd4"
+    },
+    "completed_jobs": 157,
+    "checked_bytes": 66312,
+    "scope": "short functional RTL with characterized ASIC SRAM behavior; no SDF"
+}

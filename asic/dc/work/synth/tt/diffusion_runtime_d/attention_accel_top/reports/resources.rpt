@@ -1,0 +1,246 @@
+ 
+****************************************
+Report : resources
+Design : attention_accel_top
+Version: V-2023.12-SP5
+Date   : Sun Oct 18 00:59:52 2026
+****************************************
+
+
+Resource Report for this hierarchy in file
+        /data/workspaces/zhangcheng/flash_attention/rtl/attention_accel_top.v
+=============================================================================
+| Cell           | Module         | Parameters | Contained Operations       |
+=============================================================================
+| lte_x_14       | DW_cmp         | width=16   | lte_536 (attention_accel_top.v:536) |
+| sub_x_15       | DW01_sub       | width=16   | sub_542 (attention_accel_top.v:542) |
+| add_x_16       | DW01_add       | width=20   | add_544 (attention_accel_top.v:544) |
+| add_x_20       | DW01_add       | width=32   | add_630 (attention_accel_top.v:630) |
+| add_x_22       | DW01_inc       | width=2    | add_683 (attention_accel_top.v:683) |
+| add_x_74       | DW01_add       | width=17   | u_scheduler/add_57 (accel_scheduler.v:57) |
+| add_x_75       | DW01_add       | width=17   | u_scheduler/add_58 (accel_scheduler.v:58) |
+| add_x_79       | DW01_inc       | width=11   | u_scheduler/add_128_S2 (accel_scheduler.v:128) |
+| add_x_80       | DW01_inc       | width=8    | u_scheduler/add_136 (accel_scheduler.v:136) |
+| add_x_81       | DW01_inc       | width=11   | u_scheduler/add_138 (accel_scheduler.v:138) |
+| add_x_145      | DW01_inc       | width=8    | u_qk_engine/add_135_S2 (fsa_qk_engine.v:135) |
+| add_x_146      | DW01_inc       | width=8    | u_qk_engine/add_141 (fsa_qk_engine.v:141) |
+| add_x_173      | DW01_inc       | width=8    | u_pv_engine/add_149 (fsa_pv_engine.v:149) |
+| sub_x_197      | DW01_sub       | width=13   | u_axi_write/sub_70 (axi4_master_write.v:70) |
+| gt_x_198       | DW_cmp         | width=16   | u_axi_write/gt_73 (axi4_master_write.v:73) |
+| gt_x_199       | DW_cmp         | width=16   | u_axi_write/gt_75 (axi4_master_write.v:75) |
+| sub_x_202      | DW01_dec       | width=8    | u_axi_write/sub_124 (axi4_master_write.v:124) |
+| sub_x_203      | DW01_dec       | width=8    | u_axi_write/sub_138 (axi4_master_write.v:138) |
+| sub_x_204      | DW01_dec       | width=16   | u_axi_write/sub_139 (axi4_master_write.v:139) |
+| add_x_205      | DW01_add       | width=32   | u_axi_write/add_160 (axi4_master_write.v:160) |
+| add_x_236      | DW01_inc       | width=64   | u_perf/add_35_S2 (perf_counter.v:35) |
+| add_x_237      | DW01_inc       | width=64   | u_perf/add_36_S2 (perf_counter.v:36) |
+| add_x_238      | DW01_add       | width=64   | u_perf/add_37_S2 (perf_counter.v:37) |
+| add_x_239      | DW01_inc       | width=32   | u_perf/add_38_S2 (perf_counter.v:38) |
+| u_head_stride_multiplier/u_dw_mult           |                            |
+|                | DW02_mult      | A_width=16 | u_head_stride_multiplier/u_dw_mult (fa_mult_comb.v:43) |
+      | B_width=8  |                            |
+| u_writeback_bytes_multiplier/u_dw_mult       |                            |
+|                | DW02_mult      | A_width=16 | u_writeback_bytes_multiplier/u_dw_mult (fa_mult_comb.v:43) |
+  | B_width=8  |                            |
+| lt_x_248       | DW_cmp         | width=8    | u_qk_engine/lt_135 (fsa_qk_engine.v:135) |
+   |                |            | u_qk_engine/lt_76 (fsa_qk_engine.v:76) |
+| gt_x_249       | DW_cmp         | width=8    | u_pv_engine/gt_131 (fsa_pv_engine.v:131) |
+   |                |            | u_qk_engine/gt_120 (fsa_qk_engine.v:120) |
+| lt_x_250       | DW_cmp         | width=8    | u_pv_engine/lt_148 (fsa_pv_engine.v:148) |
+   |                |            | u_pv_engine/lt_77 (fsa_pv_engine.v:77) |
+| add_x_19       | DW01_add       | width=32   | add_627 (attention_accel_top.v:627) |
+        |                |            | add_628 (attention_accel_top.v:628) |
+| add_x_18       | DW01_add       | width=24   | add_610 (attention_accel_top.v:610) |
+        |                |            | add_624 (attention_accel_top.v:624) |
+| add_x_21       | DW01_inc       | width=7    | add_673 (attention_accel_top.v:673) |
+        |                |            | add_687 (attention_accel_top.v:687) |
+| DP_OP_370J11_122_4917           |            |                            |
+|                | DP_OP_370J11_122_4917 |     |                            |
+| DP_OP_371J11_123_1375           |            |                            |
+|                | DP_OP_371J11_123_1375 |     |                            |
+| DP_OP_372J11_124_2869           |            |                            |
+|                | DP_OP_372J11_124_2869 |     |                            |
+| DP_OP_373J11_125_3876           |            |                            |
+|                | DP_OP_373J11_125_3876 |     |                            |
+| DP_OP_374J11_126_2869           |            |                            |
+|                | DP_OP_374J11_126_2869 |     |                            |
+=============================================================================
+
+Datapath Report for DP_OP_370J11_122_4917
+==============================================================================
+| Cell                 | Contained Operations                                |
+==============================================================================
+| DP_OP_370J11_122_4917 | add_538 (attention_accel_top.v:538)                |
+|                      | add_626 (attention_accel_top.v:626)                 |
+|                      | gte_538 (attention_accel_top.v:538)                 |
+|                      | gte_626 (attention_accel_top.v:626)                 |
+==============================================================================
+
+==============================================================================
+|       |      | Data     |       |                                          |
+| Var   | Type | Class    | Width | Expression                               |
+==============================================================================
+| I1    | PI   | Unsigned | 16    |                                          |
+| I2    | PI   | Unsigned | 16    |                                          |
+| T15   | IFO  | Unsigned | 17    | I1 + $unsigned(6'b100000) ( attention_accel_top.v:538 attention_accel_top.v:626 ) |
+| O1    | PO   | Unsigned | 1     | I2 >= T15 (attention_accel_top.v:538)    |
+| O2    | PO   | Unsigned | 1     | T15 >= I2 (attention_accel_top.v:626)    |
+==============================================================================
+
+Datapath Report for DP_OP_371J11_123_1375
+==============================================================================
+| Cell                 | Contained Operations                                |
+==============================================================================
+| DP_OP_371J11_123_1375 | sub_109 (attention_accel_top.v:109)                |
+|                      | u_qk_engine/sub_84 (fsa_qk_engine.v:84)             |
+|                      | u_qk_engine/sub_142 (fsa_qk_engine.v:142)           |
+|                      | u_pv_engine/sub_151 (fsa_pv_engine.v:151)           |
+|                      | eq_669_2 (attention_accel_top.v:669)                |
+|                      | eq_678 (attention_accel_top.v:678)                  |
+|                      | u_pv_engine/eq_151 (fsa_pv_engine.v:151)            |
+|                      | u_qk_engine/eq_84 (fsa_qk_engine.v:84)              |
+|                      | u_qk_engine/eq_142 (fsa_qk_engine.v:142)            |
+==============================================================================
+
+==============================================================================
+|       |      | Data     |       |                                          |
+| Var   | Type | Class    | Width | Expression                               |
+==============================================================================
+| I1    | PI   | Unsigned | 8     |                                          |
+| I2    | PI   | Unsigned | 7     |                                          |
+| I3    | PI   | Unsigned | 7     |                                          |
+| I4    | PI   | Unsigned | 8     |                                          |
+| T0    | IFO  | Signed   | 8     | I1 - $unsigned(1'b1) ( fsa_qk_engine.v:84 fsa_qk_engine.v:109 fsa_qk_engine.v:142 fsa_qk_engine.v:151 ) |
+| O1    | PO   | Unsigned | 1     | I2 == $unsigned(T0) ( attention_accel_top.v:669 attention_accel_top.v:678 ) |
+| O2    | PO   | Unsigned | 1     | I3 == $unsigned(T0) (fsa_pv_engine.v:151) |
+| O3    | PO   | Unsigned | 1     | I4 == $unsigned(T0) ( fsa_qk_engine.v:84 fsa_qk_engine.v:142 ) |
+==============================================================================
+
+Datapath Report for DP_OP_372J11_124_2869
+==============================================================================
+| Cell                 | Contained Operations                                |
+==============================================================================
+| DP_OP_372J11_124_2869 | u_scheduler/sub_61 (accel_scheduler.v:61)          |
+|                      | u_scheduler/eq_61 (accel_scheduler.v:61)            |
+==============================================================================
+
+==============================================================================
+|       |      | Data     |       |                                          |
+| Var   | Type | Class    | Width | Expression                               |
+==============================================================================
+| I1    | PI   | Unsigned | 12    |                                          |
+| I2    | PI   | Unsigned | 11    |                                          |
+| T85   | IFO  | Signed   | 12    | I1 - $unsigned(1'b1) (accel_scheduler.v:61) |
+| O1    | PO   | Unsigned | 1     | I2 == $unsigned(T85) (accel_scheduler.v:61) |
+==============================================================================
+
+Datapath Report for DP_OP_373J11_125_3876
+==============================================================================
+| Cell                 | Contained Operations                                |
+==============================================================================
+| DP_OP_373J11_125_3876 | u_scheduler/sub_62 (accel_scheduler.v:62)          |
+|                      | u_scheduler/eq_62 (accel_scheduler.v:62)            |
+==============================================================================
+
+==============================================================================
+|       |      | Data     |       |                                          |
+| Var   | Type | Class    | Width | Expression                               |
+==============================================================================
+| I1    | PI   | Unsigned | 8     |                                          |
+| I2    | PI   | Unsigned | 8     |                                          |
+| T87   | IFO  | Signed   | 8     | I1 - $unsigned(1'b1) (accel_scheduler.v:62) |
+| O1    | PO   | Unsigned | 1     | I2 == $unsigned(T87) (accel_scheduler.v:62) |
+==============================================================================
+
+Datapath Report for DP_OP_374J11_126_2869
+==============================================================================
+| Cell                 | Contained Operations                                |
+==============================================================================
+| DP_OP_374J11_126_2869 | u_scheduler/sub_62_2 (accel_scheduler.v:62)        |
+|                      | u_scheduler/sub_134 (accel_scheduler.v:134)         |
+|                      | u_scheduler/eq_62_2 (accel_scheduler.v:62)          |
+|                      | u_scheduler/eq_134 (accel_scheduler.v:134)          |
+==============================================================================
+
+==============================================================================
+|       |      | Data     |       |                                          |
+| Var   | Type | Class    | Width | Expression                               |
+==============================================================================
+| I1    | PI   | Unsigned | 12    |                                          |
+| I2    | PI   | Unsigned | 11    |                                          |
+| T89   | IFO  | Signed   | 12    | I1 - $unsigned(1'b1) ( accel_scheduler.v:62 accel_scheduler.v:134 ) |
+| O1    | PO   | Unsigned | 1     | I2 == $unsigned(T89) ( accel_scheduler.v:62 accel_scheduler.v:134 ) |
+==============================================================================
+
+
+Resource Report for Ungrouped Hierarchy u_regfile in file
+        /data/workspaces/zhangcheng/flash_attention/rtl/control/accel_regfile.v
+=============================================================================
+| Cell           | Module         | Parameters | Contained Operations       |
+=============================================================================
+| lte_x_1        | DW_cmp         | width=8    | lte_85 (accel_regfile.v:85) |
+=============================================================================
+
+
+Datapath Extraction Report
+
+Information: Cell 'u_writeback_bytes_multiplier/u_dw_mult (fa_mult_comb.v:43)' in design 'attention_accel_top' cannot be extracted because it instantiates 'DW02_mult', which could be inferred with operator '*' instead.  (HDL-125)
+
+Information: Cell 'u_head_stride_multiplier/u_dw_mult (fa_mult_comb.v:43)' in design 'attention_accel_top' cannot be extracted because it instantiates 'DW02_mult', which could be inferred with operator '*' instead.  (HDL-125)
+
+
+Implementation Report
+===============================================================================
+|                    |                  | Current            | Set            |
+| Cell               | Module           | Implementation     | Implementation |
+===============================================================================
+| lte_x_14           | DW_cmp           | apparch (area)     |                |
+| sub_x_15           | DW01_sub         | apparch (area)     |                |
+| add_x_16           | DW01_add         | apparch (area)     |                |
+| add_x_20           | DW01_add         | apparch (area)     |                |
+| add_x_22           | DW01_inc         | apparch (area)     |                |
+| add_x_74           | DW01_add         | apparch (area)     |                |
+| add_x_75           | DW01_add         | apparch (area)     |                |
+| add_x_79           | DW01_inc         | apparch (area)     |                |
+| add_x_80           | DW01_inc         | apparch (area)     |                |
+| add_x_81           | DW01_inc         | apparch (area)     |                |
+| add_x_145          | DW01_inc         | apparch (area)     |                |
+| add_x_146          | DW01_inc         | apparch (area)     |                |
+| add_x_173          | DW01_inc         | apparch (area)     |                |
+| sub_x_197          | DW01_sub         | apparch (area)     |                |
+| gt_x_198           | DW_cmp           | apparch (area)     |                |
+| gt_x_199           | DW_cmp           | apparch (area)     |                |
+| sub_x_202          | DW01_dec         | apparch (area)     |                |
+| sub_x_203          | DW01_dec         | apparch (area)     |                |
+| sub_x_204          | DW01_dec         | apparch (area)     |                |
+| add_x_205          | DW01_add         | apparch (area)     |                |
+| add_x_236          | DW01_inc         | apparch (area)     |                |
+| add_x_237          | DW01_inc         | apparch (area)     |                |
+| add_x_238          | DW01_add         | apparch (area)     |                |
+| add_x_239          | DW01_inc         | apparch (area)     |                |
+| u_head_stride_multiplier/u_dw_mult    |                    |                |
+|                    | DW02_mult        | apparch (area)     |                |
+|                    |                  | mult_arch: benc_radix4              |
+| u_writeback_bytes_multiplier/u_dw_mult                     |                |
+|                    | DW02_mult        | apparch (area)     |                |
+|                    |                  | mult_arch: benc_radix4              |
+| lt_x_248           | DW_cmp           | apparch (area)     |                |
+| gt_x_249           | DW_cmp           | apparch (area)     |                |
+| lt_x_250           | DW_cmp           | apparch (area)     |                |
+| add_x_19           | DW01_add         | apparch (area)     |                |
+| add_x_18           | DW01_add         | apparch (area)     |                |
+| add_x_21           | DW01_inc         | apparch (area)     |                |
+| lte_x_1            | DW_cmp           | apparch (area)     |                |
+| DP_OP_370J11_122_4917                 |                    |                |
+|                    | DP_OP_370J11_122_4917 | str (area)    |                |
+| DP_OP_371J11_123_1375                 |                    |                |
+|                    | DP_OP_371J11_123_1375 | str (area)    |                |
+| DP_OP_372J11_124_2869                 |                    |                |
+|                    | DP_OP_372J11_124_2869 | str (area)    |                |
+| DP_OP_373J11_125_3876                 |                    |                |
+|                    | DP_OP_373J11_125_3876 | str (area)    |                |
+| DP_OP_374J11_126_2869                 |                    |                |
+|                    | DP_OP_374J11_126_2869 | str (area)    |                |
+===============================================================================
+
+1

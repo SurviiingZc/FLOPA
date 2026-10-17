@@ -120,3 +120,6 @@ fpga/vivado/build/**
 !fpga/vivado/build/**/
 !fpga/vivado/build/reports/
 !fpga/vivado/build/reports/**
+
+# Current HEAD validation is regenerated; immutable archives are tracked.
+/paper_test/validation_manifest.json
