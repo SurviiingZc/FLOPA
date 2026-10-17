@@ -17,7 +17,7 @@ set expected_top_macros [expr {
 }]
 set expected_top_rtl_icgs [expr {
   [info exists env(FA_EXPECTED_TOP_RTL_ICGS)] ?
-  $env(FA_EXPECTED_TOP_RTL_ICGS) : 28
+    $env(FA_EXPECTED_TOP_RTL_ICGS) : 28
 }]
 set physical_aware [expr {
   [info exists env(FA_PHYSICAL_AWARE)] && $env(FA_PHYSICAL_AWARE) eq "1"
