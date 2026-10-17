@@ -11,6 +11,7 @@ module qkv_tile_cache #(
   input                     clk,
   input                     rst_n,
   input                     clear_i,
+  input      [7:0]          head_dim_i,
   input      [1:0]          load_kind_i,
   input                     load_bank_i,
   input      [ADDR_W-1:0]   load_addr_i,
@@ -87,12 +88,13 @@ module qkv_tile_cache #(
   wire [1:0] v_bank_valid_w;
 
   // Exactly one active bank responds per tensor, so valid safely selects its data.
-  assign load_ready_o = (load_kind_i == `ATTN_CACHE_Q) ?
+  assign load_ready_o = !clear_i && (load_addr_i < head_dim_i) &&
+                        ((load_kind_i == `ATTN_CACHE_Q) ?
                         !q_bank_valid_w[load_bank_i] :
                         (load_kind_i == `ATTN_CACHE_K) ?
                         !k_bank_valid_w[load_bank_i] :
                         (load_kind_i == `ATTN_CACHE_V) ?
-                        !v_bank_valid_w[load_bank_i] : 1'b0;
+                        !v_bank_valid_w[load_bank_i] : 1'b0);
   assign q_rd_data_o = q0_valid_w ? q0_data_w : q1_data_w;
   assign q_rd_valid_o = q0_valid_w | q1_valid_w;
   assign k_rd_data_o = k0_valid_w ? k0_data_w : k1_data_w;
@@ -128,7 +130,9 @@ module qkv_tile_cache #(
     end else begin
       word_wr_valid_q <= 1'b0;
       protocol_error_o <= q_pp_error_w | k_pp_error_w | v_pp_error_w;
-      if (load_valid_i) begin
+      if (load_valid_i && load_addr_i >= head_dim_i)
+        protocol_error_o <= 1'b1;
+      if (load_valid_i && load_ready_o) begin
         if (!load_half_i) begin
           pending_half_q <= 1'b1;
           pending_kind_q <= load_kind_i;
@@ -182,42 +186,42 @@ module qkv_tile_cache #(
   // Six physical memories implement Q/K/V x ping/pong. Only the active compute
   // bank is read while the inactive bank may be filled for the next tile.
   banked_sram #(.BANKS(BANKS), .BANK_W(BANK_W), .ADDR_W(ADDR_W)) u_q0 (
-    .clk(clk), .rst_n(rst_n),
+    .clk(clk), .rst_n(rst_n), .clear_i(clear_i),
     .wr_en_i(word_wr_valid_q && word_wr_kind_q == `ATTN_CACHE_Q && !word_wr_bank_q),
     .wr_addr_i(word_wr_addr_q), .wr_data_i(word_wr_data_q), .wr_bank_en_i({BANKS{1'b1}}),
     .rd_en_i(q_rd_en_i && !q_active_bank_o), .rd_addr_i(q_rd_addr_i),
     .rd_data_o(q0_data_w), .rd_valid_o(q0_valid_w)
   );
   banked_sram #(.BANKS(BANKS), .BANK_W(BANK_W), .ADDR_W(ADDR_W)) u_q1 (
-    .clk(clk), .rst_n(rst_n),
+    .clk(clk), .rst_n(rst_n), .clear_i(clear_i),
     .wr_en_i(word_wr_valid_q && word_wr_kind_q == `ATTN_CACHE_Q && word_wr_bank_q),
     .wr_addr_i(word_wr_addr_q), .wr_data_i(word_wr_data_q), .wr_bank_en_i({BANKS{1'b1}}),
     .rd_en_i(q_rd_en_i && q_active_bank_o), .rd_addr_i(q_rd_addr_i),
     .rd_data_o(q1_data_w), .rd_valid_o(q1_valid_w)
   );
   banked_sram #(.BANKS(BANKS), .BANK_W(BANK_W), .ADDR_W(ADDR_W)) u_k0 (
-    .clk(clk), .rst_n(rst_n),
+    .clk(clk), .rst_n(rst_n), .clear_i(clear_i),
     .wr_en_i(word_wr_valid_q && word_wr_kind_q == `ATTN_CACHE_K && !word_wr_bank_q),
     .wr_addr_i(word_wr_addr_q), .wr_data_i(word_wr_data_q), .wr_bank_en_i({BANKS{1'b1}}),
     .rd_en_i(k_rd_en_i && !k_active_bank_w), .rd_addr_i(k_rd_addr_i),
     .rd_data_o(k0_data_w), .rd_valid_o(k0_valid_w)
   );
   banked_sram #(.BANKS(BANKS), .BANK_W(BANK_W), .ADDR_W(ADDR_W)) u_k1 (
-    .clk(clk), .rst_n(rst_n),
+    .clk(clk), .rst_n(rst_n), .clear_i(clear_i),
     .wr_en_i(word_wr_valid_q && word_wr_kind_q == `ATTN_CACHE_K && word_wr_bank_q),
     .wr_addr_i(word_wr_addr_q), .wr_data_i(word_wr_data_q), .wr_bank_en_i({BANKS{1'b1}}),
     .rd_en_i(k_rd_en_i && k_active_bank_w), .rd_addr_i(k_rd_addr_i),
     .rd_data_o(k1_data_w), .rd_valid_o(k1_valid_w)
   );
   banked_sram #(.BANKS(BANKS), .BANK_W(BANK_W), .ADDR_W(ADDR_W)) u_v0 (
-    .clk(clk), .rst_n(rst_n),
+    .clk(clk), .rst_n(rst_n), .clear_i(clear_i),
     .wr_en_i(word_wr_valid_q && word_wr_kind_q == `ATTN_CACHE_V && !word_wr_bank_q),
     .wr_addr_i(word_wr_addr_q), .wr_data_i(word_wr_data_q), .wr_bank_en_i({BANKS{1'b1}}),
     .rd_en_i(v_rd_en_i && !v_active_bank_w), .rd_addr_i(v_rd_addr_i),
     .rd_data_o(v0_data_w), .rd_valid_o(v0_valid_w)
   );
   banked_sram #(.BANKS(BANKS), .BANK_W(BANK_W), .ADDR_W(ADDR_W)) u_v1 (
-    .clk(clk), .rst_n(rst_n),
+    .clk(clk), .rst_n(rst_n), .clear_i(clear_i),
     .wr_en_i(word_wr_valid_q && word_wr_kind_q == `ATTN_CACHE_V && word_wr_bank_q),
     .wr_addr_i(word_wr_addr_q), .wr_data_i(word_wr_data_q), .wr_bank_en_i({BANKS{1'b1}}),
     .rd_en_i(v_rd_en_i && v_active_bank_w), .rd_addr_i(v_rd_addr_i),

@@ -15,6 +15,7 @@ module axi4_master_write #(
   input  [15:0]          beat_count_i,
   input  [7:0]           burst_len_i,
   input  [DATA_W-1:0]    data_i,
+  input  [(DATA_W/8)-1:0] data_strb_i,
   input                  data_valid_i,
   output                 data_ready_o,
   output reg             busy_o,
@@ -61,7 +62,7 @@ module axi4_master_write #(
   assign data_ready_o = (state_q == ST_W) && m_axi_wready;
   assign m_axi_wvalid = (state_q == ST_W) && data_valid_i;
   assign m_axi_wdata = data_i;
-  assign m_axi_wstrb = {(DATA_W/8){1'b1}};
+  assign m_axi_wstrb = data_strb_i;
   assign m_axi_wlast = (state_q == ST_W) && (burst_left_q == 8'd1);
 
   // Select the next burst as min(beats left, configured burst, 4-KB remainder).

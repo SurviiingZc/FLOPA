@@ -15,7 +15,7 @@ MAX_FANOUT ?= 24
 # Automatic insertion remains disabled.
 DC_CORES ?= 32
 EXPECTED_TOP_SRAM_MACROS ?= 480
-EXPECTED_TOP_RTL_ICGS ?= 0
+EXPECTED_TOP_RTL_ICGS ?= 28
 
 # Physical timing inputs. They deliberately have no repository defaults: these
 # views are technology-installation specific and must be provided by the run.

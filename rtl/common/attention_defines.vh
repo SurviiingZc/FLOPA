@@ -23,12 +23,13 @@
 `define ATTN_ARRAY_COLS          32
 `define ATTN_ARRAY_STRIPE_ROWS   8
 `define ATTN_SOFTMAX_LANES       32
-`define ATTN_HEAD_DIM            64
+`define ATTN_MAX_D               128
+`define ATTN_HEAD_DIM            `ATTN_MAX_D
 `define ATTN_TILE_Q              32
 `define ATTN_TILE_K              32
 `define ATTN_NUM_BANKS           16
 `define ATTN_CACHE_DEPTH         `ATTN_HEAD_DIM
-`define ATTN_CACHE_ADDR_W         6
+`define ATTN_CACHE_ADDR_W         7
 
 // External bus widths and the internal 32-lane cache-word width.
 `define ATTN_AXI_ADDR_W          32
@@ -121,6 +122,7 @@
 `define ATTN_REG_PERF_MAC_LO      12'h084
 `define ATTN_REG_PERF_MAC_HI      12'h088
 `define ATTN_REG_PERF_TILES       12'h08c
+`define ATTN_REG_MAX_D            12'h090
 
 // CONTROL register bit assignments. Command bits generate one-cycle pulses;
 // mode bits are captured with the configuration snapshot at START.

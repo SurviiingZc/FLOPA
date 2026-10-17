@@ -36,7 +36,7 @@ module fsa_fused_array #(
   input      [15:0]                  k_base_i,
   input      [15:0]                  seq_q_i,
   input      [15:0]                  seq_kv_i,
-  input                              causal_en_i,
+  input      [7:0]                   head_dim_i,
   output reg                         softmax_pv_ready_o,
   output reg                         softmax_done_o,
   output reg                         softmax_busy_o,
@@ -73,7 +73,7 @@ module fsa_fused_array #(
   localparam integer QK_COMPLETION_DEPTH = ROWS + COLS;
   localparam [ROW_IDX_W-1:0] ROW_LAST = ROWS - 1;
   localparam [COL_IDX_W-1:0] COL_LAST = COLS - 1;
-  localparam [FEATURE_IDX_W-1:0] FEATURE_LAST = HEAD_DIM - 1;
+  wire [7:0] feature_last_w = head_dim_i - 1'b1;
 
   // Online-softmax control overlaps the reverse delta wave, column exp, rowsum,
   // serialized l update, and the start of WS-PV.
@@ -183,7 +183,6 @@ module fsa_fused_array #(
   integer mask_col;
   reg [31:0] query_index_w;
   reg [31:0] valid_col_count_w;
-  reg [31:0] causal_col_count_w;
   reg [31:0] seq_kv_int_w;
   reg [31:0] seq_q_int_w;
   reg [31:0] k_base_int_w;
@@ -443,16 +442,6 @@ module fsa_fused_array #(
         valid_col_count_w = COLS;
       else
         valid_col_count_w = seq_kv_int_w - k_base_int_w;
-      if (causal_en_i) begin
-        if (query_index_w < k_base_int_w)
-          causal_col_count_w = 0;
-        else if ((query_index_w - k_base_int_w + 1) >= COLS)
-          causal_col_count_w = COLS;
-        else
-          causal_col_count_w = query_index_w - k_base_int_w + 1;
-        if (causal_col_count_w < valid_col_count_w)
-          valid_col_count_w = causal_col_count_w;
-      end
       if (query_index_w >= seq_q_int_w)
         valid_col_count_w = 0;
       for (mask_col = 0; mask_col < COLS; mask_col = mask_col + 1)
@@ -586,6 +575,8 @@ module fsa_fused_array #(
         .pv_seed_valid_o(stripe_pv_seed_valid_w[stripe]),
         .pv_seed_data_o(stripe_pv_seed_data_w[stripe]),
         .pv_seed_feature_o(stripe_pv_seed_feature_w[stripe]),
+        .o_pass_start_i(pv_start_i), .o_first_pass_i(pv_seed_zero_i),
+        .o_rd_current_i(norm_rd_en_i),
         .o_rd_en_i(stripe_o_rd_en_w[stripe]),
         .o_rd_feature_i(stripe_o_rd_feature_w[stripe]),
         .o_rd_valid_o(stripe_o_rd_valid_w[stripe]),
@@ -869,7 +860,7 @@ module fsa_fused_array #(
 
       if (sum_right_valid_w[ROWS-1] &&
           sum_right_tag_w[(ROWS-1)*FEATURE_IDX_W +: FEATURE_IDX_W] ==
-          FEATURE_LAST)
+          feature_last_w)
         pv_done_o <= 1'b1;
     end
   end
