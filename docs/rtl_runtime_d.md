@@ -99,6 +99,9 @@ O/scale/tag路径同步增加一级metadata，normalizer总延迟比基线增加
 
 ## 统计与验收
 
+dense尾mask由32bit row-valid与32bit col-valid捕获，组合成各PE的lane mask，
+替代旧1024bit全矩阵mask寄存，捕获边界/掩码语义不变；无三角因果比较。
+
 QK/PV/归一化均只请求实际d；d128次数使用8bit不回卷，tag7bit不超过127。
 现有PERF_MAC统计物理发射槽：1024×(QK issue+PV issue)，包含尾token空槽。
 有用MAC另由 `2 * Nq * Nkv * d * heads` 计算并与probe区分，不冒充物理利用率。
