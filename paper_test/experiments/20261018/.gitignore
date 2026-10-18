@@ -1,0 +1,14 @@
+*_build/
+replay_smoke/
+*.saif
+*.observed.bin
+*.key
+flex*.log
+pilot_power_work/
+pilot_power_reports/
+pilot_power_exact_reports/
+saif_conflict_audit/
+saif_exact_name_audit/
+inputs/
+jobs/
+__pycache__/
