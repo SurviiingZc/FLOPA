@@ -13,3 +13,6 @@ saif_exact_name_audit/
 inputs/
 jobs/
 __pycache__/
+checklist_model_snapshot.json
+checklist_state.json
+checklist_update.lock

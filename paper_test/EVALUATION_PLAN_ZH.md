@@ -1,3 +1,5 @@
+> 2026-10-19 平台调整：依用户决定，主图仅比较 GPU 与 FLOPA；取消 CPU 性能测试与复测。已有 CPU 计时保留为历史，不用于论文比较。CPU 上的整数参考/误差诊断仍继续，它们不属于 CPU 性能基线。
+
 > 2026-10-19 执行更新：用户要求先完成本轮实验，再优化数值。旧数值门槛不再阻断工程性能/功耗/对照测试，误差与溢出统计仍保留。逐字节功能、协议、哈希和功耗活动窗口仍需核验。详见 PRECISION_DEFERRAL_20261019_ZH.md 与 experiments/20261018/LATEST_RUN_20261019_ZH.md。
 
 # FLOPA：ISCAS Evaluation 详细实验计划（2026-10-18执行版）
@@ -11,7 +13,7 @@
 
 本计划要检验：在高分辨率扩散 Transformer 的实际 SDPA 输入下，FLOPA 的局部
 P/O 状态与调度方式如何影响周期、内部搬运、总面积和能量，以及数值代价是否可接受。
-CPU/GPU 主图负责定位实际算子性能；同条件硬件对照负责解释收益来源。
+GPU/FLOPA 主图负责定位实际算子性能；同条件硬件对照负责解释收益来源。
 不同工艺/精度/存储范围的文献数据用于定位，不预设 FLOPA 获得总面积或能效第一。
 
 | 术语 | 本计划的固定含义 |
@@ -34,8 +36,7 @@ CPU/GPU 主图负责定位实际算子性能；同条件硬件对照负责解释
 
 | 项目 | 本次只读核实的环境 / 实验约定 |
 | --- | --- |
-| 模型、CPU/GPU服务器 | 10.2.255.13，现有 DiT-FA 工程与已下载权重 |
-| CPU | 双路 Xeon Gold 6133，2×20 个物理核，80 个逻辑线程；不以 Cortex-A72 作为主基线 |
+| 模型、GPU服务器 | 10.2.255.13，现有 DiT-FA 工程与已下载权重 |
 | GPU | 单张 RTX A6000，49140 MiB；从两张卡中固定一张空闲设备，记录 UUID |
 | 已有 profiling 软件 | PyTorch 2.9.0+cu128，CUDA 12.8，driver 550.144.03；正式采集时再次记录实际版本 |
 | ASIC 工程 | 10.1.33.33:/data/workspaces/zhangcheng/flash_attention |
@@ -44,14 +45,13 @@ CPU/GPU 主图负责定位实际算子性能；同条件硬件对照负责解释
 | ASIC 条件 | 28 nm TT / 0.9 V / 25°C，MAX_D=128，32×32 PE，480 SRAM 宏 |
 | 暂用周期 | 1.60 ns / 625 MHz；只有 setup 目标通过，hold/min-cap 尚未物理收敛 |
 
-CPU 主基线用优化 SDPA FP32。预先固定线程候选 {1,4,8,16,20,40}，先以独立 pilot
-按 N 选择最快的合法线程/亲和性组合，再冻结正式测量配置；记录 NUMA 和物理核映射。
-不强制使用在该 CPU 上低效的 FP16，也不拿单线程慢实现作为唯一基线。
+本轮取消 CPU 性能基线与正式复测，已有 CPU 计时不进入论文对比。
+CPU 上的整数参考、FP32 数值参考和误差诊断仍用于 RTL 功能核对。
 GPU 使用 FP16 SDPA，先检查 FLASH/EFFICIENT/MATH 后端的可用性与正确性，
 冻结最快的合格实现；记录实际 kernel，不假定配置开关就代表使用了 FlashAttention。
-CPU/GPU 精度与 FLOPA INT8 不同，主图必须写明，并受第 5 节质量检查约束。
+GPU FP16 与 FLOPA INT8 精度不同，主图必须写明，并受第 5 节质量检查约束。
 统一 eval/inference mode、dropout=0、is_causal=false、attn_mask=None。
-CPU/GPU先完成输入布局与dtype准备再计时，测试过程中不重新加载模型或分配大tensor。
+GPU先完成输入布局与dtype准备再计时，测试过程中不重新加载模型或分配大tensor。
 
 ## 3. 主图模型和 token 网格
 
@@ -195,7 +195,6 @@ scale，再做评估；失败点原样记录，不换 seed、删差点或事后�
 
 | 平台 | 包含 | 排除 |
 | --- | --- | --- |
-| CPU | 内存中完整 [1,H,N,d] SDPA 的执行、输出就绪 | QKV/输出投影、RoPE、采样循环、打包与拷贝 |
 | GPU | 显存中完整多头 SDPA；CUDA event 覆盖实际 kernel | 同上；不含 PCIe 拷贝和分配 |
 | FLOPA | 接受 START 到最后 head 最后输出 burst 的 B 握手；含 loader、cache 等待、重复 KV 读、计算与 drain | reset、预先配置寄存器、离线量化/打包、人为尾部空闲 |
 
@@ -206,8 +205,8 @@ FLOPA 暂按 1.60 ns 换算。图例/图注写 RTL cycles at the synthesis targe
 额外记录核心活跃/等待、输入 byte 和输出 byte；不能从主耗时中随意扣除 KV 重载。
 可另做一个固定带宽减半的敏感性点；该点属于片外服务分析，不是 P SRAM 流量。
 
-CPU/GPU：独立 pilot 冻结线程/后端后，建议20次预热、3批×30次正式测量；
-GPU 用 CUDA event，CPU 用同步 wall time。过长点可预先降低重复次数并记录，
+GPU：独立 pilot 冻结最快的合格后端后，采用20次预热、3批×30次正式测量；
+使用 CUDA event，并保存真实 kernel trace。若预先调整重复数须明确记录，
 不能只对慢基线使用冷启动。记录中位数与 IQR、系统占用和异常原因。
 RTL 主图每点一份完整确定性回放，不伪造重复误差条；另验证所选输入数据变化
 是否影响周期。GPU 保留完整 H 的并行能力，不按单头时间乘 H。
@@ -228,7 +227,7 @@ RTL PERF_MAC 含32×32尾槽，属于物理槽位计数；START不自动清零�
 ### 6.3 一张主图
 
 建议一张单栏图，左右两个子图：(a) PixArt-Sigma；(b) Wan2.1。
-三条线固定 CPU、GPU、FLOPA；共享图例，Times New Roman，PDF嵌入字体。
+两条线固定 GPU、FLOPA；共享图例，Times New Roman，PDF嵌入字体。
 横轴使用真实五个 N，纵轴 ms 采用对数刻度；不以曲线必须打败 GPU 为验收条件。
 主图仅比较一分支完整多头算子，不用 Fig.1 含投影的模块占比直接推模型加速上界。
 
@@ -327,7 +326,7 @@ PPA表征仅对该微基准报告功耗、周期、有效吞吐和能量。严�
 
 只有同一个job、同一窗口的P/C/MAC才计算能效；峰值TOPS另列，不能代替有效吞吐。
 比较变体优先用energy/job与总面积，而非孤立的平均W或MHz。
-CPU/GPU主图只比时间；本轮不将CPU package/GPU整卡功耗与ASIC IP功耗并排算节能倍数。
+GPU/FLOPA主图只比时间；本轮不将GPU整卡功耗与ASIC IP功耗并排算节能倍数。
 
 ### 9.3 功耗流程前置与放行
 
@@ -346,7 +345,7 @@ SRAM Liberty已有internal/leakage及读写/休眠条件表征；不能因PWR-42
 ## 10. 输出字段与执行顺序
 
 只使用两类结果：主图原形算子行；主表PPA/微基准/对照行。
-主图最少字段：model/vector SHA、B/H/N/d、CPU线程/NUMA/GPU后端、各平台精度、
+主图最少字段：model/vector SHA、B/H/N/d、GPU UUID/后端、各平台精度、
 误差/overflow、C_START_to_last_B、输入/输出byte、服务模型、时钟、ms与统计重复数。
 主表最少字段：design/commit、PVT、实现阶段、面积范围、物理存储、P驻留位置、
 活动源/窗口、Pdyn/Pleak/Ptotal、C/MAC/能量、覆盖/冲突、公开来源和NR原因。
@@ -357,7 +356,7 @@ SRAM Liberty已有internal/leakage及读写/休眠条件表征；不能因PWR-42
 | --- | --- |
 | D0 方案冻结 | 前三项已确认；本详细方案的长度、数值门槛和短功耗微基准边界经讨论冻结 |
 | D1 数据/数值pilot | PixArt真实轨迹、最长N shadow、量化/误差和完整H回放可行；不通过先修正确性 |
-| D2 主图 | 固定向量，先1024/2304/4096，再9216/16384；CPU/GPU计时可先独立完成 |
+| D2 主图 | 固定向量，先1024/2304/4096，再9216/16384；GPU计时可先独立完成 |
 | D3 机制 | 经批准的F2优先，F1另做设计评审；功能等价通过后才综合 |
 | D4 活动功耗 | gate-safe N32 pilot→N256主点→必要辅助d/seed，不启动全H长N门级大矩阵 |
 | D5 图表与论文 | 只写完成且资格通过的数据，短caption/脚注，检查四页正文可读性 |

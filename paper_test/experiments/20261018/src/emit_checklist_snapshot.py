@@ -48,13 +48,12 @@ def collect():
                      qualification.get('all_kv_rows_checked') is True)
             record(f'{model}_golden_{n}', ready, directory,
                    '整数参考生成中或排队；精度结果仅诊断')
-            for device, folder in [('cpu', 'cpu_after_shadow'), ('gpu', 'cuda')]:
+            for device, folder in [('gpu', 'cuda')]:
                 path = ROOT / 'baselines' / folder / f'{model}_p{pixel}.json'
                 report = load(path)
                 ready = (report.get('status') == 'pass_timing_only' and
                          bool(report.get('samples_ms')))
-                note = ('等待本轮 shadow 退出后复测' if device == 'cpu'
-                        else '等待空闲 GPU 或排队')
+                note = '等待空闲 GPU 或排队'
                 record(f'{model}_{device}_{n}', ready, path, note)
     return {'updated_utc': datetime.datetime.now(datetime.timezone.utc).isoformat(),
             'items': items}

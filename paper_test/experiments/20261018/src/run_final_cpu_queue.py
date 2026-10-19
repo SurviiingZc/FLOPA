@@ -2,6 +2,7 @@
 
 import argparse
 import fcntl
+import json
 import subprocess
 import sys
 import time
@@ -14,6 +15,11 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--output', type=Path, required=True)
     args = parser.parse_args()
+    scope_path = args.output / 'evaluation_scope.json'
+    if scope_path.exists() and not json.loads(scope_path.read_text()).get(
+            'cpu_baseline_enabled', True):
+        print('CPU_BASELINE_CANCELLED_BY_USER', flush=True)
+        return
     target = args.output / 'baselines/cpu_after_shadow'
     target.mkdir(parents=True, exist_ok=True)
     lock = (target / 'worker.lock').open('w')

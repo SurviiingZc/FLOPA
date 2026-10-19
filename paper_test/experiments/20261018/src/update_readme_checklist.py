@@ -111,7 +111,6 @@ def main():
             (f'{model}_{kind}_{n}', f'N={n:,}：{label}')
             for n in (1024, 2304, 4096, 9216, 16384)
             for kind, label in [('golden', '完整整数参考与误差诊断'),
-                                ('cpu', 'CPU 完整多头 SDPA 正式计时'),
                                 ('gpu', 'GPU 完整多头 SDPA 正式计时'),
                                 ('rtl', 'FLOPA 完整多头 RTL 周期与逐字节核对')]
         ])
@@ -137,7 +136,7 @@ def main():
         ('mcraft_power', 'MCRAFT N256/H1/d64 辅助活动功耗'),
         ('traffic_counters', '核验 loader、片上 P/O 访问计数与论文机制结论的对应关系'),
         ('workbook', '结果回填精简 Excel：主图原始数据、主表及对照数据'),
-        ('figure', 'Python 绘制两模型 CPU/GPU/FLOPA 延迟主图，Times New Roman'),
+        ('figure', 'Python 绘制两模型 GPU/FLOPA 延迟主图，Times New Roman'),
         ('table', '生成一张跨栏 PPA/吞吐主表，区分外部文献与同条件消融'),
         ('paper', '正文 Callback、结果版本及四页正文/一页参考文献排版核验'),
     ])

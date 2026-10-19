@@ -2,6 +2,7 @@
 
 import argparse
 import fcntl
+import json
 import os
 import subprocess
 import sys
@@ -17,6 +18,11 @@ def main():
     parser.add_argument('--device', choices=['cpu', 'cuda'], required=True)
     parser.add_argument('--diagnostic-precision', action='store_true')
     args = parser.parse_args()
+    scope_path = args.output / 'evaluation_scope.json'
+    if args.device == 'cpu' and scope_path.exists() and not json.loads(
+            scope_path.read_text()).get('cpu_baseline_enabled', True):
+        print('CPU_BASELINE_CANCELLED_BY_USER', flush=True)
+        return
     target = args.output / 'baselines' / args.device
     target.mkdir(parents=True, exist_ok=True)
     lock_handle = (target / 'worker.lock').open('w')

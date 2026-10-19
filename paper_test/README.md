@@ -1,10 +1,12 @@
+> 2026-10-19 平台调整：依用户决定，主图仅比较 GPU 与 FLOPA；取消 CPU 性能测试与复测。已有 CPU 计时保留为历史，不用于论文比较。CPU 上的整数参考/误差诊断仍继续，它们不属于 CPU 性能基线。
+
 # FLOPA：ISCAS 本轮实验清单
 
 当前阶段：先完成现有架构的测试；数值精度优化下一轮进行。
 主版本 F0 保持不变，F1/F2 使用独立对照版本。
 
 <!-- CURRENT_TEST_CHECKLIST_BEGIN -->
-更新时间：2026-10-19T15:30:07+08:00；已核验 **24/69** 项。
+更新时间：2026-10-19T15:46:48+08:00；已核验 **27/59** 项。
 
 勾选只表示本项通过所列检查；运行中、排队、失败及待复测均保持空框。
 
@@ -21,47 +23,37 @@
 ### B. 主图 — PixArt-Sigma：H=16，d=72
 
 - [x] N=1,024：完整整数参考与误差诊断；完成并核验。 <!-- task:pixart_golden_1024 -->
-- [ ] N=1,024：CPU 完整多头 SDPA 正式计时；等待本轮 shadow 退出后复测。 <!-- task:pixart_cpu_1024 -->
 - [x] N=1,024：GPU 完整多头 SDPA 正式计时；完成并核验。 <!-- task:pixart_gpu_1024 -->
 - [x] N=1,024：FLOPA 完整多头 RTL 周期与逐字节核对；完成并核验。 <!-- task:pixart_rtl_1024 -->
 - [x] N=2,304：完整整数参考与误差诊断；完成并核验。 <!-- task:pixart_golden_2304 -->
-- [ ] N=2,304：CPU 完整多头 SDPA 正式计时；等待本轮 shadow 退出后复测。 <!-- task:pixart_cpu_2304 -->
 - [x] N=2,304：GPU 完整多头 SDPA 正式计时；完成并核验。 <!-- task:pixart_gpu_2304 -->
-- [ ] N=2,304：FLOPA 完整多头 RTL 周期与逐字节核对；待启动。 <!-- task:pixart_rtl_2304 -->
+- [ ] N=2,304：FLOPA 完整多头 RTL 周期与逐字节核对；RTL 回放运行中。 <!-- task:pixart_rtl_2304 -->
 - [x] N=4,096：完整整数参考与误差诊断；完成并核验。 <!-- task:pixart_golden_4096 -->
-- [ ] N=4,096：CPU 完整多头 SDPA 正式计时；等待本轮 shadow 退出后复测。 <!-- task:pixart_cpu_4096 -->
 - [x] N=4,096：GPU 完整多头 SDPA 正式计时；完成并核验。 <!-- task:pixart_gpu_4096 -->
 - [ ] N=4,096：FLOPA 完整多头 RTL 周期与逐字节核对；待启动。 <!-- task:pixart_rtl_4096 -->
 - [ ] N=9,216：完整整数参考与误差诊断；整数参考生成中或排队；精度结果仅诊断。 <!-- task:pixart_golden_9216 -->
-- [ ] N=9,216：CPU 完整多头 SDPA 正式计时；等待本轮 shadow 退出后复测。 <!-- task:pixart_cpu_9216 -->
 - [x] N=9,216：GPU 完整多头 SDPA 正式计时；完成并核验。 <!-- task:pixart_gpu_9216 -->
 - [ ] N=9,216：FLOPA 完整多头 RTL 周期与逐字节核对；待启动。 <!-- task:pixart_rtl_9216 -->
 - [ ] N=16,384：完整整数参考与误差诊断；整数参考生成中或排队；精度结果仅诊断。 <!-- task:pixart_golden_16384 -->
-- [ ] N=16,384：CPU 完整多头 SDPA 正式计时；等待本轮 shadow 退出后复测。 <!-- task:pixart_cpu_16384 -->
-- [ ] N=16,384：GPU 完整多头 SDPA 正式计时；等待空闲 GPU 或排队。 <!-- task:pixart_gpu_16384 -->
+- [x] N=16,384：GPU 完整多头 SDPA 正式计时；完成并核验。 <!-- task:pixart_gpu_16384 -->
 - [ ] N=16,384：FLOPA 完整多头 RTL 周期与逐字节核对；待启动。 <!-- task:pixart_rtl_16384 -->
 
 ### B. 主图 — Wan2.1：H=12，d=128
 
 - [x] N=1,024：完整整数参考与误差诊断；完成并核验。 <!-- task:wan_golden_1024 -->
-- [ ] N=1,024：CPU 完整多头 SDPA 正式计时；等待本轮 shadow 退出后复测。 <!-- task:wan_cpu_1024 -->
 - [x] N=1,024：GPU 完整多头 SDPA 正式计时；完成并核验。 <!-- task:wan_gpu_1024 -->
-- [ ] N=1,024：FLOPA 完整多头 RTL 周期与逐字节核对；RTL 回放运行中。 <!-- task:wan_rtl_1024 -->
+- [x] N=1,024：FLOPA 完整多头 RTL 周期与逐字节核对；完成并核验。 <!-- task:wan_rtl_1024 -->
 - [x] N=2,304：完整整数参考与误差诊断；完成并核验。 <!-- task:wan_golden_2304 -->
-- [ ] N=2,304：CPU 完整多头 SDPA 正式计时；等待本轮 shadow 退出后复测。 <!-- task:wan_cpu_2304 -->
 - [x] N=2,304：GPU 完整多头 SDPA 正式计时；完成并核验。 <!-- task:wan_gpu_2304 -->
-- [ ] N=2,304：FLOPA 完整多头 RTL 周期与逐字节核对；待启动。 <!-- task:wan_rtl_2304 -->
+- [ ] N=2,304：FLOPA 完整多头 RTL 周期与逐字节核对；RTL 回放运行中。 <!-- task:wan_rtl_2304 -->
 - [x] N=4,096：完整整数参考与误差诊断；完成并核验。 <!-- task:wan_golden_4096 -->
-- [ ] N=4,096：CPU 完整多头 SDPA 正式计时；等待本轮 shadow 退出后复测。 <!-- task:wan_cpu_4096 -->
 - [x] N=4,096：GPU 完整多头 SDPA 正式计时；完成并核验。 <!-- task:wan_gpu_4096 -->
 - [ ] N=4,096：FLOPA 完整多头 RTL 周期与逐字节核对；待启动。 <!-- task:wan_rtl_4096 -->
 - [ ] N=9,216：完整整数参考与误差诊断；整数参考生成中或排队；精度结果仅诊断。 <!-- task:wan_golden_9216 -->
-- [ ] N=9,216：CPU 完整多头 SDPA 正式计时；等待本轮 shadow 退出后复测。 <!-- task:wan_cpu_9216 -->
 - [x] N=9,216：GPU 完整多头 SDPA 正式计时；完成并核验。 <!-- task:wan_gpu_9216 -->
 - [ ] N=9,216：FLOPA 完整多头 RTL 周期与逐字节核对；待启动。 <!-- task:wan_rtl_9216 -->
 - [ ] N=16,384：完整整数参考与误差诊断；整数参考生成中或排队；精度结果仅诊断。 <!-- task:wan_golden_16384 -->
-- [ ] N=16,384：CPU 完整多头 SDPA 正式计时；等待本轮 shadow 退出后复测。 <!-- task:wan_cpu_16384 -->
-- [ ] N=16,384：GPU 完整多头 SDPA 正式计时；等待空闲 GPU 或排队。 <!-- task:wan_gpu_16384 -->
+- [x] N=16,384：GPU 完整多头 SDPA 正式计时；完成并核验。 <!-- task:wan_gpu_16384 -->
 - [ ] N=16,384：FLOPA 完整多头 RTL 周期与逐字节核对；待启动。 <!-- task:wan_rtl_16384 -->
 
 ### C. 主表 — PPA、活动功耗与匹配对照
@@ -88,7 +80,7 @@
 - [ ] MCRAFT N256/H1/d64 辅助活动功耗；待启动。 <!-- task:mcraft_power -->
 - [ ] 核验 loader、片上 P/O 访问计数与论文机制结论的对应关系；待启动。 <!-- task:traffic_counters -->
 - [ ] 结果回填精简 Excel：主图原始数据、主表及对照数据；待启动。 <!-- task:workbook -->
-- [ ] Python 绘制两模型 CPU/GPU/FLOPA 延迟主图，Times New Roman；待启动。 <!-- task:figure -->
+- [ ] Python 绘制两模型 GPU/FLOPA 延迟主图，Times New Roman；待启动。 <!-- task:figure -->
 - [ ] 生成一张跨栏 PPA/吞吐主表，区分外部文献与同条件消融；待启动。 <!-- task:table -->
 - [ ] 正文 Callback、结果版本及四页正文/一页参考文献排版核验；待启动。 <!-- task:paper -->
 
@@ -97,9 +89,9 @@
 ## 工作负载与完成标准
 
 - 主图：PixArt-Sigma 与 Wan2.1，N=1024/2304/4096/9216/16384，B=1 条件分支。
-  比较完整多头 SDPA，排除 QKV/输出投影与 RoPE；CPU/GPU/FLOPA 使用同源真实 Q/K/V。
-- CPU 为双路 Xeon Gold 6133，GPU 为单张 RTX A6000。CPU 正式行等待本轮整数参考
-  计算结束后复测，原先并发期间的计时保留作初测；GPU 正式计时等待空闲条件。
+  比较完整多头 SDPA，排除 QKV/输出投影与 RoPE；GPU/FLOPA 使用同源真实 Q/K/V。
+- GPU 为单张 RTX A6000，正式计时使用空闲设备与实际优化后端。CPU 性能对比已取消；
+  既有 CPU 数据仅保留历史，CPU 上的整数/浮点参考计算仍用于功能和数值核对。
 - FLOPA 延迟使用真实 RTL START 到最后输出 B 握手的周期乘 1.60ns 综合目标周期，
   明确标注非芯片实测以及理想 128-bit loader 服务模型。
 - 完整整数参考和 RTL 功能检查仍覆盖所有 head、Q/K/V 行，包含 INT32 回绕行为；
@@ -124,7 +116,7 @@
 - 本轮口径：[PRECISION_DEFERRAL_20261019_ZH.md](PRECISION_DEFERRAL_20261019_ZH.md)。
 - 本轮状态：[LATEST_RUN_20261019_ZH.md](experiments/20261018/LATEST_RUN_20261019_ZH.md)。
 - 本地结果：`experiments/20261018/jobs/`、`checklist_state.json`。
-- 模型与 CPU/GPU 数据：13 服务器 `/10T/zhangcheng/flopa_evaluation_20261018`。
+- 模型与 GPU 数据：13 服务器 `/10T/zhangcheng/flopa_evaluation_20261018`。
 - F2 独立工作区：`/data/workspaces/zhangcheng/flopa_eval_f2`。
 - RTL 文档：[优化计划](RTL_OPTIMIZATION_PLAN_ZH.md)、[实现报告](IMPLEMENTATION_REPORT.md)。
 

@@ -1,0 +1,12 @@
+{
+    "updated_utc": "2026-10-19T07:43:41.463607+00:00",
+    "cpu_baseline_enabled": false,
+    "gpu_baseline_enabled": true,
+    "main_figure_platforms": [
+        "GPU",
+        "FLOPA"
+    ],
+    "reason": "User removed the CPU performance baseline on 2026-10-19",
+    "cpu_reference_math_remains_required": true,
+    "historical_cpu_measurements": "retained, excluded from paper comparisons"
+}
