@@ -80,6 +80,16 @@ def main():
     good = ((synth / 'results/attention_accel_top.ddc').exists() and timing.exists() and
             'setup_violating_paths=0' in timing.read_text())
     add('f2_ppa', good, synth, '综合运行中或待检查')
+    for n in (1024, 4096):
+        for model, count in [('pixart', 28), ('wan', 30)]:
+            suffix = '' if n == 1024 else f'_n{n}'
+            path = RUN / 'results' / f'layerstep_{model}{suffix}.json'
+            report = load(path)
+            done = report.get('status') == 'pass_all_layers' and report.get('layers') == count
+            complete = sum(load(folder / 'status.json').get('state') == 'pass'
+                           for folder in (RUN / 'jobs').glob(f'{model}_n{n}_l*_s15'))
+            add(model + '_layerstep' + suffix + '_rtl', done, path,
+                f'已核验{complete}/{count}层；逐层回放运行中或排队')
     for key, entry in manual.items():
         if entry.get('done') is True:
             assert entry.get('evidence'), 'Checked manual item needs evidence: ' + key
@@ -139,6 +149,22 @@ def main():
         ('figure', 'Python 绘制两模型 GPU/FLOPA 延迟主图，Times New Roman'),
         ('table', '生成一张跨栏 PPA/吞吐主表，区分外部文献与同条件消融'),
         ('paper', '正文 Callback、结果版本及四页正文/一页参考文献排版核验'),
+    ])
+    group('E. 指定时间步的全部层SDPA覆盖（N1024，步索引15，条件分支）', [
+        (f'{model}_layerstep_{kind}', f'{title}：{label}')
+        for model, title in [('pixart', 'PixArt全部28层'), ('wan', 'Wan全部30层')]
+        for kind, label in [('capture', '真实Q/K/V采集'),
+                            ('golden', '逐层独立校准与完整整数参考'),
+                            ('gpu', '驻留SDPA序列的累计GPU计时'),
+                            ('rtl', '所有层RTL通过并累加实际周期')]
+    ])
+    group('F. 正式跨层覆盖（N4096，步索引15，条件分支；N1024仅流程验证）', [
+        (f'{model}_layerstep_n4096_{kind}', f'{title}：{label}')
+        for model, title in [('pixart', 'PixArt全部28层'), ('wan', 'Wan全部30层')]
+        for kind, label in [('capture', '真实Q/K/V采集'),
+                            ('golden', '逐层冻结校准与完整整数参考'),
+                            ('gpu', '驻留SDPA序列的累计GPU计时'),
+                            ('rtl', '所有层RTL通过并累加实际周期')]
     ])
     done = sum(line.startswith('- [x]') for line in groups)
     count = sum(line.startswith('- [') for line in groups)

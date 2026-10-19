@@ -1,0 +1,16 @@
+{
+    "workbook": {
+        "done": false,
+        "status": "当前实测已回填；新结果自动同步，待全量图表数据完成",
+        "evidence": [
+            "evaluation_data.xlsx：两张基础表；待测数值为空"
+        ]
+    },
+    "paper": {
+        "done": false,
+        "status": "证据/计时边界已入稿；最终图表与四页检查待完成，内置编译宿主阻碍",
+        "evidence": [
+            "conference_101719.tex：Introduction、Evaluation、Conclusion已统一口径"
+        ]
+    }
+}

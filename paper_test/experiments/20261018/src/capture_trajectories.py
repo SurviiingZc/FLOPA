@@ -200,6 +200,8 @@ class Recorder:
             return
         wanted = (self.current_step == 15 and
                   self.current_layer == self.config['layers'][1])
+        if self.task.get('all_layers_step') is not None:
+            wanted = self.current_step == self.task['all_layers_step']
         if self.task.get('qualification', False):
             wanted |= (self.current_step in (0, 15, 29) and
                        self.current_layer in self.config['layers'])
@@ -312,7 +314,7 @@ def tasks(config):
 
 
 def capture(model_name, output, allow_shared_capture=False, diagnostic_precision=False,
-            main_only=False, microbench=False):
+            main_only=False, microbench=False, all_layers_step=False, layerstep_n=1024):
     config = MODELS[model_name]
     limit_gib = 8 if allow_shared_capture else None
     uuid = wait_for_gpu(output, capture_limit_gib=limit_gib)
@@ -355,6 +357,12 @@ def capture(model_name, output, allow_shared_capture=False, diagnostic_precision
              'prompt': config['calibration'][index], 'qualification': False}
             for index, seed in enumerate((1001, 1002))
         ]
+    if all_layers_step:
+        selected_tasks = [{
+            'role': 'layerstep', 'pixels': config['pixels'][0 if layerstep_n == 1024 else 2],
+            'seed': 301,
+            'prompt': config['main_prompt'], 'qualification': False, 'all_layers_step': 15,
+        }]
     for task in selected_tasks:
         if main_only and (task['role'] != 'evaluation' or task['seed'] != 301):
             continue
@@ -397,7 +405,10 @@ def capture(model_name, output, allow_shared_capture=False, diagnostic_precision
             assert len(rec.stats) == (28 if model_name == 'pixart' else 30)
             assert all(x['calls'] == 30 for x in rec.stats.values())
         else:
-            assert len(rec.saved) == (9 if task.get('qualification') else 1)
+            expected = 9 if task.get('qualification') else 1
+            if task.get('all_layers_step') is not None:
+                expected = 28 if model_name == 'pixart' else 30
+            assert len(rec.saved) == expected
         timesteps = pipe.scheduler.timesteps.detach().cpu().tolist()
         write_json(folder / 'complete.json', {
             **task, 'status': 'passed_capture', 'forward_calls': rec.forward_count,
@@ -413,6 +424,8 @@ def capture(model_name, output, allow_shared_capture=False, diagnostic_precision
     completion = 'main_capture_complete.json' if main_only else 'capture_complete.json'
     if microbench:
         completion = 'power_calibration_complete.json'
+    if all_layers_step:
+        completion = f'layerstep_n{layerstep_n}_capture_complete.json'
     write_json(output / model_name / completion, {'status': 'passed_capture'})
 
 
@@ -425,6 +438,8 @@ if __name__ == '__main__':
     parser.add_argument('--diagnostic-precision', action='store_true')
     parser.add_argument('--main-only', action='store_true')
     parser.add_argument('--microbench-calibration', action='store_true')
+    parser.add_argument('--all-layers-step', action='store_true')
+    parser.add_argument('--layerstep-n', type=int, choices=[1024, 4096], default=1024)
     args = parser.parse_args()
     if args.embeddings_only:
         prepare_embeddings(args.model, args.output)
@@ -432,4 +447,5 @@ if __name__ == '__main__':
         gpu_lock = (args.output / 'gpu_capture_timing.lock').open('w')
         fcntl.flock(gpu_lock, fcntl.LOCK_EX)
         capture(args.model, args.output, args.allow_shared_capture,
-                args.diagnostic_precision, args.main_only, args.microbench_calibration)
+                args.diagnostic_precision, args.main_only, args.microbench_calibration,
+                args.all_layers_step, args.layerstep_n)

@@ -35,6 +35,23 @@ def collect():
                (ROOT / model / 'frozen_scales.json').exists(), ROOT / model)
         micro = ROOT / 'power_vectors' / f'{model}_n256_s301/replay_manifest.json'
         record(model + '_power_calibration', micro.exists(), micro)
+        count = 28 if model == 'pixart' else 30
+        for layer_n, pixel_index in [(1024, 0), (4096, 2)]:
+            suffix = '' if layer_n == 1024 else f'_n{layer_n}'
+            prefix = model + '_layerstep' + suffix
+            layer_point = ROOT / model / f'layerstep_p{pixels[pixel_index]}_seed301'
+            record(prefix + '_capture',
+                   load(layer_point / 'complete.json').get('status') == 'passed_capture',
+                   layer_point)
+            exported = ROOT / model / f'layerstep{suffix}_export_complete.json'
+            record(prefix + '_golden', load(exported).get('layers') == count,
+                   exported, '全部层整数参考生成中')
+            gpu_path = ROOT / 'baselines/layerstep_gpu' / f'{model}{suffix}.json'
+            gpu_report = load(gpu_path)
+            record(prefix + '_gpu', gpu_report.get('status') == 'pass_timing_only' and
+                   gpu_report.get('layers') == count, gpu_path, '等待空闲GPU或排队')
+            if gpu_report:
+                items[prefix + '_gpu']['result'] = gpu_report
         for n, pixel, point in zip(LENGTHS, pixels, points):
             directory = ROOT / 'qualification' / model / point.name / (
                 f'l{layer:02d}_s15/full')

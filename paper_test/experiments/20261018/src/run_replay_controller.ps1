@@ -116,6 +116,11 @@ for ($taskRound = 0; $taskRound -lt 10080; $taskRound++) {
         }
         $taskState | ConvertTo-Json -Depth 20 | Set-Content -Encoding UTF8 `
             -LiteralPath "$taskBase\replay_controller_state.json"
+        try {
+            & "$taskBase\refresh_evaluation.ps1"
+        } catch {
+            Write-Output ('WORKBOOK_UPDATE_PENDING ' + $_.Exception.Message)
+        }
         $taskFinishedModels = @($taskReady.failed_models).Count
         foreach ($taskModel in @('pixart', 'wan')) {
             $taskCount = @($taskDone.Keys | Where-Object {
