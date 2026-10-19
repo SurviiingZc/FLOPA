@@ -12,5 +12,20 @@
         "evidence": [
             "conference_101719.tex：Introduction、Evaluation、Conclusion已统一口径"
         ]
+    },
+    "clock_power_audit": {
+        "done": false,
+        "status": "待审查；当前d72点clock-network占97.22%",
+        "evidence": "ENERGY_EVALUATION_ZH.md"
+    },
+    "native_energy_method": {
+        "done": false,
+        "status": "待核验长N活动方法；完整门级成本较高",
+        "evidence": "ENERGY_EVALUATION_ZH.md"
+    },
+    "native_energy": {
+        "done": false,
+        "status": "待测；未测保持空白，不以N256/H1替代原形算子",
+        "evidence": "ENERGY_EVALUATION_ZH.md"
     }
 }

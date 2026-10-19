@@ -72,6 +72,28 @@ def collect():
                          bool(report.get('samples_ms')))
                 note = '等待空闲 GPU 或排队'
                 record(f'{model}_{device}_{n}', ready, path, note)
+            path = ROOT / 'baselines/gpu_energy' / f'{model}_p{pixel}.json'
+            energy = load(path)
+            trials = energy.get('trials', [])
+            ready = (energy.get('status') == 'pass_energy_only' and len(trials) == 3 and
+                     all(trial.get('wall_s', 0) >= 10 and
+                         trial.get('actual_sdpa_calls', 0) > 0 and
+                         trial.get('energy_j', 0) > 0 for trial in trials))
+            key = f'{model}_gpu_energy_{n}'
+            record(key, ready, path, '等待空闲GPU或能量测量排队')
+            if ready:
+                items[key]['result'] = {
+                    key: energy[key] for key in ('status', 'gpu_uuid', 'shape', 'dtype',
+                        'backend', 'vector_sha256', 'median_gross_uj_per_sdpa',
+                        'minimum_gross_uj_per_sdpa', 'maximum_gross_uj_per_sdpa', 'scope')
+                }
+                items[key]['result']['source'] = str(path)
+                items[key]['result']['source_sha256'] = hashlib.sha256(
+                    path.read_bytes()).hexdigest()
+                items[key]['result']['trials'] = [
+                    {field: trial[field] for field in ('energy_j', 'wall_s',
+                        'actual_sdpa_calls', 'mean_board_w', 'gross_uj_per_sdpa',
+                        'sustained_ms_per_sdpa')} for trial in trials]
     return {'updated_utc': datetime.datetime.now(datetime.timezone.utc).isoformat(),
             'items': items}
 

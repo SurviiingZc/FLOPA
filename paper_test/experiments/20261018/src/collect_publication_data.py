@@ -27,7 +27,7 @@ def digest(path):
 def main():
     result = {'collected_utc': datetime.now(timezone.utc).isoformat(),
               'synthesis': load(PROJECT / 'paper_test/synthesis_summary.json'),
-              'native': {}, 'power': {}, 'layerstep': {}, 'variants': {}}
+              'native': {}, 'power': {}, 'layerstep': {}, 'variants': {}, 'gpu_energy': {}}
     f2 = Path('/data/workspaces/zhangcheng/flopa_eval_f2')
     mapped = f2 / 'asic/dc/work/synth/tt/evaluation_f2/attention_accel_top'
     if (mapped / 'results/attention_accel_top.ddc').exists():
@@ -46,6 +46,11 @@ def main():
             'source': str(mapped), 'physical_timing_signoff': False,
         }
     snapshot = load(RUN / 'checklist_model_snapshot.json')
+    for model in ('pixart', 'wan'):
+        for n in (1024, 2304, 4096, 9216, 16384):
+            key = f'{model}_gpu_energy_{n}'
+            result['gpu_energy'][f'{model}_n{n}'] = snapshot.get('items', {}).get(
+                key, {}).get('result', {})
     for n in (1024, 4096):
         for model in ('pixart', 'wan'):
             suffix = '' if n == 1024 else f'_n{n}'

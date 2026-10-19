@@ -166,6 +166,15 @@ def main():
                             ('gpu', '驻留SDPA序列的累计GPU计时'),
                             ('rtl', '所有层RTL通过并累加实际周期')]
     ])
+    group('G. 能量主比较（完整多头SDPA，延迟数据保留）', [
+        (f'{model}_gpu_energy_{n}', f'{title} N={n:,}：GPU三窗口整卡能量/实际调用数')
+        for model, title in [('pixart', 'PixArt'), ('wan', 'Wan')]
+        for n in (1024, 2304, 4096, 9216, 16384)
+    ] + [
+        ('clock_power_audit', 'ASIC clock-network分组、时钟负载及SAIF映射审查'),
+        ('native_energy_method', '原形长N/全head ASIC活动能量方法与可行性核验'),
+        ('native_energy', '主图原形完整多头ASIC能量；不由N256/H1功率外推'),
+    ])
     done = sum(line.startswith('- [x]') for line in groups)
     count = sum(line.startswith('- [') for line in groups)
     now = datetime.datetime.now(datetime.timezone.utc).astimezone().isoformat(timespec='seconds')

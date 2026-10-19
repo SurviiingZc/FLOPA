@@ -8,5 +8,9 @@
     ],
     "reason": "User removed the CPU performance baseline on 2026-10-19",
     "cpu_reference_math_remains_required": true,
-    "historical_cpu_measurements": "retained, excluded from paper comparisons"
+    "historical_cpu_measurements": "retained, excluded from paper comparisons",
+    "primary_cross_platform_metric": "gross_energy_per_complete_multihead_sdpa",
+    "retain_latency": true,
+    "gpu_board_and_asic_ip_boundaries_differ": true,
+    "allow_unvalidated_power_extrapolation": false
 }
