@@ -1,4 +1,5 @@
 *_build/
+replay_build_long/
 replay_smoke/
 *.saif
 *.observed.bin

@@ -63,11 +63,20 @@ def main():
     assert manifest['nkv'] == manifest['nq']
     assert (manifest['heads'], manifest['d']) in ((16, 72), (12, 128))
     executable = ROOT / 'replay_build/simv'
+    if manifest['nq'] >= 9216:
+        readiness = ROOT / 'replay_build_long/ready.json'
+        assert readiness.exists(), 'Long-watchdog executable not yet qualified'
+        ready = json.loads(readiness.read_text())
+        executable = ROOT / 'replay_build_long/simv'
+        assert sha(executable) == ready['executable_sha256']
     started = time.time()
     report = {'state': 'running', 'manifest': manifest, 'start_unix': started,
               'executable_sha256': sha(executable), 'clock_period_ns': 1.6,
               'scope': 'full-head native-shape RTL, ideal 128-bit streaming service',
               'frequency_status': 'synthesis target, not measured silicon'}
+    report['accuracy_pass'] = manifest.get('accuracy_pass', True)
+    report['precision_gate_is_diagnostic'] = manifest.get('precision_gate_is_diagnostic', False)
+    report['functional_pass_does_not_imply_accuracy_pass'] = True
     write(status, report)
     command = [str(executable), '+VECTOR_DIR=' + str(folder),
         '+RESULT=' + str(target / 'result.csv'), '+NQ=' + str(manifest['nq']),

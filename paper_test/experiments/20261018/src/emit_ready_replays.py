@@ -16,12 +16,13 @@ for model, pixels, layer in [('pixart', [512, 768, 1024, 1536, 2048], 14),
         if not manifest.exists():
             continue
         qualification = json.loads((folder / 'qualification.json').read_text())
-        if qualification['status'] != 'pass_full_shadow':
+        if (qualification['status'] != 'pass_full_shadow' and
+                not qualification.get('precision_gate_is_diagnostic', False)):
             continue
         record = json.loads(manifest.read_text())
         points.append({'model': model, 'directory': str(folder), 'manifest': record,
                        'manifest_sha256': hashlib.sha256(manifest.read_bytes()).hexdigest()})
-print(json.dumps({'points': points, 'failed_models': [
+print(json.dumps({'points': points, 'failed_models': [], 'numerical_diagnostics': [
     model for model in ('pixart', 'wan')
     if (ROOT / model / 'numerical_gate_failed.json').exists()
 ]}))

@@ -66,7 +66,7 @@ def metrics(answer, reference):
     }
 
 
-def qualify(path, frozen, output, sample_only=False):
+def qualify(path, frozen, output, sample_only=False, diagnostic_precision=False):
     vector = torch.load(path, map_location='cpu', weights_only=True)
     metadata = vector['metadata']
     config = frozen['scales'][str(metadata['layer'])]
@@ -78,7 +78,11 @@ def qualify(path, frozen, output, sample_only=False):
     if report_path.exists():
         existing = json.loads(report_path.read_text())
         assert existing['vector_sha256'] == sha(path)
-        return existing
+        if not diagnostic_precision or (directory / 'replay_manifest.json').exists():
+            return existing
+        original = directory / 'qualification_before_precision_deferral.json'
+        if not original.exists():
+            original.write_bytes(report_path.read_bytes())
     directory.mkdir(parents=True, exist_ok=True)
     quantized = {}
     clipping = {}
@@ -93,6 +97,14 @@ def qualify(path, frozen, output, sample_only=False):
     per_head = []
     integer_outputs = []
     for head in range(heads):
+        cached_report = directory / f'head{head:02d}.json'
+        cached_output = directory / f'head{head:02d}.output.bin'
+        if cached_report.exists() and cached_output.exists():
+            integer_output = np.fromfile(cached_output, dtype=np.int8)
+            integer_output = integer_output.reshape(len(indices), vector['v'].shape[3])
+            per_head.append(json.loads(cached_report.read_text()))
+            integer_outputs.append(integer_output)
+            continue
         original = [vector[name][:, head:head + 1].float() for name in ('q', 'k', 'v')]
         qkv_int = [quantized[name][0, head] for name in ('q', 'k', 'v')]
         integer_output, statistics = shadow(
@@ -120,6 +132,7 @@ def qualify(path, frozen, output, sample_only=False):
                             result['total_error']['cosine'] >= 0.99)
         per_head.append(result)
         integer_outputs.append(integer_output)
+        integer_output.tofile(cached_output)
         write_json(directory / f'head{head:02d}.json', result)
         print('QUALIFIED_HEAD', str(path), head, result['passes'],
               result['total_error'], statistics['pv_overflow_events'], flush=True)
@@ -132,9 +145,13 @@ def qualify(path, frozen, output, sample_only=False):
         'input_clipping_counts': clipping, 'heads': per_head,
         'query_indices': indices.tolist(), 'all_query_rows_checked': not sample_only,
         'all_kv_rows_checked': True,
+        'precision_gate_is_diagnostic': diagnostic_precision,
+        'accuracy_pass': passes,
+        'arithmetic_scope': 'unchanged current RTL, including signed INT32 wrap',
+        'shadow_sha256': sha(Path(__file__).with_name('fixed_point_shadow.py')),
     }
     write_json(report_path, report)
-    if passes and not sample_only:
+    if (passes or diagnostic_precision) and not sample_only:
         for name, tensor in quantized.items():
             tensor.tofile(directory / (name + '.bin'))
         np.stack(integer_outputs).tofile(directory / 'o.bin')
@@ -143,6 +160,10 @@ def qualify(path, frozen, output, sample_only=False):
             'd': vector['q'].shape[3], 'score_scale': config['score']['register'],
             'out_scale': config['out']['register'],
             'qualification_sha256': sha(report_path),
+            'precision_gate_is_diagnostic': diagnostic_precision,
+            'accuracy_pass': passes,
+            'arithmetic_scope': report['arithmetic_scope'],
+            'shadow_sha256': report['shadow_sha256'],
             'files_sha256': {name: sha(directory / name)
                              for name in ('q.bin', 'k.bin', 'v.bin', 'o.bin')},
         })
@@ -152,11 +173,36 @@ def qualify(path, frozen, output, sample_only=False):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--diagnostic-precision', action='store_true')
+    parser.add_argument('--model', choices=sorted(MODELS))
     args = parser.parse_args()
-    lock_handle = (args.output / 'qualification.lock').open('w')
+    suffix = '_' + args.model if args.model else ''
+    lock_handle = (args.output / ('qualification' + suffix + '.lock')).open('w')
     fcntl.flock(lock_handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
     torch.set_num_threads(8)
     torch.set_grad_enabled(False)
+    if args.diagnostic_precision:
+        pending = {(model, pixel) for model, config in MODELS.items()
+                   if args.model is None or args.model == model for pixel in config['pixels']}
+        for _ in range(48 * 60 * 2):
+            for model, pixel in sorted(pending):
+                frozen = calibration(args.output, model)
+                point = args.output / model / f'evaluation_p{pixel}_seed301'
+                if frozen is None or not (point / 'complete.json').exists():
+                    continue
+                layer = MODELS[model]['layers'][1]
+                report = qualify(point / f'l{layer:02d}_s15.pt', frozen, args.output,
+                                 diagnostic_precision=True)
+                print('EXPORTED_FUNCTIONAL_REPLAY', model, pixel,
+                      'accuracy_pass=', report['accuracy_pass'], flush=True)
+                pending.remove((model, pixel))
+            if not pending:
+                write_json(args.output / ('diagnostic_export' + suffix + '_complete.json'), {
+                    'status': 'all_full_vectors_exported', 'precision_qualified': False,
+                })
+                return
+            time.sleep(30)
+        raise RuntimeError('Diagnostic replay export exceeded its 48-hour limit')
     remaining = set(MODELS)
     for _ in range(48 * 60 * 2):
         for model in sorted(remaining):

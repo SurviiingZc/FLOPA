@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+task_root=/data/workspaces/zhangcheng/flash_attention
+task_run="$task_root/paper_test/experiments/20261018"
+task_mapped="$task_root/asic/dc/work/synth/tt/diffusion_runtime_d/attention_accel_top"
+task_job="$1"
+[[ "$task_job" =~ ^power_((pixart|wan)|f2_pixart)_n256_s301$ ]]
+if [[ "$task_job" == power_f2_pixart_n256_s301 ]]; then
+    task_mapped=/data/workspaces/zhangcheng/flopa_eval_f2/asic/dc/work/synth/tt
+    task_mapped="$task_mapped/evaluation_f2/attention_accel_top"
+fi
+source "$task_root/asic/scripts/library_paths.sh"
+fa_select_libraries "$task_root" tt
+export FA_ROOT="$task_root"
+export FA_DC_WORK="$task_run/jobs/$task_job/power_work"
+export FA_CLOCK_PERIOD=1.6
+export FA_DDC_FILE="$task_mapped/results/attention_accel_top.ddc"
+export FA_SAIF_FILE="$task_run/jobs/$task_job/activity.saif"
+export FA_SAIF_STRIP_PATH=tb_paper_replay/dut
+export FA_SAIF_INSTANCE=attention_accel_top
+export FA_POWER_REPORT_DIR="$task_run/jobs/$task_job/power_reports"
+export FA_RTL_HASH
+FA_RTL_HASH=$(awk -F= '$1=="FA_RTL_HASH" {print $2}' "$task_mapped/reports/run_config.rpt")
+export FA_DDC_SHA256
+FA_DDC_SHA256=$(sha256sum "$FA_DDC_FILE" | awk '{print $1}')
+export FA_SAIF_SHA256
+FA_SAIF_SHA256=$(sha256sum "$FA_SAIF_FILE" | awk '{print $1}')
+mkdir -p "$FA_DC_WORK" "$FA_POWER_REPORT_DIR"
+cd "$FA_DC_WORK"
+dc_shell -64bit -f "$task_run/src/saif_power_exact.tcl" > console.log 2>&1
+if grep -Eq '^\s*(Error:|ERROR:)' console.log; then
+    exit 2
+fi
+if grep -Eq '\(PWR-18\)|\(PWR-19\)' \
+        console.log "$FA_POWER_REPORT_DIR/saif_coverage.rpt"; then
+    exit 2
+fi

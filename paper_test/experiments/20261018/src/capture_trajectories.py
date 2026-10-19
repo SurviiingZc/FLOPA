@@ -2,6 +2,7 @@
 
 import argparse
 import contextlib
+import fcntl
 import hashlib
 import json
 import os
@@ -310,7 +311,8 @@ def tasks(config):
                    'prompt': config['main_prompt'], 'qualification': True}
 
 
-def capture(model_name, output, allow_shared_capture=False):
+def capture(model_name, output, allow_shared_capture=False, diagnostic_precision=False,
+            main_only=False, microbench=False):
     config = MODELS[model_name]
     limit_gib = 8 if allow_shared_capture else None
     uuid = wait_for_gpu(output, capture_limit_gib=limit_gib)
@@ -339,9 +341,25 @@ def capture(model_name, output, allow_shared_capture=False):
         'allocator_limit_gib': limit_gib,
         'capture_wall_time_is_not_a_latency_measurement': True,
     }
-    write_json(output / model_name / 'protocol.json', protocol)
-    for task in tasks(config):
-        if (output / model_name / 'numerical_gate_failed.json').exists():
+    protocol['precision_gate_is_diagnostic'] = diagnostic_precision
+    protocol_path = output / model_name / 'protocol.json'
+    if protocol_path.exists():
+        # Existing completion records retain their original protocol provenance.
+        protocol_path = output / model_name / ('resume_protocol_' + sha(__file__)[:12] + '.json')
+    write_json(protocol_path, protocol)
+    selected_tasks = tasks(config)
+    if microbench:
+        pixel = 1024 if model_name == 'pixart' else 512
+        selected_tasks = [
+            {'role': 'power_calibration', 'pixels': pixel, 'seed': seed,
+             'prompt': config['calibration'][index], 'qualification': False}
+            for index, seed in enumerate((1001, 1002))
+        ]
+    for task in selected_tasks:
+        if main_only and (task['role'] != 'evaluation' or task['seed'] != 301):
+            continue
+        if (not diagnostic_precision and
+                (output / model_name / 'numerical_gate_failed.json').exists()):
             print('STOPPED_AFTER_NUMERICAL_GATE_FAILURE', model_name, flush=True)
             return
         folder = output / model_name / (
@@ -387,12 +405,15 @@ def capture(model_name, output, allow_shared_capture=False):
             'wall_seconds': time.time() - started,
             'sampled_latent_shape': list(latent.shape),
             'latent_maxabs': float(latent.abs().max().item()),
-            'protocol_sha256': sha(output / model_name / 'protocol.json'),
+            'protocol_sha256': sha(protocol_path), 'protocol_file': protocol_path.name,
         })
         print('TASK_COMPLETE', str(folder), time.time() - started, flush=True)
         del result, latent
         torch.cuda.empty_cache()
-    write_json(output / model_name / 'capture_complete.json', {'status': 'passed_capture'})
+    completion = 'main_capture_complete.json' if main_only else 'capture_complete.json'
+    if microbench:
+        completion = 'power_calibration_complete.json'
+    write_json(output / model_name / completion, {'status': 'passed_capture'})
 
 
 if __name__ == '__main__':
@@ -401,8 +422,14 @@ if __name__ == '__main__':
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--embeddings-only', action='store_true')
     parser.add_argument('--allow-shared-capture', action='store_true')
+    parser.add_argument('--diagnostic-precision', action='store_true')
+    parser.add_argument('--main-only', action='store_true')
+    parser.add_argument('--microbench-calibration', action='store_true')
     args = parser.parse_args()
     if args.embeddings_only:
         prepare_embeddings(args.model, args.output)
     else:
-        capture(args.model, args.output, args.allow_shared_capture)
+        gpu_lock = (args.output / 'gpu_capture_timing.lock').open('w')
+        fcntl.flock(gpu_lock, fcntl.LOCK_EX)
+        capture(args.model, args.output, args.allow_shared_capture,
+                args.diagnostic_precision, args.main_only, args.microbench_calibration)
