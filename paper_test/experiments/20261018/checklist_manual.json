@@ -27,5 +27,10 @@
         "done": false,
         "status": "待测；未测保持空白，不以N256/H1替代原形算子",
         "evidence": "ENERGY_EVALUATION_ZH.md"
+    },
+    "f2_comparison": {
+        "done": true,
+        "status": "同输入门级核验通过；周期降6.73%、IP估计能量降5.04%；时钟审查另列",
+        "evidence": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/results/f2_comparison.json"
     }
 }

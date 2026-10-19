@@ -8,7 +8,7 @@
 主版本 F0 保持不变，F1/F2 使用独立对照版本。
 
 <!-- CURRENT_TEST_CHECKLIST_BEGIN -->
-更新时间：2026-10-19T17:12:32+08:00；已核验 **37/88** 项。
+更新时间：2026-10-19T21:01:36+08:00；已核验 **45/88** 项。
 
 勾选只表示本项通过所列检查；运行中、排队、失败及待复测均保持空框。
 
@@ -29,14 +29,14 @@
 - [x] N=1,024：FLOPA 完整多头 RTL 周期与逐字节核对；完成并核验。 <!-- task:pixart_rtl_1024 -->
 - [x] N=2,304：完整整数参考与误差诊断；完成并核验。 <!-- task:pixart_golden_2304 -->
 - [x] N=2,304：GPU 完整多头 SDPA 正式计时；完成并核验。 <!-- task:pixart_gpu_2304 -->
-- [ ] N=2,304：FLOPA 完整多头 RTL 周期与逐字节核对；RTL 回放运行中。 <!-- task:pixart_rtl_2304 -->
+- [x] N=2,304：FLOPA 完整多头 RTL 周期与逐字节核对；完成并核验。 <!-- task:pixart_rtl_2304 -->
 - [x] N=4,096：完整整数参考与误差诊断；完成并核验。 <!-- task:pixart_golden_4096 -->
 - [x] N=4,096：GPU 完整多头 SDPA 正式计时；完成并核验。 <!-- task:pixart_gpu_4096 -->
-- [ ] N=4,096：FLOPA 完整多头 RTL 周期与逐字节核对；待启动。 <!-- task:pixart_rtl_4096 -->
+- [ ] N=4,096：FLOPA 完整多头 RTL 周期与逐字节核对；RTL 回放运行中。 <!-- task:pixart_rtl_4096 -->
 - [x] N=9,216：完整整数参考与误差诊断；完成并核验。 <!-- task:pixart_golden_9216 -->
 - [x] N=9,216：GPU 完整多头 SDPA 正式计时；完成并核验。 <!-- task:pixart_gpu_9216 -->
 - [ ] N=9,216：FLOPA 完整多头 RTL 周期与逐字节核对；待启动。 <!-- task:pixart_rtl_9216 -->
-- [ ] N=16,384：完整整数参考与误差诊断；整数参考生成中或排队；精度结果仅诊断。 <!-- task:pixart_golden_16384 -->
+- [x] N=16,384：完整整数参考与误差诊断；完成并核验。 <!-- task:pixart_golden_16384 -->
 - [x] N=16,384：GPU 完整多头 SDPA 正式计时；完成并核验。 <!-- task:pixart_gpu_16384 -->
 - [ ] N=16,384：FLOPA 完整多头 RTL 周期与逐字节核对；待启动。 <!-- task:pixart_rtl_16384 -->
 
@@ -47,14 +47,14 @@
 - [x] N=1,024：FLOPA 完整多头 RTL 周期与逐字节核对；完成并核验。 <!-- task:wan_rtl_1024 -->
 - [x] N=2,304：完整整数参考与误差诊断；完成并核验。 <!-- task:wan_golden_2304 -->
 - [x] N=2,304：GPU 完整多头 SDPA 正式计时；完成并核验。 <!-- task:wan_gpu_2304 -->
-- [ ] N=2,304：FLOPA 完整多头 RTL 周期与逐字节核对；RTL 回放运行中。 <!-- task:wan_rtl_2304 -->
+- [x] N=2,304：FLOPA 完整多头 RTL 周期与逐字节核对；完成并核验。 <!-- task:wan_rtl_2304 -->
 - [x] N=4,096：完整整数参考与误差诊断；完成并核验。 <!-- task:wan_golden_4096 -->
 - [x] N=4,096：GPU 完整多头 SDPA 正式计时；完成并核验。 <!-- task:wan_gpu_4096 -->
-- [ ] N=4,096：FLOPA 完整多头 RTL 周期与逐字节核对；待启动。 <!-- task:wan_rtl_4096 -->
+- [ ] N=4,096：FLOPA 完整多头 RTL 周期与逐字节核对；RTL 回放运行中。 <!-- task:wan_rtl_4096 -->
 - [x] N=9,216：完整整数参考与误差诊断；完成并核验。 <!-- task:wan_golden_9216 -->
 - [x] N=9,216：GPU 完整多头 SDPA 正式计时；完成并核验。 <!-- task:wan_gpu_9216 -->
 - [ ] N=9,216：FLOPA 完整多头 RTL 周期与逐字节核对；待启动。 <!-- task:wan_rtl_9216 -->
-- [ ] N=16,384：完整整数参考与误差诊断；整数参考生成中或排队；精度结果仅诊断。 <!-- task:wan_golden_16384 -->
+- [x] N=16,384：完整整数参考与误差诊断；完成并核验。 <!-- task:wan_golden_16384 -->
 - [x] N=16,384：GPU 完整多头 SDPA 正式计时；完成并核验。 <!-- task:wan_gpu_16384 -->
 - [ ] N=16,384：FLOPA 完整多头 RTL 周期与逐字节核对；待启动。 <!-- task:wan_rtl_16384 -->
 
@@ -62,13 +62,13 @@
 
 - [x] F0 当前映射版本面积、SRAM、时钟与时序报告；完成并核验。 <!-- task:f0_ppa -->
 - [x] F0 PixArt N256/H1/d72/seed301 门级活动功耗、能量与吞吐；完成并核验。 <!-- task:pixart_power -->
-- [ ] F0 Wan N256/H1/d128/seed301 辅助活动功耗；门级 SAIF 仿真运行中。 <!-- task:wan_power -->
+- [x] F0 Wan N256/H1/d128/seed301 辅助活动功耗；完成并核验。 <!-- task:wan_power -->
 - [ ] d72 主功耗点 seed302：采集、回放与功耗回读；待启动。 <!-- task:power_seed302 -->
 - [ ] d72 主功耗点 seed303：采集、回放与功耗回读；待启动。 <!-- task:power_seed303 -->
 - [x] F2 关闭 PV/row-state 重叠后的 d64/72/128 与尾 tile 功能检查；完成并核验。 <!-- task:f2_function -->
 - [x] F2 同库、同 PVT、同目标时钟综合与面积/时序核验；完成并核验。 <!-- task:f2_ppa -->
-- [ ] F2 相同 d72/N256 输入的门级功能、SAIF 与活动功耗；门级 SAIF 仿真运行中。 <!-- task:f2_power -->
-- [ ] F0/F2 同条件周期、能量与面积对照汇总；待启动。 <!-- task:f2_comparison -->
+- [x] F2 相同 d72/N256 输入的门级功能、SAIF 与活动功耗；完成并核验。 <!-- task:f2_power -->
+- [x] F0/F2 同条件周期、能量与面积对照汇总；同输入门级核验通过；周期降6.73%、IP估计能量降5.04%；时钟审查另列。 <!-- task:f2_comparison -->
 - [ ] F1 真正 P-buffer-fed PV 的匹配设计与 RTL 实现；待启动。 <!-- task:f1_design -->
 - [ ] F1 与 F0 相同输入、相同整数算术的功能核对；待启动。 <!-- task:f1_function -->
 - [ ] F1 同库、同 PVT、同目标时钟综合与面积/时序核验；待启动。 <!-- task:f1_ppa -->
@@ -91,11 +91,11 @@
 - [x] PixArt全部28层：真实Q/K/V采集；完成并核验。 <!-- task:pixart_layerstep_capture -->
 - [x] PixArt全部28层：逐层独立校准与完整整数参考；完成并核验。 <!-- task:pixart_layerstep_golden -->
 - [ ] PixArt全部28层：驻留SDPA序列的累计GPU计时；等待空闲GPU或排队。 <!-- task:pixart_layerstep_gpu -->
-- [ ] PixArt全部28层：所有层RTL通过并累加实际周期；已核验2/28层；逐层回放运行中或排队。 <!-- task:pixart_layerstep_rtl -->
+- [x] PixArt全部28层：所有层RTL通过并累加实际周期；完成并核验。 <!-- task:pixart_layerstep_rtl -->
 - [x] Wan全部30层：真实Q/K/V采集；完成并核验。 <!-- task:wan_layerstep_capture -->
 - [x] Wan全部30层：逐层独立校准与完整整数参考；完成并核验。 <!-- task:wan_layerstep_golden -->
 - [ ] Wan全部30层：驻留SDPA序列的累计GPU计时；等待空闲GPU或排队。 <!-- task:wan_layerstep_gpu -->
-- [ ] Wan全部30层：所有层RTL通过并累加实际周期；已核验2/30层；逐层回放运行中或排队。 <!-- task:wan_layerstep_rtl -->
+- [ ] Wan全部30层：所有层RTL通过并累加实际周期；已核验25/30层；逐层回放运行中或排队。 <!-- task:wan_layerstep_rtl -->
 
 ### F. 正式跨层覆盖（N4096，步索引15，条件分支；N1024仅流程验证）
 

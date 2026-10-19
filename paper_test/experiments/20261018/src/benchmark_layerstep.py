@@ -73,6 +73,7 @@ for model, config in MODELS.items():
             operation()
         trace = {event.key: event.count for event in prof.key_averages()}
         assert trace.get('aten::_scaled_dot_product_flash_attention') == count
+        check_gpu_exclusive()
     import numpy as np
     values = np.array(measured).reshape(-1)
     write_json(destination, {

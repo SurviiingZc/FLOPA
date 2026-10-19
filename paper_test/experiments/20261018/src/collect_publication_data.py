@@ -27,7 +27,8 @@ def digest(path):
 def main():
     result = {'collected_utc': datetime.now(timezone.utc).isoformat(),
               'synthesis': load(PROJECT / 'paper_test/synthesis_summary.json'),
-              'native': {}, 'power': {}, 'layerstep': {}, 'variants': {}, 'gpu_energy': {}}
+              'native': {}, 'power': {}, 'layerstep': {}, 'variants': {}, 'gpu_energy': {},
+              'f2_comparison': load(RUN / 'results/f2_comparison.json')}
     f2 = Path('/data/workspaces/zhangcheng/flopa_eval_f2')
     mapped = f2 / 'asic/dc/work/synth/tt/evaluation_f2/attention_accel_top'
     if (mapped / 'results/attention_accel_top.ddc').exists():
