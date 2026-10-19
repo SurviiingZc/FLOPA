@@ -8,6 +8,22 @@ $taskPython = '/home/zhangcheng/miniconda3/envs/dfot/bin/python'
 $taskEmit = '/home/zhangcheng/DiT-FA/scripts/emit_ready_replays.py'
 $taskJobs = @{}
 $taskDone = @{}
+$taskStatePath = "$taskBase\replay_controller_state.json"
+if (Test-Path -LiteralPath $taskStatePath) {
+    $taskPrevious = Get-Content -Raw -LiteralPath $taskStatePath | ConvertFrom-Json
+    foreach ($taskField in @('running', 'completed')) {
+        foreach ($taskProperty in $taskPrevious.$taskField.PSObject.Properties) {
+            if ($taskProperty.Name -notmatch '^(pixart|wan)_n(1024|2304|4096|9216|16384)$') {
+                throw 'Unexpected saved replay job name'
+            }
+            if ($taskField -eq 'running') {
+                $taskJobs[$taskProperty.Name] = $taskProperty.Value
+            } else {
+                $taskDone[$taskProperty.Name] = $taskProperty.Value
+            }
+        }
+    }
+}
 
 function Read-RemoteJson([string]$taskHost, [string]$taskCommand) {
     $taskText = & ssh @taskSshArgs $taskHost $taskCommand
@@ -20,6 +36,17 @@ function Read-RemoteJson([string]$taskHost, [string]$taskCommand) {
 for ($taskRound = 0; $taskRound -lt 10080; $taskRound++) {
     try {
         $taskReady = Read-RemoteJson $taskSourceHost "$taskPython $taskEmit"
+        $taskSnapshot = $taskReady.checklist | ConvertTo-Json -Depth 20
+        $taskSnapshotFile = "$taskBase\checklist_model_snapshot.json"
+        [System.IO.File]::WriteAllText($taskSnapshotFile, $taskSnapshot,
+            [System.Text.UTF8Encoding]::new($false))
+        $taskRemoteSnapshot = "$taskRemoteRoot/checklist_model_snapshot.json"
+        & scp @taskSshArgs $taskSnapshotFile "${taskTargetHost}:${taskRemoteSnapshot}.incoming"
+        if ($LASTEXITCODE -ne 0) { throw 'Checklist model-state transfer failed' }
+        $taskUpdate = "mv ${taskRemoteSnapshot}.incoming $taskRemoteSnapshot"
+        $taskUpdate += " && python3 $taskRemoteRoot/src/update_readme_checklist.py"
+        & ssh @taskSshArgs $taskTargetHost $taskUpdate | Out-Null
+        if ($LASTEXITCODE -ne 0) { throw 'README checklist update failed' }
         foreach ($taskName in @($taskJobs.Keys)) {
             $taskCommand = "python3 $taskRemoteRoot/src/submit_replay.py"
             $taskCommand += " --name $taskName --status"
@@ -83,7 +110,8 @@ for ($taskRound = 0; $taskRound -lt 10080; $taskRound++) {
             updated = (Get-Date).ToString('o')
             running = $taskJobs
             completed = $taskDone
-            numerical_failures = $taskReady.failed_models
+            numerical_failures = $taskReady.numerical_diagnostics
+            precision_gate_is_diagnostic = $true
             scope = 'one-shot experiment process queue; no scheduled task'
         }
         $taskState | ConvertTo-Json -Depth 20 | Set-Content -Encoding UTF8 `

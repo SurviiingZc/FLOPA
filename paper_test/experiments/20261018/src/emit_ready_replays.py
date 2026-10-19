@@ -4,6 +4,8 @@ import hashlib
 import json
 from pathlib import Path
 
+from emit_checklist_snapshot import collect
+
 
 ROOT = Path('/10T/zhangcheng/flopa_evaluation_20261018')
 points = []
@@ -22,7 +24,8 @@ for model, pixels, layer in [('pixart', [512, 768, 1024, 1536, 2048], 14),
         record = json.loads(manifest.read_text())
         points.append({'model': model, 'directory': str(folder), 'manifest': record,
                        'manifest_sha256': hashlib.sha256(manifest.read_bytes()).hexdigest()})
-print(json.dumps({'points': points, 'failed_models': [], 'numerical_diagnostics': [
+print(json.dumps({'points': points, 'checklist': collect(),
+                 'failed_models': [], 'numerical_diagnostics': [
     model for model in ('pixart', 'wan')
     if (ROOT / model / 'numerical_gate_failed.json').exists()
 ]}))

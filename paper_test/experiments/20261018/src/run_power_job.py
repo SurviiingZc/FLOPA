@@ -124,6 +124,12 @@ def main():
                       all_user_annotation_percent=100, annotation_conflicts=0,
                       elapsed_seconds=time.time() - report['started_unix'])
         write(status_path, report)
+        updater = ROOT / 'src/update_readme_checklist.py'
+        if updater.exists():
+            try:
+                subprocess.run([sys.executable, str(updater)], check=True)
+            except Exception as error:
+                print('CHECKLIST_UPDATE_ERROR', repr(error), flush=True)
     except Exception as error:
         report.update(state='failed', error=repr(error))
         write(status_path, report)

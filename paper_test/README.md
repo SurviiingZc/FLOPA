@@ -1,89 +1,137 @@
-> 2026-10-19 执行更新：用户要求先完成本轮实验，再优化数值。旧数值门槛不再阻断工程性能/功耗/对照测试，误差与溢出统计仍保留。逐字节功能、协议、哈希和功耗活动窗口仍需核验。详见 PRECISION_DEFERRAL_20261019_ZH.md 与 experiments/20261018/LATEST_RUN_20261019_ZH.md。
+# FLOPA：ISCAS 本轮实验清单
 
-# FLOPA：ISCAS 实验入口与计划
+当前阶段：先完成现有架构的测试；数值精度优化下一轮进行。
+主版本 F0 保持不变，F1/F2 使用独立对照版本。
 
-更新：2026-10-18。作者已要求按计划开始，当前进入D1数值检查和测试流程验证。
-执行记录见 [本轮状态](experiments/20261018/STATUS_ZH.md)。
+<!-- CURRENT_TEST_CHECKLIST_BEGIN -->
+更新时间：2026-10-19T15:30:07+08:00；已核验 **24/69** 项。
 
-## 1. 本轮计划
+勾选只表示本项通过所列检查；运行中、排队、失败及待复测均保持空框。
 
-详细方案见 [EVALUATION_PLAN_ZH.md](EVALUATION_PLAN_ZH.md)。它是后续 Evaluation 的主计划，
-替代本 README 旧版的模型/单头实验建议；历史数据不能转作新 RTL 的实测结果。
+### A. 数据与测试流程
 
-作者已经确认：
+- [x] PixArt 五个原生 N 的真实轨迹 Q/K/V；完成并核验。 <!-- task:pixart_capture -->
+- [x] Wan 五个原生 N 的真实轨迹 Q/K/V；完成并核验。 <!-- task:wan_capture -->
+- [x] PixArt 独立校准与冻结 scale；完成并核验。 <!-- task:pixart_calibration -->
+- [x] Wan 独立校准与冻结 scale；完成并核验。 <!-- task:wan_calibration -->
+- [x] PixArt N256/H1 功耗微基准独立切片校准；完成并核验。 <!-- task:pixart_power_calibration -->
+- [x] Wan N256/H1 功耗微基准独立切片校准；完成并核验。 <!-- task:wan_power_calibration -->
+- [x] N32 门级测试台、SAIF 窗口和功耗回读流程核验；完成并核验。 <!-- task:gate_pilot -->
 
-- 主图：PixArt-Sigma + Wan2.1-T2V-1.3B；DFoT-MCRAFT 补充 d=64 验证。
-- 单位：完整多头 SDPA，排除 QKV/输出投影和 RoPE；三平台使用相同来源的模型张量。
-- 允许新增匹配对照并重新综合、回读活动功耗；保留 FLOPA F0 主版本。
+### B. 主图 — PixArt-Sigma：H=16，d=72
 
-建议冻结的五个 N 为 **1024、2304、4096、9216、16384**：
+- [x] N=1,024：完整整数参考与误差诊断；完成并核验。 <!-- task:pixart_golden_1024 -->
+- [ ] N=1,024：CPU 完整多头 SDPA 正式计时；等待本轮 shadow 退出后复测。 <!-- task:pixart_cpu_1024 -->
+- [x] N=1,024：GPU 完整多头 SDPA 正式计时；完成并核验。 <!-- task:pixart_gpu_1024 -->
+- [x] N=1,024：FLOPA 完整多头 RTL 周期与逐字节核对；完成并核验。 <!-- task:pixart_rtl_1024 -->
+- [x] N=2,304：完整整数参考与误差诊断；完成并核验。 <!-- task:pixart_golden_2304 -->
+- [ ] N=2,304：CPU 完整多头 SDPA 正式计时；等待本轮 shadow 退出后复测。 <!-- task:pixart_cpu_2304 -->
+- [x] N=2,304：GPU 完整多头 SDPA 正式计时；完成并核验。 <!-- task:pixart_gpu_2304 -->
+- [ ] N=2,304：FLOPA 完整多头 RTL 周期与逐字节核对；待启动。 <!-- task:pixart_rtl_2304 -->
+- [x] N=4,096：完整整数参考与误差诊断；完成并核验。 <!-- task:pixart_golden_4096 -->
+- [ ] N=4,096：CPU 完整多头 SDPA 正式计时；等待本轮 shadow 退出后复测。 <!-- task:pixart_cpu_4096 -->
+- [x] N=4,096：GPU 完整多头 SDPA 正式计时；完成并核验。 <!-- task:pixart_gpu_4096 -->
+- [ ] N=4,096：FLOPA 完整多头 RTL 周期与逐字节核对；待启动。 <!-- task:pixart_rtl_4096 -->
+- [ ] N=9,216：完整整数参考与误差诊断；整数参考生成中或排队；精度结果仅诊断。 <!-- task:pixart_golden_9216 -->
+- [ ] N=9,216：CPU 完整多头 SDPA 正式计时；等待本轮 shadow 退出后复测。 <!-- task:pixart_cpu_9216 -->
+- [x] N=9,216：GPU 完整多头 SDPA 正式计时；完成并核验。 <!-- task:pixart_gpu_9216 -->
+- [ ] N=9,216：FLOPA 完整多头 RTL 周期与逐字节核对；待启动。 <!-- task:pixart_rtl_9216 -->
+- [ ] N=16,384：完整整数参考与误差诊断；整数参考生成中或排队；精度结果仅诊断。 <!-- task:pixart_golden_16384 -->
+- [ ] N=16,384：CPU 完整多头 SDPA 正式计时；等待本轮 shadow 退出后复测。 <!-- task:pixart_cpu_16384 -->
+- [ ] N=16,384：GPU 完整多头 SDPA 正式计时；等待空闲 GPU 或排队。 <!-- task:pixart_gpu_16384 -->
+- [ ] N=16,384：FLOPA 完整多头 RTL 周期与逐字节核对；待启动。 <!-- task:pixart_rtl_16384 -->
 
-| N | PixArt 方图像素 | Wan 方图像素（固定13帧） |
-| ---: | --- | --- |
-| 1024 | 512×512 | 256×256 |
-| 2304 | 768×768 | 384×384 |
-| 4096 | 1024×1024 | 512×512 |
-| 9216 | 1536×1536 | 768×768 |
-| 16384 | 2048×2048 | 1024×1024 |
+### B. 主图 — Wan2.1：H=12，d=128
 
-它们由完整输入形状生成，不裁 N、不裁 d；扩展分辨率的生成质量尚未验证。
-建议主图 B=1 conditional branch，PixArt 全16头/d72，Wan全12头/d128。
-现 Fig.1 是固定噪声级 Gaussian latent 的 profiling；主图另从真实采样轨迹导出 Q/K/V。
-Wan 当前只有 transformer，需要补文本组件和scheduler；完整质量评价还需VAE。
-MCRAFT 短请求会被现 sampler padding 到50帧，不将短请求长度当真实Attention N。
+- [x] N=1,024：完整整数参考与误差诊断；完成并核验。 <!-- task:wan_golden_1024 -->
+- [ ] N=1,024：CPU 完整多头 SDPA 正式计时；等待本轮 shadow 退出后复测。 <!-- task:wan_cpu_1024 -->
+- [x] N=1,024：GPU 完整多头 SDPA 正式计时；完成并核验。 <!-- task:wan_gpu_1024 -->
+- [ ] N=1,024：FLOPA 完整多头 RTL 周期与逐字节核对；RTL 回放运行中。 <!-- task:wan_rtl_1024 -->
+- [x] N=2,304：完整整数参考与误差诊断；完成并核验。 <!-- task:wan_golden_2304 -->
+- [ ] N=2,304：CPU 完整多头 SDPA 正式计时；等待本轮 shadow 退出后复测。 <!-- task:wan_cpu_2304 -->
+- [x] N=2,304：GPU 完整多头 SDPA 正式计时；完成并核验。 <!-- task:wan_gpu_2304 -->
+- [ ] N=2,304：FLOPA 完整多头 RTL 周期与逐字节核对；待启动。 <!-- task:wan_rtl_2304 -->
+- [x] N=4,096：完整整数参考与误差诊断；完成并核验。 <!-- task:wan_golden_4096 -->
+- [ ] N=4,096：CPU 完整多头 SDPA 正式计时；等待本轮 shadow 退出后复测。 <!-- task:wan_cpu_4096 -->
+- [x] N=4,096：GPU 完整多头 SDPA 正式计时；完成并核验。 <!-- task:wan_gpu_4096 -->
+- [ ] N=4,096：FLOPA 完整多头 RTL 周期与逐字节核对；待启动。 <!-- task:wan_rtl_4096 -->
+- [ ] N=9,216：完整整数参考与误差诊断；整数参考生成中或排队；精度结果仅诊断。 <!-- task:wan_golden_9216 -->
+- [ ] N=9,216：CPU 完整多头 SDPA 正式计时；等待本轮 shadow 退出后复测。 <!-- task:wan_cpu_9216 -->
+- [x] N=9,216：GPU 完整多头 SDPA 正式计时；完成并核验。 <!-- task:wan_gpu_9216 -->
+- [ ] N=9,216：FLOPA 完整多头 RTL 周期与逐字节核对；待启动。 <!-- task:wan_rtl_9216 -->
+- [ ] N=16,384：完整整数参考与误差诊断；整数参考生成中或排队；精度结果仅诊断。 <!-- task:wan_golden_16384 -->
+- [ ] N=16,384：CPU 完整多头 SDPA 正式计时；等待本轮 shadow 退出后复测。 <!-- task:wan_cpu_16384 -->
+- [ ] N=16,384：GPU 完整多头 SDPA 正式计时；等待空闲 GPU 或排队。 <!-- task:wan_gpu_16384 -->
+- [ ] N=16,384：FLOPA 完整多头 RTL 周期与逐字节核对；待启动。 <!-- task:wan_rtl_16384 -->
 
-## 2. 最先做的资格检查
+### C. 主表 — PPA、活动功耗与匹配对照
 
-当前 PV/O 是 INT32，直接累加 P16×V8。均匀P/同号V压力例在约512 tokens后即可能
-溢出；这不意味着所有长模型向量必然失败，但短 UVM 通过也不能证明 N=16384 正确。
-先用真实最长 N 输入做 INT64/任意精度 shadow、逐head误差和饱和检查。
-若失败，先讨论位宽/缩放修正并重新绑定实现和PPA，不能先画性能曲线再补正确性。
+- [x] F0 当前映射版本面积、SRAM、时钟与时序报告；完成并核验。 <!-- task:f0_ppa -->
+- [ ] F0 PixArt N256/H1/d72/seed301 门级活动功耗、能量与吞吐；门级 SAIF 仿真运行中。 <!-- task:pixart_power -->
+- [ ] F0 Wan N256/H1/d128/seed301 辅助活动功耗；门级 SAIF 仿真运行中。 <!-- task:wan_power -->
+- [ ] d72 主功耗点 seed302：采集、回放与功耗回读；待启动。 <!-- task:power_seed302 -->
+- [ ] d72 主功耗点 seed303：采集、回放与功耗回读；待启动。 <!-- task:power_seed303 -->
+- [x] F2 关闭 PV/row-state 重叠后的 d64/72/128 与尾 tile 功能检查；完成并核验。 <!-- task:f2_function -->
+- [ ] F2 同库、同 PVT、同目标时钟综合与面积/时序核验；综合运行中或待检查。 <!-- task:f2_ppa -->
+- [ ] F2 相同 d72/N256 输入的门级功能、SAIF 与活动功耗；待启动。 <!-- task:f2_power -->
+- [ ] F0/F2 同条件周期、能量与面积对照汇总；待启动。 <!-- task:f2_comparison -->
+- [ ] F1 真正 P-buffer-fed PV 的匹配设计与 RTL 实现；待启动。 <!-- task:f1_design -->
+- [ ] F1 与 F0 相同输入、相同整数算术的功能核对；待启动。 <!-- task:f1_function -->
+- [ ] F1 同库、同 PVT、同目标时钟综合与面积/时序核验；待启动。 <!-- task:f1_ppa -->
+- [ ] F1 相同 d72/N256 输入的门级 SAIF 与活动功耗；待启动。 <!-- task:f1_power -->
+- [ ] F0/F1 实际 P 读写流量、存储宏/寄存器面积及功耗分量；待启动。 <!-- task:memory_comparison -->
+- [ ] 核验 H-FA-1-4、H-FA-4-4、FSA、ITA System 的 PPA/吞吐及口径；待启动。 <!-- task:external_comparison -->
 
-## 3. 图、表与机制实验
+### D. 补充验证与论文交付
 
-- 一张主图：左右两个模型子图，CPU/GPU/FLOPA完整多头SDPA延迟随N变化。
-  CPU为13服务器双路Xeon Gold6133，GPU固定单张RTX A6000；FLOPA为实测RTL周期
-  ×1.60ns综合目标，明确输入服务模型及非芯片实测边界。
-- 一张跨栏主表：H-FA-1-4、H-FA-4-4、FSA、ITA System与FLOPA；列精度、实现阶段、
-  工艺/时钟、面积/存储、功耗方法和吞吐类型。不同口径不做统一冠军排名。
-- 同条件对照：F1为真正buffer-fed PV，移除被替代PE概率寄存器并计入全部适配成本；
-  F2仅关闭PV/row-update重叠。具体匹配规则与验收见详细计划。
-- 仅额外插入P scratchpad而保留原概率寄存器的spill/reload变体，不能用于证明
-  相对优化竞争架构的总面积优势。P tile逻辑2KiB也不能当作实际宏面积节省。
+- [ ] DFoT-MCRAFT 原生 d64 真实 Q/K/V 功能与兼容性验证；待启动。 <!-- task:mcraft_function -->
+- [ ] MCRAFT N256/H1/d64 辅助活动功耗；待启动。 <!-- task:mcraft_power -->
+- [ ] 核验 loader、片上 P/O 访问计数与论文机制结论的对应关系；待启动。 <!-- task:traffic_counters -->
+- [ ] 结果回填精简 Excel：主图原始数据、主表及对照数据；待启动。 <!-- task:workbook -->
+- [ ] Python 绘制两模型 CPU/GPU/FLOPA 延迟主图，Times New Roman；待启动。 <!-- task:figure -->
+- [ ] 生成一张跨栏 PPA/吞吐主表，区分外部文献与同条件消融；待启动。 <!-- task:table -->
+- [ ] 正文 Callback、结果版本及四页正文/一页参考文献排版核验；待启动。 <!-- task:paper -->
 
-## 4. 功耗口径
+<!-- CURRENT_TEST_CHECKLIST_END -->
 
-建议 N=256/H=1/d=72 的真实QKV截短微基准为主表表征点，d64/128作辅助。
-先做N32门级流程pilot；每个功耗值与同一job、同一活动窗口的周期和有效MAC配对。
-短功耗微基准不进入原形主图，不乘长N/全头耗时推算所谓模型实测能量。
+## 工作负载与完成标准
 
-功耗包含 attention_accel_top 内全部标准单元、ICG、寄存器和已实例化SRAM宏；
-排除外部DRAM/PHY、板卡、主机、模型其他算子。mapped-SAIF、post-layout活动估计、
-PowerPro+CACTI的文献值分别标注；CPU/GPU本轮只作延迟比较。
-现旧gate入口不兼容真实ICG与新testbench探针/SAIF控制，需要先适配gate-safe流程。
-默认活动率4.8406/5.2757W和旧d64 SAIF均不能填入新工作负载结果。
+- 主图：PixArt-Sigma 与 Wan2.1，N=1024/2304/4096/9216/16384，B=1 条件分支。
+  比较完整多头 SDPA，排除 QKV/输出投影与 RoPE；CPU/GPU/FLOPA 使用同源真实 Q/K/V。
+- CPU 为双路 Xeon Gold 6133，GPU 为单张 RTX A6000。CPU 正式行等待本轮整数参考
+  计算结束后复测，原先并发期间的计时保留作初测；GPU 正式计时等待空闲条件。
+- FLOPA 延迟使用真实 RTL START 到最后输出 B 握手的周期乘 1.60ns 综合目标周期，
+  明确标注非芯片实测以及理想 128-bit loader 服务模型。
+- 完整整数参考和 RTL 功能检查仍覆盖所有 head、Q/K/V 行，包含 INT32 回绕行为；
+  逐字节核对通过不等于数值精度通过。L2、余弦、饱和与溢出继续记录，暂不阻断本轮。
+- 功耗主点为真实 Q/K/V 切片 N256/H1/d72；d128、d64 为辅助点。F0/F1/F2 必须
+  使用相同输入、scale、精度、库、PVT、目标时钟和活动窗口。
+- 门级功耗项只有在输出全等、SAIF 时长与周期一致、网表/DDC/输入哈希可核对、
+  用户活动标注 100% 且名称冲突为零后勾选。报告 IP 内 SRAM、寄存器、ICG 与逻辑，
+  排除 DRAM/主机/板卡；短微基准功耗不外推为长序列模型能量。
+- F1 必须真正用缓冲供应 PV，并移除被替代的 PE 概率寄存器；F2 仅隔离 PV 与
+  row-state 更新的重叠。相同输入周期、总面积、实际存储/流量和能量共同解释优势。
+- 文献缺项填 NR；工艺、精度、吞吐类型、实现阶段与功耗范围不同的结果分别标明。
+  当前 hold 与 min-cap 尚未物理收敛，mapped PPA 不表示物理签核完成。
 
-## 5. 当前硬件及已有验证
+## 维护方式与结果位置
 
-- 分支 `codex/diffusion-runtime-d`；实际映射输入 `fc9e921`，后续格式整理有等价证明。
-- 同一MAX_D=128实例支持d=1–128；六类短UVM共157个job、66312字节，error/fatal均0。
-- 总面积2.452364mm²，SRAM0.656747mm²/480宏/120KiB物理容量；28个显式ICG。
-- 28nm TT/0.9V/25°C，目标1.60ns；setup无违例，hold与2条min-cap尚未物理收敛。
-- 无新版模型活动功耗或完整模型性能数据；不能由当前数值预先承诺节能或Fmax提升。
+清单自动项从已核验的结果状态更新；已接入本轮运行队列，不新建定时任务。
+人工汇总/论文交付项完成后，在 `experiments/20261018/checklist_manual.json` 中记录
+对应任务 ID、`done: true` 与 `evidence` 证据，再运行清单更新脚本。
 
-实现与验证文档：
+- 详细方案：[EVALUATION_PLAN_ZH.md](EVALUATION_PLAN_ZH.md)。
+- 本轮口径：[PRECISION_DEFERRAL_20261019_ZH.md](PRECISION_DEFERRAL_20261019_ZH.md)。
+- 本轮状态：[LATEST_RUN_20261019_ZH.md](experiments/20261018/LATEST_RUN_20261019_ZH.md)。
+- 本地结果：`experiments/20261018/jobs/`、`checklist_state.json`。
+- 模型与 CPU/GPU 数据：13 服务器 `/10T/zhangcheng/flopa_evaluation_20261018`。
+- F2 独立工作区：`/data/workspaces/zhangcheng/flopa_eval_f2`。
+- RTL 文档：[优化计划](RTL_OPTIMIZATION_PLAN_ZH.md)、[实现报告](IMPLEMENTATION_REPORT.md)。
 
-- [RTL_OPTIMIZATION_PLAN_ZH.md](RTL_OPTIMIZATION_PLAN_ZH.md)：实现/未完成范围。
-- [IMPLEMENTATION_REPORT.md](IMPLEMENTATION_REPORT.md)：功能、综合、来源和边界。
-- [runtime-d RTL](../docs/rtl_runtime_d.md)、[UVM](../docs/uvm_runtime_d.md)：ABI和短验证。
-- [clock_audit](clock_audit/README.md)：DDC时钟覆盖核验，不代表hold/物理签核通过。
+## 下一轮数值优化（本轮暂缓，不计入以上完成率）
 
-重新执行短验证时使用新目录，保留原综合输入构建及日志：
+- [ ] P 与 alpha 改为 32 段线性指数，验证边界与累计误差。
+- [ ] 256 项倒数种子，保留二进制 exponent 至乘法后移位。
+- [ ] 独立输入精度验证、回归与更新后的时序/PPA/功耗复核。
 
-```bash
-RUNTIME_D_OUT_DIR="$PWD/tb/sim/build/runtime_d_current" make runtime-d-smoke
-```
-
-本轮按详细计划的五个长度、数值门槛、主表对象和短功耗工作负载执行。
-当前完成测试台短回放与压力边界检查；真实模型采集、门级pilot等状态见执行记录。
-没有取得的新数据留空，不由比例缩放、理论周期或旧结果补齐。
+理想指数只作为软件诊断参考；下一轮数据不得直接沿用本轮版本的 PPA 与功耗。
