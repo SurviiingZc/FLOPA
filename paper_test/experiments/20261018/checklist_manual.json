@@ -14,9 +14,9 @@
         ]
     },
     "clock_power_audit": {
-        "done": false,
-        "status": "待审查；当前d72点clock-network占97.22%",
-        "evidence": "ENERGY_EVALUATION_ZH.md"
+        "done": true,
+        "status": "已核验1001pF简化负载，三点按实际库pin负载回读；仍为pre-CTS",
+        "evidence": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/results/actual_pin_load_power_audit_20261020.json"
     },
     "native_energy_method": {
         "done": false,
@@ -30,7 +30,7 @@
     },
     "f2_comparison": {
         "done": true,
-        "status": "同输入门级核验通过；周期降6.73%、IP估计能量降5.04%；时钟审查另列",
+        "status": "周期降6.73%；实际pin负载IP能量降3.65%",
         "evidence": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/results/f2_comparison.json"
     }
 }

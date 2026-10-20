@@ -12,6 +12,7 @@ if [[ "$task_job" == power_f2_pixart_n256_s301 ]]; then
 fi
 source "$task_root/asic/scripts/library_paths.sh"
 fa_select_libraries "$task_root" tt
+export FA_ACTUAL_PIN_LOAD="${FA_ACTUAL_PIN_LOAD:-1}"
 export FA_ROOT="$task_root"
 export FA_DC_WORK="$task_run/jobs/$task_job/power_work"
 export FA_CLOCK_PERIOD=1.6
@@ -20,6 +21,10 @@ export FA_SAIF_FILE="$task_run/jobs/$task_job/activity.saif"
 export FA_SAIF_STRIP_PATH=tb_paper_replay/dut
 export FA_SAIF_INSTANCE=attention_accel_top
 export FA_POWER_REPORT_DIR="$task_run/jobs/$task_job/power_reports"
+if [[ "${FA_ACTUAL_PIN_LOAD:-0}" == 1 ]]; then
+    export FA_DC_WORK="$task_run/jobs/$task_job/power_work_actual_pin_load"
+    export FA_POWER_REPORT_DIR="$task_run/jobs/$task_job/power_reports_actual_pin_load"
+fi
 export FA_RTL_HASH
 FA_RTL_HASH=$(awk -F= '$1=="FA_RTL_HASH" {print $2}' "$task_mapped/reports/run_config.rpt")
 export FA_DDC_SHA256

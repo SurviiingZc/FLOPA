@@ -4,6 +4,7 @@ import argparse
 import csv
 import fcntl
 import json
+import os
 import re
 import subprocess
 import sys
@@ -102,10 +103,12 @@ def main():
                       clock_period_ns=1.6, functional_byte_exact_pass=True)
         write(status_path, report)
         subprocess.run(['bash', str(ROOT / 'src/read_power_job.sh'), name], check=True)
-        coverage = (target / 'power_reports/saif_coverage.rpt').read_text()
+        actual_load = os.environ.get('FA_ACTUAL_PIN_LOAD', '1') == '1'
+        report_folder = 'power_reports_actual_pin_load' if actual_load else 'power_reports'
+        coverage = (target / report_folder / 'saif_coverage.rpt').read_text()
         for category in ('Nets', 'Ports', 'Pins'):
             assert re.search(r'\b' + category + r'\s+\d+\(100\.00%\)', coverage)
-        summary = (target / 'power_reports/power_summary.rpt').read_text()
+        summary = (target / report_folder / 'power_summary.rpt').read_text()
         values = {}
         for field, label in [('dynamic_w', 'Total Dynamic Power'),
                              ('leakage_w', 'Cell Leakage Power')]:
@@ -120,6 +123,9 @@ def main():
         values['pj_per_mac'] = values['energy_job_j'] / macs * 1e12
         values['effective_tops'] = 2 * macs / seconds / 1e12
         report.update(state='pass', activity_based_estimate=values,
+                      power_report_directory=report_folder,
+                      load_model=('actual pin loads; high_fanout_net_threshold=0; pre-CTS'
+                                  if actual_load else 'legacy default high-fanout approximation'),
                       scope='mapped pre-layout IP, 625-MHz target, no external memory',
                       all_user_annotation_percent=100, annotation_conflicts=0,
                       elapsed_seconds=time.time() - report['started_unix'])

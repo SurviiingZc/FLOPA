@@ -15,6 +15,10 @@ current_design $env(FA_SAIF_INSTANCE)
 if {![link]} {
     error "Mapped DDC link failed"
 }
+if {[info exists env(FA_ACTUAL_PIN_LOAD)] && $env(FA_ACTUAL_PIN_LOAD) == "1"} {
+    # Official DC variable reference: threshold=0 disables the synthetic high-fanout model.
+    set_app_var high_fanout_net_threshold 0
+}
 identify_clock_gating
 reset_switching_activity
 unsuppress_message PWR-18
@@ -45,5 +49,7 @@ foreach task_variable {
 }
 puts $task_config "saif_name_policy=exact mapped names; auto_map_names disabled"
 puts $task_config "sram_macros=[sizeof_collection $task_macros]"
+puts $task_config "high_fanout_net_threshold=[get_app_var high_fanout_net_threshold]"
+puts $task_config "high_fanout_net_pin_capacitance=[get_app_var high_fanout_net_pin_capacitance]"
 close $task_config
 exit

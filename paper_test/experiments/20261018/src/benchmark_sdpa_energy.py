@@ -17,6 +17,9 @@ from torch.nn.attention import SDPBackend, sdpa_kernel
 from capture_trajectories import sha, write_json
 
 
+ALLOW_SHARED = False
+
+
 class Nvml:
     def __init__(self, uuid):
         self.lib = ctypes.CDLL('libnvidia-ml.so.1')
@@ -51,15 +54,19 @@ class Nvml:
         return value.value / 1000
 
 
-def require_exclusive(uuid):
+def observe_background(uuid):
     raw = subprocess.check_output([
         'nvidia-smi', '--query-compute-apps=gpu_uuid,pid,used_memory',
         '--format=csv,noheader,nounits',
     ], text=True)
+    foreign = []
     for line in raw.splitlines():
         device, pid, memory = [field.strip() for field in line.split(',')]
         if device == uuid and int(pid) != os.getpid():
-            raise RuntimeError('Energy window has another compute process: ' + line)
+            foreign.append({'pid': int(pid), 'memory_mib': int(memory), 'uuid': device})
+    if foreign and not ALLOW_SHARED:
+        raise RuntimeError('Energy window has another compute process: ' + str(foreign))
+    return foreign
 
 
 def telemetry(uuid):
@@ -70,23 +77,24 @@ def telemetry(uuid):
 
 
 def idle_window(nvml, uuid, seconds=10):
-    require_exclusive(uuid)
+    background = [[time.monotonic(), observe_background(uuid)]]
     start = time.monotonic()
     first = nvml.energy()
     readings = []
     while time.monotonic() - start < seconds:
-        require_exclusive(uuid)
+        background.append([time.monotonic(), observe_background(uuid)])
         readings.append([time.monotonic() - start, nvml.power()])
         time.sleep(0.25)
     last = nvml.energy()
     duration = time.monotonic() - start
     assert last > first
     return {'energy_start_mj': first, 'energy_end_mj': last, 'wall_s': duration,
-            'mean_w': (last - first) / 1000 / duration, 'power_samples': readings}
+            'mean_w': (last - first) / 1000 / duration, 'power_samples': readings,
+            'background_process_samples': background}
 
 
 def active_window(graph, calls_per_graph, nvml, uuid, seconds=10):
-    require_exclusive(uuid)
+    background = [[time.monotonic(), observe_background(uuid)]]
     stop = threading.Event()
     errors = []
     readings = []
@@ -97,9 +105,9 @@ def active_window(graph, calls_per_graph, nvml, uuid, seconds=10):
             while not stop.is_set():
                 now = time.monotonic()
                 if now - last_check >= 1:
-                    require_exclusive(uuid)
+                    background.append([now, observe_background(uuid)])
                     last_check = now
-                readings.append([now, nvml.power(), nvml.energy()])
+                readings.append([time.monotonic(), nvml.power(), nvml.energy()])
                 stop.wait(0.05)
         except Exception as error:
             errors.append(repr(error))
@@ -108,6 +116,7 @@ def active_window(graph, calls_per_graph, nvml, uuid, seconds=10):
     watcher = threading.Thread(target=monitor, daemon=True)
     watcher.start()
     first = nvml.energy()
+    first_power = nvml.power()
     start = time.monotonic()
     batches = 0
     try:
@@ -120,33 +129,44 @@ def active_window(graph, calls_per_graph, nvml, uuid, seconds=10):
         torch.cuda.synchronize()
         last = nvml.energy()
         duration = time.monotonic() - start
+        last_power = nvml.power()
     finally:
         stop.set()
         watcher.join(timeout=5)
-    require_exclusive(uuid)
+    background.append([time.monotonic(), observe_background(uuid)])
     assert not errors and batches > 0 and last > first
-    joules = (last - first) / 1000
+    counter_joules = (last - first) / 1000
     count = batches * calls_per_graph
-    relative_error = None
-    if len(readings) > 2:
-        integral = sum((right[0] - left[0]) * (left[1] + right[1]) / 2
-                       for left, right in zip(readings, readings[1:]))
-        covered_s = readings[-1][0] - readings[0][0]
-        relative_error = abs(integral / covered_s - joules / duration) / (joules / duration)
-        assert relative_error < 0.15, 'Energy counter / power sensor disagreement'
+    assert len(readings) > 20
+    points = [[start, first_power]] + [item[:2] for item in readings
+                                     if start < item[0] < start + duration]
+    points.append([start + duration, last_power])
+    joules = sum((right[0] - left[0]) * (left[1] + right[1]) / 2
+                 for left, right in zip(points, points[1:]))
+    assert joules > 0 and all(item[1] > 0 for item in points)
+    relative_error = abs(joules - counter_joules) / counter_joules
     return {'energy_start_mj': first, 'energy_end_mj': last, 'energy_j': joules,
+            'window_start_monotonic_s': start, 'window_end_monotonic_s': start + duration,
+            'endpoint_board_power_w': [first_power, last_power],
+            'energy_method': 'NVML board-power trapezoidal integration over actual window',
+            'counter_energy_j': counter_joules,
+            'counter_consistency_pass': relative_error < 0.15,
             'wall_s': duration, 'actual_sdpa_calls': count, 'mean_board_w': joules / duration,
             'gross_uj_per_sdpa': joules / count * 1e6, 'sustained_ms_per_sdpa':
             duration / count * 1000, 'power_counter_relative_disagreement': relative_error,
-            'samples': readings, 'telemetry_after': telemetry(uuid)}
+            'samples': readings, 'telemetry_after': telemetry(uuid),
+            'background_process_samples': background}
 
 
 def main():
+    global ALLOW_SHARED
     parser = argparse.ArgumentParser()
     parser.add_argument('--vector', type=Path, required=True)
     parser.add_argument('--baseline', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--allow-shared', action='store_true')
     args = parser.parse_args()
+    ALLOW_SHARED = args.allow_shared
     baseline = json.loads(args.baseline.read_text())
     assert baseline['status'] == 'pass_timing_only'
     assert sha(args.vector) == baseline['vector_sha256']
@@ -156,7 +176,7 @@ def main():
         '--query-gpu=uuid', '--format=csv,noheader',
     ], text=True).strip()
     assert visible_uuid == uuid
-    require_exclusive(uuid)
+    initial_background = observe_background(uuid)
     nvml = Nvml(uuid)
     torch.set_grad_enabled(False)
     torch.set_num_threads(4)
@@ -169,10 +189,17 @@ def main():
               'baseline_sha256': sha(args.baseline), 'gpu_uuid': uuid,
               'shape': list(qkv[0].shape), 'dtype': 'FP16', 'backend': backend.name,
               'metadata': payload['metadata'], 'torch': torch.__version__,
-              'scope': 'gross NVML board energy of resident repeated full-head SDPA',
+              'scope': 'gross NVML board-power integral for repeated full-head SDPA',
               'excluded': 'host/CPU energy, PCIe, QKV/output projections, RoPE, MLP',
               'protocol': '3x10-second sustained windows; 10-second pre/post idle and warm load',
               'sustained_replay_is_not_isolated_call_latency': True}
+    report.update(shared_environment_authorized=ALLOW_SHARED,
+                  foreign_processes_at_start=initial_background,
+                  measurement_condition=('shared-board gross energy; background included'
+                                         if ALLOW_SHARED else 'exclusive compute admission'))
+    report['energy_method'] = 'NVML board-power trapezoidal integration'
+    report['counter_used_as_diagnostic_only'] = True
+    report['measurement_script_sha256'] = sha(Path(__file__))
     with sdpa_kernel(backend):
         answer = functional.scaled_dot_product_attention(*qkv)
         relative = float((answer.float() - reference).norm() /
@@ -194,7 +221,7 @@ def main():
         last_check = start
         while time.monotonic() - start < 10:
             if time.monotonic() - last_check >= 1:
-                require_exclusive(uuid)
+                observe_background(uuid)
                 last_check = time.monotonic()
             graph.replay()
             torch.cuda.synchronize()

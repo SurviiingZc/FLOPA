@@ -87,6 +87,14 @@ def collect():
                         'backend', 'vector_sha256', 'median_gross_uj_per_sdpa',
                         'minimum_gross_uj_per_sdpa', 'maximum_gross_uj_per_sdpa', 'scope')
                 }
+                items[key]['result']['shared_environment_authorized'] = energy.get(
+                    'shared_environment_authorized', False)
+                items[key]['result']['measurement_condition'] = energy.get(
+                    'measurement_condition', 'exclusive compute admission')
+                items[key]['result']['energy_method'] = energy.get(
+                    'energy_method', 'NVML cumulative energy counter')
+                if energy.get('shared_environment_authorized'):
+                    items[key]['status'] = '完成并核验（共享环境整卡能量，含背景）'
                 items[key]['result']['source'] = str(path)
                 items[key]['result']['source_sha256'] = hashlib.sha256(
                     path.read_bytes()).hexdigest()

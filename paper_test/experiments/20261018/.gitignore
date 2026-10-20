@@ -16,3 +16,5 @@ __pycache__/
 checklist_model_snapshot.json
 checklist_state.json
 checklist_update.lock
+clock_load_audit_*/
+publication_update.lock

@@ -1,6 +1,7 @@
 """Submit energy measurements only when the fixed GPU is idle and reserved by our lock."""
 
 import fcntl
+import argparse
 import json
 import os
 import subprocess
@@ -12,6 +13,9 @@ from capture_trajectories import MODELS, wait_for_gpu, write_json
 
 
 ROOT = Path('/10T/zhangcheng/flopa_evaluation_20261018')
+parser = argparse.ArgumentParser()
+parser.add_argument('--allow-shared', action='store_true')
+args = parser.parse_args()
 os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 target = ROOT / 'baselines/gpu_energy'
 target.mkdir(parents=True, exist_ok=True)
@@ -28,15 +32,19 @@ for model, config in MODELS.items():
             write_json(target / 'queue_state.json', {
                 'state': 'waiting_idle_gpu', 'point': name, 'attempt': attempt,
             })
-            wait_for_gpu(target)
+            if not args.allow_shared:
+                wait_for_gpu(target)
             with (ROOT / 'gpu_capture_timing.lock').open('w') as gpu_lock:
                 fcntl.flock(gpu_lock, fcntl.LOCK_EX)
-                wait_for_gpu(target)
+                if not args.allow_shared:
+                    wait_for_gpu(target)
                 layer = config['layers'][1]
                 vector = ROOT / model / f'evaluation_p{pixel}_seed301/l{layer:02d}_s15.pt'
                 command = [sys.executable, '-u', str(Path(__file__).with_name(
                     'benchmark_sdpa_energy.py')), '--vector', str(vector), '--baseline',
                     str(ROOT / f'baselines/cuda/{name}.json'), '--output', str(destination)]
+                if args.allow_shared:
+                    command.append('--allow-shared')
                 write_json(target / 'queue_state.json', {
                     'state': 'running', 'point': name, 'attempt': attempt,
                 })

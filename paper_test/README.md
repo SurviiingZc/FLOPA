@@ -1,3 +1,7 @@
+> 2026-10-20功耗回读修正：原约5W受DC默认1001pF高扇出简化负载影响。同一DDC/SAIF以high_fanout_net_threshold=0重新回读，F0 d72为0.5740094W、F0 d128为0.5996562W、F2 d72为0.5556435W；匹配能量减少3.65%。这些仍为实际库pin负载、ZeroWireload/preCTS IP估计；未重综合，旧结果留存审计而不再作当前主结果。详见results中的actual_pin_load_power_audit。
+
+> 2026-10-20最新执行决定：作者要求“直接测”，GPU能量改为共享环境直接采集，记录背景进程，不因驻留CUDA进程拒收。主能量由整卡NVML功率曲线积分得到；累计计数器因与功率积分不一致仅作诊断。结果是含背景的共享整卡能量，不冒充独占SDPA能量或ASIC系统级节能倍数。
+
 > 2026-10-19最新决定：跨平台主比较改为每次完整多头SDPA的能量（µJ/call），原延迟保留。GPU整卡与ASIC IP边界分开标注；未测长N能量不由N256/H1功率外推。详见[ENERGY_EVALUATION_ZH.md](ENERGY_EVALUATION_ZH.md)。
 
 > 2026-10-19 平台调整：依用户决定，主图仅比较 GPU 与 FLOPA；取消 CPU 性能测试与复测。已有 CPU 计时保留为历史，不用于论文比较。CPU 上的整数参考/误差诊断仍继续，它们不属于 CPU 性能基线。
@@ -8,7 +12,7 @@
 主版本 F0 保持不变，F1/F2 使用独立对照版本。
 
 <!-- CURRENT_TEST_CHECKLIST_BEGIN -->
-更新时间：2026-10-19T21:01:36+08:00；已核验 **45/88** 项。
+更新时间：2026-10-20T15:03:42+08:00；已核验 **65/88** 项。
 
 勾选只表示本项通过所列检查；运行中、排队、失败及待复测均保持空框。
 
@@ -32,10 +36,10 @@
 - [x] N=2,304：FLOPA 完整多头 RTL 周期与逐字节核对；完成并核验。 <!-- task:pixart_rtl_2304 -->
 - [x] N=4,096：完整整数参考与误差诊断；完成并核验。 <!-- task:pixart_golden_4096 -->
 - [x] N=4,096：GPU 完整多头 SDPA 正式计时；完成并核验。 <!-- task:pixart_gpu_4096 -->
-- [ ] N=4,096：FLOPA 完整多头 RTL 周期与逐字节核对；RTL 回放运行中。 <!-- task:pixart_rtl_4096 -->
+- [x] N=4,096：FLOPA 完整多头 RTL 周期与逐字节核对；完成并核验。 <!-- task:pixart_rtl_4096 -->
 - [x] N=9,216：完整整数参考与误差诊断；完成并核验。 <!-- task:pixart_golden_9216 -->
 - [x] N=9,216：GPU 完整多头 SDPA 正式计时；完成并核验。 <!-- task:pixart_gpu_9216 -->
-- [ ] N=9,216：FLOPA 完整多头 RTL 周期与逐字节核对；待启动。 <!-- task:pixart_rtl_9216 -->
+- [ ] N=9,216：FLOPA 完整多头 RTL 周期与逐字节核对；RTL 回放运行中。 <!-- task:pixart_rtl_9216 -->
 - [x] N=16,384：完整整数参考与误差诊断；完成并核验。 <!-- task:pixart_golden_16384 -->
 - [x] N=16,384：GPU 完整多头 SDPA 正式计时；完成并核验。 <!-- task:pixart_gpu_16384 -->
 - [ ] N=16,384：FLOPA 完整多头 RTL 周期与逐字节核对；待启动。 <!-- task:pixart_rtl_16384 -->
@@ -50,10 +54,10 @@
 - [x] N=2,304：FLOPA 完整多头 RTL 周期与逐字节核对；完成并核验。 <!-- task:wan_rtl_2304 -->
 - [x] N=4,096：完整整数参考与误差诊断；完成并核验。 <!-- task:wan_golden_4096 -->
 - [x] N=4,096：GPU 完整多头 SDPA 正式计时；完成并核验。 <!-- task:wan_gpu_4096 -->
-- [ ] N=4,096：FLOPA 完整多头 RTL 周期与逐字节核对；RTL 回放运行中。 <!-- task:wan_rtl_4096 -->
+- [x] N=4,096：FLOPA 完整多头 RTL 周期与逐字节核对；完成并核验。 <!-- task:wan_rtl_4096 -->
 - [x] N=9,216：完整整数参考与误差诊断；完成并核验。 <!-- task:wan_golden_9216 -->
 - [x] N=9,216：GPU 完整多头 SDPA 正式计时；完成并核验。 <!-- task:wan_gpu_9216 -->
-- [ ] N=9,216：FLOPA 完整多头 RTL 周期与逐字节核对；待启动。 <!-- task:wan_rtl_9216 -->
+- [ ] N=9,216：FLOPA 完整多头 RTL 周期与逐字节核对；RTL 回放运行中。 <!-- task:wan_rtl_9216 -->
 - [x] N=16,384：完整整数参考与误差诊断；完成并核验。 <!-- task:wan_golden_16384 -->
 - [x] N=16,384：GPU 完整多头 SDPA 正式计时；完成并核验。 <!-- task:wan_gpu_16384 -->
 - [ ] N=16,384：FLOPA 完整多头 RTL 周期与逐字节核对；待启动。 <!-- task:wan_rtl_16384 -->
@@ -68,7 +72,7 @@
 - [x] F2 关闭 PV/row-state 重叠后的 d64/72/128 与尾 tile 功能检查；完成并核验。 <!-- task:f2_function -->
 - [x] F2 同库、同 PVT、同目标时钟综合与面积/时序核验；完成并核验。 <!-- task:f2_ppa -->
 - [x] F2 相同 d72/N256 输入的门级功能、SAIF 与活动功耗；完成并核验。 <!-- task:f2_power -->
-- [x] F0/F2 同条件周期、能量与面积对照汇总；同输入门级核验通过；周期降6.73%、IP估计能量降5.04%；时钟审查另列。 <!-- task:f2_comparison -->
+- [x] F0/F2 同条件周期、能量与面积对照汇总；周期降6.73%；实际pin负载IP能量降3.65%。 <!-- task:f2_comparison -->
 - [ ] F1 真正 P-buffer-fed PV 的匹配设计与 RTL 实现；待启动。 <!-- task:f1_design -->
 - [ ] F1 与 F0 相同输入、相同整数算术的功能核对；待启动。 <!-- task:f1_function -->
 - [ ] F1 同库、同 PVT、同目标时钟综合与面积/时序核验；待启动。 <!-- task:f1_ppa -->
@@ -90,37 +94,37 @@
 
 - [x] PixArt全部28层：真实Q/K/V采集；完成并核验。 <!-- task:pixart_layerstep_capture -->
 - [x] PixArt全部28层：逐层独立校准与完整整数参考；完成并核验。 <!-- task:pixart_layerstep_golden -->
-- [ ] PixArt全部28层：驻留SDPA序列的累计GPU计时；等待空闲GPU或排队。 <!-- task:pixart_layerstep_gpu -->
+- [x] PixArt全部28层：驻留SDPA序列的累计GPU计时；完成并核验。 <!-- task:pixart_layerstep_gpu -->
 - [x] PixArt全部28层：所有层RTL通过并累加实际周期；完成并核验。 <!-- task:pixart_layerstep_rtl -->
 - [x] Wan全部30层：真实Q/K/V采集；完成并核验。 <!-- task:wan_layerstep_capture -->
 - [x] Wan全部30层：逐层独立校准与完整整数参考；完成并核验。 <!-- task:wan_layerstep_golden -->
-- [ ] Wan全部30层：驻留SDPA序列的累计GPU计时；等待空闲GPU或排队。 <!-- task:wan_layerstep_gpu -->
-- [ ] Wan全部30层：所有层RTL通过并累加实际周期；已核验25/30层；逐层回放运行中或排队。 <!-- task:wan_layerstep_rtl -->
+- [x] Wan全部30层：驻留SDPA序列的累计GPU计时；完成并核验。 <!-- task:wan_layerstep_gpu -->
+- [x] Wan全部30层：所有层RTL通过并累加实际周期；完成并核验。 <!-- task:wan_layerstep_rtl -->
 
 ### F. 正式跨层覆盖（N4096，步索引15，条件分支；N1024仅流程验证）
 
 - [x] PixArt全部28层：真实Q/K/V采集；完成并核验。 <!-- task:pixart_layerstep_n4096_capture -->
-- [ ] PixArt全部28层：逐层冻结校准与完整整数参考；全部层整数参考生成中。 <!-- task:pixart_layerstep_n4096_golden -->
-- [ ] PixArt全部28层：驻留SDPA序列的累计GPU计时；等待空闲GPU或排队。 <!-- task:pixart_layerstep_n4096_gpu -->
-- [ ] PixArt全部28层：所有层RTL通过并累加实际周期；已核验0/28层；逐层回放运行中或排队。 <!-- task:pixart_layerstep_n4096_rtl -->
+- [x] PixArt全部28层：逐层冻结校准与完整整数参考；完成并核验。 <!-- task:pixart_layerstep_n4096_golden -->
+- [x] PixArt全部28层：驻留SDPA序列的累计GPU计时；完成并核验。 <!-- task:pixart_layerstep_n4096_gpu -->
+- [ ] PixArt全部28层：所有层RTL通过并累加实际周期；已核验8/28层；逐层回放运行中或排队。 <!-- task:pixart_layerstep_n4096_rtl -->
 - [x] Wan全部30层：真实Q/K/V采集；完成并核验。 <!-- task:wan_layerstep_n4096_capture -->
-- [ ] Wan全部30层：逐层冻结校准与完整整数参考；全部层整数参考生成中。 <!-- task:wan_layerstep_n4096_golden -->
-- [ ] Wan全部30层：驻留SDPA序列的累计GPU计时；等待空闲GPU或排队。 <!-- task:wan_layerstep_n4096_gpu -->
-- [ ] Wan全部30层：所有层RTL通过并累加实际周期；已核验0/30层；逐层回放运行中或排队。 <!-- task:wan_layerstep_n4096_rtl -->
+- [x] Wan全部30层：逐层冻结校准与完整整数参考；完成并核验。 <!-- task:wan_layerstep_n4096_golden -->
+- [x] Wan全部30层：驻留SDPA序列的累计GPU计时；完成并核验。 <!-- task:wan_layerstep_n4096_gpu -->
+- [ ] Wan全部30层：所有层RTL通过并累加实际周期；已核验4/30层；逐层回放运行中或排队。 <!-- task:wan_layerstep_n4096_rtl -->
 
 ### G. 能量主比较（完整多头SDPA，延迟数据保留）
 
-- [ ] PixArt N=1,024：GPU三窗口整卡能量/实际调用数；等待空闲GPU或能量测量排队。 <!-- task:pixart_gpu_energy_1024 -->
-- [ ] PixArt N=2,304：GPU三窗口整卡能量/实际调用数；等待空闲GPU或能量测量排队。 <!-- task:pixart_gpu_energy_2304 -->
-- [ ] PixArt N=4,096：GPU三窗口整卡能量/实际调用数；等待空闲GPU或能量测量排队。 <!-- task:pixart_gpu_energy_4096 -->
-- [ ] PixArt N=9,216：GPU三窗口整卡能量/实际调用数；等待空闲GPU或能量测量排队。 <!-- task:pixart_gpu_energy_9216 -->
-- [ ] PixArt N=16,384：GPU三窗口整卡能量/实际调用数；等待空闲GPU或能量测量排队。 <!-- task:pixart_gpu_energy_16384 -->
-- [ ] Wan N=1,024：GPU三窗口整卡能量/实际调用数；等待空闲GPU或能量测量排队。 <!-- task:wan_gpu_energy_1024 -->
-- [ ] Wan N=2,304：GPU三窗口整卡能量/实际调用数；等待空闲GPU或能量测量排队。 <!-- task:wan_gpu_energy_2304 -->
-- [ ] Wan N=4,096：GPU三窗口整卡能量/实际调用数；等待空闲GPU或能量测量排队。 <!-- task:wan_gpu_energy_4096 -->
-- [ ] Wan N=9,216：GPU三窗口整卡能量/实际调用数；等待空闲GPU或能量测量排队。 <!-- task:wan_gpu_energy_9216 -->
-- [ ] Wan N=16,384：GPU三窗口整卡能量/实际调用数；等待空闲GPU或能量测量排队。 <!-- task:wan_gpu_energy_16384 -->
-- [ ] ASIC clock-network分组、时钟负载及SAIF映射审查；待审查；当前d72点clock-network占97.22%。 <!-- task:clock_power_audit -->
+- [x] PixArt N=1,024：GPU三窗口整卡能量/实际调用数；完成并核验（共享环境整卡能量，含背景）。 <!-- task:pixart_gpu_energy_1024 -->
+- [x] PixArt N=2,304：GPU三窗口整卡能量/实际调用数；完成并核验（共享环境整卡能量，含背景）。 <!-- task:pixart_gpu_energy_2304 -->
+- [x] PixArt N=4,096：GPU三窗口整卡能量/实际调用数；完成并核验（共享环境整卡能量，含背景）。 <!-- task:pixart_gpu_energy_4096 -->
+- [x] PixArt N=9,216：GPU三窗口整卡能量/实际调用数；完成并核验（共享环境整卡能量，含背景）。 <!-- task:pixart_gpu_energy_9216 -->
+- [x] PixArt N=16,384：GPU三窗口整卡能量/实际调用数；完成并核验（共享环境整卡能量，含背景）。 <!-- task:pixart_gpu_energy_16384 -->
+- [x] Wan N=1,024：GPU三窗口整卡能量/实际调用数；完成并核验（共享环境整卡能量，含背景）。 <!-- task:wan_gpu_energy_1024 -->
+- [x] Wan N=2,304：GPU三窗口整卡能量/实际调用数；完成并核验（共享环境整卡能量，含背景）。 <!-- task:wan_gpu_energy_2304 -->
+- [x] Wan N=4,096：GPU三窗口整卡能量/实际调用数；完成并核验（共享环境整卡能量，含背景）。 <!-- task:wan_gpu_energy_4096 -->
+- [x] Wan N=9,216：GPU三窗口整卡能量/实际调用数；完成并核验（共享环境整卡能量，含背景）。 <!-- task:wan_gpu_energy_9216 -->
+- [x] Wan N=16,384：GPU三窗口整卡能量/实际调用数；完成并核验（共享环境整卡能量，含背景）。 <!-- task:wan_gpu_energy_16384 -->
+- [x] ASIC clock-network分组、时钟负载及SAIF映射审查；已核验1001pF简化负载，三点按实际库pin负载回读；仍为pre-CTS。 <!-- task:clock_power_audit -->
 - [ ] 原形长N/全head ASIC活动能量方法与可行性核验；待核验长N活动方法；完整门级成本较高。 <!-- task:native_energy_method -->
 - [ ] 主图原形完整多头ASIC能量；不由N256/H1功率外推；待测；未测保持空白，不以N256/H1替代原形算子。 <!-- task:native_energy -->
 
