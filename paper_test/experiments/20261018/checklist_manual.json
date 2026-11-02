@@ -32,5 +32,54 @@
         "done": true,
         "status": "周期降6.73%；实际pin负载IP能量降3.65%",
         "evidence": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/results/f2_comparison.json"
+    },
+    "pixart_rtl_16384": {
+        "done": false,
+        "cancelled": true,
+        "status": "按用户要求取消；本轮最高 N=9,216，保留已有文件",
+        "evidence": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/continuation_20261022/scope_change_20261023_cancel_n16384.json"
+    },
+    "pixart_native_energy_16384": {
+        "done": false,
+        "cancelled": true,
+        "status": "按用户要求取消；本轮最高 N=9,216，保留已有文件",
+        "evidence": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/continuation_20261022/scope_change_20261023_cancel_n16384.json"
+    },
+    "wan_rtl_16384": {
+        "done": false,
+        "cancelled": true,
+        "status": "按用户要求取消；本轮最高 N=9,216，保留已有文件",
+        "evidence": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/continuation_20261022/scope_change_20261023_cancel_n16384.json"
+    },
+    "wan_native_energy_16384": {
+        "done": false,
+        "cancelled": true,
+        "status": "按用户要求取消；本轮最高 N=9,216，保留已有文件",
+        "evidence": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/continuation_20261022/scope_change_20261023_cancel_n16384.json"
+    },
+    "accuracy_pixart_lengths": {
+        "done": true,
+        "status": "124组重算完成且完整输出匹配；MAE/RMSE已汇总，不代表达到精度门槛",
+        "evidence": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261024_accuracy/accuracy_summary.json"
+    },
+    "accuracy_wan_lengths": {
+        "done": true,
+        "status": "124组重算完成且完整输出匹配；MAE/RMSE已汇总，不代表达到精度门槛",
+        "evidence": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261024_accuracy/accuracy_summary.json"
+    },
+    "accuracy_pixart_layers": {
+        "done": true,
+        "status": "124组重算完成且完整输出匹配；MAE/RMSE已汇总，不代表达到精度门槛",
+        "evidence": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261024_accuracy/accuracy_summary.json"
+    },
+    "accuracy_wan_layers": {
+        "done": true,
+        "status": "124组重算完成且完整输出匹配；MAE/RMSE已汇总，不代表达到精度门槛",
+        "evidence": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261024_accuracy/accuracy_summary.json"
+    },
+    "quality_pixart_4pairs": {
+        "done": true,
+        "status": "原生1024/N4096四组生成及核验完成；有可见差异，不宣称近无损",
+        "evidence": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261024_accuracy/quality_native/quality_summary.json"
     }
 }

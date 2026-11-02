@@ -1,0 +1,11 @@
+top=attention_accel_top
+corner=tt
+clock_period_ns=1.6
+ddc=/data/workspaces/zhangcheng/flash_attention/asic/dc/work/synth/tt/system/attention_accel_top/results/attention_accel_top.ddc
+ddc_sha256=b3b3cdf6c24140e1efa1ed5a1c057601aeff3ae78f4803420af65be09837b4b6
+saif=/data/workspaces/zhangcheng/flash_attention/paper_test/runs/20261012T212312Z_gate_q64_kv64_s302_c0_r0/activity.saif
+saif_sha256=9bec25cf3e006c3f5abdbdc591f568f419313b1f316a9811acb20e2b40ca3bb1
+saif_strip_path=tb_top/dut
+rtl_hash=d31a35dc02783c6ed1a02068ff107af362343ab13ce487aa3ce4ec82193dc791
+standard_cell_db=/data/public/STD/tcbn28hpcplusbwp12t30p140_190a/tcbn28hpcplusbwp12t30p140_180a_ccs/TSMCHOME/digital/Front_End/timing_power_noise/CCS/tcbn28hpcplusbwp12t30p140_180a/tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs.db
+sram_db=/data/workspaces/zhangcheng/flash_attention/asic/dc/work/lib/uhdsp_256x8m4s_tt0p9v25c.db

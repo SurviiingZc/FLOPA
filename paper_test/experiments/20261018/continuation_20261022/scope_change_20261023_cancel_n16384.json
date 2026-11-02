@@ -1,0 +1,22 @@
+{
+    "requested_at_utc": "2026-10-23T08:30:34.416704+00:00",
+    "user_request": "Finish N=9216; do not run N=16384.",
+    "maximum_sequence_length": 9216,
+    "cancelled_jobs": [
+        "pixart_n16384",
+        "wan_n16384",
+        "power_native_pixart_n16384_s301",
+        "power_native_wan_n16384_s301"
+    ],
+    "stopped_queue_pid": 2682426,
+    "stopped_simulation_pids": [
+        3629886,
+        3629907
+    ],
+    "backup_directory": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/continuation_20261022/cancel_n16384_20261023T083033Z",
+    "preserved_completed_16k_gpu_and_reference_data": true,
+    "remaining_lower_length_and_power_tests": "continue unchanged",
+    "queue_source_sha256": "78e9911a3acf16640ac0519331f54f3c986fe6ec4acd2306b78a9432e775a998",
+    "checklist_source_sha256": "ac6f8f41218bb28c56fd98608fbcd07d7f7b75e3f5fb4e285deb5c38e913fbb0",
+    "restarted_queue_pid": 186901
+}

@@ -1,0 +1,1502 @@
+{
+    "timestamp_utc": "2026-10-24T17:51:12.703378Z",
+    "scope": "Read-only status snapshot plus this new JSON. No job was started, restarted, resumed, stopped, or reconfigured; no RTL/TeX/Excel changed.",
+    "queue_status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/continuation_20261022/status.json",
+    "queue_status_sha256": "68d1df95e27327e34f54cd05861824e7fd85fb6254dbc0a6148e1d43c361d06b",
+    "finite_queue": {
+        "pid": 186901,
+        "updated_unix": 1792864228.4508953,
+        "completed": 101,
+        "total": 132,
+        "running": [
+            "power_native_pixart_n1024_s301",
+            "pixart_n4096_l20_s15",
+            "pixart_n4096_l21_s15",
+            "pixart_n4096_l22_s15",
+            "pixart_n4096_l23_s15",
+            "wan_n9216",
+            "power_native_wan_n1024_s301",
+            "wan_n4096_l16_s15",
+            "wan_n4096_l17_s15",
+            "wan_n4096_l18_s15",
+            "wan_n4096_l19_s15"
+        ],
+        "failed": [],
+        "free_gib": 103.70328903198242,
+        "disk_guard_pauses_new_jobs": false,
+        "submitted_this_round": [],
+        "precision_optimization": "deferred",
+        "maximum_sequence_length": 9216,
+        "scope": "finite approved queue; maximum N=9216; exits after terminal states"
+    },
+    "wan_n9216": {
+        "name": "wan_n9216",
+        "state": "running",
+        "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/wan_n9216/status.json",
+        "status_sha256": "8d88e66a6888958292c903f1acf4efffb4d9fc7949833e2f54700f67017ac4b0",
+        "simulation_pid": null,
+        "started_unix": 1792443475.0957613,
+        "cycles": null,
+        "elapsed_seconds": null,
+        "expected_cycles": null,
+        "log_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/wan_n9216/run.log",
+        "log_sha256": "b0e8ec44b7c88fcbfb347b3aa859da27545e63b3024a69fb645a74d0b875ca07",
+        "log_mtime_unix": 1792861543.8386467,
+        "last_logged_sim_time_ps": 808339312800,
+        "last_logged_sim_time_ms": 808.3393128,
+        "infl_delta_warning_count": 14,
+        "logged_warning_times_strictly_increasing": true,
+        "pass_marker": false,
+        "warning_interpretation": "Simulation timestamps advance; warning alone is not a proven permanent zero-delay hang. No current live time is queried."
+    },
+    "layer_replay_status": [
+        {
+            "model": "pixart",
+            "n": 1024,
+            "expected_layers": 28,
+            "states": {
+                "pass": 28
+            },
+            "jobs": [
+                {
+                    "name": "pixart_n1024_l00_s15",
+                    "state": "pass",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/pixart_n1024_l00_s15/status.json",
+                    "status_sha256": "b550c6b80dcacef4d8ddbacf663a8c70e700964da7b4931de356a13116e2c527",
+                    "simulation_pid": null,
+                    "started_unix": 1792397990.7272332,
+                    "cycles": 6308273,
+                    "elapsed_seconds": 1861.9926722049713,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "pixart_n1024_l01_s15",
+                    "state": "pass",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/pixart_n1024_l01_s15/status.json",
+                    "status_sha256": "298c42836d71b833acbf565f497977cd4cd4e7c7a2618b87e4ec2548f0d6de5b",
+                    "simulation_pid": null,
+                    "started_unix": 1792397996.290264,
+                    "cycles": 6308273,
+                    "elapsed_seconds": 1920.89835190773,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "pixart_n1024_l02_s15",
+                    "state": "pass",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/pixart_n1024_l02_s15/status.json",
+                    "status_sha256": "1a2bd98ce5fdab046364c6efa1115dbf54d620e292921134c08ea59a9c2864b9",
+                    "simulation_pid": null,
+                    "started_unix": 1792399626.7927737,
+                    "cycles": 6308273,
+                    "elapsed_seconds": 1709.4233076572418,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "pixart_n1024_l03_s15",
+                    "state": "pass",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/pixart_n1024_l03_s15/status.json",
+                    "status_sha256": "9f85ba072b21ae52dac83b4b292447abdd85cd5c01747d67f224f4e6373037d5",
+                    "simulation_pid": null,
+                    "started_unix": 1792399632.3780704,
+                    "cycles": 6308273,
+                    "elapsed_seconds": 1905.4813871383667,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "pixart_n1024_l04_s15",
+                    "state": "pass",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/pixart_n1024_l04_s15/status.json",
+                    "status_sha256": "def04dc3a45554cf94217f34c73fa15ec78e6f84ab087cd9de7b445e70ed46ee",
+                    "simulation_pid": null,
+                    "started_unix": 1792399901.7056558,
+                    "cycles": 6308273,
+                    "elapsed_seconds": 1855.9882390499115,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "pixart_n1024_l05_s15",
+                    "state": "pass",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/pixart_n1024_l05_s15/status.json",
+                    "status_sha256": "7f5b74fa265079bb42315c5a3b15658a2e0e57372f93b73656933e2e9ad1dc9c",
+                    "simulation_pid": null,
+                    "started_unix": 1792399970.5521948,
+                    "cycles": 6308273,
+                    "elapsed_seconds": 1887.0196964740753,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "pixart_n1024_l06_s15",
+                    "state": "pass",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/pixart_n1024_l06_s15/status.json",
+                    "status_sha256": "14cb840fd206c56de02d315668ba947a69e1f4c6d63e0c72809d15aa5accfcf9",
+                    "simulation_pid": null,
+                    "started_unix": 1792401378.601371,
+                    "cycles": 6308273,
+                    "elapsed_seconds": 1828.9690554141998,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "pixart_n1024_l07_s15",
+                    "state": "pass",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/pixart_n1024_l07_s15/status.json",
+                    "status_sha256": "caef75c7f20acdc33b5f0c64df63532e4e497f9c54debc405f1f088bb63bbe69",
+                    "simulation_pid": null,
+                    "started_unix": 1792401573.8467734,
+                    "cycles": 6308273,
+                    "elapsed_seconds": 1897.7008872032166,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "pixart_n1024_l08_s15",
+                    "state": "pass",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/pixart_n1024_l08_s15/status.json",
+                    "status_sha256": "ab52b266920d54b025cf762e072518b108c6d03640406aae011b79d478c10125",
+                    "simulation_pid": null,
+                    "started_unix": 1792401768.9972367,
+                    "cycles": 6308273,
+                    "elapsed_seconds": 1883.1960349082947,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "pixart_n1024_l09_s15",
+                    "state": "pass",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/pixart_n1024_l09_s15/status.json",
+                    "status_sha256": "9592e2014a573462ceab80aa80aa2e9533d2fe77a86dcf439d2b6d70ff44467a",
+                    "simulation_pid": null,
+                    "started_unix": 1792401900.9683788,
+                    "cycles": 6308273,
+                    "elapsed_seconds": 1851.6144669055939,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "pixart_n1024_l10_s15",
+                    "state": "pass",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/pixart_n1024_l10_s15/status.json",
+                    "status_sha256": "7ad29f1259152d70a3fb81d4da6277071c1931d5422a101bef93f7be963d98df",
+                    "simulation_pid": null,
+                    "started_unix": 1792403251.029188,
+                    "cycles": 6308273,
+                    "elapsed_seconds": 1944.8319177627563,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "pixart_n1024_l11_s15",
+                    "state": "pass",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/pixart_n1024_l11_s15/status.json",
+                    "status_sha256": "421d21eb6379642e5230a8cd3148edc1e9e5454e3f25c6e09bc891c41ba00ff2",
+                    "simulation_pid": null,
+                    "started_unix": 1792403515.655985,
+                    "cycles": 6308273,
+                    "elapsed_seconds": 1916.7662861347198,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "pixart_n1024_l12_s15",
+                    "state": "pass",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/pixart_n1024_l12_s15/status.json",
+                    "status_sha256": "37aa54e0831ab6e7b08c0c0868b07f574f6bb82bff61d83230a624f805c9e0a9",
+                    "simulation_pid": null,
+                    "started_unix": 1792403710.9873977,
+                    "cycles": 6308273,
+                    "elapsed_seconds": 1900.0754961967468,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "pixart_n1024_l13_s15",
+                    "state": "pass",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/pixart_n1024_l13_s15/status.json",
+                    "status_sha256": "34a471805d218ef530ce9d6ac0d5dccd9b2d5577483ba6cce2a221a3bb39d387",
+                    "simulation_pid": null,
+                    "started_unix": 1792403779.714232,
+                    "cycles": 6308273,
+                    "elapsed_seconds": 1875.753033876419,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "pixart_n1024_l14_s15",
+                    "state": "pass",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/pixart_n1024_l14_s15/status.json",
+                    "status_sha256": "19a26c2e4f79a4786b576dc12decc86146d682c4cdd06a6b57d1e4d360db41af",
+                    "simulation_pid": null,
+                    "started_unix": 1792405250.5759504,
+                    "cycles": 6308273,
+                    "elapsed_seconds": 1887.7236058712006,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "pixart_n1024_l15_s15",
+                    "state": "pass",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/pixart_n1024_l15_s15/status.json",
+                    "status_sha256": "9f6d76c81440cc9ba8863ad7a1c4f923f58caaf8d922028e4e97f2ef218cf3cd",
+                    "simulation_pid": null,
+                    "started_unix": 1792405445.7106476,
+                    "cycles": 6308273,
+                    "elapsed_seconds": 1865.765604019165,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "pixart_n1024_l16_s15",
+                    "state": "pass",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/pixart_n1024_l16_s15/status.json",
+                    "status_sha256": "eca4fef8647f53d72d6f387da2b72b1c08a8fb3dca8ad7f5c90abff4c2409ae3",
+                    "simulation_pid": null,
+                    "started_unix": 1792405646.3040237,
+                    "cycles": 6308273,
+                    "elapsed_seconds": 1849.9671580791473,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "pixart_n1024_l17_s15",
+                    "state": "pass",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/pixart_n1024_l17_s15/status.json",
+                    "status_sha256": "0d1035a950b3d8fa10f2687c8f44d1e0a176ecfdfc4463123b9d9f15e0c7be45",
+                    "simulation_pid": null,
+                    "started_unix": 1792405720.6635334,
+                    "cycles": 6308273,
+                    "elapsed_seconds": 1856.9581668376923,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "pixart_n1024_l18_s15",
+                    "state": "pass",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/pixart_n1024_l18_s15/status.json",
+                    "status_sha256": "c1f1e55799d79cbc4478fe1b82d3e3d61ebde5630351f3fb2b19a3c4c83a20f9",
+                    "simulation_pid": null,
+                    "started_unix": 1792407190.8420343,
+                    "cycles": 6308273,
+                    "elapsed_seconds": 1851.1803050041199,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "pixart_n1024_l19_s15",
+                    "state": "pass",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/pixart_n1024_l19_s15/status.json",
+                    "status_sha256": "74e2c6ea6c25f55855ce8f9c9529d8f66b7822795c38d5dc70464f3c578993f7",
+                    "simulation_pid": null,
+                    "started_unix": 1792407322.583724,
+                    "cycles": 6308273,
+                    "elapsed_seconds": 1810.1097874641418,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "pixart_n1024_l20_s15",
+                    "state": "pass",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/pixart_n1024_l20_s15/status.json",
+                    "status_sha256": "5b9eb796e96b64429a1ae6fdfc30d1b54708383a6dbbf2fe075732f33cba9053",
+                    "simulation_pid": null,
+                    "started_unix": 1792407517.78974,
+                    "cycles": 6308273,
+                    "elapsed_seconds": 1843.2551929950714,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "pixart_n1024_l21_s15",
+                    "state": "pass",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/pixart_n1024_l21_s15/status.json",
+                    "status_sha256": "177c479d051fa0b8dec91003709c40878dd342b9802f1b7ea807014a15789b9f",
+                    "simulation_pid": null,
+                    "started_unix": 1792407586.5912783,
+                    "cycles": 6308273,
+                    "elapsed_seconds": 1912.5464708805084,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "pixart_n1024_l22_s15",
+                    "state": "pass",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/pixart_n1024_l22_s15/status.json",
+                    "status_sha256": "77c4002da03d9387f12d2f6425e630883efd0ef7e0f4247033c4dd670800a5ad",
+                    "simulation_pid": null,
+                    "started_unix": 1792409057.12623,
+                    "cycles": 6308273,
+                    "elapsed_seconds": 1858.556319952011,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "pixart_n1024_l23_s15",
+                    "state": "pass",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/pixart_n1024_l23_s15/status.json",
+                    "status_sha256": "047d435ec0b772bf2b82671e9b639a3129acca66d5f2f08f9d42078de150ae1b",
+                    "simulation_pid": null,
+                    "started_unix": 1792409194.644876,
+                    "cycles": 6308273,
+                    "elapsed_seconds": 1843.3224239349365,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "pixart_n1024_l24_s15",
+                    "state": "pass",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/pixart_n1024_l24_s15/status.json",
+                    "status_sha256": "b2da713e0b3c4c6cb15c5e50bd26a99ef2193f31b336bfd21f37c5af75eeffcf",
+                    "simulation_pid": null,
+                    "started_unix": 1792409395.3077986,
+                    "cycles": 6308273,
+                    "elapsed_seconds": 1840.6488275527954,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "pixart_n1024_l25_s15",
+                    "state": "pass",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/pixart_n1024_l25_s15/status.json",
+                    "status_sha256": "15386bc2b7d2f6c93fc980960882c0847781712f7bd212f73c041ee338539ad5",
+                    "simulation_pid": null,
+                    "started_unix": 1792409527.3668668,
+                    "cycles": 6308273,
+                    "elapsed_seconds": 1858.5596704483032,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "pixart_n1024_l26_s15",
+                    "state": "pass",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/pixart_n1024_l26_s15/status.json",
+                    "status_sha256": "de1bfc213957bdd1d17e5556b17b032b3d80c1b1a085187b424ec1b8b705c026",
+                    "simulation_pid": null,
+                    "started_unix": 1792410935.6211274,
+                    "cycles": 6308273,
+                    "elapsed_seconds": 1832.5623016357422,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "pixart_n1024_l27_s15",
+                    "state": "pass",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/pixart_n1024_l27_s15/status.json",
+                    "status_sha256": "96a6887a197a2cc91c3d5e1c9678a7de1a8718c2840cef419a96ebbeead3d97e",
+                    "simulation_pid": null,
+                    "started_unix": 1792411067.4871202,
+                    "cycles": 6308273,
+                    "elapsed_seconds": 1885.019291639328,
+                    "expected_cycles": null
+                }
+            ]
+        },
+        {
+            "model": "pixart",
+            "n": 4096,
+            "expected_layers": 28,
+            "states": {
+                "pass": 20,
+                "running": 4,
+                "not_submitted": 4
+            },
+            "jobs": [
+                {
+                    "name": "pixart_n4096_l00_s15",
+                    "state": "pass",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/pixart_n4096_l00_s15/status.json",
+                    "status_sha256": "e31995a2c3507d8808dcee0356c619a0008c5c775efc765ead93ce7bd05e4dc7",
+                    "simulation_pid": null,
+                    "started_unix": 1792411263.147241,
+                    "cycles": 94831025,
+                    "elapsed_seconds": 29077.830305099487,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "pixart_n4096_l01_s15",
+                    "state": "pass",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/pixart_n4096_l01_s15/status.json",
+                    "status_sha256": "db716bbe4a79279a3af911aa4f19c8b373f29ebc02d2ca885b4d100a24300c5e",
+                    "simulation_pid": null,
+                    "started_unix": 1792411402.413978,
+                    "cycles": 94831025,
+                    "elapsed_seconds": 29980.2731051445,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "pixart_n4096_l02_s15",
+                    "state": "pass",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/pixart_n4096_l02_s15/status.json",
+                    "status_sha256": "9e6434e5335a51c48f23885d615fd04551cf21bfd4b09ea28bff0c8e3eb69917",
+                    "simulation_pid": null,
+                    "started_unix": 1792412814.4597094,
+                    "cycles": 94831025,
+                    "elapsed_seconds": 25941.190600395203,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "pixart_n4096_l03_s15",
+                    "state": "pass",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/pixart_n4096_l03_s15/status.json",
+                    "status_sha256": "9e6ee01c20b971240ea490299fae503aa823a44d1a75adc148e514827b0499d9",
+                    "simulation_pid": null,
+                    "started_unix": 1792413009.8871782,
+                    "cycles": 94831025,
+                    "elapsed_seconds": 29421.478731393814,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "pixart_n4096_l04_s15",
+                    "state": "pass",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/pixart_n4096_l04_s15/status.json",
+                    "status_sha256": "926491bb9ce03aa58100e74da3c5fc4b56973008a8b971dd5520194b3dd6e6be",
+                    "simulation_pid": null,
+                    "started_unix": 1792438785.315564,
+                    "cycles": 94831025,
+                    "elapsed_seconds": 29619.517359972,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "pixart_n4096_l05_s15",
+                    "state": "pass",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/pixart_n4096_l05_s15/status.json",
+                    "status_sha256": "52dc58d84dfd726819b73715ef3a893c40f789d8cc687799deda59265dcbdc7e",
+                    "simulation_pid": null,
+                    "started_unix": 1792440373.5646527,
+                    "cycles": 94831025,
+                    "elapsed_seconds": 30625.21001791954,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "pixart_n4096_l06_s15",
+                    "state": "pass",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/pixart_n4096_l06_s15/status.json",
+                    "status_sha256": "7d8fb0a9acca537b75ae1cf6215457737fd3cd0554558480bca111765f6bd7ae",
+                    "simulation_pid": null,
+                    "started_unix": 1792441392.8235323,
+                    "cycles": 94831025,
+                    "elapsed_seconds": 29146.374633789062,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "pixart_n4096_l07_s15",
+                    "state": "pass",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/pixart_n4096_l07_s15/status.json",
+                    "status_sha256": "fe657b7663626c178a16f0c9ab04fca5ea616cc1322aa05154317f178f6c4290",
+                    "simulation_pid": null,
+                    "started_unix": 1792442477.7949035,
+                    "cycles": 94831025,
+                    "elapsed_seconds": 30458.54532980919,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "pixart_n4096_l08_s15",
+                    "state": "pass",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/pixart_n4096_l08_s15/status.json",
+                    "status_sha256": "852882c62be61dad4b029111ef698ca59332d6d8a51fa3e6a5c87c919fa30752",
+                    "simulation_pid": null,
+                    "started_unix": 1792468462.8307254,
+                    "cycles": 94831025,
+                    "elapsed_seconds": 38845.38212752342,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "pixart_n4096_l09_s15",
+                    "state": "pass",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/pixart_n4096_l09_s15/status.json",
+                    "status_sha256": "27512a86a50ca3765045d725feec208b2889115b31ae2cf5df0226b301e8a6b8",
+                    "simulation_pid": null,
+                    "started_unix": 1792470566.4092405,
+                    "cycles": 94831025,
+                    "elapsed_seconds": 42645.40103697777,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "pixart_n4096_l10_s15",
+                    "state": "pass",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/pixart_n4096_l10_s15/status.json",
+                    "status_sha256": "8d7950b5211d150599218313ca4bc207b59b813238bdccd180e21f2802c70528",
+                    "simulation_pid": null,
+                    "started_unix": 1792471017.9907696,
+                    "cycles": 94831025,
+                    "elapsed_seconds": 44734.701724529266,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "pixart_n4096_l11_s15",
+                    "state": "pass",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/pixart_n4096_l11_s15/status.json",
+                    "status_sha256": "09c96784bee1f94f3ef6116e94ff5ea7ef45b2375d0874494cc6d752b809e98e",
+                    "simulation_pid": null,
+                    "started_unix": 1792472995.2487764,
+                    "cycles": 94831025,
+                    "elapsed_seconds": 45771.494052648544,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "pixart_n4096_l12_s15",
+                    "state": "pass",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/pixart_n4096_l12_s15/status.json",
+                    "status_sha256": "ed3f70aefb611a6ea0dc5280eb64ca0789969b9e9310a948616eaabeaf837fcf",
+                    "simulation_pid": null,
+                    "started_unix": 1792577443.4561327,
+                    "cycles": 94831025,
+                    "elapsed_seconds": 104860.58264732361,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "pixart_n4096_l13_s15",
+                    "state": "pass",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/pixart_n4096_l13_s15/status.json",
+                    "status_sha256": "587ad5d70dec82502912ca12bbe11d0d04563320b8329c367f82f14813851230",
+                    "simulation_pid": null,
+                    "started_unix": 1792577451.5148902,
+                    "cycles": 94831025,
+                    "elapsed_seconds": 100799.27648258209,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "pixart_n4096_l14_s15",
+                    "state": "pass",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/pixart_n4096_l14_s15/status.json",
+                    "status_sha256": "9038357d9a7a06c18894ec98c0f2976641fcfb9bb0348d7ea071f4840ad30bc9",
+                    "simulation_pid": null,
+                    "started_unix": 1792577459.9341552,
+                    "cycles": 94831025,
+                    "elapsed_seconds": 110658.80714416504,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "pixart_n4096_l15_s15",
+                    "state": "pass",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/pixart_n4096_l15_s15/status.json",
+                    "status_sha256": "6b657f8966ec88a6eeb96361e580aadae794d9255eeb1c5b135b7ac53ef5e5dd",
+                    "simulation_pid": null,
+                    "started_unix": 1792577468.2405436,
+                    "cycles": 94831025,
+                    "elapsed_seconds": 116257.35584235191,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "pixart_n4096_l16_s15",
+                    "state": "pass",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/pixart_n4096_l16_s15/status.json",
+                    "status_sha256": "12be689e8f6cc0eb52604aa4a104e5bb0b5a5afadb9e873c2687870aabcb80c4",
+                    "simulation_pid": null,
+                    "started_unix": 1792678756.8499372,
+                    "cycles": 94831025,
+                    "elapsed_seconds": 101408.35261154175,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "pixart_n4096_l17_s15",
+                    "state": "pass",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/pixart_n4096_l17_s15/status.json",
+                    "status_sha256": "90e7e18aa63678be7ebd347f1cf4dad8c599300177ba7c8e137e6672476f460a",
+                    "simulation_pid": null,
+                    "started_unix": 1792682334.8740687,
+                    "cycles": 94831025,
+                    "elapsed_seconds": 102500.8122587204,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "pixart_n4096_l18_s15",
+                    "state": "pass",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/pixart_n4096_l18_s15/status.json",
+                    "status_sha256": "86f5edc713904170fc24b0d02ba5654b84026d003c6a771255acc14623f88ad2",
+                    "simulation_pid": null,
+                    "started_unix": 1792688144.8568065,
+                    "cycles": 94831025,
+                    "elapsed_seconds": 100697.13467502594,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "pixart_n4096_l19_s15",
+                    "state": "pass",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/pixart_n4096_l19_s15/status.json",
+                    "status_sha256": "2bf2a4f65a9d384018f6f9a2faa393ad0c2f0205e83c1580cc37511525359fe8",
+                    "simulation_pid": null,
+                    "started_unix": 1792693777.5200214,
+                    "cycles": 94831025,
+                    "elapsed_seconds": 98193.61138701439,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "pixart_n4096_l20_s15",
+                    "state": "running",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/pixart_n4096_l20_s15/status.json",
+                    "status_sha256": "7fac97a9a5ea143a54b295d1bd4b60145e700d6f1c92e5b81a3ff5bb0232380d",
+                    "simulation_pid": null,
+                    "started_unix": 1792780223.5482824,
+                    "cycles": null,
+                    "elapsed_seconds": null,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "pixart_n4096_l21_s15",
+                    "state": "running",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/pixart_n4096_l21_s15/status.json",
+                    "status_sha256": "d0178599eeeb90c8524c1be4037ec900f58528c74d4b026bf86a727ff50dd017",
+                    "simulation_pid": null,
+                    "started_unix": 1792784890.4427595,
+                    "cycles": null,
+                    "elapsed_seconds": null,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "pixart_n4096_l22_s15",
+                    "state": "running",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/pixart_n4096_l22_s15/status.json",
+                    "status_sha256": "13554f988316dfe377c72e1ecae5da160af4756a6cee224fa5e59244cde51676",
+                    "simulation_pid": null,
+                    "started_unix": 1792788893.8913171,
+                    "cycles": null,
+                    "elapsed_seconds": null,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "pixart_n4096_l23_s15",
+                    "state": "running",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/pixart_n4096_l23_s15/status.json",
+                    "status_sha256": "5694affccb6f1dd3163afa3356f855ddb4c57f4cf554baf1f04be4d80663e813",
+                    "simulation_pid": null,
+                    "started_unix": 1792791986.2564065,
+                    "cycles": null,
+                    "elapsed_seconds": null,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "pixart_n4096_l24_s15",
+                    "state": "not_submitted",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/pixart_n4096_l24_s15/status.json"
+                },
+                {
+                    "name": "pixart_n4096_l25_s15",
+                    "state": "not_submitted",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/pixart_n4096_l25_s15/status.json"
+                },
+                {
+                    "name": "pixart_n4096_l26_s15",
+                    "state": "not_submitted",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/pixart_n4096_l26_s15/status.json"
+                },
+                {
+                    "name": "pixart_n4096_l27_s15",
+                    "state": "not_submitted",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/pixart_n4096_l27_s15/status.json"
+                }
+            ]
+        },
+        {
+            "model": "wan",
+            "n": 1024,
+            "expected_layers": 30,
+            "states": {
+                "pass": 30
+            },
+            "jobs": [
+                {
+                    "name": "wan_n1024_l00_s15",
+                    "state": "pass",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/wan_n1024_l00_s15/status.json",
+                    "status_sha256": "0ae2276975b095273dfca9a6260a838604c679b486fcbfbaeb394d7efefb13d7",
+                    "simulation_pid": null,
+                    "started_unix": 1792398432.411806,
+                    "cycles": 6748722,
+                    "elapsed_seconds": 2311.162148952484,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "wan_n1024_l01_s15",
+                    "state": "pass",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/wan_n1024_l01_s15/status.json",
+                    "status_sha256": "0b9b33acb61e07f1d83579ab2970c2d410279b828696439d6c3def60612e3fb5",
+                    "simulation_pid": null,
+                    "started_unix": 1792398499.895044,
+                    "cycles": 6748722,
+                    "elapsed_seconds": 2313.1916842460632,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "wan_n1024_l02_s15",
+                    "state": "pass",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/wan_n1024_l02_s15/status.json",
+                    "status_sha256": "963e80c44dcb665cc7e5021c074f46081840702b0a817236e000a1946168e885",
+                    "simulation_pid": null,
+                    "started_unix": 1792399637.890051,
+                    "cycles": 6748722,
+                    "elapsed_seconds": 2301.676504135132,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "wan_n1024_l03_s15",
+                    "state": "pass",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/wan_n1024_l03_s15/status.json",
+                    "status_sha256": "2cfeb582e8069aa8f371de3ecd70051f0e1a11f5659c4ecd847555f430e2f840",
+                    "simulation_pid": null,
+                    "started_unix": 1792399643.3309407,
+                    "cycles": 6748722,
+                    "elapsed_seconds": 2353.3927042484283,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "wan_n1024_l04_s15",
+                    "state": "pass",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/wan_n1024_l04_s15/status.json",
+                    "status_sha256": "75a72c02d165a22eeb52259ada188ac78877ace3a5450cc1d9a2b6c751f79442",
+                    "simulation_pid": null,
+                    "started_unix": 1792400798.1479242,
+                    "cycles": 6748722,
+                    "elapsed_seconds": 2319.7556314468384,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "wan_n1024_l05_s15",
+                    "state": "pass",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/wan_n1024_l05_s15/status.json",
+                    "status_sha256": "0dff84d8f226cc227cc7a8869c112ed4ffe95ff561adbb9aad9425b05228e840",
+                    "simulation_pid": null,
+                    "started_unix": 1792400866.9926581,
+                    "cycles": 6748722,
+                    "elapsed_seconds": 2319.057060241699,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "wan_n1024_l06_s15",
+                    "state": "pass",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/wan_n1024_l06_s15/status.json",
+                    "status_sha256": "c90638daf5c65d6b8a09b31bacfa40faaa614464679d73cb92514be0085311b3",
+                    "simulation_pid": null,
+                    "started_unix": 1792401969.831895,
+                    "cycles": 6748722,
+                    "elapsed_seconds": 2318.880741596222,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "wan_n1024_l07_s15",
+                    "state": "pass",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/wan_n1024_l07_s15/status.json",
+                    "status_sha256": "130ba9cdca0d756f7d476efa51f363fb20af066a65349a2a25f3d325fddec366",
+                    "simulation_pid": null,
+                    "started_unix": 1792402038.748192,
+                    "cycles": 6748722,
+                    "elapsed_seconds": 2312.312537431717,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "wan_n1024_l08_s15",
+                    "state": "pass",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/wan_n1024_l08_s15/status.json",
+                    "status_sha256": "8a641e090d93aede39fd02477b3c3347ab8c02e715f7ec93bf8a255b7cdb7315",
+                    "simulation_pid": null,
+                    "started_unix": 1792403182.2270052,
+                    "cycles": 6748722,
+                    "elapsed_seconds": 2370.316801071167,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "wan_n1024_l09_s15",
+                    "state": "pass",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/wan_n1024_l09_s15/status.json",
+                    "status_sha256": "285dda5a4ede9dc6d2541875c2db7ea0e2bec597e51b5ddac90cca31895e2e46",
+                    "simulation_pid": null,
+                    "started_unix": 1792403256.6510065,
+                    "cycles": 6748722,
+                    "elapsed_seconds": 2355.1044657230377,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "wan_n1024_l10_s15",
+                    "state": "pass",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/wan_n1024_l10_s15/status.json",
+                    "status_sha256": "74d7172c1b1739563791b0c519aadd215030ade2541d16936b0668f72e34953f",
+                    "simulation_pid": null,
+                    "started_unix": 1792404354.6890762,
+                    "cycles": 6748722,
+                    "elapsed_seconds": 2340.673442363739,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "wan_n1024_l11_s15",
+                    "state": "pass",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/wan_n1024_l11_s15/status.json",
+                    "status_sha256": "f9fba9aa2f3b358268c8019e25fa2271610e3ca0f3aa06899b1e41868206329c",
+                    "simulation_pid": null,
+                    "started_unix": 1792404423.4977014,
+                    "cycles": 6748722,
+                    "elapsed_seconds": 2335.824597120285,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "wan_n1024_l12_s15",
+                    "state": "pass",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/wan_n1024_l12_s15/status.json",
+                    "status_sha256": "4721824f42c7a24380e28d60ea2d2efdc020cead5dbe1fef626a57cfa737df4b",
+                    "simulation_pid": null,
+                    "started_unix": 1792405577.565232,
+                    "cycles": 6748722,
+                    "elapsed_seconds": 2313.2519147396088,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "wan_n1024_l13_s15",
+                    "state": "pass",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/wan_n1024_l13_s15/status.json",
+                    "status_sha256": "adbef199577b561bbd0cab0da133164176c2f83da318f70591c310bf2e16c625",
+                    "simulation_pid": null,
+                    "started_unix": 1792405651.8481064,
+                    "cycles": 6748722,
+                    "elapsed_seconds": 2345.4223024845123,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "wan_n1024_l14_s15",
+                    "state": "pass",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/wan_n1024_l14_s15/status.json",
+                    "status_sha256": "808b8e53f73a0d0423b9b5d40be73a07880c66c943b970d5b29b831f069e8012",
+                    "simulation_pid": null,
+                    "started_unix": 1792406736.9833722,
+                    "cycles": 6748722,
+                    "elapsed_seconds": 2307.6997742652893,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "wan_n1024_l15_s15",
+                    "state": "pass",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/wan_n1024_l15_s15/status.json",
+                    "status_sha256": "75fa1aa928c439ae797e40d0f6b5c7a651f35a05d4f72555e974edc61f1f2d30",
+                    "simulation_pid": null,
+                    "started_unix": 1792406806.0709682,
+                    "cycles": 6748722,
+                    "elapsed_seconds": 2337.3620636463165,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "wan_n1024_l16_s15",
+                    "state": "pass",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/wan_n1024_l16_s15/status.json",
+                    "status_sha256": "009118e348ec24565e13d652b65ad149a76ac8900513380520983271ebc90a4f",
+                    "simulation_pid": null,
+                    "started_unix": 1792407908.1331956,
+                    "cycles": 6748722,
+                    "elapsed_seconds": 2289.3684270381927,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "wan_n1024_l17_s15",
+                    "state": "pass",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/wan_n1024_l17_s15/status.json",
+                    "status_sha256": "d2171dcc3c2dba1acb6f4ef7cebe80a496a1c3b2daaaf30b6567c661fb468636",
+                    "simulation_pid": null,
+                    "started_unix": 1792408040.2820084,
+                    "cycles": 6748722,
+                    "elapsed_seconds": 2243.3312356472015,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "wan_n1024_l18_s15",
+                    "state": "pass",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/wan_n1024_l18_s15/status.json",
+                    "status_sha256": "c5687f596a1b5a5874f12d711b2d4454bef866ffb7b7d7e56478e92eba2eb927",
+                    "simulation_pid": null,
+                    "started_unix": 1792409062.686025,
+                    "cycles": 6748722,
+                    "elapsed_seconds": 2287.6939034461975,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "wan_n1024_l19_s15",
+                    "state": "pass",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/wan_n1024_l19_s15/status.json",
+                    "status_sha256": "b5ad573b1ba3a5611d26bd61d7905faba459bba4c53c32b32838dd6d6fc587db",
+                    "simulation_pid": null,
+                    "started_unix": 1792409200.202603,
+                    "cycles": 6748722,
+                    "elapsed_seconds": 2270.3664186000824,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "wan_n1024_l20_s15",
+                    "state": "pass",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/wan_n1024_l20_s15/status.json",
+                    "status_sha256": "e43acd43e2a10fae143c25c017410462b590be85f98e41b7045a7e90a63b4bd4",
+                    "simulation_pid": null,
+                    "started_unix": 1792410228.6990333,
+                    "cycles": 6748722,
+                    "elapsed_seconds": 2245.7135899066925,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "wan_n1024_l21_s15",
+                    "state": "pass",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/wan_n1024_l21_s15/status.json",
+                    "status_sha256": "d9f974852bebc7d75abb45337a5540a92bac05e1241df1c506fea290e1dca0ab",
+                    "simulation_pid": null,
+                    "started_unix": 1792410298.2546422,
+                    "cycles": 6748722,
+                    "elapsed_seconds": 2295.945615053177,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "wan_n1024_l22_s15",
+                    "state": "pass",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/wan_n1024_l22_s15/status.json",
+                    "status_sha256": "9f3087fc7a20c00d024b46353c860111e6272b0d6c9c2b16f77b57faf7023274",
+                    "simulation_pid": null,
+                    "started_unix": 1792411396.2745848,
+                    "cycles": 6748722,
+                    "elapsed_seconds": 2286.4566419124603,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "wan_n1024_l23_s15",
+                    "state": "pass",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/wan_n1024_l23_s15/status.json",
+                    "status_sha256": "cca06c0c4104b00452555b0f4cf0baa16ea8fae791894ce648f6687ed0fc56cc",
+                    "simulation_pid": null,
+                    "started_unix": 1792411534.3525789,
+                    "cycles": 6748722,
+                    "elapsed_seconds": 2268.6500000953674,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "wan_n1024_l24_s15",
+                    "state": "pass",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/wan_n1024_l24_s15/status.json",
+                    "status_sha256": "823b84d2cf1002bb7d9b323a6d875c055e1197937b871237d59287dc5e228f80",
+                    "simulation_pid": null,
+                    "started_unix": 1792412487.2193441,
+                    "cycles": 6748722,
+                    "elapsed_seconds": 2266.6855070590973,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "wan_n1024_l25_s15",
+                    "state": "pass",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/wan_n1024_l25_s15/status.json",
+                    "status_sha256": "c51c67156bf12af3a6a2659f3cb9e8c6aa56821553a37d3bf08b949adc93d00b",
+                    "simulation_pid": null,
+                    "started_unix": 1792412619.077878,
+                    "cycles": 6748722,
+                    "elapsed_seconds": 2309.223700284958,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "wan_n1024_l26_s15",
+                    "state": "pass",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/wan_n1024_l26_s15/status.json",
+                    "status_sha256": "c6c4fb341c6f2d5152bb1d6974095b78174dda852966f2aaa92098e5b2b51334",
+                    "simulation_pid": null,
+                    "started_unix": 1792413710.9187765,
+                    "cycles": 6748722,
+                    "elapsed_seconds": 2279.1055347919464,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "wan_n1024_l27_s15",
+                    "state": "pass",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/wan_n1024_l27_s15/status.json",
+                    "status_sha256": "5dfaaf9f9c2be6bfabbbea27e89393fecf6ac8f0cd52c8430dff796d149652f8",
+                    "simulation_pid": null,
+                    "started_unix": 1792413843.150996,
+                    "cycles": 6748722,
+                    "elapsed_seconds": 2266.507576227188,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "wan_n1024_l28_s15",
+                    "state": "pass",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/wan_n1024_l28_s15/status.json",
+                    "status_sha256": "07a704734b3c6ed4d2d736d3be9306758dc9bd4af5a5f933764a6f18076ce34e",
+                    "simulation_pid": null,
+                    "started_unix": 1792414796.603749,
+                    "cycles": 6748722,
+                    "elapsed_seconds": 2124.9453780651093,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "wan_n1024_l29_s15",
+                    "state": "pass",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/wan_n1024_l29_s15/status.json",
+                    "status_sha256": "bf5092b7789ae652c4dab9e77392a2adb49d43773df8b5a493d7783d91aae69e",
+                    "simulation_pid": null,
+                    "started_unix": 1792414991.9791205,
+                    "cycles": 6748722,
+                    "elapsed_seconds": 2162.9049894809723,
+                    "expected_cycles": null
+                }
+            ]
+        },
+        {
+            "model": "wan",
+            "n": 4096,
+            "expected_layers": 30,
+            "states": {
+                "pass": 16,
+                "running": 4,
+                "not_submitted": 10
+            },
+            "jobs": [
+                {
+                    "name": "wan_n4096_l00_s15",
+                    "state": "pass",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/wan_n4096_l00_s15/status.json",
+                    "status_sha256": "4fec15e5f0612f096077b680263db3dc24229f4fe50b798bae3fd38ded8d9e88",
+                    "simulation_pid": null,
+                    "started_unix": 1792423843.553971,
+                    "cycles": 102784050,
+                    "elapsed_seconds": 36394.64570379257,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "wan_n4096_l01_s15",
+                    "state": "pass",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/wan_n4096_l01_s15/status.json",
+                    "status_sha256": "78e1cd50e1f0eae43732462b90aefe3bcb854763f55abd4b70da8f89123d1724",
+                    "simulation_pid": null,
+                    "started_unix": 1792424786.1452506,
+                    "cycles": 102784050,
+                    "elapsed_seconds": 36993.656610012054,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "wan_n4096_l02_s15",
+                    "state": "pass",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/wan_n4096_l02_s15/status.json",
+                    "status_sha256": "da640c0a713df0a31dfba814b64a67f4ef155d891b01582640984a5d24982796",
+                    "simulation_pid": null,
+                    "started_unix": 1792425795.5527809,
+                    "cycles": 102784050,
+                    "elapsed_seconds": 36806.45603942871,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "wan_n4096_l03_s15",
+                    "state": "pass",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/wan_n4096_l03_s15/status.json",
+                    "status_sha256": "9e88e2efafedd56f0ce7d0c1b6ff368019db93a308de0d7b72520011d09f6b79",
+                    "simulation_pid": null,
+                    "started_unix": 1792426746.567549,
+                    "cycles": 102784050,
+                    "elapsed_seconds": 37085.49104189873,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "wan_n4096_l04_s15",
+                    "state": "pass",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/wan_n4096_l04_s15/status.json",
+                    "status_sha256": "a107f0f7274e965304d882017b3dd7b86eb4de4dbc9ed920bf27cd9bb3e4dffc",
+                    "simulation_pid": null,
+                    "started_unix": 1792460257.027136,
+                    "cycles": 102784050,
+                    "elapsed_seconds": 43179.25568318367,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "wan_n4096_l05_s15",
+                    "state": "pass",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/wan_n4096_l05_s15/status.json",
+                    "status_sha256": "3647690a315641e1ab152976ffa3ffda637d6f5eb8516a54bd3fb6fc31affd85",
+                    "simulation_pid": null,
+                    "started_unix": 1792461796.5570457,
+                    "cycles": 102784050,
+                    "elapsed_seconds": 46535.59449148178,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "wan_n4096_l06_s15",
+                    "state": "pass",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/wan_n4096_l06_s15/status.json",
+                    "status_sha256": "be4fa7860663bc0e1972175bfe5faa95a66fe620f1d14b62040037b6cd9d6814",
+                    "simulation_pid": null,
+                    "started_unix": 1792462636.7779672,
+                    "cycles": 102784050,
+                    "elapsed_seconds": 46169.87634396553,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "wan_n4096_l07_s15",
+                    "state": "pass",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/wan_n4096_l07_s15/status.json",
+                    "status_sha256": "d4118ace730c54970bdcefd3311c6b4a7994939fc64dcc216dd174eeb0a13983",
+                    "simulation_pid": null,
+                    "started_unix": 1792463859.2246485,
+                    "cycles": 102784050,
+                    "elapsed_seconds": 53402.34220910072,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "wan_n4096_l08_s15",
+                    "state": "pass",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/wan_n4096_l08_s15/status.json",
+                    "status_sha256": "16aa18ef840509765dfee29a4fa51dbd3d1e935a9a6e7c376a07aac9c09e628f",
+                    "simulation_pid": null,
+                    "started_unix": 1792577476.9170349,
+                    "cycles": 102784050,
+                    "elapsed_seconds": 152777.47153806686,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "wan_n4096_l09_s15",
+                    "state": "pass",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/wan_n4096_l09_s15/status.json",
+                    "status_sha256": "1f84e09ae6ed60642db1ab8de6232b9abd662a9bb9a9a040451595978c613e28",
+                    "simulation_pid": null,
+                    "started_unix": 1792577486.0633693,
+                    "cycles": 102784050,
+                    "elapsed_seconds": 140644.51775836945,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "wan_n4096_l10_s15",
+                    "state": "pass",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/wan_n4096_l10_s15/status.json",
+                    "status_sha256": "32e409bad8e33a0cab27dcddd892f90fb5fe88a831822a85c2b631c7e8d5b95f",
+                    "simulation_pid": null,
+                    "started_unix": 1792577495.0397105,
+                    "cycles": 102784050,
+                    "elapsed_seconds": 146815.34908604622,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "wan_n4096_l11_s15",
+                    "state": "pass",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/wan_n4096_l11_s15/status.json",
+                    "status_sha256": "6a3d81f57f04c53e79f7b31703e8f35b94f874e4163dffef543f78fb5714c203",
+                    "simulation_pid": null,
+                    "started_unix": 1792577504.515233,
+                    "cycles": 102784050,
+                    "elapsed_seconds": 126279.75015330315,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "wan_n4096_l12_s15",
+                    "state": "pass",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/wan_n4096_l12_s15/status.json",
+                    "status_sha256": "cbe3afbc607dd2c69342e9506fcc0b986836b2055b2768ada8bbeb711d13bc07",
+                    "simulation_pid": null,
+                    "started_unix": 1792703820.3605466,
+                    "cycles": 102784050,
+                    "elapsed_seconds": 137419.09394478798,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "wan_n4096_l13_s15",
+                    "state": "pass",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/wan_n4096_l13_s15/status.json",
+                    "status_sha256": "e0b6146d9325f89b1a94be491732cc39b7205eae8b37ebb12d0a823a48da8e5b",
+                    "simulation_pid": null,
+                    "started_unix": 1792718164.3905537,
+                    "cycles": 102784050,
+                    "elapsed_seconds": 125233.85409140587,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "wan_n4096_l14_s15",
+                    "state": "pass",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/wan_n4096_l14_s15/status.json",
+                    "status_sha256": "9776c8b0ac6b46fdeac5810ebb7474048474f9f0aa797b1f5d6f263a1df171a1",
+                    "simulation_pid": null,
+                    "started_unix": 1792724335.2821689,
+                    "cycles": 102784050,
+                    "elapsed_seconds": 122670.477394104,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "wan_n4096_l15_s15",
+                    "state": "pass",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/wan_n4096_l15_s15/status.json",
+                    "status_sha256": "30dba8c825a36ff9b1120a4357ebd378726458ef868a3681485f0de73abe342d",
+                    "simulation_pid": null,
+                    "started_unix": 1792730270.3905046,
+                    "cycles": 102784050,
+                    "elapsed_seconds": 123260.29325532913,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "wan_n4096_l16_s15",
+                    "state": "running",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/wan_n4096_l16_s15/status.json",
+                    "status_sha256": "b35c994c8dddf70a380b41aefb67d92193904dbae17001c583baea53a9c81179",
+                    "simulation_pid": null,
+                    "started_unix": 1792841283.0653875,
+                    "cycles": null,
+                    "elapsed_seconds": null,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "wan_n4096_l17_s15",
+                    "state": "running",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/wan_n4096_l17_s15/status.json",
+                    "status_sha256": "1458467a69dff0d2991c0d243d0ff353dadd75d20a69c3843ca70dcee649fd07",
+                    "simulation_pid": null,
+                    "started_unix": 1792843404.5424,
+                    "cycles": null,
+                    "elapsed_seconds": null,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "wan_n4096_l18_s15",
+                    "state": "running",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/wan_n4096_l18_s15/status.json",
+                    "status_sha256": "4a5fbf2d1ef21ca8f38dedb481c4ffe36d766be7e315d2dc46a74e951b83b8ce",
+                    "simulation_pid": null,
+                    "started_unix": 1792847042.1554735,
+                    "cycles": null,
+                    "elapsed_seconds": null,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "wan_n4096_l19_s15",
+                    "state": "running",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/wan_n4096_l19_s15/status.json",
+                    "status_sha256": "2220bd25d3ab6e247bf0bfd7363cb7b18377636d1dc86b8754d8b2569bfdcb97",
+                    "simulation_pid": null,
+                    "started_unix": 1792853532.9685886,
+                    "cycles": null,
+                    "elapsed_seconds": null,
+                    "expected_cycles": null
+                },
+                {
+                    "name": "wan_n4096_l20_s15",
+                    "state": "not_submitted",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/wan_n4096_l20_s15/status.json"
+                },
+                {
+                    "name": "wan_n4096_l21_s15",
+                    "state": "not_submitted",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/wan_n4096_l21_s15/status.json"
+                },
+                {
+                    "name": "wan_n4096_l22_s15",
+                    "state": "not_submitted",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/wan_n4096_l22_s15/status.json"
+                },
+                {
+                    "name": "wan_n4096_l23_s15",
+                    "state": "not_submitted",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/wan_n4096_l23_s15/status.json"
+                },
+                {
+                    "name": "wan_n4096_l24_s15",
+                    "state": "not_submitted",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/wan_n4096_l24_s15/status.json"
+                },
+                {
+                    "name": "wan_n4096_l25_s15",
+                    "state": "not_submitted",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/wan_n4096_l25_s15/status.json"
+                },
+                {
+                    "name": "wan_n4096_l26_s15",
+                    "state": "not_submitted",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/wan_n4096_l26_s15/status.json"
+                },
+                {
+                    "name": "wan_n4096_l27_s15",
+                    "state": "not_submitted",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/wan_n4096_l27_s15/status.json"
+                },
+                {
+                    "name": "wan_n4096_l28_s15",
+                    "state": "not_submitted",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/wan_n4096_l28_s15/status.json"
+                },
+                {
+                    "name": "wan_n4096_l29_s15",
+                    "state": "not_submitted",
+                    "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/wan_n4096_l29_s15/status.json"
+                }
+            ]
+        }
+    ],
+    "native_gate_energy": [
+        {
+            "name": "power_native_pixart_n1024_s301",
+            "state": "gate_running",
+            "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/power_native_pixart_n1024_s301/status.json",
+            "status_sha256": "4fe4ea336df5967d0f73ddc579904faa3f141fb0a042a988513c62ae2f658834",
+            "simulation_pid": 1476676,
+            "started_unix": 1792498134.9259984,
+            "cycles": null,
+            "elapsed_seconds": null,
+            "expected_cycles": 6308273,
+            "last_logged_job_start_cycle": 39,
+            "current_simulation_time": null,
+            "current_simulation_time_reason": "Running logs expose JOB_START only; no live simulator query or signal was sent.",
+            "saif_exists": false,
+            "result_csv_exists": false
+        },
+        {
+            "name": "power_native_pixart_n2304_s301",
+            "state": "not_submitted",
+            "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/power_native_pixart_n2304_s301/status.json",
+            "last_logged_job_start_cycle": null,
+            "current_simulation_time": null,
+            "current_simulation_time_reason": "Running logs expose JOB_START only; no live simulator query or signal was sent.",
+            "saif_exists": false,
+            "result_csv_exists": false
+        },
+        {
+            "name": "power_native_pixart_n4096_s301",
+            "state": "not_submitted",
+            "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/power_native_pixart_n4096_s301/status.json",
+            "last_logged_job_start_cycle": null,
+            "current_simulation_time": null,
+            "current_simulation_time_reason": "Running logs expose JOB_START only; no live simulator query or signal was sent.",
+            "saif_exists": false,
+            "result_csv_exists": false
+        },
+        {
+            "name": "power_native_pixart_n9216_s301",
+            "state": "not_submitted",
+            "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/power_native_pixart_n9216_s301/status.json",
+            "last_logged_job_start_cycle": null,
+            "current_simulation_time": null,
+            "current_simulation_time_reason": "Running logs expose JOB_START only; no live simulator query or signal was sent.",
+            "saif_exists": false,
+            "result_csv_exists": false
+        },
+        {
+            "name": "power_native_wan_n1024_s301",
+            "state": "gate_running",
+            "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/power_native_wan_n1024_s301/status.json",
+            "status_sha256": "0bec04095ba94326eb227cae6ac60ee838622284da7f99d7728ebcd3ff28d2d6",
+            "simulation_pid": 1476677,
+            "started_unix": 1792498134.9316194,
+            "cycles": null,
+            "elapsed_seconds": null,
+            "expected_cycles": 6748722,
+            "last_logged_job_start_cycle": 39,
+            "current_simulation_time": null,
+            "current_simulation_time_reason": "Running logs expose JOB_START only; no live simulator query or signal was sent.",
+            "saif_exists": false,
+            "result_csv_exists": false
+        },
+        {
+            "name": "power_native_wan_n2304_s301",
+            "state": "not_submitted",
+            "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/power_native_wan_n2304_s301/status.json",
+            "last_logged_job_start_cycle": null,
+            "current_simulation_time": null,
+            "current_simulation_time_reason": "Running logs expose JOB_START only; no live simulator query or signal was sent.",
+            "saif_exists": false,
+            "result_csv_exists": false
+        },
+        {
+            "name": "power_native_wan_n4096_s301",
+            "state": "not_submitted",
+            "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/power_native_wan_n4096_s301/status.json",
+            "last_logged_job_start_cycle": null,
+            "current_simulation_time": null,
+            "current_simulation_time_reason": "Running logs expose JOB_START only; no live simulator query or signal was sent.",
+            "saif_exists": false,
+            "result_csv_exists": false
+        },
+        {
+            "name": "power_native_wan_n9216_s301",
+            "state": "not_submitted",
+            "status_path": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/power_native_wan_n9216_s301/status.json",
+            "last_logged_job_start_cycle": null,
+            "current_simulation_time": null,
+            "current_simulation_time_reason": "Running logs expose JOB_START only; no live simulator query or signal was sent.",
+            "saif_exists": false,
+            "result_csv_exists": false
+        }
+    ],
+    "native_gate_energy_states": {
+        "gate_running": 2,
+        "not_submitted": 6
+    },
+    "active_processes": [
+        {
+            "pid": 186901,
+            "elapsed_seconds": 120038,
+            "state": "Ss",
+            "cpu_percent": 0.4,
+            "command": "/usr/bin/python3 /data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/src/resume_server_queue.py"
+        },
+        {
+            "pid": 1016994,
+            "elapsed_seconds": 84049,
+            "state": "R",
+            "cpu_percent": 67.4,
+            "command": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/replay_build/simv +VECTOR_DIR=/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/inputs/pixart_n4096_l20_s15 +RESULT=/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/pixart_n4096_l20_s15/result.csv +NQ=4096 +NKV=4096 +HEADS=16 +DIM=72 +SCORE_SCALE=000f5fd6 +OUT_SCALE=001d51c6 +CLK_PERIOD_NS=1.6 +no_notifier +notimingcheck -l /data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/pixart_n4096_l20_s15/run.log"
+        },
+        {
+            "pid": 1125055,
+            "elapsed_seconds": 79382,
+            "state": "R",
+            "cpu_percent": 67.8,
+            "command": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/replay_build/simv +VECTOR_DIR=/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/inputs/pixart_n4096_l21_s15 +RESULT=/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/pixart_n4096_l21_s15/result.csv +NQ=4096 +NKV=4096 +HEADS=16 +DIM=72 +SCORE_SCALE=00106251 +OUT_SCALE=001d400a +CLK_PERIOD_NS=1.6 +no_notifier +notimingcheck -l /data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/pixart_n4096_l21_s15/run.log"
+        },
+        {
+            "pid": 1216872,
+            "elapsed_seconds": 75379,
+            "state": "R",
+            "cpu_percent": 67.9,
+            "command": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/replay_build/simv +VECTOR_DIR=/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/inputs/pixart_n4096_l22_s15 +RESULT=/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/pixart_n4096_l22_s15/result.csv +NQ=4096 +NKV=4096 +HEADS=16 +DIM=72 +SCORE_SCALE=000f4d50 +OUT_SCALE=001d4403 +CLK_PERIOD_NS=1.6 +no_notifier +notimingcheck -l /data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/pixart_n4096_l22_s15/run.log"
+        },
+        {
+            "pid": 1285835,
+            "elapsed_seconds": 72287,
+            "state": "R",
+            "cpu_percent": 67.8,
+            "command": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/replay_build/simv +VECTOR_DIR=/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/inputs/pixart_n4096_l23_s15 +RESULT=/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/pixart_n4096_l23_s15/result.csv +NQ=4096 +NKV=4096 +HEADS=16 +DIM=72 +SCORE_SCALE=000e4012 +OUT_SCALE=001d49f3 +CLK_PERIOD_NS=1.6 +no_notifier +notimingcheck -l /data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/pixart_n4096_l23_s15/run.log"
+        },
+        {
+            "pid": 1476676,
+            "elapsed_seconds": 366135,
+            "state": "R",
+            "cpu_percent": 80.2,
+            "command": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/gate_pilot_build/simv +VECTOR_DIR=/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/inputs/pixart_n1024 +RESULT=/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/power_native_pixart_n1024_s301/result.csv +NQ=1024 +NKV=1024 +HEADS=16 +DIM=72 +CLK_PERIOD_NS=1.6 +SCORE_SCALE=0010618b +OUT_SCALE=001d60d9 +SAIF_ENABLE +SAIF_FILE=/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/power_native_pixart_n1024_s301/activity.saif +no_notifier +notimingcheck -l /data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/power_native_pixart_n1024_s301/run.log"
+        },
+        {
+            "pid": 1476677,
+            "elapsed_seconds": 366135,
+            "state": "R",
+            "cpu_percent": 80.3,
+            "command": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/gate_pilot_build/simv +VECTOR_DIR=/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/inputs/wan_n1024 +RESULT=/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/power_native_wan_n1024_s301/result.csv +NQ=1024 +NKV=1024 +HEADS=12 +DIM=128 +CLK_PERIOD_NS=1.6 +SCORE_SCALE=000f46e1 +OUT_SCALE=001d723e +SAIF_ENABLE +SAIF_FILE=/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/power_native_wan_n1024_s301/activity.saif +no_notifier +notimingcheck -l /data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/power_native_wan_n1024_s301/run.log"
+        },
+        {
+            "pid": 2382336,
+            "elapsed_seconds": 22990,
+            "state": "R",
+            "cpu_percent": 78.4,
+            "command": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/replay_build/simv +VECTOR_DIR=/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/inputs/wan_n4096_l16_s15 +RESULT=/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/wan_n4096_l16_s15/result.csv +NQ=4096 +NKV=4096 +HEADS=12 +DIM=128 +SCORE_SCALE=001167dd +OUT_SCALE=001d5d87 +CLK_PERIOD_NS=1.6 +no_notifier +notimingcheck -l /data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/wan_n4096_l16_s15/run.log"
+        },
+        {
+            "pid": 2427910,
+            "elapsed_seconds": 20868,
+            "state": "R",
+            "cpu_percent": 79.2,
+            "command": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/replay_build/simv +VECTOR_DIR=/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/inputs/wan_n4096_l17_s15 +RESULT=/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/wan_n4096_l17_s15/result.csv +NQ=4096 +NKV=4096 +HEADS=12 +DIM=128 +SCORE_SCALE=00105480 +OUT_SCALE=001d6c13 +CLK_PERIOD_NS=1.6 +no_notifier +notimingcheck -l /data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/wan_n4096_l17_s15/run.log"
+        },
+        {
+            "pid": 2506297,
+            "elapsed_seconds": 17231,
+            "state": "R",
+            "cpu_percent": 80.2,
+            "command": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/replay_build/simv +VECTOR_DIR=/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/inputs/wan_n4096_l18_s15 +RESULT=/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/wan_n4096_l18_s15/result.csv +NQ=4096 +NKV=4096 +HEADS=12 +DIM=128 +SCORE_SCALE=001162b1 +OUT_SCALE=001d63b7 +CLK_PERIOD_NS=1.6 +no_notifier +notimingcheck -l /data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/wan_n4096_l18_s15/run.log"
+        },
+        {
+            "pid": 2644319,
+            "elapsed_seconds": 10740,
+            "state": "R",
+            "cpu_percent": 81.1,
+            "command": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/replay_build/simv +VECTOR_DIR=/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/inputs/wan_n4096_l19_s15 +RESULT=/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/wan_n4096_l19_s15/result.csv +NQ=4096 +NKV=4096 +HEADS=12 +DIM=128 +SCORE_SCALE=00105f51 +OUT_SCALE=001d53ca +CLK_PERIOD_NS=1.6 +no_notifier +notimingcheck -l /data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/wan_n4096_l19_s15/run.log"
+        },
+        {
+            "pid": 3157759,
+            "elapsed_seconds": 420798,
+            "state": "R",
+            "cpu_percent": 82.6,
+            "command": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/replay_build_long/simv +VECTOR_DIR=/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/inputs/wan_n9216 +RESULT=/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/wan_n9216/result.csv +NQ=9216 +NKV=9216 +HEADS=12 +DIM=128 +SCORE_SCALE=000f46e1 +OUT_SCALE=001d723e +CLK_PERIOD_NS=1.6 +no_notifier +notimingcheck -l /data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/jobs/wan_n9216/run.log"
+        }
+    ],
+    "disk_space": [
+        {
+            "path": "/data",
+            "available_bytes": 111350558720,
+            "available_gib": 103.70328903198242,
+            "total_bytes": 3936818806784
+        },
+        {
+            "path": "/home",
+            "available_bytes": 799055872,
+            "available_gib": 0.7441787719726562,
+            "total_bytes": 953947852800
+        },
+        {
+            "path": "/tmp",
+            "available_bytes": 799055872,
+            "available_gib": 0.7441787719726562,
+            "total_bytes": 953947852800
+        }
+    ],
+    "maximum_sequence_length": 9216,
+    "n16384_restored": false,
+    "notes": [
+        "Completion counts are existing status records, not a rerun or a new artifact qualification.",
+        "Current gate simulation time is unknown: both running N1024 gate jobs log JOB_START cycle39 but no progress time; SAIF files are absent until completion.",
+        "No native gate energy result is complete; do not fill power/energy fields from elapsed walltime.",
+        "/home and /tmp share the nearly full root filesystem; /data has about104GiB free."
+    ]
+}

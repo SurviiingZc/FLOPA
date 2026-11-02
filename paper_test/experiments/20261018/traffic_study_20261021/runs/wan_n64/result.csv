@@ -1,0 +1,2 @@
+status,heads,nq,nkv,d,cycles,loader_bytes,output_bytes
+pass,1,64,64,128,5634,40960,8192

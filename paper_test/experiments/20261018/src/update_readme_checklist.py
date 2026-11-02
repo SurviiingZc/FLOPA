@@ -49,8 +49,21 @@ def main():
     for model in ('pixart', 'wan'):
         for n in (1024, 2304, 4096, 9216, 16384):
             job(f'{model}_rtl_{n}', f'{model}_n{n}')
+            job(f'{model}_native_energy_{n}', f'power_native_{model}_n{n}_s301', power=True)
         job(model + '_power', f'power_{model}_n256_s301', power=True)
     job('f2_power', 'power_f2_pixart_n256_s301', power=True)
+    for seed in (302, 303):
+        job(f'power_seed{seed}', f'power_pixart_n256_s{seed}', power=True)
+    traffic_path = RUN / 'results/traffic_study_20261021.json'
+    traffic = load(traffic_path)
+    traffic_good = traffic.get('state') == 'pass_complete_study' and (
+        len(traffic.get('results', {})) == 8)
+    traffic_good = traffic_good and all(
+        value.get('functional_byte_exact_pass') is True and
+        value.get('macro_count') == 480 and value.get('pe_count') == 1024
+        for value in traffic.get('results', {}).values())
+    add('traffic_counters', traffic_good, traffic_path,
+        'SRAM端口计数与P轨迹读回待核验')
     pilot = RUN / 'results/gate_pilot_d72_n32.json'
     audit = RUN / 'results/pilot_power_flow_audit.json'
     add('gate_pilot', load(pilot).get('status') == 'pass_gate_flow_pilot' and audit.exists(),
@@ -91,6 +104,8 @@ def main():
             add(model + '_layerstep' + suffix + '_rtl', done, path,
                 f'已核验{complete}/{count}层；逐层回放运行中或排队')
     for key, entry in manual.items():
+        if key in ('power_seed302', 'power_seed303', 'traffic_counters'):
+            continue
         if entry.get('done') is True:
             assert entry.get('evidence'), 'Checked manual item needs evidence: ' + key
         items[key] = entry
@@ -101,6 +116,10 @@ def main():
         groups.append('### ' + title + '\n')
         for key, label in rows:
             entry = items.get(key, {})
+            if entry.get('cancelled'):
+                status = entry.get('status', 'cancelled by user')
+                groups.append(f'- 已取消：{label}；{status}。 <!-- task:{key} -->')
+                continue
             mark = 'x' if entry.get('done') else ' '
             status = entry.get('status', '待启动')
             groups.append(f'- [{mark}] {label}；{status}。 <!-- task:{key} -->')
@@ -139,15 +158,14 @@ def main():
         ('f1_ppa', 'F1 同库、同 PVT、同目标时钟综合与面积/时序核验'),
         ('f1_power', 'F1 相同 d72/N256 输入的门级 SAIF 与活动功耗'),
         ('memory_comparison', 'F0/F1 实际 P 读写流量、存储宏/寄存器面积及功耗分量'),
-        ('external_comparison', '核验 H-FA-1-4、H-FA-4-4、FSA、ITA System 的 PPA/吞吐及口径'),
     ])
     group('D. 补充验证与论文交付', [
         ('mcraft_function', 'DFoT-MCRAFT 原生 d64 真实 Q/K/V 功能与兼容性验证'),
         ('mcraft_power', 'MCRAFT N256/H1/d64 辅助活动功耗'),
         ('traffic_counters', '核验 loader、片上 P/O 访问计数与论文机制结论的对应关系'),
         ('workbook', '结果回填精简 Excel：主图原始数据、主表及对照数据'),
-        ('figure', 'Python 绘制两模型 GPU/FLOPA 延迟主图，Times New Roman'),
-        ('table', '生成一张跨栏 PPA/吞吐主表，区分外部文献与同条件消融'),
+        ('figure', 'Python 绘制两模型 GPU/FLOPA 完整多头能量主图（mJ/次），Times New Roman'),
+        ('table', '分别生成本设计PPA表与匹配消融表，数值与已核验结果一致'),
         ('paper', '正文 Callback、结果版本及四页正文/一页参考文献排版核验'),
     ])
     group('E. 指定时间步的全部层SDPA覆盖（N1024，步索引15，条件分支）', [
@@ -171,13 +189,25 @@ def main():
         for model, title in [('pixart', 'PixArt'), ('wan', 'Wan')]
         for n in (1024, 2304, 4096, 9216, 16384)
     ] + [
+        (f'{model}_native_energy_{n}', f'{title} N={n:,}：ASIC完整多头门级活动能量')
+        for model, title in [('pixart', 'PixArt'), ('wan', 'Wan')]
+        for n in (1024, 2304, 4096, 9216, 16384)
+    ] + [
         ('clock_power_audit', 'ASIC clock-network分组、时钟负载及SAIF映射审查'),
         ('native_energy_method', '原形长N/全head ASIC活动能量方法与可行性核验'),
         ('native_energy', '主图原形完整多头ASIC能量；不由N256/H1功率外推'),
     ])
+    group('H. 当前定点精度与配对生成质量', [
+        ('accuracy_pixart_lengths', 'PixArt四个N点：完整多头输出MAE/RMSE与冻结算术核对'),
+        ('accuracy_wan_lengths', 'Wan四个N点：完整多头输出MAE/RMSE与冻结算术核对'),
+        ('accuracy_pixart_layers', 'PixArt N1024/N4096全部28层的元素加权MAE/RMSE'),
+        ('accuracy_wan_layers', 'Wan N1024/N4096全部30层的元素加权MAE/RMSE'),
+        ('quality_pixart_4pairs', 'PixArt四组30步FP16/定点闭环生成与配对PSNR/SSIM'),
+    ])
     done = sum(line.startswith('- [x]') for line in groups)
     count = sum(line.startswith('- [') for line in groups)
-    now = datetime.datetime.now(datetime.timezone.utc).astimezone().isoformat(timespec='seconds')
+    local_zone = datetime.timezone(datetime.timedelta(hours=8))
+    now = datetime.datetime.now(local_zone).isoformat(timespec='seconds')
     body = [BEGIN, f'更新时间：{now}；已核验 **{done}/{count}** 项。', '',
             '勾选只表示本项通过所列检查；运行中、排队、失败及待复测均保持空框。', '',
             *groups, END]

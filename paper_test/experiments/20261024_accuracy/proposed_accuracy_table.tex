@@ -1,0 +1,21 @@
+% Candidate Table I rows; NOT a standalone document and not auto-inserted.
+% Scope: N=4096; all 28 PixArt / 30 Wan self-attention layers at step index 15.
+% Original activation scale after dequantization; all outputs compared with FP32 SDPA.
+Output MAE & 0.02793 & 0.01750 \\
+Output RMSE & 0.03689 & 0.02409 \\
+
+% Suggested addition to the table note:
+% Accuracy is aggregated over all layers at one denoising step using original
+% activation units after dequantization; errors are aggregated over all output elements.
+
+% Candidate Evaluation paragraph; copy separately after author review.
+We compared dequantized FLOPA outputs with FP32 SDPA on the same captured Q/K/V.
+At $N=4{,}096$, aggregating all 28 PixArt and 30 Wan self-attention layers at one
+denoising step gives MAEs of 0.02793 and 0.01750 and RMSEs of 0.03689 and 0.02409,
+respectively. These aggregates do not establish uniform per-head accuracy:
+the worst relative L2 errors are 77.8\% for PixArt and 17.0\% for Wan.
+Separately, four paired $1024\times1024$ generations gave a mean PSNR of
+17.04~dB and SSIM of 0.648 against the original FP16 pipeline. The main subjects
+were preserved, with visible differences in composition, texture, and reflections.
+These limited paired-image comparisons quantify fidelity; they do not establish
+near-lossless generation or population-level image quality.

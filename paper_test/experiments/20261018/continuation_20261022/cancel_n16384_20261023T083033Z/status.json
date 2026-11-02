@@ -1,0 +1,26 @@
+{
+    "pid": 2682426,
+    "updated_unix": 1792744202.1695979,
+    "completed": 93,
+    "total": 136,
+    "running": [
+        "pixart_n16384",
+        "power_native_pixart_n1024_s301",
+        "pixart_n4096_l16_s15",
+        "pixart_n4096_l17_s15",
+        "pixart_n4096_l18_s15",
+        "pixart_n4096_l19_s15",
+        "wan_n9216",
+        "power_native_wan_n1024_s301",
+        "wan_n4096_l12_s15",
+        "wan_n4096_l13_s15",
+        "wan_n4096_l14_s15",
+        "wan_n4096_l15_s15"
+    ],
+    "failed": [],
+    "free_gib": 64.50226593017578,
+    "disk_guard_pauses_new_jobs": false,
+    "submitted_this_round": [],
+    "precision_optimization": "deferred",
+    "scope": "finite approved experiment queue; exits after all terminal states"
+}

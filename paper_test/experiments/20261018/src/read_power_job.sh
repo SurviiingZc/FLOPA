@@ -5,8 +5,8 @@ task_root=/data/workspaces/zhangcheng/flash_attention
 task_run="$task_root/paper_test/experiments/20261018"
 task_mapped="$task_root/asic/dc/work/synth/tt/diffusion_runtime_d/attention_accel_top"
 task_job="$1"
-[[ "$task_job" =~ ^power_((pixart|wan)|f2_pixart)_n256_s301$ ]]
-if [[ "$task_job" == power_f2_pixart_n256_s301 ]]; then
+[[ "$task_job" =~ ^power_((pixart|wan)|f2_pixart)_n256_s30[123]$ ]]
+if [[ "$task_job" =~ ^power_f2_pixart_n256_s30[123]$ ]]; then
     task_mapped=/data/workspaces/zhangcheng/flopa_eval_f2/asic/dc/work/synth/tt
     task_mapped="$task_mapped/evaluation_f2/attention_accel_top"
 fi

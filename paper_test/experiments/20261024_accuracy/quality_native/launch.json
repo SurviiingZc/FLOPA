@@ -1,0 +1,50 @@
+[
+    {
+        "worker": 0,
+        "pid": 2591500,
+        "cases": [
+            "cactus_s301",
+            "cactus_s302"
+        ],
+        "args": [
+            "/home/zhangcheng/miniconda3/envs/dfot/bin/python",
+            "-u",
+            "/10T/zhangcheng/flopa_accuracy_20261024/run_pixart_quality_native.py",
+            "--output",
+            "/10T/zhangcheng/flopa_accuracy_20261024/quality_native/worker0",
+            "--worker",
+            "0",
+            "--cases",
+            "cactus_s301",
+            "cactus_s302",
+            "--query-chunk",
+            "4096",
+            "--memory-limit-gib",
+            "10"
+        ]
+    },
+    {
+        "worker": 1,
+        "pid": 2591501,
+        "cases": [
+            "cabin_s301",
+            "train_s303"
+        ],
+        "args": [
+            "/home/zhangcheng/miniconda3/envs/dfot/bin/python",
+            "-u",
+            "/10T/zhangcheng/flopa_accuracy_20261024/run_pixart_quality_native.py",
+            "--output",
+            "/10T/zhangcheng/flopa_accuracy_20261024/quality_native/worker1",
+            "--worker",
+            "1",
+            "--cases",
+            "cabin_s301",
+            "train_s303",
+            "--query-chunk",
+            "4096",
+            "--memory-limit-gib",
+            "10"
+        ]
+    }
+]

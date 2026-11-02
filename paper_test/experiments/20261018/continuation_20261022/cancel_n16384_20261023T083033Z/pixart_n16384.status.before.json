@@ -1,0 +1,30 @@
+{
+    "state": "running",
+    "manifest": {
+        "heads": 16,
+        "nq": 16384,
+        "nkv": 16384,
+        "d": 72,
+        "score_scale": 1073547,
+        "out_scale": 1925337,
+        "qualification_sha256": "d2d4bfa88c148d3f382f75180e286455d81437c08c55d4bf11873062ed6505a8",
+        "precision_gate_is_diagnostic": true,
+        "accuracy_pass": false,
+        "arithmetic_scope": "unchanged current RTL, including signed INT32 wrap",
+        "shadow_sha256": "a0c8cc5b7d472e78e6a1a2c21b6abf913e6a9e26b067dbf13308700fd71b9db0",
+        "files_sha256": {
+            "q.bin": "d934b2b50d1a8afe57d3715833fc460e9d33ea60cb0d6f75f510ed494c09262d",
+            "k.bin": "adea79a587437919c773e59e60d8a1c447e69242b545383c454134cbf576d33e",
+            "v.bin": "2b5d87d551ecec0ec2bc59db09c8d6ea8cf0cd5d062172ff16e0be2852618b06",
+            "o.bin": "b74ba2295f73b39c1e220423958168a60de6851cccd43534d80af3041e28f787"
+        }
+    },
+    "start_unix": 1792714412.6781805,
+    "executable_sha256": "c01d8c224d531b62b10c0829a99bde77d4ee9393a24d011ebd89d97cbee7943e",
+    "clock_period_ns": 1.6,
+    "scope": "full-head native-shape RTL, ideal 128-bit streaming service",
+    "frequency_status": "synthesis target, not measured silicon",
+    "accuracy_pass": false,
+    "precision_gate_is_diagnostic": true,
+    "functional_pass_does_not_imply_accuracy_pass": true
+}

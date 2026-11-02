@@ -1,0 +1,36 @@
+{
+    "workbook": {
+        "done": false,
+        "status": "当前实测已回填；新结果自动同步，待全量图表数据完成",
+        "evidence": [
+            "evaluation_data.xlsx：两张基础表；待测数值为空"
+        ]
+    },
+    "paper": {
+        "done": false,
+        "status": "证据/计时边界已入稿；最终图表与四页检查待完成，内置编译宿主阻碍",
+        "evidence": [
+            "conference_101719.tex：Introduction、Evaluation、Conclusion已统一口径"
+        ]
+    },
+    "clock_power_audit": {
+        "done": true,
+        "status": "已核验1001pF简化负载，三点按实际库pin负载回读；仍为pre-CTS",
+        "evidence": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/results/actual_pin_load_power_audit_20261020.json"
+    },
+    "native_energy_method": {
+        "done": false,
+        "status": "待核验长N活动方法；完整门级成本较高",
+        "evidence": "ENERGY_EVALUATION_ZH.md"
+    },
+    "native_energy": {
+        "done": false,
+        "status": "待测；未测保持空白，不以N256/H1替代原形算子",
+        "evidence": "ENERGY_EVALUATION_ZH.md"
+    },
+    "f2_comparison": {
+        "done": true,
+        "status": "周期降6.73%；实际pin负载IP能量降3.65%",
+        "evidence": "/data/workspaces/zhangcheng/flash_attention/paper_test/experiments/20261018/results/f2_comparison.json"
+    }
+}

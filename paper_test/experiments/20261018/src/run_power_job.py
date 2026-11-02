@@ -19,9 +19,10 @@ def main():
     parser.add_argument('--model', choices=['pixart', 'wan'], required=True)
     parser.add_argument('--worker', action='store_true')
     parser.add_argument('--variant', choices=['F0', 'F2'], default='F0')
+    parser.add_argument('--seed', type=int, choices=[301, 302, 303], default=301)
     args = parser.parse_args()
-    input_name = 'power_' + args.model + '_n256_s301'
-    name = input_name if args.variant == 'F0' else 'power_f2_' + args.model + '_n256_s301'
+    input_name = f'power_{args.model}_n256_s{args.seed}'
+    name = input_name if args.variant == 'F0' else f'power_f2_{args.model}_n256_s{args.seed}'
     assert args.variant != 'F2' or args.model == 'pixart'
     folder = ROOT / 'inputs' / input_name
     target = ROOT / 'jobs' / name
@@ -33,7 +34,7 @@ def main():
             return
         with (target / 'worker.log').open('w') as log:
             child = subprocess.Popen([sys.executable, __file__, '--model', args.model,
-                '--variant', args.variant, '--worker'],
+                '--variant', args.variant, '--seed', str(args.seed), '--worker'],
                 stdin=subprocess.DEVNULL, stdout=log, stderr=subprocess.STDOUT,
                 cwd=str(target), start_new_session=True)
         print(json.dumps({'state': 'submitted', 'pid': child.pid}))
@@ -41,7 +42,7 @@ def main():
     lock = (target / 'worker.lock').open('w')
     fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
     report = {'state': 'validating_inputs', 'started_unix': time.time(),
-              'variant': args.variant,
+              'variant': args.variant, 'seed': args.seed,
               'precision_qualification': 'deferred; current integer arithmetic only'}
     write(status_path, report)
     try:
