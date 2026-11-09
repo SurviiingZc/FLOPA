@@ -1,0 +1,20 @@
+{
+    "updated_utc": "2026-10-19T07:43:41.463607+00:00",
+    "cpu_baseline_enabled": false,
+    "gpu_baseline_enabled": true,
+    "main_figure_platforms": [
+        "GPU",
+        "FLOPA"
+    ],
+    "reason": "User removed the CPU performance baseline on 2026-10-19",
+    "cpu_reference_math_remains_required": true,
+    "historical_cpu_measurements": "retained, excluded from paper comparisons",
+    "primary_cross_platform_metric": "gross_energy_per_complete_multihead_sdpa",
+    "retain_latency": true,
+    "gpu_board_and_asic_ip_boundaries_differ": true,
+    "allow_unvalidated_power_extrapolation": false,
+    "gpu_energy_shared_environment_authorized": true,
+    "gpu_energy_method": "NVML board-power trapezoidal integration",
+    "gpu_energy_counter_diagnostic_only": true,
+    "shared_board_energy_is_not_exclusive_sdpa_energy": true
+}

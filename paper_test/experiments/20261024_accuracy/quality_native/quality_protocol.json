@@ -1,0 +1,22 @@
+{
+    "state": "complete",
+    "model": "PixArt-Sigma-XL-2-1024-MS",
+    "pixels": 1024,
+    "N": 4096,
+    "heads": 16,
+    "d": 72,
+    "steps": 30,
+    "guidance_scale": 4.5,
+    "CFG_branches": 2,
+    "replacement": "all 28 self-attention layers at all 30 steps, exact frozen arithmetic",
+    "reference": "original FP16 self-attention; same model, prompt, initial latent, scheduler",
+    "unchanged_scale_sha256": "7e7d9584c806333873ed2c597a7660f4746fe71f4817923d0c963e2f37ab5880",
+    "shadow_sha256": "705e2ea79e4637795fdb21ab48b8024cc89a96789fb2ca546047c6511466cecf",
+    "worker_protocols_sha256": {
+        "quality_native/worker0/quality_protocol.json": "7611ba6e307455e4bdb6f012821da5d318e8e7f540bde673c9e23d212bf417c8",
+        "quality_native/worker1/quality_protocol.json": "05ba3ba9764b4baa868ae600bfa87e94ac7c9bbffbc678c575832f5ad64af589"
+    },
+    "image_metrics": "PSNR/SSIM on decoded RGB uint8 images, range 0..255",
+    "limitations": "four pairs; two prompts overlap calibration; no FID/general quality claim",
+    "runtime_scope": "software numerical emulator; wall time is not hardware performance"
+}

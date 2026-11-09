@@ -19,6 +19,7 @@ module fsa_pv_engine #(
   input                              rst_n,
   input                              clear_i,
   input                              start_i,
+    input      [7:0]                   head_dim_i,
   input                              first_kv_tile_i,
   output reg                         v_rd_en_o,
   output reg [CACHE_ADDR_W-1:0]      v_rd_addr_o,
@@ -73,7 +74,7 @@ module fsa_pv_engine #(
   // so bubbles or a later cache latency change cannot silently write O[:,d] as
   // O[:,d+1].
   always @(*) begin
-    v_rd_en_o = (state_q == ST_ISSUE && issue_count_q < FEATURE_LIMIT);
+        v_rd_en_o = (state_q == ST_ISSUE && issue_count_q < head_dim_i);
     v_rd_addr_o = issue_count_q[CACHE_ADDR_W-1:0];
     array_start_o = (state_q == ST_ARRAY_START);
     array_seed_zero_o = first_kv_tile_i;
@@ -127,8 +128,12 @@ module fsa_pv_engine #(
         ST_IDLE: begin
           busy_o <= 1'b0;
           if (start_i) begin
-            busy_o <= 1'b1;
-            state_q <= ST_ARRAY_START;
+                        if (head_dim_i == 0 || head_dim_i > FEATURE_LIMIT) begin
+                            error_o <= 1'b1;
+                        end else begin
+                            busy_o <= 1'b1;
+                            state_q <= ST_ARRAY_START;
+                        end
           end
         end
         ST_ARRAY_START: state_q <= ST_ARRAY_READY;
@@ -140,10 +145,11 @@ module fsa_pv_engine #(
           end
         end
         ST_ISSUE: begin
-          if (issue_count_q < FEATURE_LIMIT)
+                    if (issue_count_q < head_dim_i)
             issue_count_q <= issue_count_q + 1'b1;
           if (v_rd_valid_i && v_rd_response_tag_valid_w) begin
-            if (v_rd_response_feature_w == FEATURE_LAST) state_q <= ST_DRAIN;
+                        if ({1'b0, v_rd_response_feature_w} == head_dim_i - 1'b1) state_q <=
+                            ST_DRAIN;
           end
         end
         ST_DRAIN: if (array_done_i) state_q <= ST_DONE;

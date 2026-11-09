@@ -1,0 +1,124 @@
+ 
+****************************************
+Report : attribute definition
+        -application
+Design :
+Version: V-2023.12-SP5
+Date   : Sun Oct 18 01:10:08 2026
+****************************************
+
+Attributes:
+    a - application-defined
+    r - read-only
+    u - user-defined
+
+Attribute name                               Class      Type       Attributes
+--------------------------------------------------------------------------------
+arrival                                      timing_path
+                                                        string     a
+capture_clock_paths                          timing_path
+                                                        collection a
+cell_delay                                   timing_path
+                                                        string     a
+clock_path                                   timing_path
+                                                        boolean    a
+clock_uncertainty                            timing_path
+                                                        float      a
+common_path_pessimism                        timing_path
+                                                        float      a
+crpr_common_point                            timing_path
+                                                        collection a
+endpoint                                     timing_path
+                                                        collection a
+endpoint_clock                               timing_path
+                                                        collection a
+endpoint_clock_close_edge_type               timing_path
+                                                        string     a
+endpoint_clock_close_edge_value              timing_path
+                                                        float      a
+endpoint_clock_is_inverted                   timing_path
+                                                        boolean    a
+endpoint_clock_is_propagated                 timing_path
+                                                        boolean    a
+endpoint_clock_latency                       timing_path
+                                                        float      a
+endpoint_clock_open_edge_type                timing_path
+                                                        string     a
+endpoint_clock_open_edge_value               timing_path
+                                                        float      a
+endpoint_clock_pin                           timing_path
+                                                        collection a
+endpoint_hold_time_value                     timing_path
+                                                        float      a
+endpoint_is_level_sensitive                  timing_path
+                                                        boolean    a
+endpoint_output_delay_value                  timing_path
+                                                        float      a
+endpoint_recovery_time_value                 timing_path
+                                                        float      a
+endpoint_removal_time_value                  timing_path
+                                                        float      a
+endpoint_setup_time_value                    timing_path
+                                                        float      a
+full_name                                    timing_path
+                                                        string     a
+hierarchical                                 timing_path
+                                                        boolean    a
+is_multicycle                                timing_path
+                                                        boolean    a
+is_recovered                                 timing_path
+                                                        boolean    a
+launch_clock_paths                           timing_path
+                                                        collection a
+logic_depth                                  timing_path
+                                                        string     a
+name                                         timing_path
+                                                        string     a
+net_delay                                    timing_path
+                                                        string     a
+normalized_slack                             timing_path
+                                                        float      a
+object_class                                 timing_path
+                                                        string     a
+path_group                                   timing_path
+                                                        collection a
+path_infeasible                              timing_path
+                                                        boolean    a
+path_length                                  timing_path
+                                                        integer    a
+path_length_no_bufinv                        timing_path
+                                                        integer    a
+path_type                                    timing_path
+                                                        string     a
+points                                       timing_path
+                                                        collection a
+required                                     timing_path
+                                                        string     a
+scenario                                     timing_path
+                                                        string     a
+slack                                        timing_path
+                                                        string     a
+startpoint                                   timing_path
+                                                        collection a
+startpoint_clock                             timing_path
+                                                        collection a
+startpoint_clock_is_inverted                 timing_path
+                                                        boolean    a
+startpoint_clock_is_propagated               timing_path
+                                                        boolean    a
+startpoint_clock_latency                     timing_path
+                                                        float      a
+startpoint_clock_open_edge_type              timing_path
+                                                        string     a
+startpoint_clock_open_edge_value             timing_path
+                                                        float      a
+startpoint_input_delay_value                 timing_path
+                                                        float      a
+startpoint_is_level_sensitive                timing_path
+                                                        boolean    a
+time_borrowed_from_endpoint                  timing_path
+                                                        float      a
+time_lent_to_startpoint                      timing_path
+                                                        float      a
+--------------------------------------------------------------------------------
+1

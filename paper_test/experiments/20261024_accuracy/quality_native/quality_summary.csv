@@ -1,0 +1,5 @@
+case,prompt,seed,pixels,N,psnr_db,ssim,latent_rmse
+cactus_s301,A small cactus with a happy face in the Sahara desert.,301,1024,4096,17.340582229015688,0.7656889665736575,0.41667142510414124
+cactus_s302,A small cactus with a happy face in the Sahara desert.,302,1024,4096,16.41663495877579,0.7227337593716213,0.48857319355010986
+cabin_s301,A wooden cabin beside a lake at sunrise.,301,1024,4096,16.582937459459252,0.5392644615639535,0.4414016604423523
+train_s303,A yellow train in a green valley.,303,1024,4096,17.806025619192734,0.5649742920561205,0.4427245259284973

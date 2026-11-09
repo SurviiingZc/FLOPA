@@ -1,0 +1,17 @@
+{
+    "pid": 186901,
+    "updated_unix": 1793193577.770635,
+    "completed": 124,
+    "total": 132,
+    "running": [
+        "power_native_pixart_n1024_s301",
+        "power_native_wan_n1024_s301"
+    ],
+    "failed": [],
+    "free_gib": 131.26036071777344,
+    "disk_guard_pauses_new_jobs": false,
+    "submitted_this_round": [],
+    "precision_optimization": "deferred",
+    "maximum_sequence_length": 9216,
+    "scope": "finite approved queue; maximum N=9216; exits after terminal states"
+}

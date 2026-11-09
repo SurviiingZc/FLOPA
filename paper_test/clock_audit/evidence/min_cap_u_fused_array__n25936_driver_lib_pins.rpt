@@ -1,0 +1,22 @@
+ 
+****************************************
+Report : Attribute
+Design : attention_accel_top
+Version: V-2023.12-SP5
+Date   : Sun Oct 18 01:10:35 2026
+****************************************
+
+Design          Object             Type      Attribute Name            Value
+--------------------------------------------------------------------------------
+INVD0BWP12T30P140 ZN               port      power_down_function       !VDD + VSS
+INVD0BWP12T30P140 ZN               port      function                  !I
+INVD0BWP12T30P140 ZN               port      max_capacitance           0.044078
+INVD0BWP12T30P140 ZN               port      min_capacitance           0.000410
+INVD0BWP12T30P140 ZN               port      series_parallel           true
+INVD0BWP12T30P140 ZN               port      pin_function_class        a1
+INVD0BWP12T30P140 ZN               port      pin_function_id           Ia1.0
+INVD0BWP12T30P140 ZN               port      pin_class                 1
+INVD0BWP12T30P140 ZN               port      pin_sense                 false
+INVD0BWP12T30P140 ZN               port      pin_used_in_function      true
+
+1

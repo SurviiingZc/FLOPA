@@ -1,0 +1,643 @@
+{
+    "state": "pass_complete_study",
+    "started_unix": 1792585848.1183224,
+    "results": {
+        "pixart_n33": {
+            "state": "pass_measured_traffic",
+            "model": "pixart",
+            "n": 33,
+            "heads": 1,
+            "d": 72,
+            "tiles": 4,
+            "cycles": 3387,
+            "loader_bytes": 23040,
+            "output_bytes": 2376,
+            "macro_accesses": {
+                "q": {
+                    "read_bytes": 9216,
+                    "write_bytes": 4608,
+                    "macros": 64
+                },
+                "k": {
+                    "read_bytes": 9216,
+                    "write_bytes": 9216,
+                    "macros": 64
+                },
+                "v": {
+                    "read_bytes": 9216,
+                    "write_bytes": 9216,
+                    "macros": 64
+                },
+                "o": {
+                    "read_bytes": 36864,
+                    "write_bytes": 36864,
+                    "macros": 256
+                },
+                "output": {
+                    "read_bytes": 3168,
+                    "write_bytes": 6144,
+                    "macros": 32
+                }
+            },
+            "flopa_sram_read_bytes": 67680,
+            "flopa_sram_write_bytes": 66048,
+            "flopa_p_sram_read_bytes": 0,
+            "flopa_p_sram_write_bytes": 0,
+            "p_register_loads_physical": 4096,
+            "p_register_loads_useful": 1089,
+            "p_pv_uses_physical": 294912,
+            "p_pv_uses_useful": 78408,
+            "useful_p_reuse": 72.0,
+            "p_buffer_trace_read_bytes": 8192,
+            "p_buffer_trace_write_bytes": 8192,
+            "p_buffer_words_checked": 128,
+            "reference_scope": "traffic-only SRAM spill/reload of actual RTL P columns",
+            "reference_is_full_accelerator_variant": false,
+            "functional_byte_exact_pass": true,
+            "macro_count": 480,
+            "pe_count": 1024,
+            "mask_tail_case": true,
+            "input_manifest": {
+                "model": "pixart",
+                "heads": 1,
+                "nq": 33,
+                "nkv": 33,
+                "d": 72,
+                "score_scale": 1200306,
+                "out_scale": 1922647,
+                "qualification_sha256": "ed013e91c9be2b11c66a82bd5df8186f3e28ac44755f812d96225193bfff18bc",
+                "files_sha256": {
+                    "q.bin": "9901248ca7c6406d3c42b7672f26909395e2f82247010dfa8b70eb00f4422ceb",
+                    "k.bin": "c0a62b83cf910873e04951d3a97ff77b44e19ef4e0c89dd1195e7c30e8226903",
+                    "v.bin": "5c3213c5af2c9999086eb9b5ae9c43ef58558c3028140e3ed6a2f0cc100496e1",
+                    "o.bin": "11229ec32982fd6f4e6a8f299d758d0810b4e1923483dae94b7c2c551fb94e42"
+                }
+            },
+            "source_sha256": {
+                "rtl.log": "8306e648969cbd83a2e61a1f937a13ed0677027bc7335d68124e8b2b1327dcf4",
+                "reference.log": "808c3b6350c8bea46c1fdf23fdb3a3fc2626f6a3e98cdc9c048a6619ab38461c",
+                "probability.txt": "21f40c2fcfb95140806131253e026aa38de45fec5cab699328f2dd4ce5cd1acf",
+                "result.csv": "1953e33f0ab8692f6d604b523929ae6b0240a097a512731278f147fe6dbbd7cc",
+                "result.csv.observed.bin": "11229ec32982fd6f4e6a8f299d758d0810b4e1923483dae94b7c2c551fb94e42"
+            }
+        },
+        "pixart_n64": {
+            "state": "pass_measured_traffic",
+            "model": "pixart",
+            "n": 64,
+            "heads": 1,
+            "d": 72,
+            "tiles": 4,
+            "cycles": 3833,
+            "loader_bytes": 23040,
+            "output_bytes": 4608,
+            "macro_accesses": {
+                "q": {
+                    "read_bytes": 9216,
+                    "write_bytes": 4608,
+                    "macros": 64
+                },
+                "k": {
+                    "read_bytes": 9216,
+                    "write_bytes": 9216,
+                    "macros": 64
+                },
+                "v": {
+                    "read_bytes": 9216,
+                    "write_bytes": 9216,
+                    "macros": 64
+                },
+                "o": {
+                    "read_bytes": 36864,
+                    "write_bytes": 36864,
+                    "macros": 256
+                },
+                "output": {
+                    "read_bytes": 6144,
+                    "write_bytes": 6144,
+                    "macros": 32
+                }
+            },
+            "flopa_sram_read_bytes": 70656,
+            "flopa_sram_write_bytes": 66048,
+            "flopa_p_sram_read_bytes": 0,
+            "flopa_p_sram_write_bytes": 0,
+            "p_register_loads_physical": 4096,
+            "p_register_loads_useful": 4096,
+            "p_pv_uses_physical": 294912,
+            "p_pv_uses_useful": 294912,
+            "useful_p_reuse": 72.0,
+            "p_buffer_trace_read_bytes": 8192,
+            "p_buffer_trace_write_bytes": 8192,
+            "p_buffer_words_checked": 128,
+            "reference_scope": "traffic-only SRAM spill/reload of actual RTL P columns",
+            "reference_is_full_accelerator_variant": false,
+            "functional_byte_exact_pass": true,
+            "macro_count": 480,
+            "pe_count": 1024,
+            "mask_tail_case": false,
+            "input_manifest": {
+                "model": "pixart",
+                "heads": 1,
+                "nq": 64,
+                "nkv": 64,
+                "d": 72,
+                "score_scale": 1200306,
+                "out_scale": 1922647,
+                "qualification_sha256": "985197efbbf9df0477c370dd4babcc5bda65f132d5a57d60bd0d4bc951adf426",
+                "files_sha256": {
+                    "q.bin": "7b812da5778532511f4952d02b5a360a55c49a72c52719fb8e77cd973635e642",
+                    "k.bin": "9ba10cf10d7923f3e6bef471d84b8a727ac7b5617da63e6844015112aaf73893",
+                    "v.bin": "296d687d18f596669a1c7858c348bf55d9040c9a6bb7dce7766d7520413bb82d",
+                    "o.bin": "0d845d6b1f17b8cfec33997987a8d9382ba0a057c2f96311ad402cb39787da25"
+                }
+            },
+            "source_sha256": {
+                "rtl.log": "58ad11ec6ace654252e651be6cbef34f756dd95f491e2b503f7c98ff0aafbac8",
+                "reference.log": "666ddba1dff8cce38f1590288cd1874d466a56516430ad48f8fd755cdd7ecb9d",
+                "probability.txt": "822b7db3e348cb87174953baa94564382282f50ebbcfbb6350b3e7817b86265c",
+                "result.csv": "323144c0960978deec974acfc72c988ea17373966c308b22416fdf3a58ab8405",
+                "result.csv.observed.bin": "0d845d6b1f17b8cfec33997987a8d9382ba0a057c2f96311ad402cb39787da25"
+            }
+        },
+        "pixart_n128": {
+            "state": "pass_measured_traffic",
+            "model": "pixart",
+            "n": 128,
+            "heads": 1,
+            "d": 72,
+            "tiles": 16,
+            "cycles": 10065,
+            "loader_bytes": 82944,
+            "output_bytes": 9216,
+            "macro_accesses": {
+                "q": {
+                    "read_bytes": 36864,
+                    "write_bytes": 9216,
+                    "macros": 64
+                },
+                "k": {
+                    "read_bytes": 36864,
+                    "write_bytes": 36864,
+                    "macros": 64
+                },
+                "v": {
+                    "read_bytes": 36864,
+                    "write_bytes": 36864,
+                    "macros": 64
+                },
+                "o": {
+                    "read_bytes": 147456,
+                    "write_bytes": 147456,
+                    "macros": 256
+                },
+                "output": {
+                    "read_bytes": 12288,
+                    "write_bytes": 12288,
+                    "macros": 32
+                }
+            },
+            "flopa_sram_read_bytes": 270336,
+            "flopa_sram_write_bytes": 242688,
+            "flopa_p_sram_read_bytes": 0,
+            "flopa_p_sram_write_bytes": 0,
+            "p_register_loads_physical": 16384,
+            "p_register_loads_useful": 16384,
+            "p_pv_uses_physical": 1179648,
+            "p_pv_uses_useful": 1179648,
+            "useful_p_reuse": 72.0,
+            "p_buffer_trace_read_bytes": 32768,
+            "p_buffer_trace_write_bytes": 32768,
+            "p_buffer_words_checked": 512,
+            "reference_scope": "traffic-only SRAM spill/reload of actual RTL P columns",
+            "reference_is_full_accelerator_variant": false,
+            "functional_byte_exact_pass": true,
+            "macro_count": 480,
+            "pe_count": 1024,
+            "mask_tail_case": false,
+            "input_manifest": {
+                "model": "pixart",
+                "heads": 1,
+                "nq": 128,
+                "nkv": 128,
+                "d": 72,
+                "score_scale": 1200306,
+                "out_scale": 1922647,
+                "qualification_sha256": "8154da7b5131c175cf04fc08bd0519e80dce376eff766aa6df13140ca5251b4d",
+                "files_sha256": {
+                    "q.bin": "d98b690eeab60c21b92de07dff91db64e104708c5101a3de1521cf3678b7396a",
+                    "k.bin": "a89c299cef6b6f1b840e9ee1fd61e2c9a1ca34bd246c3a1ba3d6167799f9892f",
+                    "v.bin": "d722b60630458bfdf24ffa237233f2cd8251ca14934bc8ec61e14f18687d5a8e",
+                    "o.bin": "573a882eec7ee4a792254dbbdaac486bdf33147f3ada317373977a50a203a346"
+                }
+            },
+            "source_sha256": {
+                "rtl.log": "9962f8409cbe5cc2530178d2319cd9ce7efeb2aba3e6b7f2df2d5e19bdd383b1",
+                "reference.log": "f65ae8ab8634bdedc78f3685926acf826705f66b845cb6f13e725813b9f72ab2",
+                "probability.txt": "31843243d3628dc61493c731324c744269b55077b4f34694bbed4e57245b628c",
+                "result.csv": "703e7330098e25152986516fee8b5aa4e588975756e054170a56b167d0f70aaa",
+                "result.csv.observed.bin": "573a882eec7ee4a792254dbbdaac486bdf33147f3ada317373977a50a203a346"
+            }
+        },
+        "pixart_n256": {
+            "state": "pass_measured_traffic",
+            "model": "pixart",
+            "n": 256,
+            "heads": 1,
+            "d": 72,
+            "tiles": 64,
+            "cycles": 31025,
+            "loader_bytes": 313344,
+            "output_bytes": 18432,
+            "macro_accesses": {
+                "q": {
+                    "read_bytes": 147456,
+                    "write_bytes": 18432,
+                    "macros": 64
+                },
+                "k": {
+                    "read_bytes": 147456,
+                    "write_bytes": 147456,
+                    "macros": 64
+                },
+                "v": {
+                    "read_bytes": 147456,
+                    "write_bytes": 147456,
+                    "macros": 64
+                },
+                "o": {
+                    "read_bytes": 589824,
+                    "write_bytes": 589824,
+                    "macros": 256
+                },
+                "output": {
+                    "read_bytes": 24576,
+                    "write_bytes": 24576,
+                    "macros": 32
+                }
+            },
+            "flopa_sram_read_bytes": 1056768,
+            "flopa_sram_write_bytes": 927744,
+            "flopa_p_sram_read_bytes": 0,
+            "flopa_p_sram_write_bytes": 0,
+            "p_register_loads_physical": 65536,
+            "p_register_loads_useful": 65536,
+            "p_pv_uses_physical": 4718592,
+            "p_pv_uses_useful": 4718592,
+            "useful_p_reuse": 72.0,
+            "p_buffer_trace_read_bytes": 131072,
+            "p_buffer_trace_write_bytes": 131072,
+            "p_buffer_words_checked": 2048,
+            "reference_scope": "traffic-only SRAM spill/reload of actual RTL P columns",
+            "reference_is_full_accelerator_variant": false,
+            "functional_byte_exact_pass": true,
+            "macro_count": 480,
+            "pe_count": 1024,
+            "mask_tail_case": false,
+            "input_manifest": {
+                "model": "pixart",
+                "heads": 1,
+                "nq": 256,
+                "nkv": 256,
+                "d": 72,
+                "score_scale": 1200306,
+                "out_scale": 1922647,
+                "qualification_sha256": "595ad6d5464fda5526e1cd95a5b5077eb1e7ef2ee5963b67c5018ab97ac478fc",
+                "files_sha256": {
+                    "q.bin": "79609f4424139204a89e20a04b17f5eda0a79ff2620d35e1afccce7ebeca6b7c",
+                    "k.bin": "c67014f3b808b1aa7a8f7b5098dc46a8c9cfc02f321bea803e1a39d355ec260c",
+                    "v.bin": "fdf60d4eab3acf33d53041e9712e2adc15a828f7e6ae14e31613bee0f3186d07",
+                    "o.bin": "8c914cfcbeedb348a102b902f841af4d796c4b22ad30f3ceff2dcfcbe3082ad0"
+                }
+            },
+            "source_sha256": {
+                "rtl.log": "10b2c7be477e4d5b0307eb21ea65a83bcddcc03b3dd6f5523384532fa9d44d18",
+                "reference.log": "c642fb5fc79eca4ddfcf9e929ce10f0756bf2dbddee94aeb4f8b1322d495c8a0",
+                "probability.txt": "0fada9dd24d3f84eef2e029273f57e52b6ef7b4fe24e5c3e4ee113a4cbb59fda",
+                "result.csv": "c8ebf431ecb54a214df307ba88678d08f39fcc3140214f2adb1439fe9df0f0d1",
+                "result.csv.observed.bin": "8c914cfcbeedb348a102b902f841af4d796c4b22ad30f3ceff2dcfcbe3082ad0"
+            }
+        },
+        "wan_n33": {
+            "state": "pass_measured_traffic",
+            "model": "wan",
+            "n": 33,
+            "heads": 1,
+            "d": 128,
+            "tiles": 4,
+            "cycles": 5014,
+            "loader_bytes": 40960,
+            "output_bytes": 4224,
+            "macro_accesses": {
+                "q": {
+                    "read_bytes": 16384,
+                    "write_bytes": 8192,
+                    "macros": 64
+                },
+                "k": {
+                    "read_bytes": 16384,
+                    "write_bytes": 16384,
+                    "macros": 64
+                },
+                "v": {
+                    "read_bytes": 16384,
+                    "write_bytes": 16384,
+                    "macros": 64
+                },
+                "o": {
+                    "read_bytes": 65536,
+                    "write_bytes": 65536,
+                    "macros": 256
+                },
+                "output": {
+                    "read_bytes": 4224,
+                    "write_bytes": 8192,
+                    "macros": 32
+                }
+            },
+            "flopa_sram_read_bytes": 118912,
+            "flopa_sram_write_bytes": 114688,
+            "flopa_p_sram_read_bytes": 0,
+            "flopa_p_sram_write_bytes": 0,
+            "p_register_loads_physical": 4096,
+            "p_register_loads_useful": 1089,
+            "p_pv_uses_physical": 524288,
+            "p_pv_uses_useful": 139392,
+            "useful_p_reuse": 128.0,
+            "p_buffer_trace_read_bytes": 8192,
+            "p_buffer_trace_write_bytes": 8192,
+            "p_buffer_words_checked": 128,
+            "reference_scope": "traffic-only SRAM spill/reload of actual RTL P columns",
+            "reference_is_full_accelerator_variant": false,
+            "functional_byte_exact_pass": true,
+            "macro_count": 480,
+            "pe_count": 1024,
+            "mask_tail_case": true,
+            "input_manifest": {
+                "model": "wan",
+                "heads": 1,
+                "nq": 33,
+                "nkv": 33,
+                "d": 128,
+                "score_scale": 1274674,
+                "out_scale": 1928016,
+                "qualification_sha256": "617e2f3a8b9647a9b7ec2e6b77b7aea3ccdf86acdde3033ad11d4cb0bd8d7721",
+                "files_sha256": {
+                    "q.bin": "5ea0f026cc279c9857a69f3ab062f80613f95811982e588b124be6c98e4ac166",
+                    "k.bin": "e065291a3847a24268d4e90f5c6f694c328aa98cfd861ac4a1edffc4b5a0e2ae",
+                    "v.bin": "ef412e25274e74b072dda5ca7428ab622d2e865ac95d0e07eb1f00174dd12265",
+                    "o.bin": "57fbcafbea81f24096fd47b0b49eceb1f7ebbd851d6baae468ec14856d497f45"
+                }
+            },
+            "source_sha256": {
+                "rtl.log": "e6996c9f244db4fe837fc60d3dbf57406e9dcd56457a34c85b847b9989aa432d",
+                "reference.log": "f72cf0d53355022acd9f9cddcec254ec4f22bdc0ba832f72987d0d20fbd84e4e",
+                "probability.txt": "8c1852498638225e60dd2cd6e2f9c1ebea651ffbb2b28771a85116e3e8c6d920",
+                "result.csv": "e1a3f17f239a9f5e2dd94bb36b3550f1c5a09272598ca7ea69bb8a5863d9a4dd",
+                "result.csv.observed.bin": "57fbcafbea81f24096fd47b0b49eceb1f7ebbd851d6baae468ec14856d497f45"
+            }
+        },
+        "wan_n64": {
+            "state": "pass_measured_traffic",
+            "model": "wan",
+            "n": 64,
+            "heads": 1,
+            "d": 128,
+            "tiles": 4,
+            "cycles": 5634,
+            "loader_bytes": 40960,
+            "output_bytes": 8192,
+            "macro_accesses": {
+                "q": {
+                    "read_bytes": 16384,
+                    "write_bytes": 8192,
+                    "macros": 64
+                },
+                "k": {
+                    "read_bytes": 16384,
+                    "write_bytes": 16384,
+                    "macros": 64
+                },
+                "v": {
+                    "read_bytes": 16384,
+                    "write_bytes": 16384,
+                    "macros": 64
+                },
+                "o": {
+                    "read_bytes": 65536,
+                    "write_bytes": 65536,
+                    "macros": 256
+                },
+                "output": {
+                    "read_bytes": 8192,
+                    "write_bytes": 8192,
+                    "macros": 32
+                }
+            },
+            "flopa_sram_read_bytes": 122880,
+            "flopa_sram_write_bytes": 114688,
+            "flopa_p_sram_read_bytes": 0,
+            "flopa_p_sram_write_bytes": 0,
+            "p_register_loads_physical": 4096,
+            "p_register_loads_useful": 4096,
+            "p_pv_uses_physical": 524288,
+            "p_pv_uses_useful": 524288,
+            "useful_p_reuse": 128.0,
+            "p_buffer_trace_read_bytes": 8192,
+            "p_buffer_trace_write_bytes": 8192,
+            "p_buffer_words_checked": 128,
+            "reference_scope": "traffic-only SRAM spill/reload of actual RTL P columns",
+            "reference_is_full_accelerator_variant": false,
+            "functional_byte_exact_pass": true,
+            "macro_count": 480,
+            "pe_count": 1024,
+            "mask_tail_case": false,
+            "input_manifest": {
+                "model": "wan",
+                "heads": 1,
+                "nq": 64,
+                "nkv": 64,
+                "d": 128,
+                "score_scale": 1274674,
+                "out_scale": 1928016,
+                "qualification_sha256": "1b55e6a32900a420b068785e26c701d897cc7398b58b8f8c93553c94b82dda25",
+                "files_sha256": {
+                    "q.bin": "f5e575f4a9a1f3aab80b6d8b0e1304ddcc33de237d80626d151c31dc8b143443",
+                    "k.bin": "a5362b39ef02c8b18c82daafc0e62d774cc8d4c62b9066231cafb80b2a54ba91",
+                    "v.bin": "1951987ea3c3d3428e3a719cd873493a57669be8d0d5341a0235be3126af99cc",
+                    "o.bin": "ad4589eb6523f0485e4602b9f7eeeb8c7c568165f1913c67bb9d9b573d0a73f5"
+                }
+            },
+            "source_sha256": {
+                "rtl.log": "d491b2da0a34469578e79b23ae5a55764b6bdd8353e4fb23021e319134432cc8",
+                "reference.log": "ec9bcd3927405f269976b564c73584294aa7773f280d39b9b1277d9d3afe2016",
+                "probability.txt": "16c28d24064d8dd03d503fdb12f73f61008a110ded083babbc788d2022a497b5",
+                "result.csv": "94cb79094aa07316ca2eb3eda4f327e597f76e92ed3102e71858ea94868eaa26",
+                "result.csv.observed.bin": "ad4589eb6523f0485e4602b9f7eeeb8c7c568165f1913c67bb9d9b573d0a73f5"
+            }
+        },
+        "wan_n128": {
+            "state": "pass_measured_traffic",
+            "model": "wan",
+            "n": 128,
+            "heads": 1,
+            "d": 128,
+            "tiles": 16,
+            "cycles": 14274,
+            "loader_bytes": 147456,
+            "output_bytes": 16384,
+            "macro_accesses": {
+                "q": {
+                    "read_bytes": 65536,
+                    "write_bytes": 16384,
+                    "macros": 64
+                },
+                "k": {
+                    "read_bytes": 65536,
+                    "write_bytes": 65536,
+                    "macros": 64
+                },
+                "v": {
+                    "read_bytes": 65536,
+                    "write_bytes": 65536,
+                    "macros": 64
+                },
+                "o": {
+                    "read_bytes": 262144,
+                    "write_bytes": 262144,
+                    "macros": 256
+                },
+                "output": {
+                    "read_bytes": 16384,
+                    "write_bytes": 16384,
+                    "macros": 32
+                }
+            },
+            "flopa_sram_read_bytes": 475136,
+            "flopa_sram_write_bytes": 425984,
+            "flopa_p_sram_read_bytes": 0,
+            "flopa_p_sram_write_bytes": 0,
+            "p_register_loads_physical": 16384,
+            "p_register_loads_useful": 16384,
+            "p_pv_uses_physical": 2097152,
+            "p_pv_uses_useful": 2097152,
+            "useful_p_reuse": 128.0,
+            "p_buffer_trace_read_bytes": 32768,
+            "p_buffer_trace_write_bytes": 32768,
+            "p_buffer_words_checked": 512,
+            "reference_scope": "traffic-only SRAM spill/reload of actual RTL P columns",
+            "reference_is_full_accelerator_variant": false,
+            "functional_byte_exact_pass": true,
+            "macro_count": 480,
+            "pe_count": 1024,
+            "mask_tail_case": false,
+            "input_manifest": {
+                "model": "wan",
+                "heads": 1,
+                "nq": 128,
+                "nkv": 128,
+                "d": 128,
+                "score_scale": 1274674,
+                "out_scale": 1928016,
+                "qualification_sha256": "f6df1c474e31009d2d39c6c7b8336b7ae8e61a9c13c3cf25f8e6533263677bad",
+                "files_sha256": {
+                    "q.bin": "ddf61e7e8677eacf23cf36500a14f6f90be7c2ed8a2ab685d4e530e5ee4709b5",
+                    "k.bin": "37705ac5685f0bd13b37fc2bd79a3257f2fb7dd4b384c4e13cd45efa4a45ea7f",
+                    "v.bin": "754c4d2bb651c41b22c1a96b2287a8bb0ab005922101658dab1602a685fc7205",
+                    "o.bin": "03a0aa4b2aa1a4c58aba6000c009a52c209145433c7bbf5500e14f16359b290c"
+                }
+            },
+            "source_sha256": {
+                "rtl.log": "2816233ed582372debda22ccff9ca2a1b12617bfe009729c65ab158bc6ff6afc",
+                "reference.log": "ac7d89176ded9e742eb0cfaaf8fcd8d90a7901fe5c358d0108fbd86f12154f17",
+                "probability.txt": "9bbf0aa68ac6e74d4dfa4db75ea9a10749101890c175424a45c54474a40db3a3",
+                "result.csv": "15dd931067c2d136b04cb334a7a7a834b8fa9209ef203b7dff514da8a09a4b09",
+                "result.csv.observed.bin": "03a0aa4b2aa1a4c58aba6000c009a52c209145433c7bbf5500e14f16359b290c"
+            }
+        },
+        "wan_n256": {
+            "state": "pass_measured_traffic",
+            "model": "wan",
+            "n": 256,
+            "heads": 1,
+            "d": 128,
+            "tiles": 64,
+            "cycles": 42962,
+            "loader_bytes": 557056,
+            "output_bytes": 32768,
+            "macro_accesses": {
+                "q": {
+                    "read_bytes": 262144,
+                    "write_bytes": 32768,
+                    "macros": 64
+                },
+                "k": {
+                    "read_bytes": 262144,
+                    "write_bytes": 262144,
+                    "macros": 64
+                },
+                "v": {
+                    "read_bytes": 262144,
+                    "write_bytes": 262144,
+                    "macros": 64
+                },
+                "o": {
+                    "read_bytes": 1048576,
+                    "write_bytes": 1048576,
+                    "macros": 256
+                },
+                "output": {
+                    "read_bytes": 32768,
+                    "write_bytes": 32768,
+                    "macros": 32
+                }
+            },
+            "flopa_sram_read_bytes": 1867776,
+            "flopa_sram_write_bytes": 1638400,
+            "flopa_p_sram_read_bytes": 0,
+            "flopa_p_sram_write_bytes": 0,
+            "p_register_loads_physical": 65536,
+            "p_register_loads_useful": 65536,
+            "p_pv_uses_physical": 8388608,
+            "p_pv_uses_useful": 8388608,
+            "useful_p_reuse": 128.0,
+            "p_buffer_trace_read_bytes": 131072,
+            "p_buffer_trace_write_bytes": 131072,
+            "p_buffer_words_checked": 2048,
+            "reference_scope": "traffic-only SRAM spill/reload of actual RTL P columns",
+            "reference_is_full_accelerator_variant": false,
+            "functional_byte_exact_pass": true,
+            "macro_count": 480,
+            "pe_count": 1024,
+            "mask_tail_case": false,
+            "input_manifest": {
+                "model": "wan",
+                "heads": 1,
+                "nq": 256,
+                "nkv": 256,
+                "d": 128,
+                "score_scale": 1274674,
+                "out_scale": 1928016,
+                "qualification_sha256": "96963084f9aebda911dc67748c04ae56070717f296f961e458f78dc3592f12d9",
+                "files_sha256": {
+                    "q.bin": "3cb1a17564e878d955e865a3db59ed05409e0fceb32e6de0a075543ec1c8e11c",
+                    "k.bin": "86c454243a60cf289fd06a979d36ae2aa05b6064d0cf8260e02eacef7c14216d",
+                    "v.bin": "dbd5f2fcf4af7082277d389dd88b24752df523d64830750a7441f7e6f6f63d07",
+                    "o.bin": "750d1e147a582ef93649d09e6a189d7a3d09bb23980a05d688895fb694b5c320"
+                }
+            },
+            "source_sha256": {
+                "rtl.log": "fbd847d07d788311d7e2fe5bebbf30f89e5cb2949ca942f7cb3e15bbcba71dd8",
+                "reference.log": "77085b3fee11244cab12ccd066f80978c81cf5ead86b52302fff0954b54d7d81",
+                "probability.txt": "77fcac6cc30638dd202867120744446dd639ee5f757deb98600d0dd34c733a36",
+                "result.csv": "c79de41e4c4d294262cc6eafa6811dc30031e93d2d18f43befc63aae62706e3a",
+                "result.csv.observed.bin": "750d1e147a582ef93649d09e6a189d7a3d09bb23980a05d688895fb694b5c320"
+            }
+        }
+    },
+    "executable_sha256": "ac1cf8e976095b3e9392e05ba030b565d05b0475dd49ccf7822b6adb151f5885",
+    "reference_executable_sha256": "1e3c029f6c2a36eb4d2aed62fb66df2f1abac74bd0a2afa31009f6b4761b3b26",
+    "rtl_unchanged_from_synthesis_input": "fc9e921 modulo whitespace normalization",
+    "active": null,
+    "elapsed_seconds": 193.36998915672302
+}

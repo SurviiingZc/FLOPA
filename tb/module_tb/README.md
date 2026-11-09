@@ -1,3 +1,12 @@
+# ABI-v3 验收说明（2026-10-17）
+
+本目录原有测试包含 B0 固定 d、causal/Decode 与旧 O 布局假设，部分接口已过时。
+新版只以 `make runtime-d-smoke` 的短 UVM 全链路与 `tb_runtime_arithmetic` 定向结果
+作为本轮验收；旧版 21/23 项、历史 PASS 和覆盖率不得复用到新版。
+具体矩阵、来源哈希与测试边界见 `docs/uvm_runtime_d.md`。
+
+以下内容为历史 B0 module 测试说明。
+
 # Directed Module Testbenches
 
 The directed suite covers every active leaf or its nearest integration parent.

@@ -13,6 +13,7 @@ module online_normalizer #(
   input                         clk,
   input                         rst_n,
   input                         clock_en_i,
+    input                         clear_i,
   input                         valid_i,
   input      [LANES*ACC_W-1:0]  acc_rows_i,
   input      [LANES*LSE_W-1:0]  l_rows_i,
@@ -48,9 +49,10 @@ module online_normalizer #(
     end
   endfunction
 
+    wire pipeline_rst_n = rst_n && !clear_i;
   wire gated_clk_w;
   fa_clock_gate u_clock_gate (
-    .clk_i(clk), .enable_i(!rst_n || clock_en_i), .test_enable_i(1'b0),
+        .clk_i(clk), .enable_i(!rst_n || clock_en_i || clear_i), .test_enable_i(1'b0),
     .clk_o(gated_clk_w)
   );
 
@@ -71,6 +73,9 @@ module online_normalizer #(
   reg [TAG_W-1:0] mult_tag_s1_q;
   reg [TAG_W-1:0] mult_tag_s2_q;
   reg norm_valid_q;
+    reg norm_valid_s1_q;
+    reg [TAG_W-1:0] norm_tag_s2_q;
+    reg [2:0] input_valid_q;
   reg mult_metadata_valid_s1_q;
   wire [LANES-1:0] norm_product_valid_w;
   wire norm_product_stage_valid_w = norm_product_valid_w[0];
@@ -120,8 +125,10 @@ module online_normalizer #(
       wire signed [63:0] scale_product_w;
       reg signed [15:0] scale_mant_q;
       reg signed [15:0] scale_mant_s1_q;
+            reg signed [15:0] scale_mant_s2_q;
       reg [5:0] scale_shift_q;
       reg [5:0] scale_shift_s1_q;
+            reg [5:0] scale_shift_norm_s2_q;
       reg [5:0] scale_shift_s2_q;
       reg [5:0] result_shift_q;
       reg signed [63:0] shifted_w;
@@ -131,7 +138,7 @@ module online_normalizer #(
       reg signed [OUT_W-1:0] result_q;
 
       reciprocal_lut #(.RECIP_W(RECIP_W)) u_reciprocal (
-        .clk(gated_clk_w), .rst_n(rst_n), .valid_i(valid_i),
+                .clk(gated_clk_w), .rst_n(pipeline_rst_n), .valid_i(valid_i),
         .value_i(l_rows_i[lane*LSE_W +: LSE_W]),
         .valid_o(reciprocal_valid_w[lane]),
         .reciprocal_o(reciprocal_w[lane*RECIP_W +: RECIP_W])
@@ -149,10 +156,10 @@ module online_normalizer #(
       // gives an exact signed 32x31 product without widening the multiplier to 33.
       // Split the former single-cycle product into two registered partial
       // products and a registered combine stage. The wrapper remains II=1.
-      fa_signed_mult_pipe2 #(
+            fa_signed_mult_pipe3 #(
         .A_W(ACC_W), .B_W(NORM_MULT_B_W), .SPLIT_W(ACC_W/2)
       ) u_reciprocal_multiplier (
-        .clk(gated_clk_w), .rst_n(rst_n),
+                .clk(gated_clk_w), .rst_n(pipeline_rst_n),
         .valid_i(reciprocal_stage_valid_w),
         .a_i($signed(acc_s2_q[lane*ACC_W +: ACC_W])),
         .b_i($signed({1'b0,
@@ -164,9 +171,9 @@ module online_normalizer #(
       fa_signed_mult_pipe2 #(
         .A_W(NORM_REDUCED_W), .B_W(16), .SPLIT_W(24)
       ) u_output_scale_multiplier (
-        .clk(gated_clk_w), .rst_n(rst_n),
+                .clk(gated_clk_w), .rst_n(pipeline_rst_n),
         .valid_i(norm_product_valid_w[lane]),
-        .a_i(norm_reduced_w), .b_i(scale_mant_s1_q),
+                .a_i(norm_reduced_w), .b_i(scale_mant_s2_q),
         .valid_o(scale_product_valid_w[lane]), .product_o(scale_product_w)
       );
 
@@ -200,8 +207,12 @@ module online_normalizer #(
           scale_mant_s1_q <= scale_mant_q;
           scale_shift_s1_q <= scale_shift_q;
         end
+                if (norm_valid_s1_q) begin
+                    scale_mant_s2_q <= scale_mant_s1_q;
+                    scale_shift_norm_s2_q <= scale_shift_s1_q;
+                end
         if (norm_product_valid_w[lane])
-          scale_shift_s2_q <= scale_shift_s1_q;
+                    scale_shift_s2_q <= scale_shift_norm_s2_q;
         if (mult_metadata_valid_s1_q)
           result_shift_q <= scale_shift_s2_q;
         if (scale_product_valid_w[lane]) begin
@@ -222,30 +233,42 @@ module online_normalizer #(
   endgenerate
 
   // Delay O, scale, and tag to match reciprocal latency before the lane pipelines.
-  always @(posedge gated_clk_w or negedge rst_n) begin
-    if (!rst_n) begin
+    always @(posedge gated_clk_w or negedge pipeline_rst_n) begin
+        if (!pipeline_rst_n) begin
       norm_valid_q <= 1'b0;
+            norm_valid_s1_q <= 1'b0;
+            input_valid_q <= 0;
       mult_metadata_valid_s1_q <= 1'b0;
       valid_o <= 1'b0;
     end else begin
-      acc_s0_q <= acc_rows_i;
-      acc_s1_q <= acc_s0_q;
-      acc_s2_q <= acc_s1_q;
-      scale_s0_q <= out_scale_i;
-      scale_s1_q <= scale_s0_q;
-      scale_s2_q <= scale_s1_q;
-      tag_s0_q <= tag_i;
-      tag_s1_q <= tag_s0_q;
-      tag_s2_q <= tag_s1_q;
+            input_valid_q <= {input_valid_q[1:0], valid_i};
+            if (valid_i) begin
+                acc_s0_q <= acc_rows_i;
+                scale_s0_q <= out_scale_i;
+                tag_s0_q <= tag_i;
+            end
+            if (input_valid_q[0]) begin
+                acc_s1_q <= acc_s0_q;
+                scale_s1_q <= scale_s0_q;
+                tag_s1_q <= tag_s0_q;
+            end
+            if (input_valid_q[1]) begin
+                acc_s2_q <= acc_s1_q;
+                scale_s2_q <= scale_s1_q;
+                tag_s2_q <= tag_s1_q;
+            end
       norm_valid_q <= reciprocal_stage_valid_w;
+            norm_valid_s1_q <= norm_valid_q;
       mult_metadata_valid_s1_q <= norm_product_stage_valid_w;
       valid_o <= scale_product_stage_valid_w;
       if (reciprocal_stage_valid_w)
         norm_tag_q <= tag_s2_q;
       if (norm_valid_q)
         norm_tag_s1_q <= norm_tag_q;
+            if (norm_valid_s1_q)
+                norm_tag_s2_q <= norm_tag_s1_q;
       if (norm_product_stage_valid_w)
-        mult_tag_s1_q <= norm_tag_s1_q;
+                mult_tag_s1_q <= norm_tag_s2_q;
       if (mult_metadata_valid_s1_q)
         mult_tag_s2_q <= mult_tag_s1_q;
       if (scale_product_stage_valid_w)

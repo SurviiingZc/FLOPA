@@ -1,0 +1,16 @@
+{
+    "claim": "All four prespecified native-resolution paired images are shown.",
+    "visual_review": "FP16 baselines depict their prompts; paired details visibly differ.",
+    "all_cases_shown": 4,
+    "case_exclusions": 0,
+    "image_transforms": "No crop, contrast, gamma or color adjustment; full RGB images.",
+    "backend": "Python/matplotlib",
+    "width_mm": 183,
+    "preview_dpi": 300,
+    "pdf_embedded_fonts": [
+        "/FVHMJJ+TimesNewRomanPSMT"
+    ],
+    "font_preflight_override": "The generic validator accepts only sans-serif fonts. The user's explicit Times New Roman requirement takes precedence; embedded PDF font verified.",
+    "raster_warning": "Report preview is 300 dpi. Vector PDF/SVG supplied; TIFF not requested.",
+    "scope": "Paired fidelity in four examples, not FID or a population quality claim."
+}

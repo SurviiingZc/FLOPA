@@ -1,0 +1,28 @@
+Warning: '-significant_digits' option is ignored when '-connections' argument is present. (UID-451)
+ 
+****************************************
+Report : cell
+        -connections
+        -verbose
+Design : attention_accel_top
+Version: V-2023.12-SP5
+Date   : Sun Oct 18 01:10:35 2026
+****************************************
+
+
+Connections for cell 'u_fused_array/U25823':
+    Reference:          INVD0BWP12T30P140
+    Library:            tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+    Area:               0.336
+    dont_touch:         TRUE           
+
+    Input Pins          Net            Net Driver Pins   Driver Pin Type
+    ----------------    ------------   ----------------  ----------------
+    I                   u_fused_array/rst_n rst_n        Input Port
+
+    Output Pins         Net            Net Load Pins     Load Pin Type
+    ----------------    ------------   ----------------  ----------------
+    ZN                  u_fused_array/n25936 u_fused_array/U2769/A1 Input Pin (NR2D0BWP12T30P140)
+                                       u_fused_array/U6943/A1 Input Pin (OR2D1BWP12T30P140)
+                                       u_fused_array/U9256/A1 Input Pin (OR4D1BWP12T30P140)
+1

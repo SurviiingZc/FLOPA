@@ -1,0 +1,22 @@
+Information: Updating graph... (UID-83)
+Warning: Design 'attention_accel_top' contains 9 high-fanout nets. A fanout number of 1000 will be used for delay calculations involving these nets. (TIM-134)
+ 
+****************************************
+Report : clocks
+Design : attention_accel_top
+Version: V-2023.12-SP5
+Date   : Thu Oct  1 20:01:23 2026
+****************************************
+
+Attributes:
+    d - dont_touch_network
+    f - fix_hold
+    p - propagated_clock
+    G - generated_clock
+    g - lib_generated_clock
+
+Clock          Period   Waveform            Attrs     Sources
+--------------------------------------------------------------------------------
+core_clk         1.60   {0 0.8}                       {clk}
+--------------------------------------------------------------------------------
+1

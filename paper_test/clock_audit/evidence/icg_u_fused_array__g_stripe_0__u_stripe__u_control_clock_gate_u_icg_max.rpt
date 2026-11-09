@@ -1,0 +1,93 @@
+ 
+****************************************
+Report : timing
+        -path full_clock_expanded
+        -delay max
+        -nets
+        -max_paths 1
+        -transition_time
+Design : attention_accel_top
+Version: V-2023.12-SP5
+Date   : Sun Oct 18 01:10:14 2026
+****************************************
+
+ # A fanout number of 1000 was used for high fanout net computations.
+
+Operating Conditions: tt0p9v25c   Library: tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+Wire Load Model Mode: segmented
+
+  Startpoint: u_regfile_cfg_soft_reset_pulse_o_reg
+              (rising edge-triggered flip-flop clocked by core_clk)
+  Endpoint: u_fused_array/g_stripe_0__u_stripe/u_control_clock_gate_u_icg
+            (gating element for clock core_clk)
+  Path Group: core_clk
+  Path Type: max
+
+  Des/Clust/Port     Wire Load Model       Library
+  ------------------------------------------------
+  fsa_stripe_STRIPE_ROWS8_COLS32_HEAD_DIM128_DATA_W8_SCORE_W32_PROB_W16_SUM_W32_TAG_W7_LOCAL_ROW_IDX_W3_0 ZeroWireload tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+  fsa_stripe_STRIPE_ROWS8_COLS32_HEAD_DIM128_DATA_W8_SCORE_W32_PROB_W16_SUM_W32_TAG_W7_LOCAL_ROW_IDX_W3_1 ZeroWireload tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+  fsa_stripe_STRIPE_ROWS8_COLS32_HEAD_DIM128_DATA_W8_SCORE_W32_PROB_W16_SUM_W32_TAG_W7_LOCAL_ROW_IDX_W3_2 ZeroWireload tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+  fsa_stripe_STRIPE_ROWS8_COLS32_HEAD_DIM128_DATA_W8_SCORE_W32_PROB_W16_SUM_W32_TAG_W7_LOCAL_ROW_IDX_W3_3 ZeroWireload tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+  output_buffer_ROWS32_NORM_LANES8_HEAD_DIM128_OUT_W8_GROUP_SIZE32 ZeroWireload tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+  online_normalizer_LANES8_ACC_W32_LSE_W32_OUT_W8_TAG_W9 ZeroWireload tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+  fsa_fused_array_ROWS32_STRIPE_ROWS8_COLS32_DATA_W8_SCORE_W32_PROB_W16_ACC_W32_LSE_W32_HEAD_DIM128_FEATURE_IDX_W7 ZeroWireload tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+  attention_accel_top ZeroWireload         tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+  qkv_tile_cache_ADDR_W7 ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+
+  Point                                                                                                                                         Fanout     Trans      Incr       Path
+  --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  clock core_clk (rise edge)                                                                                                                                          0.00       0.00
+  clock network delay (ideal)                                                                                                                                         0.00       0.00
+  u_regfile_cfg_soft_reset_pulse_o_reg/CP (DFCNQD1BWP12T30P140)                                                                                             0.05      0.00 #     0.00 r
+  u_regfile_cfg_soft_reset_pulse_o_reg/Q (DFCNQD1BWP12T30P140)                                                                                              0.03      0.06       0.06 f
+  cfg_soft_reset_w (net)                                                                                                                         14                   0.00       0.06 f
+  U2056/ZN (INVD0BWP12T30P140)                                                                                                                              0.05      0.04       0.10 r
+  n3756 (net)                                                                                                                                    15                   0.00       0.10 r
+  U2064/ZN (INVD0BWP12T30P140)                                                                                                                              0.05      0.04       0.15 f
+  n2495 (net)                                                                                                                                    14                   0.00       0.15 f
+  U2068/Z (OR2D1BWP12T30P140)                                                                                                                               0.04      0.04       0.19 f
+  n3748 (net)                                                                                                                                    17                   0.00       0.19 f
+  U2258/ZN (INVD0BWP12T30P140)                                                                                                                              0.06      0.05       0.24 r
+  n1296 (net)                                                                                                                                    14                   0.00       0.24 r
+  u_fused_array/clear_i_BAR (fsa_fused_array_ROWS32_STRIPE_ROWS8_COLS32_DATA_W8_SCORE_W32_PROB_W16_ACC_W32_LSE_W32_HEAD_DIM128_FEATURE_IDX_W7)                        0.00       0.24 r
+  u_fused_array/clear_i_BAR (net)                                                                                                                                     0.00       0.24 r
+  u_fused_array/U778/ZN (INVD0BWP12T30P140)                                                                                                                 0.07      0.05       0.29 f
+  u_fused_array/n76976 (net)                                                                                                                     19                   0.00       0.29 f
+  u_fused_array/U579/ZN (NR2D0BWP12T30P140)                                                                                                                 0.03      0.03       0.32 r
+  u_fused_array/n78880 (net)                                                                                                                      2                   0.00       0.32 r
+  u_fused_array/U5/ZN (INVD1BWP12T30P140)                                                                                                                   0.04      0.03       0.35 f
+  u_fused_array/n_138_net_ (net)                                                                                                                 24                   0.00       0.35 f
+  u_fused_array/g_stripe_0__u_stripe/clear_i (fsa_stripe_STRIPE_ROWS8_COLS32_HEAD_DIM128_DATA_W8_SCORE_W32_PROB_W16_SUM_W32_TAG_W7_LOCAL_ROW_IDX_W3_3)                0.00       0.35 f
+  u_fused_array/g_stripe_0__u_stripe/clear_i (net)                                                                                                                    0.00       0.35 f
+  u_fused_array/g_stripe_0__u_stripe/U2103/ZN (INVD0BWP12T30P140)                                                                                           0.08      0.06       0.41 r
+  u_fused_array/g_stripe_0__u_stripe/n26505 (net)                                                                                                20                   0.00       0.41 r
+  u_fused_array/g_stripe_0__u_stripe/U1938/ZN (ND2D0BWP12T30P140)                                                                                           0.17      0.11       0.53 f
+  u_fused_array/g_stripe_0__u_stripe/n238224 (net)                                                                                               24                   0.00       0.53 f
+  u_fused_array/g_stripe_0__u_stripe/U1709/Z (BUFFD0BWP12T30P140)                                                                                           0.07      0.08       0.61 f
+  u_fused_array/g_stripe_0__u_stripe/n203123 (net)                                                                                               24                   0.00       0.61 f
+  u_fused_array/g_stripe_0__u_stripe/U1715/Z (BUFFD0BWP12T30P140)                                                                                           0.08      0.07       0.68 f
+  u_fused_array/g_stripe_0__u_stripe/n221891 (net)                                                                                               19                   0.00       0.68 f
+  u_fused_array/g_stripe_0__u_stripe/U1941/Z (BUFFD0BWP12T30P140)                                                                                           0.08      0.07       0.75 f
+  u_fused_array/g_stripe_0__u_stripe/n238484 (net)                                                                                               24                   0.00       0.75 f
+  u_fused_array/g_stripe_0__u_stripe/U2118/Z (BUFFD0BWP12T30P140)                                                                                           0.08      0.07       0.82 f
+  u_fused_array/g_stripe_0__u_stripe/n239827 (net)                                                                                               24                   0.00       0.82 f
+  u_fused_array/g_stripe_0__u_stripe/U199782/Z (OR3D1BWP12T30P140)                                                                                          0.01      0.03       0.85 f
+  u_fused_array/g_stripe_0__u_stripe/n_1_net_ (net)                                                                                               1                   0.00       0.85 f
+  u_fused_array/g_stripe_0__u_stripe/u_control_clock_gate_u_icg/E (CKLNQD1BWP12T30P140)                                                                     0.01      0.00       0.85 f
+  data arrival time                                                                                                                                                              0.85
+
+  clock core_clk (rise edge)                                                                                                                                          1.60       1.60
+  clock network delay (ideal)                                                                                                                                         0.00       1.60
+  clock uncertainty                                                                                                                                                  -0.10       1.50
+  u_fused_array/g_stripe_0__u_stripe/u_control_clock_gate_u_icg/CP (CKLNQD1BWP12T30P140)                                                                              0.00       1.50 r
+  clock gating setup time                                                                                                                                            -0.02       1.48
+  data required time                                                                                                                                                             1.48
+  --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  data required time                                                                                                                                                             1.48
+  data arrival time                                                                                                                                                             -0.85
+  --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  slack (MET)                                                                                                                                                                    0.63
+
+
+1

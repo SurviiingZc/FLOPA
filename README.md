@@ -6,26 +6,36 @@ and partial output remain local to the compute fabric; the design therefore
 avoids round trips through a global score/probability scratchpad and overlaps
 the major attention phases.
 
-The final RTL supports tiled MHA prefill, causal masking, and single-query MHA
-decode. A complete VCK190 path replaces the Attention nodes of
-SmolLM2-135M-Instruct and has been measured on board.
+The current branch targets dense bidirectional diffusion-transformer attention.
+One MAX_D=128 instance selects d at job start; the native model dimensions
+are 64, 72, and 128. LLM Decode and causal masking are removed.
+The VCK190/SmolLM2 results below describe the historical fixed-d=64 design,
+not this new ASIC implementation. See [runtime-d RTL](docs/rtl_runtime_d.md)
+for the current ABI and [implementation report](paper_test/IMPLEMENTATION_REPORT.md)
+for validation and synthesis evidence.
+
+The new instance passes 157 short UVM jobs and 66,312 byte checks. Its 28 nm TT
+mapped cell area is 2.452364 mm², including 0.656747 mm² of SRAM (480 macros).
+It has 28 explicit ICGs and no setup violations at the 1.60 ns target. Pre-CTS
+SRAM-interface hold violations remain; this is not routed timing signoff.
+Workload power and model latency for this version have not yet been measured.
 
 ## Design Point
 
-| Item | Final implementation |
+| Item | Current implementation |
 | --- | --- |
 | Compute fabric | 32 x 32 fused PEs in four 8 x 32 stripes |
-| Head dimension | 64 |
+| Head dimension | MAX_D=128; job-snapshotted runtime d=1..128 |
 | Arithmetic | signed INT8 Q/K/V and output, unsigned Q1.15 P/alpha, INT32 state |
 | Softmax parallelism | 32 score-scale/PWL-exp lanes |
 | Dataflow | output-stationary QK, column-overlapped online softmax, probability-stationary WS-PV |
 | Local storage | PE-local score/P, persistent feature-addressed O banks, ping-pong Q/K/V cache |
 | Control/input/output | AXI4-Lite, 128-bit tile loader, 128-bit AXI4 write master |
-| Runtime modes | MHA prefill and single-query multi-KV-tile MHA decode |
+| Runtime operation | dense bidirectional MHA; one head count |
 
 ![FLOPA overall architecture](figures/flopa_overall_architecture.png)
 
-## Final Results
+## Historical Fixed-d=64 Results
 
 ### ASIC estimate
 
@@ -129,32 +139,38 @@ Prerequisites are VCS V-2023.12-SP2 or compatible, Design Compiler/Power
 Compiler V-2023.12-SP5, Vivado/Vitis 2023.1 for VCK190, GNU Make, and the
 28 nm libraries configured below `/data/public`.
 
-Run from the repository root:
+Run the short functional suite from the repository root:
 
 ```bash
-# Directed checks and the final 21-run UVM regression.
-make -C tb/sim syntax
-make -C tb/sim run
-make -C tb/sim asic-sram
-make uvm-regression
-
-# One configurable UVM workload.
-make uvm-test UVM_TEST=fa_random_qkv_test \
-  UVM_SEQ_Q=64 UVM_SEQ_KV=64 UVM_SEED=301
-
-# ASIC synthesis, equivalence, and mapped-netlist power.
-make synth CORNER=tt CLOCK_PERIOD=1.6
-make formality CORNER=tt
-make gate-saif-power CORNER=tt GATE_SEQ_Q=64 GATE_SEQ_KV=64 \
-  GATE_SAIF_SEED=301
+RUNTIME_D_OUT_DIR="$PWD/tb/sim/build/runtime_d_current" make runtime-d-smoke
 ```
+
+Use a fresh output directory to preserve the archived synthesis-authorizing
+build and logs. The suite uses one compiled simulator and short sequences. It checks native
+dimensions, configuration switches, tails, multiple heads, output strobes,
+and numerical data. See `docs/uvm_runtime_d.md` for exact coverage and logs.
+The old 21-run/23-module results below belong to the historical ABI.
+
+After the tested RTL/UVM/configuration is committed and its validation manifest
+is created, synthesize the same source with:
+
+```bash
+make synth-verified CLOCK_PERIOD=1.6
+```
+
+The manifest binds passing logs to their SHA256 and source commit. New results
+are stored in `asic/dc/work/synth/tt/diffusion_runtime_d/attention_accel_top/`;
+the old `system/` reports are retained as the historical baseline. Automatic
+clock-gate insertion remains disabled; the final mapped design has 28 RTL ICGs.
+`power.rpt` without a new activity trace is a vectorless estimate, not gate-SAIF
+workload power. No new long-sequence gate simulation is required by this suite.
 
 For the FPGA build and board run, follow [fpga/vitis/README.md](fpga/vitis/README.md)
 and [fpga/model/README.md](fpga/model/README.md). The Vitis collateral retains
 the legacy `dit_fa_*` filename prefix; it identifies FLOPA artifacts and does
 not denote a second architecture.
 
-## Verification Status
+## Historical Verification Status
 
 All 21 fixed-seed UVM runs pass with zero errors/fatals. Functional coverage is
 100.00%; raw full merged coverage is 95.66%, raw `tb_top` coverage is 95.01%,
@@ -166,8 +182,8 @@ query by 256 KV tokens.
 
 - The RTL input boundary is a 128-bit tile-loader stream; the VCK190 design
   supplies the external mover/DMA wrapper.
-- Native GQA is not implemented. The board host expands three model KV heads
-  to nine MHA heads before transfer.
+- Native GQA is not implemented. The legacy board software expands KV heads;
+  that software targets ABI v2 and must be adapted before use with ABI v3.
 - FPGA board power and Re10K board results are not yet measured.
 - ASIC figures are synthesis/gate-activity estimates, not placed-and-routed or
   silicon measurements.

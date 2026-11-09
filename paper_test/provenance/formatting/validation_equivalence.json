@@ -1,0 +1,347 @@
+{
+    "status": "prepared_not_integrated",
+    "source_commit": "fc9e921069a6f9e6aa41921857143418a9ba13a4",
+    "source_root": "/data/workspaces/zhangcheng/flash_attention",
+    "staging_root": "/data/workspaces/zhangcheng/.runtime_d_style/validation",
+    "file_count": 10,
+    "changed_line_count": 28,
+    "files": [
+        {
+            "path": "tb/module_tb/compute/tb_runtime_arithmetic.sv",
+            "source_commit": "fc9e921069a6f9e6aa41921857143418a9ba13a4",
+            "before_sha256": "418e5d5917fefbe44038fe7070dddb961b87ef873fadbec6a116f4040ebbd1b6",
+            "after_sha256": "63910ef5bd153b1a6bd9a7577622eeea4d2ccca63b2601ef35aedda82a0a74b7",
+            "before_non_whitespace_sha256": "079ec66d8a8c8b7b1915162d5e154709474ee7a022170c68dfb47f2665afea7d",
+            "after_non_whitespace_sha256": "079ec66d8a8c8b7b1915162d5e154709474ee7a022170c68dfb47f2665afea7d",
+            "non_whitespace_identical": true,
+            "only_leading_indent_changed": true,
+            "string_and_comment_payload_unchanged": true,
+            "python_ast_identical": null,
+            "changed_lines": [
+                {
+                    "line": 51,
+                    "old_indent": 31,
+                    "new_indent": 8,
+                    "new_line_length": 52,
+                    "payload_identical": true
+                },
+                {
+                    "line": 118,
+                    "old_indent": 42,
+                    "new_indent": 8,
+                    "new_line_length": 32,
+                    "payload_identical": true
+                },
+                {
+                    "line": 176,
+                    "old_indent": 21,
+                    "new_indent": 12,
+                    "new_line_length": 61,
+                    "payload_identical": true
+                }
+            ]
+        },
+        {
+            "path": "tb/module_tb/softmax/tb_online_normalizer.sv",
+            "source_commit": "fc9e921069a6f9e6aa41921857143418a9ba13a4",
+            "before_sha256": "cd4e962ca99f2af86a92d195002ba9c9bbc1e44d00046b96ece36a3ac42e4f57",
+            "after_sha256": "fe304d3df12557a0050b04e1952c598bb2b3032a7babfbff7359ecc282da75d2",
+            "before_non_whitespace_sha256": "2e2085694a56385250937c0d0c7035b963bec09b2387de84afef7db47e1dcc64",
+            "after_non_whitespace_sha256": "2e2085694a56385250937c0d0c7035b963bec09b2387de84afef7db47e1dcc64",
+            "non_whitespace_identical": true,
+            "only_leading_indent_changed": true,
+            "string_and_comment_payload_unchanged": true,
+            "python_ast_identical": null,
+            "changed_lines": [
+                {
+                    "line": 7,
+                    "old_indent": 2,
+                    "new_indent": 4,
+                    "new_line_length": 18,
+                    "payload_identical": true
+                }
+            ]
+        },
+        {
+            "path": "tb/uvm/coverage/attention_coverage.svh",
+            "source_commit": "fc9e921069a6f9e6aa41921857143418a9ba13a4",
+            "before_sha256": "751573b783188fbd1707d71104bf51d10ab66bbfa81f99ecbeff8247785c6b71",
+            "after_sha256": "7e4150bf787b5333ace0cbeda2c98f9696f2c2537bd5213bd83ba8aa7223d099",
+            "before_non_whitespace_sha256": "cc9c0b96afbfc45b487451a7cdc6e76fc3ad83a79cd7f5d69fd659860762d56c",
+            "after_non_whitespace_sha256": "cc9c0b96afbfc45b487451a7cdc6e76fc3ad83a79cd7f5d69fd659860762d56c",
+            "non_whitespace_identical": true,
+            "only_leading_indent_changed": true,
+            "string_and_comment_payload_unchanged": true,
+            "python_ast_identical": null,
+            "changed_lines": [
+                {
+                    "line": 178,
+                    "old_indent": 18,
+                    "new_indent": 20,
+                    "new_line_length": 70,
+                    "payload_identical": true
+                },
+                {
+                    "line": 179,
+                    "old_indent": 18,
+                    "new_indent": 20,
+                    "new_line_length": 70,
+                    "payload_identical": true
+                },
+                {
+                    "line": 180,
+                    "old_indent": 18,
+                    "new_indent": 20,
+                    "new_line_length": 48,
+                    "payload_identical": true
+                }
+            ]
+        },
+        {
+            "path": "tb/uvm/fa_uvm_types.svh",
+            "source_commit": "fc9e921069a6f9e6aa41921857143418a9ba13a4",
+            "before_sha256": "0c719ee077dc38756d294b70e0e58644c36a59039a27e35e23b260a2b1a86e97",
+            "after_sha256": "ae7f3d1e2f1737eb1ebb31cf2bcea865a9e0ca447be0492d7192e54f2c96127c",
+            "before_non_whitespace_sha256": "d613fdfd3b3f1ebdad85029c3c70b94ab4ccf3a23f0e9ba45a3928939ffcad72",
+            "after_non_whitespace_sha256": "d613fdfd3b3f1ebdad85029c3c70b94ab4ccf3a23f0e9ba45a3928939ffcad72",
+            "non_whitespace_identical": true,
+            "only_leading_indent_changed": true,
+            "string_and_comment_payload_unchanged": true,
+            "python_ast_identical": null,
+            "changed_lines": [
+                {
+                    "line": 47,
+                    "old_indent": 66,
+                    "new_indent": 8,
+                    "new_line_length": 38,
+                    "payload_identical": true
+                },
+                {
+                    "line": 48,
+                    "old_indent": 70,
+                    "new_indent": 8,
+                    "new_line_length": 13,
+                    "payload_identical": true
+                },
+                {
+                    "line": 69,
+                    "old_indent": 78,
+                    "new_indent": 8,
+                    "new_line_length": 20,
+                    "payload_identical": true
+                },
+                {
+                    "line": 70,
+                    "old_indent": 82,
+                    "new_indent": 8,
+                    "new_line_length": 24,
+                    "payload_identical": true
+                },
+                {
+                    "line": 149,
+                    "old_indent": 58,
+                    "new_indent": 8,
+                    "new_line_length": 48,
+                    "payload_identical": true
+                },
+                {
+                    "line": 150,
+                    "old_indent": 58,
+                    "new_indent": 8,
+                    "new_line_length": 50,
+                    "payload_identical": true
+                },
+                {
+                    "line": 247,
+                    "old_indent": 14,
+                    "new_indent": 4,
+                    "new_line_length": 33,
+                    "payload_identical": true
+                },
+                {
+                    "line": 248,
+                    "old_indent": 14,
+                    "new_indent": 4,
+                    "new_line_length": 32,
+                    "payload_identical": true
+                },
+                {
+                    "line": 249,
+                    "old_indent": 14,
+                    "new_indent": 4,
+                    "new_line_length": 37,
+                    "payload_identical": true
+                },
+                {
+                    "line": 250,
+                    "old_indent": 14,
+                    "new_indent": 4,
+                    "new_line_length": 33,
+                    "payload_identical": true
+                },
+                {
+                    "line": 251,
+                    "old_indent": 14,
+                    "new_indent": 4,
+                    "new_line_length": 37,
+                    "payload_identical": true
+                },
+                {
+                    "line": 252,
+                    "old_indent": 14,
+                    "new_indent": 4,
+                    "new_line_length": 21,
+                    "payload_identical": true
+                },
+                {
+                    "line": 253,
+                    "old_indent": 14,
+                    "new_indent": 4,
+                    "new_line_length": 20,
+                    "payload_identical": true
+                },
+                {
+                    "line": 282,
+                    "old_indent": 14,
+                    "new_indent": 4,
+                    "new_line_length": 38,
+                    "payload_identical": true
+                }
+            ]
+        },
+        {
+            "path": "tb/uvm/ref_model/attention_ref_model.svh",
+            "source_commit": "fc9e921069a6f9e6aa41921857143418a9ba13a4",
+            "before_sha256": "900916cfc3e41e83d86aed6614303015dbe88739f72c2c90605a054aadba65b8",
+            "after_sha256": "3ce0fe0afae527db3a592bf60697735cbb1e57c5cc480f0e9c7165be5ed49bb2",
+            "before_non_whitespace_sha256": "f683158b6561b843b9088f2c382137a9cd3a344e4ba266571e37852c2a729ba4",
+            "after_non_whitespace_sha256": "f683158b6561b843b9088f2c382137a9cd3a344e4ba266571e37852c2a729ba4",
+            "non_whitespace_identical": true,
+            "only_leading_indent_changed": true,
+            "string_and_comment_payload_unchanged": true,
+            "python_ast_identical": null,
+            "changed_lines": [
+                {
+                    "line": 324,
+                    "old_indent": 26,
+                    "new_indent": 20,
+                    "new_line_length": 54,
+                    "payload_identical": true
+                }
+            ]
+        },
+        {
+            "path": "tb/uvm/scoreboard/attention_scoreboard.svh",
+            "source_commit": "fc9e921069a6f9e6aa41921857143418a9ba13a4",
+            "before_sha256": "4728cf343b977d33e848fc4bf5b5a8483b3ae2eafbae2bb647dda9bb9c1e82d7",
+            "after_sha256": "4200e046175e03e8367d3260bfb2cdcc998432269651873a96023de702187677",
+            "before_non_whitespace_sha256": "da6ab924858da4f51780dd2db954cab454115fc121466788c0f644cc4d8de9ca",
+            "after_non_whitespace_sha256": "da6ab924858da4f51780dd2db954cab454115fc121466788c0f644cc4d8de9ca",
+            "non_whitespace_identical": true,
+            "only_leading_indent_changed": true,
+            "string_and_comment_payload_unchanged": true,
+            "python_ast_identical": null,
+            "changed_lines": [
+                {
+                    "line": 253,
+                    "old_indent": 13,
+                    "new_indent": 16,
+                    "new_line_length": 75,
+                    "payload_identical": true
+                }
+            ]
+        },
+        {
+            "path": "tb/uvm/tb_top.sv",
+            "source_commit": "fc9e921069a6f9e6aa41921857143418a9ba13a4",
+            "before_sha256": "d90bd7cd3a21fa0d21168599d4643711ac960feeb2b1f1cfae9ecf70feea05e9",
+            "after_sha256": "906567c6d98680f68421ec60e1c663f30af77c449604669fdb563d3ae79cd10a",
+            "before_non_whitespace_sha256": "b9e4a04cfdd159bb3d959afd72689aba76f056327271e64280da2544db5b0885",
+            "after_non_whitespace_sha256": "b9e4a04cfdd159bb3d959afd72689aba76f056327271e64280da2544db5b0885",
+            "non_whitespace_identical": true,
+            "only_leading_indent_changed": true,
+            "string_and_comment_payload_unchanged": true,
+            "python_ast_identical": null,
+            "changed_lines": [
+                {
+                    "line": 151,
+                    "old_indent": 30,
+                    "new_indent": 16,
+                    "new_line_length": 42,
+                    "payload_identical": true
+                }
+            ]
+        },
+        {
+            "path": "paper_test/build_validation_manifest.py",
+            "source_commit": "fc9e921069a6f9e6aa41921857143418a9ba13a4",
+            "before_sha256": "6d2357d34d142dfe3a6cfe383e488d3981148dfd32dc93fab119de4eab1195c7",
+            "after_sha256": "c881295de4fb748a43561bdc9afc2e000cb07b9d0291bcdfb8684b508f172887",
+            "before_non_whitespace_sha256": "179e7a65f77cf0411655731de6dee47aa1f0c9826ec338b37779426140b383ba",
+            "after_non_whitespace_sha256": "179e7a65f77cf0411655731de6dee47aa1f0c9826ec338b37779426140b383ba",
+            "non_whitespace_identical": true,
+            "only_leading_indent_changed": true,
+            "string_and_comment_payload_unchanged": true,
+            "python_ast_identical": true,
+            "changed_lines": [
+                {
+                    "line": 59,
+                    "old_indent": 33,
+                    "new_indent": 4,
+                    "new_line_length": 36,
+                    "payload_identical": true
+                }
+            ]
+        },
+        {
+            "path": "paper_test/report_synthesis.py",
+            "source_commit": "fc9e921069a6f9e6aa41921857143418a9ba13a4",
+            "before_sha256": "7caaa3fd6940fe05efee305e0a9ee323efcfcd2dbf832636a7f766156d6fdb46",
+            "after_sha256": "aca3581b7a09b8f4a1b331ddafba3f06149a74b189b5aeb35757bce532818c8e",
+            "before_non_whitespace_sha256": "fc84305692f53b6a4b21178838d5af8d9a234a66ce128a320e131d3b150f0d0f",
+            "after_non_whitespace_sha256": "fc84305692f53b6a4b21178838d5af8d9a234a66ce128a320e131d3b150f0d0f",
+            "non_whitespace_identical": true,
+            "only_leading_indent_changed": true,
+            "string_and_comment_payload_unchanged": true,
+            "python_ast_identical": true,
+            "changed_lines": [
+                {
+                    "line": 65,
+                    "old_indent": 22,
+                    "new_indent": 8,
+                    "new_line_length": 51,
+                    "payload_identical": true
+                },
+                {
+                    "line": 71,
+                    "old_indent": 18,
+                    "new_indent": 4,
+                    "new_line_length": 42,
+                    "payload_identical": true
+                }
+            ]
+        },
+        {
+            "path": "paper_test/run_synth_verified.sh",
+            "source_commit": "fc9e921069a6f9e6aa41921857143418a9ba13a4",
+            "before_sha256": "68b9395d4d67c450906ee88913f56eebaee989dc164b812ba491a9e4c2fe7994",
+            "after_sha256": "44d15e470a1735a74fddbd4d54e6fbf9b383bd607cb15bdec0fce629df066248",
+            "before_non_whitespace_sha256": "50cf0bff34423924a7871b4511e59c7c05eedcffc0ffe230d6f46c4beb84fb77",
+            "after_non_whitespace_sha256": "50cf0bff34423924a7871b4511e59c7c05eedcffc0ffe230d6f46c4beb84fb77",
+            "non_whitespace_identical": true,
+            "only_leading_indent_changed": true,
+            "string_and_comment_payload_unchanged": true,
+            "python_ast_identical": true,
+            "changed_lines": [
+                {
+                    "line": 25,
+                    "old_indent": 33,
+                    "new_indent": 4,
+                    "new_line_length": 36,
+                    "payload_identical": true
+                }
+            ]
+        }
+    ],
+    "actions": "staging files only; no source overwrite, commit or simulation"
+}

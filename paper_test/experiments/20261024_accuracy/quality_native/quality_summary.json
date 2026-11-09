@@ -1,0 +1,125 @@
+{
+    "state": "complete",
+    "completed": 4,
+    "total": 4,
+    "pixels": 1024,
+    "N": 4096,
+    "steps": 30,
+    "cases": [
+        {
+            "state": "complete",
+            "case": "cactus_s301",
+            "prompt": "A small cactus with a happy face in the Sahara desert.",
+            "seed": 301,
+            "self_attention_calls_replaced": 840,
+            "CFG_branches_replaced": 2,
+            "pixels": 1024,
+            "N": 4096,
+            "paired_initial_latents_sha256": "7aebaad4f585522e8730f617e702310ab8bb40fa9eb0c1666cdd75f0e5193cd9",
+            "image_metrics": {
+                "pixel_mae_0_to_1": 0.07947632160062103,
+                "pixel_rmse_0_to_1": 0.1358222399725106,
+                "psnr_db": 17.340582229015688,
+                "ssim": 0.7656889665736575,
+                "scope": "paired image fidelity; not dataset FID or text-alignment quality"
+            },
+            "latent_mae": 0.27720481157302856,
+            "latent_rmse": 0.41667142510414124,
+            "wall_seconds": {
+                "fp16": 7.2771735191345215,
+                "flopa": 890.2984046936035
+            },
+            "output_sha256": {
+                "fp16": "5c7189196e54fe696128f1390e8cbfb8d456df2f46c054142d4c315acb2111f7",
+                "flopa": "0f8566ca701107b5553ef9440ae384873c543f0a4244c649e28ba568333bf4b9"
+            }
+        },
+        {
+            "state": "complete",
+            "case": "cactus_s302",
+            "prompt": "A small cactus with a happy face in the Sahara desert.",
+            "seed": 302,
+            "self_attention_calls_replaced": 840,
+            "CFG_branches_replaced": 2,
+            "pixels": 1024,
+            "N": 4096,
+            "paired_initial_latents_sha256": "b1a09613b0dd108d11baa37a6e6d54526fdb9403b791dbcaa9d2bbabf9aff469",
+            "image_metrics": {
+                "pixel_mae_0_to_1": 0.08961421368168852,
+                "pixel_rmse_0_to_1": 0.15106652947346494,
+                "psnr_db": 16.41663495877579,
+                "ssim": 0.7227337593716213,
+                "scope": "paired image fidelity; not dataset FID or text-alignment quality"
+            },
+            "latent_mae": 0.31164103746414185,
+            "latent_rmse": 0.48857319355010986,
+            "wall_seconds": {
+                "fp16": 6.75393009185791,
+                "flopa": 887.3110785484314
+            },
+            "output_sha256": {
+                "fp16": "d139154236abfee60cf99c9428d8aa9a6cc565a29f1492ca3d469c9961168fb0",
+                "flopa": "cffae2af7eb2dcda72366f6a1158dc4ad047226895c3f2da7f4d27227ce60da4"
+            }
+        },
+        {
+            "state": "complete",
+            "case": "cabin_s301",
+            "prompt": "A wooden cabin beside a lake at sunrise.",
+            "seed": 301,
+            "self_attention_calls_replaced": 840,
+            "CFG_branches_replaced": 2,
+            "pixels": 1024,
+            "N": 4096,
+            "paired_initial_latents_sha256": "7aebaad4f585522e8730f617e702310ab8bb40fa9eb0c1666cdd75f0e5193cd9",
+            "image_metrics": {
+                "pixel_mae_0_to_1": 0.09198159236533966,
+                "pixel_rmse_0_to_1": 0.14820168008030205,
+                "psnr_db": 16.582937459459252,
+                "ssim": 0.5392644615639535,
+                "scope": "paired image fidelity; not dataset FID or text-alignment quality"
+            },
+            "latent_mae": 0.3095698356628418,
+            "latent_rmse": 0.4414016604423523,
+            "wall_seconds": {
+                "fp16": 7.283656597137451,
+                "flopa": 890.1216306686401
+            },
+            "output_sha256": {
+                "fp16": "8f0ca292833e63864c6e325afeab307e40e6451be02cabc6792e5e3d7f00526c",
+                "flopa": "b7ff63b02331605ccd851a462c41e22ed1b7a11a3f900ac5d3eb635552e3b7c5"
+            }
+        },
+        {
+            "state": "complete",
+            "case": "train_s303",
+            "prompt": "A yellow train in a green valley.",
+            "seed": 303,
+            "self_attention_calls_replaced": 840,
+            "CFG_branches_replaced": 2,
+            "pixels": 1024,
+            "N": 4096,
+            "paired_initial_latents_sha256": "4b18466d25cadc206ff3ab3c57bc22041286b5491b54a77d2a5b58ea2a3b7a9f",
+            "image_metrics": {
+                "pixel_mae_0_to_1": 0.07595827189925448,
+                "pixel_rmse_0_to_1": 0.1287356170629269,
+                "psnr_db": 17.806025619192734,
+                "ssim": 0.5649742920561205,
+                "scope": "paired image fidelity; not dataset FID or text-alignment quality"
+            },
+            "latent_mae": 0.2988347113132477,
+            "latent_rmse": 0.4427245259284973,
+            "wall_seconds": {
+                "fp16": 6.8742640018463135,
+                "flopa": 889.8279693126678
+            },
+            "output_sha256": {
+                "fp16": "585c13163129eeb76edfa72c51ff95f90f714547221feb8e223dc0def3bd8d9e",
+                "flopa": "082fa6f97a8141080586e2b4cc720dbaca7479bb6fdea6efd6521af2a4170c23"
+            }
+        }
+    ],
+    "mean_ssim": 0.6481653698913382,
+    "mean_psnr_db": 17.036545066610866,
+    "scope": "four paired image-fidelity diagnostics; not FID or population quality"
+}

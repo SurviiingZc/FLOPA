@@ -1,0 +1,28 @@
+{
+    "state": "complete",
+    "case": "cactus_s302",
+    "prompt": "A small cactus with a happy face in the Sahara desert.",
+    "seed": 302,
+    "self_attention_calls_replaced": 840,
+    "CFG_branches_replaced": 2,
+    "pixels": 1024,
+    "N": 4096,
+    "paired_initial_latents_sha256": "b1a09613b0dd108d11baa37a6e6d54526fdb9403b791dbcaa9d2bbabf9aff469",
+    "image_metrics": {
+        "pixel_mae_0_to_1": 0.08961421368168852,
+        "pixel_rmse_0_to_1": 0.15106652947346494,
+        "psnr_db": 16.41663495877579,
+        "ssim": 0.7227337593716213,
+        "scope": "paired image fidelity; not dataset FID or text-alignment quality"
+    },
+    "latent_mae": 0.31164103746414185,
+    "latent_rmse": 0.48857319355010986,
+    "wall_seconds": {
+        "fp16": 6.75393009185791,
+        "flopa": 887.3110785484314
+    },
+    "output_sha256": {
+        "fp16": "d139154236abfee60cf99c9428d8aa9a6cc565a29f1492ca3d469c9961168fb0",
+        "flopa": "cffae2af7eb2dcda72366f6a1158dc4ad047226895c3f2da7f4d27227ce60da4"
+    }
+}

@@ -1,0 +1,35 @@
+Warning: '-significant_digits' option is ignored when '-connections' argument is present. (UID-451)
+ 
+****************************************
+Report : net
+        -min
+        -connections
+        -verbose
+Design : attention_accel_top
+Version: V-2023.12-SP5
+Date   : Sun Oct 18 01:10:35 2026
+****************************************
+
+
+net 'u_fused_array/n25936':
+    dont_touch:         TRUE                
+    pin capacitance:    min:0    max:0
+    wire capacitance:   min:0    max:0
+    total capacitance:  min:0    max:0
+    wire resistance:    NA
+    number of drivers:  1
+    number of loads:    3
+    number of pins:     4
+
+Connections for net 'u_fused_array/n25936':
+
+    Driver Pins         Type                Pin Cap
+    ------------        ----------------    --------
+    u_fused_array/U25823/ZN Output Pin (INVD0BWP12T30P140) 0
+
+    Load Pins           Type                Pin Cap
+    ------------        ----------------    --------
+    u_fused_array/U2769/A1 Input Pin (NR2D0BWP12T30P140) 0.000433243
+    u_fused_array/U6943/A1 Input Pin (OR2D1BWP12T30P140) 0.000602938
+    u_fused_array/U9256/A1 Input Pin (OR4D1BWP12T30P140) 0.000760393
+1

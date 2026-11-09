@@ -90,3 +90,59 @@ module fa_signed_mult_pipe2 #(
   end
 
 endmodule
+
+// Exact latency-3 alternative for a wide B operand. Four small partial
+// multipliers replace the long 16x31 partial products in the normalizer.
+module fa_signed_mult_pipe3 #(
+    parameter integer A_W = 32,
+    parameter integer B_W = 31,
+    parameter integer SPLIT_W = 16,
+    parameter integer B_SPLIT_W = 15
+)(
+    input clk,
+    input rst_n,
+    input valid_i,
+    input signed [A_W-1:0] a_i,
+    input signed [B_W-1:0] b_i,
+    output reg valid_o,
+    output reg signed [A_W+B_W-1:0] product_o
+);
+    localparam integer HI_B_W = B_W - B_SPLIT_W;
+    localparam integer LO_B_W = B_SPLIT_W + 1;
+    localparam integer PRODUCT_W = A_W + B_W;
+    wire signed [HI_B_W-1:0] b_hi_w = b_i[B_W-1:B_SPLIT_W];
+    wire signed [LO_B_W-1:0] b_lo_w = {1'b0, b_i[B_SPLIT_W-1:0]};
+    wire signed [A_W+HI_B_W-1:0] hi_product_w;
+    wire signed [A_W+LO_B_W-1:0] lo_product_w;
+    wire high_valid_w;
+    wire low_valid_w;
+    wire signed [PRODUCT_W-1:0] hi_extended_w =
+        {{B_SPLIT_W{hi_product_w[A_W+HI_B_W-1]}}, hi_product_w};
+    wire signed [PRODUCT_W-1:0] lo_extended_w =
+        {{(B_W-LO_B_W){lo_product_w[A_W+LO_B_W-1]}}, lo_product_w};
+
+    fa_signed_mult_pipe2 #(.A_W(A_W), .B_W(HI_B_W), .SPLIT_W(SPLIT_W)) u_high (
+        .clk(clk), .rst_n(rst_n), .valid_i(valid_i), .a_i(a_i), .b_i(b_hi_w),
+        .valid_o(high_valid_w), .product_o(hi_product_w)
+    );
+    fa_signed_mult_pipe2 #(.A_W(A_W), .B_W(LO_B_W), .SPLIT_W(SPLIT_W)) u_low (
+        .clk(clk), .rst_n(rst_n), .valid_i(valid_i), .a_i(a_i), .b_i(b_lo_w),
+        .valid_o(low_valid_w), .product_o(lo_product_w)
+    );
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n)
+            valid_o <= 1'b0;
+        else
+            valid_o <= high_valid_w;
+    end
+    always @(posedge clk) begin
+        if (rst_n && high_valid_w)
+            product_o <= (hi_extended_w <<< B_SPLIT_W) + lo_extended_w;
+    end
+`ifndef SYNTHESIS
+    always @(posedge clk) begin
+        if (rst_n && high_valid_w != low_valid_w)
+            $fatal(1, "fa_signed_mult_pipe3 partial valid mismatch");
+    end
+`endif
+endmodule

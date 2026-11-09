@@ -1,5 +1,7 @@
 # FLOPA Register and Interface Reference
 
+> Runtime-d branch note: This document records historical ABI v2. The runtime-d branch uses ABI v3; the authoritative register map and output layout are in [runtime-d RTL](rtl_runtime_d.md).
+
 This document is the software and integration reference for
 `rtl/attention_accel_top.v`. The RTL definitions in
 `rtl/common/attention_defines.vh` and `rtl/control/accel_regfile.v` are the

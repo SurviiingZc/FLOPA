@@ -1,5 +1,7 @@
 # FLOPA PPA and Optimization Report
 
+> Runtime-d branch note: The PPA and gate-SAIF figures here belong to the historical fixed-d=64 netlist. New MAX_D=128 results are reported separately in [implementation report](../paper_test/IMPLEMENTATION_REPORT.md).
+
 ## 1. Reporting Policy
 
 ASIC figures are mapped pre-layout estimates at the stated PVT and workload.

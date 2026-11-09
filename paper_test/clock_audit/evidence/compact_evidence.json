@@ -1,0 +1,73 @@
+{
+    "scope": "read-only mapped DDC clock coverage; not full timing/physical signoff",
+    "overall_clock_coverage": "PASS",
+    "ddc_sha256": "b03b398f2e2cac9274fe9c02b1aa8d8fa10d3cefe6537aae68dfcdeae22129f2",
+    "ddc_sha256_after": "b03b398f2e2cac9274fe9c02b1aa8d8fa10d3cefe6537aae68dfcdeae22129f2",
+    "read_ddc_first_attempt": "UNKNOWN; design-list result incorrectly used as Boolean",
+    "edge_cells": 244581,
+    "ordinary_flip_flops": 244101,
+    "sram_macros": 480,
+    "no_clock_edge_cells": 0,
+    "identify_members_gained": 0,
+    "identify_members_lost": 0,
+    "mapped_preexisting_icg": 28,
+    "automatic_icg": 0,
+    "sram_structural_pass": 480,
+    "sram_core_clk_owner": 480,
+    "sram_in_core_register_collection": 480,
+    "icg_enable_timing": {
+        "max": {
+            "gate": "u_fused_array/g_stripe_3__u_stripe/u_pe_clock_gate_u_icg",
+            "slack_ns": 0.58521,
+            "queried_paths": 28,
+            "all_nonnegative": true
+        },
+        "min": {
+            "gate": "u_fused_array/g_stripe_2__u_stripe/u_pe_clock_gate_u_icg",
+            "slack_ns": 0.0522154,
+            "queried_paths": 28,
+            "all_nonnegative": true
+        }
+    },
+    "unconstrained_endpoints": "PASS; independent check_timing report has no Warning/Error",
+    "ordinary_hold": {
+        "worst_slack_ns": -0.0971237,
+        "qor_violating_paths": 6409,
+        "queried_worst_paths": 20,
+        "queried_module_classes": [
+            "u_output_buffer"
+        ],
+        "scope": "ordinary hold still violated; clock coverage PASS does not clear hold"
+    },
+    "min_capacitance": {
+        "violating_nets": 2,
+        "required_pF_each": 0.00041,
+        "reported_actual_pF_each": 0.0,
+        "drivers": [
+            "u_fused_array/U25823/ZN",
+            "u_fused_array/U119892/ZN"
+        ],
+        "driver_ref": "INVD0BWP12T30P140",
+        "driver_input": "rst_n; SDC set_ideal_network rst_n",
+        "load_pin_counts": [
+            3,
+            6
+        ],
+        "interpretation": "ideal reset branch; not an unloaded net"
+    },
+    "clock_model": {
+        "period_ns": 1.6,
+        "max_min_rise_fall_transition_ns": 0.05,
+        "reported_clock_network_delay": "ideal, 0 ns",
+        "highest_fanout_icg_Q_cap_transition_ideal_attributes": "not queried",
+        "limitation": "pre-CTS; actual ICG output load and transition not quantified"
+    },
+    "vectorless_power": {
+        "original_dynamic_W": 4.8309,
+        "after_identify_dynamic_W": 5.2662,
+        "after_identify_leakage_mW": 9.2669,
+        "after_identify_clock_network_percent": 99.72,
+        "warnings": "unannotated primary inputs/sequential outputs/black-box outputs",
+        "scope": "default-activity estimates; no SAIF read; no power benefit claimed"
+    }
+}

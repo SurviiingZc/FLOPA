@@ -1,0 +1,296 @@
+{
+    "state": "pass_execution_audit",
+    "timestamp_utc": "2026-10-24T17:41:37.924960+00:00",
+    "quality_pass_not_asserted": true,
+    "cases": [
+        {
+            "case": "cactus_s301",
+            "worker": 0,
+            "attention_calls": 840,
+            "all_28_layers_all_30_steps": true,
+            "all_16_heads_both_CFG_branches": true,
+            "all_queries_and_KV_rows": true,
+            "input_clipping": {
+                "q": 2,
+                "k": 8,
+                "v": 8
+            },
+            "saturations": {
+                "row_sum_saturations": 0,
+                "output_saturations": 16
+            },
+            "pv_overflow_count_scope": "not collected; exact INT32 modular recurrence used",
+            "file_sha256": {
+                "result.json": "f9adb4ded2648b52ee50d9f31aac05cd80bd951b2bc6ced422d4cf0192e646ce",
+                "initial_latents.pt": "7aebaad4f585522e8730f617e702310ab8bb40fa9eb0c1666cdd75f0e5193cd9",
+                "flopa_final_latents.pt": "82fd7c5b5f122a7b6a07df0a4183c9ff384a1dc45cf7e61c77e1167f7868773a",
+                "attention_calls.json": "c8d8aa52327c6ec819f618eae8090a7fc0442094fcf20e77047d34cae0825165",
+                "fp16_final_latents.pt": "b11ca9946947f71f144988e274d565daf18a023df7aacfb0d7c74f988c3a6b8e",
+                "flopa.png": "0f8566ca701107b5553ef9440ae384873c543f0a4244c649e28ba568333bf4b9",
+                "fp16.png": "5c7189196e54fe696128f1390e8cbfb8d456df2f46c054142d4c315acb2111f7"
+            }
+        },
+        {
+            "case": "cactus_s302",
+            "worker": 0,
+            "attention_calls": 840,
+            "all_28_layers_all_30_steps": true,
+            "all_16_heads_both_CFG_branches": true,
+            "all_queries_and_KV_rows": true,
+            "input_clipping": {
+                "q": 72,
+                "k": 60,
+                "v": 3
+            },
+            "saturations": {
+                "row_sum_saturations": 0,
+                "output_saturations": 18
+            },
+            "pv_overflow_count_scope": "not collected; exact INT32 modular recurrence used",
+            "file_sha256": {
+                "result.json": "0300a8e59650298ce8dad357f9d2f35eaef03b296f42810da86a8d2b3f2ec93b",
+                "initial_latents.pt": "b1a09613b0dd108d11baa37a6e6d54526fdb9403b791dbcaa9d2bbabf9aff469",
+                "flopa_final_latents.pt": "73b3589efc6fe865b4a105cbd894880e2a49cbf9fc47559445d0f875f1ea8995",
+                "attention_calls.json": "604453c2fa3006da4e930ca0945e893101a9109ffdc11e1982a54899d8239520",
+                "fp16_final_latents.pt": "669a9564f521f059080d77daaa4f0dbf11b4cfc2f102d2035af82802d951d2fe",
+                "flopa.png": "cffae2af7eb2dcda72366f6a1158dc4ad047226895c3f2da7f4d27227ce60da4",
+                "fp16.png": "d139154236abfee60cf99c9428d8aa9a6cc565a29f1492ca3d469c9961168fb0"
+            }
+        },
+        {
+            "case": "cabin_s301",
+            "worker": 1,
+            "attention_calls": 840,
+            "all_28_layers_all_30_steps": true,
+            "all_16_heads_both_CFG_branches": true,
+            "all_queries_and_KV_rows": true,
+            "input_clipping": {
+                "q": 0,
+                "k": 3,
+                "v": 15
+            },
+            "saturations": {
+                "row_sum_saturations": 0,
+                "output_saturations": 81
+            },
+            "pv_overflow_count_scope": "not collected; exact INT32 modular recurrence used",
+            "file_sha256": {
+                "result.json": "1042849eac73153e58a7ea535766e2823304a944aeb37477f01df50bf1658cc9",
+                "initial_latents.pt": "7aebaad4f585522e8730f617e702310ab8bb40fa9eb0c1666cdd75f0e5193cd9",
+                "flopa_final_latents.pt": "051e1cb1493df494022ce4256a7ef15a025f355243ded86f3db8ef4c9c4accf0",
+                "attention_calls.json": "73cb911dc17c25915b4f833e1992e9429cc684ff029d3fdbae31c5ced202ad89",
+                "fp16_final_latents.pt": "23382191a0c6bfcdc32b54d1a308b0982a0c2b46c329adc7699156e3f9015d62",
+                "flopa.png": "b7ff63b02331605ccd851a462c41e22ed1b7a11a3f900ac5d3eb635552e3b7c5",
+                "fp16.png": "8f0ca292833e63864c6e325afeab307e40e6451be02cabc6792e5e3d7f00526c"
+            }
+        },
+        {
+            "case": "train_s303",
+            "worker": 1,
+            "attention_calls": 840,
+            "all_28_layers_all_30_steps": true,
+            "all_16_heads_both_CFG_branches": true,
+            "all_queries_and_KV_rows": true,
+            "input_clipping": {
+                "q": 0,
+                "k": 30,
+                "v": 160
+            },
+            "saturations": {
+                "row_sum_saturations": 0,
+                "output_saturations": 249
+            },
+            "pv_overflow_count_scope": "not collected; exact INT32 modular recurrence used",
+            "file_sha256": {
+                "result.json": "47a1f7442b00e21391e3273d2e15752ff8554c783b1560b5da45cf0756f336e4",
+                "initial_latents.pt": "4b18466d25cadc206ff3ab3c57bc22041286b5491b54a77d2a5b58ea2a3b7a9f",
+                "flopa_final_latents.pt": "0853ca476867df37d01a48aa0521a0dd2481f56ee6077ae74fe710d22500a5d5",
+                "attention_calls.json": "9db6230dce4a4180e503bcbd94e38f1d2e8696a1572f7f2aa652b7228c9bf001",
+                "fp16_final_latents.pt": "fba8d3dfb97995928aaacd155936d363eaa4f2cf7b77a3d2ed1e42781cf3d053",
+                "flopa.png": "082fa6f97a8141080586e2b4cc720dbaca7479bb6fdea6efd6521af2a4170c23",
+                "fp16.png": "585c13163129eeb76edfa72c51ff95f90f714547221feb8e223dc0def3bd8d9e"
+            }
+        }
+    ],
+    "source_protocols": {
+        "quality_native/worker0/quality_protocol.json": {
+            "sha256": "7611ba6e307455e4bdb6f012821da5d318e8e7f540bde673c9e23d212bf417c8",
+            "protocol": {
+                "state": "running",
+                "pid": 2591500,
+                "cases": [
+                    [
+                        "cactus_s301",
+                        "A small cactus with a happy face in the Sahara desert.",
+                        301
+                    ],
+                    [
+                        "cactus_s302",
+                        "A small cactus with a happy face in the Sahara desert.",
+                        302
+                    ]
+                ],
+                "worker": "0",
+                "visible_device": "0",
+                "model": "/10T/zhangcheng/DiT_models/pixart_sigma_xl_2_1024_ms",
+                "pixels": 1024,
+                "N": 4096,
+                "steps": 30,
+                "guidance_scale": 4.5,
+                "branches": "both unconditional and conditional",
+                "replaced": "all 28 self-attention layers at all 30 denoising steps",
+                "unchanged": "cross-attention, projections, scheduler, VAE and model weights",
+                "reference": "original FP16 self-attention",
+                "variant": "current frozen INT8/PWL/reciprocal arithmetic; dequantized to FP16",
+                "calibration_sha256": "7e7d9584c806333873ed2c597a7660f4746fe71f4817923d0c963e2f37ab5880",
+                "embeddings_sha256": "dc4aa7c20d3ea125d88bc807ed657da49dc89d94da109b41824068495af879a2",
+                "shadow_source_sha256": "705e2ea79e4637795fdb21ab48b8024cc89a96789fb2ca546047c6511466cecf",
+                "script_sha256": "963716cf82b590fc461e94ac0ea920ca191831a5a3a1fe51476ee18268cecdb6",
+                "torch": "2.9.0+cu128",
+                "gpu": "NVIDIA RTX A6000",
+                "cuda": "12.8",
+                "scheduler": {
+                    "num_train_timesteps": 1000,
+                    "beta_start": 0.0001,
+                    "beta_end": 0.02,
+                    "beta_schedule": "linear",
+                    "trained_betas": null,
+                    "solver_order": 2,
+                    "prediction_type": "epsilon",
+                    "thresholding": false,
+                    "dynamic_thresholding_ratio": 0.995,
+                    "sample_max_value": 1.0,
+                    "algorithm_type": "dpmsolver++",
+                    "solver_type": "midpoint",
+                    "lower_order_final": true,
+                    "euler_at_final": false,
+                    "use_karras_sigmas": false,
+                    "use_exponential_sigmas": false,
+                    "use_beta_sigmas": false,
+                    "use_lu_lambdas": false,
+                    "use_flow_sigmas": false,
+                    "flow_shift": 1.0,
+                    "final_sigmas_type": "zero",
+                    "lambda_min_clipped": -Infinity,
+                    "variance_type": null,
+                    "timestep_spacing": "linspace",
+                    "steps_offset": 0,
+                    "rescale_betas_zero_snr": false,
+                    "use_dynamic_shifting": false,
+                    "time_shift_type": "exponential",
+                    "_use_default_values": [
+                        "use_flow_sigmas",
+                        "rescale_betas_zero_snr",
+                        "use_exponential_sigmas",
+                        "final_sigmas_type",
+                        "use_dynamic_shifting",
+                        "use_beta_sigmas",
+                        "time_shift_type",
+                        "flow_shift"
+                    ],
+                    "_class_name": "DPMSolverMultistepScheduler",
+                    "_diffusers_version": "0.22.0.dev0"
+                },
+                "sampling": "prespecified subset of four prompt/seed pairs; no exclusions",
+                "resolution_reason": "checkpoint-native 1024; forced 512 baseline was invalid",
+                "query_chunk": 4096,
+                "per_process_memory_limit_gib": 10.0,
+                "unity_bypass": false,
+                "calibration_prompts_reused_in_two_cases": true,
+                "not_an_independent_dataset_quality_benchmark": true
+            }
+        },
+        "quality_native/worker1/quality_protocol.json": {
+            "sha256": "05ba3ba9764b4baa868ae600bfa87e94ac7c9bbffbc678c575832f5ad64af589",
+            "protocol": {
+                "state": "running",
+                "pid": 2591501,
+                "cases": [
+                    [
+                        "cabin_s301",
+                        "A wooden cabin beside a lake at sunrise.",
+                        301
+                    ],
+                    [
+                        "train_s303",
+                        "A yellow train in a green valley.",
+                        303
+                    ]
+                ],
+                "worker": "1",
+                "visible_device": "1",
+                "model": "/10T/zhangcheng/DiT_models/pixart_sigma_xl_2_1024_ms",
+                "pixels": 1024,
+                "N": 4096,
+                "steps": 30,
+                "guidance_scale": 4.5,
+                "branches": "both unconditional and conditional",
+                "replaced": "all 28 self-attention layers at all 30 denoising steps",
+                "unchanged": "cross-attention, projections, scheduler, VAE and model weights",
+                "reference": "original FP16 self-attention",
+                "variant": "current frozen INT8/PWL/reciprocal arithmetic; dequantized to FP16",
+                "calibration_sha256": "7e7d9584c806333873ed2c597a7660f4746fe71f4817923d0c963e2f37ab5880",
+                "embeddings_sha256": "dc4aa7c20d3ea125d88bc807ed657da49dc89d94da109b41824068495af879a2",
+                "shadow_source_sha256": "705e2ea79e4637795fdb21ab48b8024cc89a96789fb2ca546047c6511466cecf",
+                "script_sha256": "963716cf82b590fc461e94ac0ea920ca191831a5a3a1fe51476ee18268cecdb6",
+                "torch": "2.9.0+cu128",
+                "gpu": "NVIDIA RTX A6000",
+                "cuda": "12.8",
+                "scheduler": {
+                    "num_train_timesteps": 1000,
+                    "beta_start": 0.0001,
+                    "beta_end": 0.02,
+                    "beta_schedule": "linear",
+                    "trained_betas": null,
+                    "solver_order": 2,
+                    "prediction_type": "epsilon",
+                    "thresholding": false,
+                    "dynamic_thresholding_ratio": 0.995,
+                    "sample_max_value": 1.0,
+                    "algorithm_type": "dpmsolver++",
+                    "solver_type": "midpoint",
+                    "lower_order_final": true,
+                    "euler_at_final": false,
+                    "use_karras_sigmas": false,
+                    "use_exponential_sigmas": false,
+                    "use_beta_sigmas": false,
+                    "use_lu_lambdas": false,
+                    "use_flow_sigmas": false,
+                    "flow_shift": 1.0,
+                    "final_sigmas_type": "zero",
+                    "lambda_min_clipped": -Infinity,
+                    "variance_type": null,
+                    "timestep_spacing": "linspace",
+                    "steps_offset": 0,
+                    "rescale_betas_zero_snr": false,
+                    "use_dynamic_shifting": false,
+                    "time_shift_type": "exponential",
+                    "_use_default_values": [
+                        "use_beta_sigmas",
+                        "use_flow_sigmas",
+                        "time_shift_type",
+                        "flow_shift",
+                        "rescale_betas_zero_snr",
+                        "use_exponential_sigmas",
+                        "use_dynamic_shifting",
+                        "final_sigmas_type"
+                    ],
+                    "_class_name": "DPMSolverMultistepScheduler",
+                    "_diffusers_version": "0.22.0.dev0"
+                },
+                "sampling": "prespecified subset of four prompt/seed pairs; no exclusions",
+                "resolution_reason": "checkpoint-native 1024; forced 512 baseline was invalid",
+                "query_chunk": 4096,
+                "per_process_memory_limit_gib": 10.0,
+                "unity_bypass": false,
+                "calibration_prompts_reused_in_two_cases": true,
+                "not_an_independent_dataset_quality_benchmark": true
+            }
+        }
+    },
+    "unchanged_shadow_sha256": "705e2ea79e4637795fdb21ab48b8024cc89a96789fb2ca546047c6511466cecf",
+    "native_runner_sha256": "963716cf82b590fc461e94ac0ea920ca191831a5a3a1fe51476ee18268cecdb6",
+    "merger_sha256": "608672ff36d184ed19764b8fc563d1db65d35adb8876c404413c095b04ae1ebe",
+    "original_512_directory_preserved": "/10T/zhangcheng/flopa_accuracy_20261024/quality",
+    "original_512_scope": "invalid generation-quality baseline; retained as raw evidence"
+}

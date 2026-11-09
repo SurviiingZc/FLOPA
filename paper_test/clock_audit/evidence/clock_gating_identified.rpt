@@ -1,0 +1,58 @@
+ 
+****************************************
+Report : clock_gating
+        -verbose
+        -multi_stage
+Design : attention_accel_top
+Version: V-2023.12-SP5
+Date   : Sun Oct 18 01:08:43 2026
+****************************************
+
+
+
+                             Clock Gating Summary
+          ------------------------------------------------------------
+          |    Number of Clock gating elements    |       28         |
+          |                                       |                  |
+          |    Number of Gated registers          | 242589 (99.38%)  |
+          |                                       |                  |
+          |    Number of Ungated registers        |  1512 (0.62%)    |
+          |                                       |                  |
+          |    Total number of registers          |   244101         |
+          |                                       |                  |
+          |    Number of multi-stage clock gates  |        0         |
+          |                                       |                  |
+          |    Average multi-stage fanout         |        -         |
+          |                                       |                  |
+          |    Number of gated cells              |   242589         |
+          |                                       |                  |
+          |    Maximum number of stages           |        1         |
+          |                                       |                  |
+          |    Average number of stages           |        1.0       |
+          ------------------------------------------------------------
+
+
+
+                             Clock Gating Report by Origin
+          +-------------------------------------------------+------------------+
+          |                                                 |    Actual (%)    |
+          |                                                 |    Count         |
+          +-------------------------------------------------+------------------+
+          |  Number of tool-inserted clock gating elements  |     0 (0.00%)    |
+          |                                                 |                  |
+          |  Number of pre-existing clock gating elements   |    28 (100.00%)  |
+          |                                                 |                  |
+          |  Number of gated registers                      | 242589 (99.38%)  |
+          |                                                 |                  |
+          |  Number of tool-inserted gated registers        |     0 (0.00%)    |
+          |                                                 |                  |
+          |  Number of pre-existing gated registers         | 242589 (99.38%)  |
+          |                                                 |                  |
+          |  Number of ungated registers                    |  1512 (0.62%)    |
+          |                                                 |                  |
+          |  Number of registers                            |   244101         |
+          +-------------------------------------------------+------------------+
+
+
+
+1

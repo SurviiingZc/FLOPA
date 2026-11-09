@@ -1,0 +1,28 @@
+{
+    "state": "complete",
+    "case": "train_s303",
+    "prompt": "A yellow train in a green valley.",
+    "seed": 303,
+    "self_attention_calls_replaced": 840,
+    "CFG_branches_replaced": 2,
+    "pixels": 512,
+    "N": 1024,
+    "paired_initial_latents_sha256": "805da593ecd989502f256390710aed7235d823669a669a0aa06cc76cc0f68fe7",
+    "image_metrics": {
+        "pixel_mae_0_to_1": 0.1686209136364506,
+        "pixel_rmse_0_to_1": 0.31908509990316175,
+        "psnr_db": 9.921869505657897,
+        "ssim": 0.5725333856227613,
+        "scope": "paired image fidelity; not dataset FID or text-alignment quality"
+    },
+    "latent_mae": 0.8342265486717224,
+    "latent_rmse": 1.2502707242965698,
+    "wall_seconds": {
+        "fp16": 1.84456205368042,
+        "flopa": 71.28852081298828
+    },
+    "output_sha256": {
+        "fp16": "bb6092433470af3a7baeb831b3be3082d6a55dcf63c9844b1fc0c0b4e3343db9",
+        "flopa": "4b3e37b8aaa43db6aba081c47a273bffb34b9b6e21ae88b9e853cacbe319cd51"
+    }
+}

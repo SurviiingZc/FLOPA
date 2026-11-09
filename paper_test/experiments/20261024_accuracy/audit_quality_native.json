@@ -1,0 +1,219 @@
+{
+    "state": "pass_saved_artifact_audit",
+    "created_utc": "2026-10-24T18:05:22.541489+00:00",
+    "scope": "Read-only saved-output verification; no model run or optimization.",
+    "summary_sha256": "edb02c88a63cc57105d014d26a2017cffa58ea590ab655d9e4b0c4fd56eb4394",
+    "protocol_sha256": "5d566b4f5380e51dd870a4cfb806367a93c58df572cde588870c50bfb79e424d",
+    "worker_cases": {
+        "cactus_s301": "/10T/zhangcheng/flopa_accuracy_20261024/quality_native/worker0/cactus_s301",
+        "cactus_s302": "/10T/zhangcheng/flopa_accuracy_20261024/quality_native/worker0/cactus_s302",
+        "cabin_s301": "/10T/zhangcheng/flopa_accuracy_20261024/quality_native/worker1/cabin_s301",
+        "train_s303": "/10T/zhangcheng/flopa_accuracy_20261024/quality_native/worker1/train_s303"
+    },
+    "quality_runner_sha256": "963716cf82b590fc461e94ac0ea920ca191831a5a3a1fe51476ee18268cecdb6",
+    "frozen_scales_sha256": "7e7d9584c806333873ed2c597a7660f4746fe71f4817923d0c963e2f37ab5880",
+    "shadow_sha256": "705e2ea79e4637795fdb21ab48b8024cc89a96789fb2ca546047c6511466cecf",
+    "audit_script_sha256": "cdda719dfe3ef1921ac31f15a42f7d1ac98f250fd3ae539badbb9e71c6d9fcd5",
+    "source_checks": {
+        "only_attn1_modules_hooked": true,
+        "outside_attn1_original_sdpa": true,
+        "post_hook_clears_current_layer": true,
+        "shared_initial_clone_for_both_variants": true,
+        "fresh_same_scheduler_for_each_variant": true,
+        "read_original_layer_scales": true
+    },
+    "source_check_limit": "Cross-attention preservation verified from hook scope in source.",
+    "initial_latent_check_limit": "One shared initializer is saved; both branches receive its clone in audited source.",
+    "cases": [
+        {
+            "case": "cactus_s301",
+            "seed": 301,
+            "prompt": "A small cactus with a happy face in the Sahara desert.",
+            "calls": 840,
+            "layers": 28,
+            "steps": 30,
+            "shape_every_call": [
+                2,
+                16,
+                4096,
+                72
+            ],
+            "coverage_every_step_layer_exactly_once": true,
+            "conditional_and_unconditional_replaced": true,
+            "initial_latent_matches_seed": true,
+            "initial_latent_sha256": "7aebaad4f585522e8730f617e702310ab8bb40fa9eb0c1666cdd75f0e5193cd9",
+            "output_sha256": {
+                "fp16": "5c7189196e54fe696128f1390e8cbfb8d456df2f46c054142d4c315acb2111f7",
+                "flopa": "0f8566ca701107b5553ef9440ae384873c543f0a4244c649e28ba568333bf4b9"
+            },
+            "calls_sha256": "c8d8aa52327c6ec819f618eae8090a7fc0442094fcf20e77047d34cae0825165",
+            "result_sha256": "f9adb4ded2648b52ee50d9f31aac05cd80bd951b2bc6ced422d4cf0192e646ce",
+            "recomputed_image_metrics": {
+                "pixel_mae_0_to_1": 0.07947632160062103,
+                "pixel_rmse_0_to_1": 0.1358222399725106,
+                "psnr_db": 17.340582229015688,
+                "ssim": 0.7656889665736575
+            },
+            "reported_minus_recomputed_absolute_max": 0.0,
+            "recomputed_latent_metrics": {
+                "latent_mae": 0.27720481157302856,
+                "latent_rmse": 0.41667142510414124
+            },
+            "input_clipping_counts": {
+                "q": 2,
+                "k": 8,
+                "v": 8
+            },
+            "output_saturations": 16,
+            "row_sum_saturations": 0,
+            "pv_overflow_events": null,
+            "pv_overflow_note": "Torch shadow does not record this counter; not zero."
+        },
+        {
+            "case": "cactus_s302",
+            "seed": 302,
+            "prompt": "A small cactus with a happy face in the Sahara desert.",
+            "calls": 840,
+            "layers": 28,
+            "steps": 30,
+            "shape_every_call": [
+                2,
+                16,
+                4096,
+                72
+            ],
+            "coverage_every_step_layer_exactly_once": true,
+            "conditional_and_unconditional_replaced": true,
+            "initial_latent_matches_seed": true,
+            "initial_latent_sha256": "b1a09613b0dd108d11baa37a6e6d54526fdb9403b791dbcaa9d2bbabf9aff469",
+            "output_sha256": {
+                "fp16": "d139154236abfee60cf99c9428d8aa9a6cc565a29f1492ca3d469c9961168fb0",
+                "flopa": "cffae2af7eb2dcda72366f6a1158dc4ad047226895c3f2da7f4d27227ce60da4"
+            },
+            "calls_sha256": "604453c2fa3006da4e930ca0945e893101a9109ffdc11e1982a54899d8239520",
+            "result_sha256": "0300a8e59650298ce8dad357f9d2f35eaef03b296f42810da86a8d2b3f2ec93b",
+            "recomputed_image_metrics": {
+                "pixel_mae_0_to_1": 0.08961421368168852,
+                "pixel_rmse_0_to_1": 0.15106652947346494,
+                "psnr_db": 16.41663495877579,
+                "ssim": 0.7227337593716213
+            },
+            "reported_minus_recomputed_absolute_max": 0.0,
+            "recomputed_latent_metrics": {
+                "latent_mae": 0.31164103746414185,
+                "latent_rmse": 0.48857319355010986
+            },
+            "input_clipping_counts": {
+                "q": 72,
+                "k": 60,
+                "v": 3
+            },
+            "output_saturations": 18,
+            "row_sum_saturations": 0,
+            "pv_overflow_events": null,
+            "pv_overflow_note": "Torch shadow does not record this counter; not zero."
+        },
+        {
+            "case": "cabin_s301",
+            "seed": 301,
+            "prompt": "A wooden cabin beside a lake at sunrise.",
+            "calls": 840,
+            "layers": 28,
+            "steps": 30,
+            "shape_every_call": [
+                2,
+                16,
+                4096,
+                72
+            ],
+            "coverage_every_step_layer_exactly_once": true,
+            "conditional_and_unconditional_replaced": true,
+            "initial_latent_matches_seed": true,
+            "initial_latent_sha256": "7aebaad4f585522e8730f617e702310ab8bb40fa9eb0c1666cdd75f0e5193cd9",
+            "output_sha256": {
+                "fp16": "8f0ca292833e63864c6e325afeab307e40e6451be02cabc6792e5e3d7f00526c",
+                "flopa": "b7ff63b02331605ccd851a462c41e22ed1b7a11a3f900ac5d3eb635552e3b7c5"
+            },
+            "calls_sha256": "73cb911dc17c25915b4f833e1992e9429cc684ff029d3fdbae31c5ced202ad89",
+            "result_sha256": "1042849eac73153e58a7ea535766e2823304a944aeb37477f01df50bf1658cc9",
+            "recomputed_image_metrics": {
+                "pixel_mae_0_to_1": 0.09198159236533966,
+                "pixel_rmse_0_to_1": 0.14820168008030205,
+                "psnr_db": 16.582937459459252,
+                "ssim": 0.5392644615639535
+            },
+            "reported_minus_recomputed_absolute_max": 0.0,
+            "recomputed_latent_metrics": {
+                "latent_mae": 0.3095698356628418,
+                "latent_rmse": 0.4414016604423523
+            },
+            "input_clipping_counts": {
+                "q": 0,
+                "k": 3,
+                "v": 15
+            },
+            "output_saturations": 81,
+            "row_sum_saturations": 0,
+            "pv_overflow_events": null,
+            "pv_overflow_note": "Torch shadow does not record this counter; not zero."
+        },
+        {
+            "case": "train_s303",
+            "seed": 303,
+            "prompt": "A yellow train in a green valley.",
+            "calls": 840,
+            "layers": 28,
+            "steps": 30,
+            "shape_every_call": [
+                2,
+                16,
+                4096,
+                72
+            ],
+            "coverage_every_step_layer_exactly_once": true,
+            "conditional_and_unconditional_replaced": true,
+            "initial_latent_matches_seed": true,
+            "initial_latent_sha256": "4b18466d25cadc206ff3ab3c57bc22041286b5491b54a77d2a5b58ea2a3b7a9f",
+            "output_sha256": {
+                "fp16": "585c13163129eeb76edfa72c51ff95f90f714547221feb8e223dc0def3bd8d9e",
+                "flopa": "082fa6f97a8141080586e2b4cc720dbaca7479bb6fdea6efd6521af2a4170c23"
+            },
+            "calls_sha256": "9db6230dce4a4180e503bcbd94e38f1d2e8696a1572f7f2aa652b7228c9bf001",
+            "result_sha256": "47a1f7442b00e21391e3273d2e15752ff8554c783b1560b5da45cf0756f336e4",
+            "recomputed_image_metrics": {
+                "pixel_mae_0_to_1": 0.07595827189925448,
+                "pixel_rmse_0_to_1": 0.1287356170629269,
+                "psnr_db": 17.806025619192734,
+                "ssim": 0.5649742920561205
+            },
+            "reported_minus_recomputed_absolute_max": 0.0,
+            "recomputed_latent_metrics": {
+                "latent_mae": 0.2988347113132477,
+                "latent_rmse": 0.4427245259284973
+            },
+            "input_clipping_counts": {
+                "q": 0,
+                "k": 30,
+                "v": 160
+            },
+            "output_saturations": 249,
+            "row_sum_saturations": 0,
+            "pv_overflow_events": null,
+            "pv_overflow_note": "Torch shadow does not record this counter; not zero."
+        }
+    ],
+    "mean_ssim": 0.6481653698913382,
+    "mean_psnr_db": 17.036545066610866,
+    "ssim_range": [
+        0.5392644615639535,
+        0.7656889665736575
+    ],
+    "psnr_db_range": [
+        16.41663495877579,
+        17.806025619192734
+    ],
+    "near_lossless_supported": false,
+    "conclusion": "Substantial paired-image differences; results do not support near lossless.",
+    "population_quality_claim": false,
+    "sample_scope": "Four prespecified prompt/seed pairs at 1024 pixels; two calibration prompts."
+}

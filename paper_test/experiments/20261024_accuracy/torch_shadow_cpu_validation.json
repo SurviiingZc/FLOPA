@@ -1,0 +1,36 @@
+{
+    "status": "pass",
+    "device": "cpu",
+    "checks": [
+        "rounded_shift_all_0_63",
+        "reciprocal_boundaries",
+        "pwl_all_relevant_codes",
+        "20_tail_dimension_cases_with_state_and_PE_stats",
+        "uniform_1024_KV_INT32_overflow",
+        "BH_register_broadcast_and_chunking",
+        "existing_PixArt_N1024_d72_head00_o_bin_73728_bytes"
+    ],
+    "random_cases": 20,
+    "wall_seconds": 0.6360924243927002,
+    "module_sha256": "705e2ea79e4637795fdb21ab48b8024cc89a96789fb2ca546047c6511466cecf",
+    "numpy_shadow_sha256": "a0c8cc5b7d472e78e6a1a2c21b6abf913e6a9e26b067dbf13308700fd71b9db0",
+    "existing_o_bin_sha256": "e8fa757e99d90dee71a2680bbc4445193547f36a7df670ef6dda95142b84640e",
+    "unity_bypass": false,
+    "existing_vector_stats": {
+        "query_rows": 1024,
+        "kv_rows": 1024,
+        "batch": 1,
+        "heads": 1,
+        "full_query_coverage": true,
+        "all_kv_rows_checked": true,
+        "row_sum_saturations": 0,
+        "p_zero": 906634,
+        "p_total": 1048576,
+        "output_saturations": 0,
+        "pv_overflow_events": null,
+        "max_absolute_pre_wrap": null,
+        "unity_bypass": false,
+        "arithmetic": "eight-segment PWL; 16-seed early-shift reciprocal; INT32 wrap",
+        "pv_reduction": "exact integer sum via FP64 bmm then INT32 modular addition"
+    }
+}

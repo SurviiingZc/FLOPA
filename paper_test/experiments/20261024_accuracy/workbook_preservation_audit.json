@@ -1,0 +1,12 @@
+{
+    "state": "pass",
+    "sheets": [
+        "图_模型算子耗时",
+        "表_PPA与机制"
+    ],
+    "old_values_formulas_styles_changed": [],
+    "old_freezes_merges_tables_validations_chart_counts_dimensions_preserved": true,
+    "new_accuracy_quality_and_cached_means_match_source_json": true,
+    "source_sha256": "9ad78bfdf905d0f7422e0dffb769ee59100df908d52caf404afbe93bcb36a5b2",
+    "candidate_sha256": "4744f4801998aabb9f92e4339d738887696c294e16f5ef405d156dd12c14c749"
+}

@@ -1,0 +1,28 @@
+{
+    "state": "complete",
+    "case": "cabin_s301",
+    "prompt": "A wooden cabin beside a lake at sunrise.",
+    "seed": 301,
+    "self_attention_calls_replaced": 840,
+    "CFG_branches_replaced": 2,
+    "pixels": 512,
+    "N": 1024,
+    "paired_initial_latents_sha256": "f6ddfed46652293a60a25566bac60711286003d6814c50cd5c4415f8f54f8f5f",
+    "image_metrics": {
+        "pixel_mae_0_to_1": 0.18923597148820467,
+        "pixel_rmse_0_to_1": 0.3677792040859733,
+        "psnr_db": 8.68825662789932,
+        "ssim": 0.5325693630364067,
+        "scope": "paired image fidelity; not dataset FID or text-alignment quality"
+    },
+    "latent_mae": 0.6275758743286133,
+    "latent_rmse": 1.0234423875808716,
+    "wall_seconds": {
+        "fp16": 1.8605968952178955,
+        "flopa": 71.4533302783966
+    },
+    "output_sha256": {
+        "fp16": "cd80ecd3b5cae71d73bb9f1adae9a892902e3a8a53459cdedfa40105bc2dc651",
+        "flopa": "2fe024790af9fb30e0df115db3ba795f028524321edf54fe19d3c0a9405cb936"
+    }
+}

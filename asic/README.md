@@ -1,5 +1,7 @@
 # ASIC Synthesis and Power Flow
 
+> Runtime-d branch note: This page retains the historical fixed-d=64 results and commands. The current runtime-d flow uses `make runtime-d-smoke` followed by `make synth-verified`, writes the `diffusion_runtime_d` synthesis group, and checks 480 SRAM macros plus 28 explicit RTL ICGs. See [implementation report](../paper_test/IMPLEMENTATION_REPORT.md).
+
 The final synthesis configuration targets `attention_accel_top` with the TSMC
 28 nm TT 0.9 V, 25 C CCS standard-cell library and the matching
 `uhdsp_256x8m4s` SRAM library. The target period is 1.60 ns (625 MHz).

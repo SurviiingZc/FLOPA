@@ -1,5 +1,7 @@
 # FLOPA Technical Report
 
+> Runtime-d branch note: This specification and its measurements describe the historical fixed-d=64 design. Current diffusion RTL changes are documented in [runtime-d RTL](rtl_runtime_d.md).
+
 ## 1. Purpose and Design Point
 
 FLOPA (Fully Local, Overlapped Probability-stationary Attention Accelerator)

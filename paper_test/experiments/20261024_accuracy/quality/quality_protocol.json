@@ -1,0 +1,88 @@
+{
+    "state": "running",
+    "pid": 2467593,
+    "cases": [
+        [
+            "cactus_s301",
+            "A small cactus with a happy face in the Sahara desert.",
+            301
+        ],
+        [
+            "cactus_s302",
+            "A small cactus with a happy face in the Sahara desert.",
+            302
+        ],
+        [
+            "cabin_s301",
+            "A wooden cabin beside a lake at sunrise.",
+            301
+        ],
+        [
+            "train_s303",
+            "A yellow train in a green valley.",
+            303
+        ]
+    ],
+    "model": "/10T/zhangcheng/DiT_models/pixart_sigma_xl_2_1024_ms",
+    "pixels": 512,
+    "N": 1024,
+    "steps": 30,
+    "guidance_scale": 4.5,
+    "branches": "both unconditional and conditional",
+    "replaced": "all 28 self-attention layers at all 30 denoising steps",
+    "unchanged": "cross-attention, projections, scheduler, VAE and model weights",
+    "reference": "original FP16 self-attention",
+    "variant": "current frozen INT8/PWL/reciprocal arithmetic; dequantized to FP16",
+    "calibration_sha256": "7e7d9584c806333873ed2c597a7660f4746fe71f4817923d0c963e2f37ab5880",
+    "embeddings_sha256": "dc4aa7c20d3ea125d88bc807ed657da49dc89d94da109b41824068495af879a2",
+    "shadow_source_sha256": "705e2ea79e4637795fdb21ab48b8024cc89a96789fb2ca546047c6511466cecf",
+    "script_sha256": "17c3245ea02565910419890dbfe97b13b6f6f5be024fbfe8e172d41e0be66c17",
+    "torch": "2.9.0+cu128",
+    "gpu": "NVIDIA RTX A6000",
+    "cuda": "12.8",
+    "scheduler": {
+        "num_train_timesteps": 1000,
+        "beta_start": 0.0001,
+        "beta_end": 0.02,
+        "beta_schedule": "linear",
+        "trained_betas": null,
+        "solver_order": 2,
+        "prediction_type": "epsilon",
+        "thresholding": false,
+        "dynamic_thresholding_ratio": 0.995,
+        "sample_max_value": 1.0,
+        "algorithm_type": "dpmsolver++",
+        "solver_type": "midpoint",
+        "lower_order_final": true,
+        "euler_at_final": false,
+        "use_karras_sigmas": false,
+        "use_exponential_sigmas": false,
+        "use_beta_sigmas": false,
+        "use_lu_lambdas": false,
+        "use_flow_sigmas": false,
+        "flow_shift": 1.0,
+        "final_sigmas_type": "zero",
+        "lambda_min_clipped": -Infinity,
+        "variance_type": null,
+        "timestep_spacing": "linspace",
+        "steps_offset": 0,
+        "rescale_betas_zero_snr": false,
+        "use_dynamic_shifting": false,
+        "time_shift_type": "exponential",
+        "_use_default_values": [
+            "rescale_betas_zero_snr",
+            "use_flow_sigmas",
+            "time_shift_type",
+            "flow_shift",
+            "final_sigmas_type",
+            "use_dynamic_shifting",
+            "use_beta_sigmas",
+            "use_exponential_sigmas"
+        ],
+        "_class_name": "DPMSolverMultistepScheduler",
+        "_diffusers_version": "0.22.0.dev0"
+    },
+    "sampling": "four prespecified prompt/seed pairs; no exclusions",
+    "calibration_prompts_reused_in_two_cases": true,
+    "not_an_independent_dataset_quality_benchmark": true
+}

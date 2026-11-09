@@ -11,7 +11,8 @@ module attention_accel_top #(
   parameter integer BETA_W = `ATTN_BETA_W,
   parameter integer LSE_W = `ATTN_LSE_W,
   parameter integer OUT_W = `ATTN_OUT_W,
-  parameter integer HEAD_DIM = `ATTN_HEAD_DIM,
+    parameter integer MAX_D = `ATTN_MAX_D,
+    parameter integer HEAD_DIM = MAX_D,
   parameter integer CACHE_WORD_W = `ATTN_CACHE_WORD_W,
   parameter integer CACHE_ADDR_W = (HEAD_DIM < 2) ? 1 : $clog2(HEAD_DIM),
   parameter integer STRIPE_ROWS = `ATTN_ARRAY_STRIPE_ROWS
@@ -79,11 +80,10 @@ module attention_accel_top #(
   localparam integer NORM_TAG_W = STRIPE_IDX_W + FEATURE_IDX_W;
   localparam integer OUTPUT_GROUP_SIZE = 32;
   localparam [4:0] OUTPUT_GROUP_LAST = OUTPUT_GROUP_SIZE - 1;
-  localparam [FEATURE_IDX_W-1:0] FEATURE_LAST = HEAD_DIM - 1;
+    wire [7:0] feature_last_w;
   localparam [STRIPE_IDX_W-1:0] STRIPE_LAST = NUM_STRIPES - 1;
   localparam [16:0] ARRAY_ROWS_17 = ARRAY_ROWS;
   localparam [15:0] ARRAY_ROWS_16 = ARRAY_ROWS;
-  localparam [31:0] OUTPUT_ROW_BYTES_32 = HEAD_DIM * (OUT_W / 8);
 
 `ifndef SYNTHESIS
   // The physical array consumes exactly one 256-bit cache word per issue cycle.
@@ -101,19 +101,12 @@ module attention_accel_top #(
   wire cfg_soft_reset_w;
   wire cfg_clear_done_w;
   wire cfg_clear_error_w;
-  wire cfg_mode_sel_w;
-  wire cfg_causal_en_w;
-  wire cfg_prefill_en_w;
-  wire cfg_decode_en_w;
   wire [63:0] cfg_o_base_w;
-  wire [31:0] cfg_o_stride_w;
   wire [15:0] cfg_seq_q_w;
   wire [15:0] cfg_seq_kv_w;
   wire [7:0] cfg_num_q_heads_w;
-  wire [7:0] cfg_num_kv_heads_w;
   wire [7:0] cfg_head_dim_w;
-  wire [7:0] cfg_tile_q_w;
-  wire [7:0] cfg_tile_k_w;
+    assign feature_last_w = cfg_head_dim_w - 1'b1;
   wire [31:0] cfg_score_scale_w;
   wire [31:0] cfg_out_scale_w;
   wire [31:0] cfg_perf_ctrl_w;
@@ -139,9 +132,6 @@ module attention_accel_top #(
   wire [15:0] kv_tile_base_w;
   wire tile_last_w;
   wire run_last_w;
-  wire scheduler_decode_active_w;
-  wire [15:0] array_q_base_w;
-  wire [15:0] array_seq_q_w;
 
   wire [63:0] perf_cycles_w;
   wire [63:0] perf_stall_w;
@@ -246,8 +236,8 @@ module attention_accel_top #(
   reg [31:0] writeback_addr_q;
   reg [31:0] head_base_addr_q;
   reg [63:0] head_stride_bytes_q;
-  wire [47:0] head_stride_product_w;
-  wire [47:0] writeback_bytes_product_w;
+    wire [23:0] head_stride_product_w;
+    wire [23:0] writeback_bytes_product_w;
   reg [15:0] writeback_beats_w;
   reg [15:0] valid_q_rows_w;
   reg [31:0] writeback_bytes_w;
@@ -281,16 +271,16 @@ module attention_accel_top #(
   // Runtime configuration products use explicit unsigned DesignWare boundaries.
   // Constant factors remain parameters so DC may still strength-reduce them.
   fa_unsigned_mult_comb #(
-    .A_W(16), .B_W(32)
+        .A_W(16), .B_W(8)
   ) u_head_stride_multiplier (
-    .a_i(cfg_seq_q_w), .b_i(cfg_o_stride_w),
+        .a_i(cfg_seq_q_w), .b_i(cfg_head_dim_w),
     .product_o(head_stride_product_w)
   );
 
   fa_unsigned_mult_comb #(
-    .A_W(16), .B_W(32)
+        .A_W(16), .B_W(8)
   ) u_writeback_bytes_multiplier (
-    .a_i(valid_q_rows_w), .b_i(OUTPUT_ROW_BYTES_32),
+        .a_i(valid_q_rows_w), .b_i(cfg_head_dim_w),
     .product_o(writeback_bytes_product_w)
   );
 
@@ -319,12 +309,9 @@ module attention_accel_top #(
     .s_axi_rdata(s_axi_rdata), .s_axi_rresp(s_axi_rresp), .s_axi_rvalid(s_axi_rvalid), .s_axi_rready(s_axi_rready),
     .cfg_start_pulse_o(cfg_start_w), .cfg_soft_reset_pulse_o(cfg_soft_reset_w),
     .cfg_clear_done_pulse_o(cfg_clear_done_w), .cfg_clear_error_pulse_o(cfg_clear_error_w),
-    .cfg_mode_sel_o(cfg_mode_sel_w), .cfg_causal_en_o(cfg_causal_en_w),
-    .cfg_prefill_en_o(cfg_prefill_en_w), .cfg_decode_en_o(cfg_decode_en_w),
-    .cfg_o_base_o(cfg_o_base_w), .cfg_o_stride_o(cfg_o_stride_w),
+        .cfg_o_base_o(cfg_o_base_w),
     .cfg_seq_q_o(cfg_seq_q_w), .cfg_seq_kv_o(cfg_seq_kv_w), .cfg_num_q_heads_o(cfg_num_q_heads_w),
-    .cfg_num_kv_heads_o(cfg_num_kv_heads_w), .cfg_head_dim_o(cfg_head_dim_w),
-    .cfg_tile_q_o(cfg_tile_q_w), .cfg_tile_k_o(cfg_tile_k_w),
+        .cfg_head_dim_o(cfg_head_dim_w),
     .cfg_score_scale_o(cfg_score_scale_w), .cfg_out_scale_o(cfg_out_scale_w),
     .cfg_perf_ctrl_o(cfg_perf_ctrl_w),
     .busy_i(scheduler_busy_w), .done_i(scheduler_done_w), .error_i(scheduler_error_w | fatal_error_w),
@@ -337,10 +324,7 @@ module attention_accel_top #(
   accel_scheduler u_scheduler (
     .clk(clk), .rst_n(rst_n), .start_i(cfg_start_w), .soft_reset_i(cfg_soft_reset_w),
     .clear_done_i(cfg_clear_done_w), .clear_error_i(cfg_clear_error_w), .fatal_error_i(fatal_error_w),
-    .mode_sel_i(cfg_mode_sel_w), .prefill_en_i(cfg_prefill_en_w), .decode_en_i(cfg_decode_en_w),
     .seq_q_i(cfg_seq_q_w), .seq_kv_i(cfg_seq_kv_w), .num_q_heads_i(cfg_num_q_heads_w),
-    .num_kv_heads_i(cfg_num_kv_heads_w),
-    .tile_q_i(cfg_tile_q_w), .tile_k_i(cfg_tile_k_w),
     .load_q_done_i(q_active_valid_w), .load_kv_done_i(kv_active_valid_w),
     .qk_done_i(qk_done_w), .softmax_pv_ready_i(softmax_pv_ready_w),
     .pv_done_i(pv_complete_q), .wb_done_i(axi_write_done_pulse_w),
@@ -350,17 +334,9 @@ module attention_accel_top #(
     .load_q_en_o(load_q_en_w), .load_kv_en_o(load_kv_en_w), .qk_en_o(qk_en_w),
     .softmax_en_o(softmax_en_w), .pv_en_o(pv_en_w), .wb_en_o(wb_en_w),
     .head_index_o(head_index_w), .q_tile_index_o(q_tile_index_w), .kv_tile_index_o(kv_tile_index_w),
-    .q_tile_base_o(q_tile_base_w), .kv_tile_base_o(kv_tile_base_w), .tile_last_o(tile_last_w), .run_last_o(run_last_w),
-    .decode_active_o(scheduler_decode_active_w)
+        .q_tile_base_o(q_tile_base_w), .kv_tile_base_o(kv_tile_base_w), .tile_last_o(tile_last_w),
+            .run_last_o(run_last_w)
   );
-
-  // Decode has one new query at absolute position seq_kv-1. Present that
-  // position to the existing causal-mask builder while keeping q_tile_base at
-  // zero for scheduler/writeback accounting. With array_seq_q=seq_kv only row
-  // zero is valid; all remaining physical rows are masked in the fused array.
-  assign array_q_base_w = scheduler_decode_active_w ?
-                          (cfg_seq_kv_w - 16'd1) : q_tile_base_w;
-  assign array_seq_q_w = scheduler_decode_active_w ? cfg_seq_kv_w : cfg_seq_q_w;
 
   // Release each tensor at its true last consumer. Q is dead after the final
   // QK of its Q tile, K after every QK, and V after every PV. If the next bank
@@ -409,7 +385,8 @@ module attention_accel_top #(
 
   // Data plane loader writes the inactive ping-pong banks while compute reads active.
   qkv_tile_cache #(.ADDR_W(CACHE_ADDR_W)) u_tile_cache (
-    .clk(clk), .rst_n(rst_n), .clear_i(cfg_soft_reset_w),
+        .clk(clk), .rst_n(rst_n), .clear_i(cfg_soft_reset_w || cfg_start_w),
+        .head_dim_i(cfg_head_dim_w),
     .load_kind_i(tile_load_kind_i), .load_bank_i(tile_load_bank_i), .load_addr_i(tile_load_addr_i),
     .load_half_i(tile_load_half_i), .load_data_i(tile_load_data_i), .load_valid_i(tile_load_valid_i),
     .load_ready_o(tile_load_ready_o), .commit_kind_i(tile_commit_kind_i),
@@ -461,7 +438,7 @@ module attention_accel_top #(
     .HEAD_DIM(HEAD_DIM)
   ) u_pv_engine (
     .clk(clk), .rst_n(rst_n), .clear_i(cfg_soft_reset_w), .start_i(pv_go_w),
-    .first_kv_tile_i(kv_tile_index_w == 0),
+        .head_dim_i(cfg_head_dim_w), .first_kv_tile_i(kv_tile_index_w == 0),
     .v_rd_en_o(v_cache_rd_en_w), .v_rd_addr_o(v_cache_rd_addr_w), .v_rd_data_i(v_cache_rd_data_w), .v_rd_valid_i(v_cache_rd_valid_w),
     .array_start_o(pv_array_start_w), .array_ready_i(pv_array_ready_w),
     .array_seed_zero_o(pv_array_seed_zero_w),
@@ -476,14 +453,14 @@ module attention_accel_top #(
   assign softmax_clear_rows_w = load_q_en_w && !load_q_en_d_q;
   // ASIC ICG enables remain asserted through each complete pipeline drain. FPGA
   // builds ignore these clock boundaries and infer ordinary register enables.
-  assign array_clock_en_w = cfg_soft_reset_w || softmax_clear_rows_w ||
+    assign array_clock_en_w = cfg_soft_reset_w || cfg_start_w || softmax_clear_rows_w ||
       qk_en_w || softmax_en_w || pv_en_w ||
       qk_busy_w || pv_engine_busy_w || array_controller_busy_w ||
       softmax_busy_w || (pv_flow_state_q != PV_FLOW_IDLE);
-  assign normalizer_clock_en_w = cfg_soft_reset_w ||
+    assign normalizer_clock_en_w = cfg_soft_reset_w || cfg_start_w ||
       (pv_flow_state_q == PV_FLOW_NORM_ISSUE) ||
       (pv_flow_state_q == PV_FLOW_NORM_DRAIN);
-  assign output_clock_en_w = cfg_soft_reset_w || softmax_clear_rows_w ||
+    assign output_clock_en_w = cfg_soft_reset_w || cfg_start_w || softmax_clear_rows_w ||
       normalizer_clock_en_w || wb_en_w || axi_write_busy_w ||
       output_stream_busy_w || output_stream_valid_w;
   // The fused array owns all PE-local score/P state, row state, and persistent O.
@@ -494,15 +471,15 @@ module attention_accel_top #(
     .HEAD_DIM(HEAD_DIM), .FEATURE_IDX_W(FEATURE_IDX_W)
   ) u_fused_array (
     .clk(clk), .rst_n(rst_n), .clock_en_i(array_clock_en_w),
-    .clear_i(cfg_soft_reset_w),
+        .clear_i(cfg_soft_reset_w || cfg_start_w),
+        .head_dim_i(cfg_head_dim_w),
     .clear_rows_i(softmax_clear_rows_w),
     .qk_clear_i(qk_array_clear_w), .qk_valid_i(qk_array_valid_w),
     .qk_last_i(qk_array_last_w), .qk_rows_i(qk_array_rows_w),
     .qk_cols_i(qk_array_cols_w), .qk_last_o(fused_qk_last_w),
     .softmax_start_i(softmax_start_w), .score_scale_i(cfg_score_scale_w),
-    .q_base_i(array_q_base_w), .k_base_i(kv_tile_base_w),
-    .seq_q_i(array_seq_q_w), .seq_kv_i(cfg_seq_kv_w),
-    .causal_en_i(cfg_causal_en_w),
+        .q_base_i(q_tile_base_w), .k_base_i(kv_tile_base_w),
+        .seq_q_i(cfg_seq_q_w), .seq_kv_i(cfg_seq_kv_w),
     .softmax_pv_ready_o(softmax_pv_ready_w),
     .softmax_done_o(softmax_done_w),
     .softmax_busy_o(softmax_busy_w),
@@ -530,6 +507,7 @@ module attention_accel_top #(
     .OUT_W(OUT_W), .TAG_W(NORM_TAG_W)
   ) u_normalizer (
     .clk(clk), .rst_n(rst_n), .clock_en_i(normalizer_clock_en_w),
+        .clear_i(cfg_soft_reset_w || cfg_start_w),
     .valid_i(norm_rd_valid_w), .acc_rows_i(norm_acc_rows_w),
     .l_rows_i(norm_l_rows_w), .out_scale_i(cfg_out_scale_w),
     .tag_i({norm_rd_stripe_w, norm_rd_feature_w}),
@@ -541,7 +519,8 @@ module attention_accel_top #(
     .OUT_W(OUT_W), .GROUP_SIZE(OUTPUT_GROUP_SIZE)
   ) u_output_buffer (
     .clk(clk), .rst_n(rst_n), .clock_en_i(output_clock_en_w),
-    .clear_tile_i(softmax_clear_rows_w),
+        .clear_tile_i(cfg_soft_reset_w || cfg_start_w || softmax_clear_rows_w),
+        .head_dim_i(cfg_head_dim_w),
     .norm_valid_i(norm_valid_w),
     .norm_stripe_i(norm_tag_w[NORM_TAG_W-1 -: STRIPE_IDX_W]),
     .norm_feature_i(norm_tag_w[FEATURE_IDX_W-1:0]),
@@ -555,18 +534,14 @@ module attention_accel_top #(
 
   // Tail Q tiles write only valid rows; convert the byte count to 128-bit AXI beats.
   always @(*) begin
-    // A decode invocation has exactly one meaningful output row. The existing
-    // output buffer therefore streams only row zero although the array remains 32x32.
-    if (scheduler_decode_active_w)
-      valid_q_rows_w = 16'd1;
-    else if ({1'b0, cfg_seq_q_w} <= {1'b0, q_tile_base_w})
+        if ({1'b0, cfg_seq_q_w} <= {1'b0, q_tile_base_w})
       valid_q_rows_w = 16'd0;
     else if ({1'b0, cfg_seq_q_w} >=
              ({1'b0, q_tile_base_w} + ARRAY_ROWS_17))
       valid_q_rows_w = ARRAY_ROWS_16;
     else
       valid_q_rows_w = cfg_seq_q_w - q_tile_base_w;
-    writeback_bytes_w = writeback_bytes_product_w[31:0];
+        writeback_bytes_w = {8'd0, writeback_bytes_product_w};
     writeback_beats_full_w = (writeback_bytes_w + 15) >> 4;
     writeback_beats_w = writeback_beats_full_w[15:0];
   end
@@ -580,7 +555,8 @@ module attention_accel_top #(
     .clk(clk), .rst_n(rst_n), .start_i(axi_write_start_w),
     .clear_error_i(cfg_clear_error_w | cfg_soft_reset_w), .base_addr_i(writeback_addr_q),
     .beat_count_i(writeback_beats_w), .burst_len_i(8'd16),
-    .data_i(output_stream_data_w), .data_valid_i(output_stream_valid_w), .data_ready_o(axi_data_ready_w),
+        .data_i(output_stream_data_w), .data_strb_i(output_stream_strb_w),
+        .data_valid_i(output_stream_valid_w), .data_ready_o(axi_data_ready_w),
     .busy_o(axi_write_busy_w), .done_o(axi_write_done_w), .error_o(axi_write_error_w),
     .m_axi_awaddr(m_axi_awaddr), .m_axi_awlen(m_axi_awlen), .m_axi_awsize(m_axi_awsize), .m_axi_awburst(m_axi_awburst),
     .m_axi_awvalid(m_axi_awvalid), .m_axi_awready(m_axi_awready),
@@ -632,7 +608,7 @@ module attention_accel_top #(
       norm_feature_q <= {FEATURE_IDX_W{1'b0}};
       writeback_addr_q <= cfg_o_base_w[31:0];
       head_base_addr_q <= cfg_o_base_w[31:0];
-      head_stride_bytes_q <= {16'd0, head_stride_product_w};
+            head_stride_bytes_q <= {40'd0, ((head_stride_product_w + 24'd15) & 24'hfffff0)};
     end else begin
       qk_en_d_q <= qk_en_w;
       softmax_en_d_q <= softmax_en_w;
@@ -646,13 +622,13 @@ module attention_accel_top #(
       if (cfg_start_w) begin
         writeback_addr_q <= cfg_o_base_w[31:0];
         head_base_addr_q <= cfg_o_base_w[31:0];
-        head_stride_bytes_q <= {16'd0, head_stride_product_w};
+                head_stride_bytes_q <= {40'd0, ((head_stride_product_w + 24'd15) & 24'hfffff0)};
       end else if (axi_write_done_pulse_w) begin
         if ({1'b0, q_tile_base_w} + ARRAY_ROWS_17 >= {1'b0, cfg_seq_q_w}) begin
           head_base_addr_q <= head_base_addr_q + head_stride_bytes_q[31:0];
           writeback_addr_q <= head_base_addr_q + head_stride_bytes_q[31:0];
         end else begin
-          writeback_addr_q <= writeback_addr_q + ARRAY_ROWS*cfg_o_stride_w;
+                    writeback_addr_q <= writeback_addr_q + ({24'd0, cfg_head_dim_w} << 5);
         end
       end
       if (softmax_start_w)
@@ -692,7 +668,7 @@ module attention_accel_top #(
         PV_FLOW_NORM_ISSUE: begin
           if (norm_output_ready_w) begin
             if ((norm_feature_q[4:0] == OUTPUT_GROUP_LAST) ||
-                (norm_feature_q == FEATURE_LAST))
+                                (norm_feature_q == feature_last_w))
               pv_flow_state_q <= PV_FLOW_NORM_DRAIN;
             else
               norm_feature_q <= norm_feature_q + 1'b1;
@@ -700,7 +676,7 @@ module attention_accel_top #(
         end
         PV_FLOW_NORM_DRAIN: begin
           if (norm_group_done_w) begin
-            if (norm_feature_q == FEATURE_LAST) begin
+                        if (norm_feature_q == feature_last_w) begin
               norm_feature_q <= {FEATURE_IDX_W{1'b0}};
               if (norm_stripe_q == STRIPE_LAST)
                 pv_flow_state_q <= PV_FLOW_COMPLETE;

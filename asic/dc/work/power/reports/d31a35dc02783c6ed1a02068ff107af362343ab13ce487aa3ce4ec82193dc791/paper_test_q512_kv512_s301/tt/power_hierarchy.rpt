@@ -1,0 +1,204 @@
+Information: Propagating switching activity (low effort zero delay simulation). (PWR-6)
+ 
+****************************************
+Report : power
+        -hier
+        -analysis_effort low
+Design : attention_accel_top
+Version: V-2023.12-SP5
+Date   : Wed Oct 14 04:14:22 2026
+****************************************
+
+
+Library(s) Used:
+
+    tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs (File: /data/public/STD/tcbn28hpcplusbwp12t30p140_190a/tcbn28hpcplusbwp12t30p140_180a_ccs/TSMCHOME/digital/Front_End/timing_power_noise/CCS/tcbn28hpcplusbwp12t30p140_180a/tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs.db)
+    uhdsp_256x8m4s_tt0p9v25c (File: /data/workspaces/zhangcheng/flash_attention/asic/dc/work/lib/uhdsp_256x8m4s_tt0p9v25c.db)
+
+
+Operating Conditions: tt0p9v25c   Library: tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+Wire Load Model Mode: segmented
+
+Design        Wire Load Model            Library
+------------------------------------------------
+attention_accel_top    ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+qkv_tile_cache_ADDR_W6 ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+fsa_fused_array_ROWS32_STRIPE_ROWS8_COLS32_DATA_W8_SCORE_W32_PROB_W16_ACC_W32_LSE_W32_HEAD_DIM64_FEATURE_IDX_W6
+                       ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+online_normalizer_LANES8_ACC_W32_LSE_W32_OUT_W8_TAG_W8
+                       ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+output_buffer_ROWS32_NORM_LANES8_HEAD_DIM64_OUT_W8_GROUP_SIZE32
+                       ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+fsa_delay_line_WIDTH38_DEPTH16
+                       ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+fsa_delay_line_WIDTH38_DEPTH17
+                       ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+fsa_delay_line_WIDTH38_DEPTH18
+                       ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+fsa_delay_line_WIDTH38_DEPTH19
+                       ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+fsa_delay_line_WIDTH38_DEPTH20
+                       ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+fsa_delay_line_WIDTH38_DEPTH21
+                       ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+fsa_delay_line_WIDTH38_DEPTH22
+                       ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+fsa_delay_line_WIDTH38_DEPTH23
+                       ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+fsa_delay_line_WIDTH38_DEPTH24
+                       ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+fsa_delay_line_WIDTH38_DEPTH25
+                       ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+fsa_delay_line_WIDTH38_DEPTH26
+                       ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+fsa_delay_line_WIDTH38_DEPTH27
+                       ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+fsa_delay_line_WIDTH38_DEPTH28
+                       ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+fsa_delay_line_WIDTH38_DEPTH29
+                       ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+fsa_delay_line_WIDTH38_DEPTH30
+                       ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+fsa_delay_line_WIDTH38_DEPTH31
+                       ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+fsa_delay_line_WIDTH38_DEPTH32
+                       ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+fsa_stripe_STRIPE_ROWS8_COLS32_HEAD_DIM64_DATA_W8_SCORE_W32_PROB_W16_SUM_W32_TAG_W6_LOCAL_ROW_IDX_W3_3
+                       ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+fsa_stripe_STRIPE_ROWS8_COLS32_HEAD_DIM64_DATA_W8_SCORE_W32_PROB_W16_SUM_W32_TAG_W6_LOCAL_ROW_IDX_W3_2
+                       ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+fsa_stripe_STRIPE_ROWS8_COLS32_HEAD_DIM64_DATA_W8_SCORE_W32_PROB_W16_SUM_W32_TAG_W6_LOCAL_ROW_IDX_W3_1
+                       ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+fsa_stripe_STRIPE_ROWS8_COLS32_HEAD_DIM64_DATA_W8_SCORE_W32_PROB_W16_SUM_W32_TAG_W6_LOCAL_ROW_IDX_W3_0
+                       ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+fa_clear_replica_15    ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+fa_clear_replica_14    ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+fa_clear_replica_13    ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+fa_clear_replica_12    ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+o_accumulator_bank_ROWS8_HEAD_DIM64_GROUP_SIZE32_DATA_W32_FEATURE_IDX_W6_3
+                       ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+fa_clear_replica_11    ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+fa_clear_replica_10    ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+fa_clear_replica_9     ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+fa_clear_replica_8     ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+o_accumulator_bank_ROWS8_HEAD_DIM64_GROUP_SIZE32_DATA_W32_FEATURE_IDX_W6_2
+                       ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+fa_clear_replica_7     ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+fa_clear_replica_6     ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+fa_clear_replica_5     ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+fa_clear_replica_4     ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+o_accumulator_bank_ROWS8_HEAD_DIM64_GROUP_SIZE32_DATA_W32_FEATURE_IDX_W6_1
+                       ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+fa_clear_replica_3     ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+fa_clear_replica_2     ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+fa_clear_replica_1     ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+fa_clear_replica_0     ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+o_accumulator_bank_ROWS8_HEAD_DIM64_GROUP_SIZE32_DATA_W32_FEATURE_IDX_W6_0
+                       ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+
+
+Global Operating Voltage = 0.9  
+Power-specific unit information :
+    Voltage Units = 1V
+    Capacitance Units = 1.000000pf
+    Time Units = 1ns
+    Dynamic Power Units = 1mW    (derived from V,C,T units)
+    Leakage Power Units = 1nW
+
+
+--------------------------------------------------------------------------------
+                                       Switch   Int      Leak     Total
+Hierarchy                              Power    Power    Power    Power    %
+--------------------------------------------------------------------------------
+attention_accel_top                      36.017  674.404 1.00e+07  720.433 100.0
+  u_output_buffer (output_buffer_ROWS32_NORM_LANES8_HEAD_DIM64_OUT_W8_GROUP_SIZE32)
+                                       2.81e-02    5.675 1.62e+05    5.865   0.8
+  u_normalizer (online_normalizer_LANES8_ACC_W32_LSE_W32_OUT_W8_TAG_W8)
+                                          0.215   10.200 2.40e+05   10.654   1.5
+  u_fused_array (fsa_fused_array_ROWS32_STRIPE_ROWS8_COLS32_DATA_W8_SCORE_W32_PROB_W16_ACC_W32_LSE_W32_HEAD_DIM64_FEATURE_IDX_W6)
+                                         34.540  636.528 8.79e+06  679.861  94.4
+    g_stripe_3__u_stripe (fsa_stripe_STRIPE_ROWS8_COLS32_HEAD_DIM64_DATA_W8_SCORE_W32_PROB_W16_SUM_W32_TAG_W6_LOCAL_ROW_IDX_W3_0)
+                                          8.462  127.206 1.86e+06  137.528  19.1
+      u_o_bank (o_accumulator_bank_ROWS8_HEAD_DIM64_GROUP_SIZE32_DATA_W32_FEATURE_IDX_W6_0)
+                                       1.49e-02    5.268 2.47e+05    5.529   0.8
+      g_clear_replica_3__u_clear_replica (fa_clear_replica_0)
+                                       1.61e-06 2.50e-03   16.336 2.52e-03   0.0
+      g_clear_replica_2__u_clear_replica (fa_clear_replica_1)
+                                       1.25e-06 2.50e-03   16.336 2.52e-03   0.0
+      g_clear_replica_1__u_clear_replica (fa_clear_replica_2)
+                                       1.25e-06 2.50e-03   16.336 2.52e-03   0.0
+      g_clear_replica_0__u_clear_replica (fa_clear_replica_3)
+                                       1.61e-06 2.50e-03   16.336 2.52e-03   0.0
+    g_stripe_2__u_stripe (fsa_stripe_STRIPE_ROWS8_COLS32_HEAD_DIM64_DATA_W8_SCORE_W32_PROB_W16_SUM_W32_TAG_W6_LOCAL_ROW_IDX_W3_1)
+                                          8.551  128.033 1.87e+06  138.452  19.2
+      u_o_bank (o_accumulator_bank_ROWS8_HEAD_DIM64_GROUP_SIZE32_DATA_W32_FEATURE_IDX_W6_1)
+                                       1.48e-02    5.263 2.47e+05    5.524   0.8
+      g_clear_replica_3__u_clear_replica (fa_clear_replica_4)
+                                       1.61e-06 2.50e-03   16.336 2.52e-03   0.0
+      g_clear_replica_2__u_clear_replica (fa_clear_replica_5)
+                                       1.25e-06 2.50e-03   16.336 2.52e-03   0.0
+      g_clear_replica_1__u_clear_replica (fa_clear_replica_6)
+                                       1.25e-06 2.50e-03   16.336 2.52e-03   0.0
+      g_clear_replica_0__u_clear_replica (fa_clear_replica_7)
+                                       1.61e-06 2.50e-03   16.336 2.52e-03   0.0
+    g_stripe_1__u_stripe (fsa_stripe_STRIPE_ROWS8_COLS32_HEAD_DIM64_DATA_W8_SCORE_W32_PROB_W16_SUM_W32_TAG_W6_LOCAL_ROW_IDX_W3_2)
+                                          8.526  128.020 1.87e+06  138.413  19.2
+      u_o_bank (o_accumulator_bank_ROWS8_HEAD_DIM64_GROUP_SIZE32_DATA_W32_FEATURE_IDX_W6_2)
+                                       1.34e-02    5.255 2.47e+05    5.515   0.8
+      g_clear_replica_3__u_clear_replica (fa_clear_replica_8)
+                                       1.61e-06 2.50e-03   16.336 2.52e-03   0.0
+      g_clear_replica_2__u_clear_replica (fa_clear_replica_9)
+                                       1.49e-06 2.50e-03   16.336 2.52e-03   0.0
+      g_clear_replica_1__u_clear_replica (fa_clear_replica_10)
+                                       1.25e-06 2.50e-03   16.336 2.52e-03   0.0
+      g_clear_replica_0__u_clear_replica (fa_clear_replica_11)
+                                       1.61e-06 2.50e-03   16.336 2.52e-03   0.0
+    g_stripe_0__u_stripe (fsa_stripe_STRIPE_ROWS8_COLS32_HEAD_DIM64_DATA_W8_SCORE_W32_PROB_W16_SUM_W32_TAG_W6_LOCAL_ROW_IDX_W3_3)
+                                          8.550  128.089 1.87e+06  138.509  19.2
+      u_o_bank (o_accumulator_bank_ROWS8_HEAD_DIM64_GROUP_SIZE32_DATA_W32_FEATURE_IDX_W6_3)
+                                       1.45e-02    5.251 2.47e+05    5.512   0.8
+      g_clear_replica_3__u_clear_replica (fa_clear_replica_12)
+                                       1.61e-06 2.50e-03   16.336 2.52e-03   0.0
+      g_clear_replica_2__u_clear_replica (fa_clear_replica_13)
+                                       1.25e-06 2.50e-03   16.336 2.52e-03   0.0
+      g_clear_replica_1__u_clear_replica (fa_clear_replica_14)
+                                       1.25e-06 2.50e-03   16.336 2.52e-03   0.0
+      g_clear_replica_0__u_clear_replica (fa_clear_replica_15)
+                                       1.61e-06 2.50e-03   16.336 2.52e-03   0.0
+    g_q_skew_31__u_pv_seed_skew (fsa_delay_line_WIDTH38_DEPTH32)
+                                       3.03e-02    3.211 2.67e+04    3.268   0.5
+    g_q_skew_30__u_pv_seed_skew (fsa_delay_line_WIDTH38_DEPTH31)
+                                       3.01e-02    3.116 2.59e+04    3.172   0.4
+    g_q_skew_29__u_pv_seed_skew (fsa_delay_line_WIDTH38_DEPTH30)
+                                       2.84e-02    3.010 2.51e+04    3.064   0.4
+    g_q_skew_28__u_pv_seed_skew (fsa_delay_line_WIDTH38_DEPTH29)
+                                       2.67e-02    2.904 2.42e+04    2.955   0.4
+    g_q_skew_27__u_pv_seed_skew (fsa_delay_line_WIDTH38_DEPTH28)
+                                       2.73e-02    2.815 2.33e+04    2.866   0.4
+    g_q_skew_26__u_pv_seed_skew (fsa_delay_line_WIDTH38_DEPTH27)
+                                       2.66e-02    2.717 2.26e+04    2.766   0.4
+    g_q_skew_25__u_pv_seed_skew (fsa_delay_line_WIDTH38_DEPTH26)
+                                       2.43e-02    2.606 2.17e+04    2.652   0.4
+    g_q_skew_24__u_pv_seed_skew (fsa_delay_line_WIDTH38_DEPTH25)
+                                       2.36e-02    2.508 2.08e+04    2.552   0.4
+    g_q_skew_23__u_pv_seed_skew (fsa_delay_line_WIDTH38_DEPTH24)
+                                       2.31e-02    2.411 2.01e+04    2.454   0.3
+    g_q_skew_22__u_pv_seed_skew (fsa_delay_line_WIDTH38_DEPTH23)
+                                       2.12e-02    2.304 1.92e+04    2.344   0.3
+    g_q_skew_21__u_pv_seed_skew (fsa_delay_line_WIDTH38_DEPTH22)
+                                       2.05e-02    2.205 1.84e+04    2.244   0.3
+    g_q_skew_20__u_pv_seed_skew (fsa_delay_line_WIDTH38_DEPTH21)
+                                       2.03e-02    2.110 1.75e+04    2.148   0.3
+    g_q_skew_19__u_pv_seed_skew (fsa_delay_line_WIDTH38_DEPTH20)
+                                       1.80e-02    2.000 1.67e+04    2.035   0.3
+    g_q_skew_18__u_pv_seed_skew (fsa_delay_line_WIDTH38_DEPTH19)
+                                       1.87e-02    1.912 1.59e+04    1.946   0.3
+    g_q_skew_17__u_pv_seed_skew (fsa_delay_line_WIDTH38_DEPTH18)
+                                       1.73e-02    1.808 1.50e+04    1.841   0.3
+    g_q_skew_16__u_pv_seed_skew (fsa_delay_line_WIDTH38_DEPTH17)
+                                       1.66e-02    1.710 1.42e+04    1.741   0.2
+    g_q_skew_15__u_pv_seed_skew (fsa_delay_line_WIDTH38_DEPTH16)
+                                       1.59e-02    1.611 1.34e+04    1.641   0.2
+  u_tile_cache (qkv_tile_cache_ADDR_W6)
+                                          0.291   19.036 7.86e+05   20.113   2.8
+1

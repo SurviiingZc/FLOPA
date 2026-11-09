@@ -1,0 +1,132 @@
+ 
+****************************************
+Report : power
+        -analysis_effort low
+Design : attention_accel_top
+Version: V-2023.12-SP5
+Date   : Tue Oct 13 03:10:51 2026
+****************************************
+
+
+Library(s) Used:
+
+    tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs (File: /data/public/STD/tcbn28hpcplusbwp12t30p140_190a/tcbn28hpcplusbwp12t30p140_180a_ccs/TSMCHOME/digital/Front_End/timing_power_noise/CCS/tcbn28hpcplusbwp12t30p140_180a/tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs.db)
+    uhdsp_256x8m4s_tt0p9v25c (File: /data/workspaces/zhangcheng/flash_attention/asic/dc/work/lib/uhdsp_256x8m4s_tt0p9v25c.db)
+
+
+Operating Conditions: tt0p9v25c   Library: tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+Wire Load Model Mode: segmented
+
+Design        Wire Load Model            Library
+------------------------------------------------
+attention_accel_top    ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+qkv_tile_cache_ADDR_W6 ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+fsa_fused_array_ROWS32_STRIPE_ROWS8_COLS32_DATA_W8_SCORE_W32_PROB_W16_ACC_W32_LSE_W32_HEAD_DIM64_FEATURE_IDX_W6
+                       ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+online_normalizer_LANES8_ACC_W32_LSE_W32_OUT_W8_TAG_W8
+                       ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+output_buffer_ROWS32_NORM_LANES8_HEAD_DIM64_OUT_W8_GROUP_SIZE32
+                       ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+fsa_delay_line_WIDTH38_DEPTH16
+                       ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+fsa_delay_line_WIDTH38_DEPTH17
+                       ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+fsa_delay_line_WIDTH38_DEPTH18
+                       ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+fsa_delay_line_WIDTH38_DEPTH19
+                       ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+fsa_delay_line_WIDTH38_DEPTH20
+                       ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+fsa_delay_line_WIDTH38_DEPTH21
+                       ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+fsa_delay_line_WIDTH38_DEPTH22
+                       ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+fsa_delay_line_WIDTH38_DEPTH23
+                       ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+fsa_delay_line_WIDTH38_DEPTH24
+                       ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+fsa_delay_line_WIDTH38_DEPTH25
+                       ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+fsa_delay_line_WIDTH38_DEPTH26
+                       ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+fsa_delay_line_WIDTH38_DEPTH27
+                       ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+fsa_delay_line_WIDTH38_DEPTH28
+                       ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+fsa_delay_line_WIDTH38_DEPTH29
+                       ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+fsa_delay_line_WIDTH38_DEPTH30
+                       ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+fsa_delay_line_WIDTH38_DEPTH31
+                       ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+fsa_delay_line_WIDTH38_DEPTH32
+                       ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+fsa_stripe_STRIPE_ROWS8_COLS32_HEAD_DIM64_DATA_W8_SCORE_W32_PROB_W16_SUM_W32_TAG_W6_LOCAL_ROW_IDX_W3_3
+                       ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+fsa_stripe_STRIPE_ROWS8_COLS32_HEAD_DIM64_DATA_W8_SCORE_W32_PROB_W16_SUM_W32_TAG_W6_LOCAL_ROW_IDX_W3_2
+                       ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+fsa_stripe_STRIPE_ROWS8_COLS32_HEAD_DIM64_DATA_W8_SCORE_W32_PROB_W16_SUM_W32_TAG_W6_LOCAL_ROW_IDX_W3_1
+                       ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+fsa_stripe_STRIPE_ROWS8_COLS32_HEAD_DIM64_DATA_W8_SCORE_W32_PROB_W16_SUM_W32_TAG_W6_LOCAL_ROW_IDX_W3_0
+                       ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+fa_clear_replica_15    ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+fa_clear_replica_14    ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+fa_clear_replica_13    ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+fa_clear_replica_12    ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+o_accumulator_bank_ROWS8_HEAD_DIM64_GROUP_SIZE32_DATA_W32_FEATURE_IDX_W6_3
+                       ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+fa_clear_replica_11    ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+fa_clear_replica_10    ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+fa_clear_replica_9     ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+fa_clear_replica_8     ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+o_accumulator_bank_ROWS8_HEAD_DIM64_GROUP_SIZE32_DATA_W32_FEATURE_IDX_W6_2
+                       ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+fa_clear_replica_7     ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+fa_clear_replica_6     ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+fa_clear_replica_5     ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+fa_clear_replica_4     ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+o_accumulator_bank_ROWS8_HEAD_DIM64_GROUP_SIZE32_DATA_W32_FEATURE_IDX_W6_1
+                       ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+fa_clear_replica_3     ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+fa_clear_replica_2     ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+fa_clear_replica_1     ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+fa_clear_replica_0     ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+o_accumulator_bank_ROWS8_HEAD_DIM64_GROUP_SIZE32_DATA_W32_FEATURE_IDX_W6_0
+                       ZeroWireload      tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+
+
+Global Operating Voltage = 0.9  
+Power-specific unit information :
+    Voltage Units = 1V
+    Capacitance Units = 1.000000pf
+    Time Units = 1ns
+    Dynamic Power Units = 1mW    (derived from V,C,T units)
+    Leakage Power Units = 1nW
+
+
+Attributes
+----------
+i - Including register clock pin internal power
+
+
+  Cell Internal Power  = 613.9806 mW   (98%)
+  Net Switching Power  =  12.2050 mW    (2%)
+                         ---------
+Total Dynamic Power    = 626.1856 mW  (100%)
+
+Cell Leakage Power     =   9.8144 mW
+
+
+                 Internal         Switching           Leakage            Total
+Power Group      Power            Power               Power              Power   (   %    )  Attrs
+--------------------------------------------------------------------------------------------------
+io_pad             0.0000            0.0000            0.0000            0.0000  (   0.00%)
+memory            13.7801        5.6776e-03        1.8334e+06           15.6191  (   2.46%)
+black_box          0.0000            0.0000            0.0000            0.0000  (   0.00%)
+clock_network    580.6717            0.0000            0.0000          580.6717  (  91.37%)  i
+register           6.3609            1.5318        3.3411e+06           11.4279  (   1.80%)
+sequential         0.0000            0.0000            0.0000            0.0000  (   0.00%)
+combinational     12.4681           10.6495        4.6399e+06           27.7670  (   4.37%)
+--------------------------------------------------------------------------------------------------
+Total            613.2808 mW        12.1869 mW     9.8144e+06 nW       635.4857 mW
+1

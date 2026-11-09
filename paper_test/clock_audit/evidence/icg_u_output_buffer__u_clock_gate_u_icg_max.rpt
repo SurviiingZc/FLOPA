@@ -1,0 +1,78 @@
+ 
+****************************************
+Report : timing
+        -path full_clock_expanded
+        -delay max
+        -nets
+        -max_paths 1
+        -transition_time
+Design : attention_accel_top
+Version: V-2023.12-SP5
+Date   : Sun Oct 18 01:10:19 2026
+****************************************
+
+ # A fanout number of 1000 was used for high fanout net computations.
+
+Operating Conditions: tt0p9v25c   Library: tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+Wire Load Model Mode: segmented
+
+  Startpoint: u_output_buffer/reservoir_bytes_q_reg_0_
+              (rising edge-triggered flip-flop clocked by core_clk)
+  Endpoint: u_output_buffer/u_clock_gate_u_icg
+            (gating element for clock core_clk)
+  Path Group: core_clk
+  Path Type: max
+
+  Des/Clust/Port     Wire Load Model       Library
+  ------------------------------------------------
+  output_buffer_ROWS32_NORM_LANES8_HEAD_DIM128_OUT_W8_GROUP_SIZE32 ZeroWireload tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+  attention_accel_top ZeroWireload         tcbn28hpcplusbwp12t30p140tt0p9v25c_ccs
+
+  Point                                                                                      Fanout     Trans      Incr       Path
+  -----------------------------------------------------------------------------------------------------------------------------------
+  clock core_clk (rise edge)                                                                                       0.00       0.00
+  clock network delay (ideal)                                                                                      0.00       0.00
+  u_output_buffer/reservoir_bytes_q_reg_0_/CP (DFCNQD1BWP12T30P140)                                      0.05      0.00 #     0.00 r
+  u_output_buffer/reservoir_bytes_q_reg_0_/Q (DFCNQD1BWP12T30P140)                                       0.05      0.07       0.07 f
+  u_output_buffer/reservoir_bytes_q[0] (net)                                                  22                   0.00       0.07 f
+  u_output_buffer/U6/Z (BUFFD0BWP12T30P140)                                                              0.09      0.07       0.15 f
+  u_output_buffer/n1481 (net)                                                                 24                   0.00       0.15 f
+  u_output_buffer/U57/ZN (NR2D0BWP12T30P140)                                                             0.04      0.04       0.18 r
+  u_output_buffer/n1137 (net)                                                                  2                   0.00       0.18 r
+  u_output_buffer/U56/ZN (MAOI222D0BWP12T30P140)                                                         0.04      0.03       0.22 f
+  u_output_buffer/n1150 (net)                                                                  3                   0.00       0.22 f
+  u_output_buffer/U55/ZN (MAOI222D0BWP12T30P140)                                                         0.05      0.04       0.25 r
+  u_output_buffer/n1155 (net)                                                                  3                   0.00       0.25 r
+  u_output_buffer/U54/ZN (MAOI222D0BWP12T30P140)                                                         0.04      0.03       0.28 f
+  u_output_buffer/n1129 (net)                                                                  2                   0.00       0.28 f
+  u_output_buffer/U49/ZN (ND2D1BWP12T30P140)                                                             0.02      0.02       0.30 r
+  u_output_buffer/n1165 (net)                                                                  2                   0.00       0.30 r
+  u_output_buffer/U275/ZN (AOI211D1BWP12T30P140)                                                         0.03      0.02       0.32 f
+  u_output_buffer/stream_valid_o (net)                                                         5                   0.00       0.32 f
+  u_output_buffer/stream_valid_o (output_buffer_ROWS32_NORM_LANES8_HEAD_DIM128_OUT_W8_GROUP_SIZE32)                0.00       0.32 f
+  output_stream_valid_w (net)                                                                                      0.00       0.32 f
+  U6114/ZN (NR4D0BWP12T30P140)                                                                           0.02      0.02       0.34 r
+  n3168 (net)                                                                                  1                   0.00       0.34 r
+  U6115/ZN (ND3D1BWP12T30P140)                                                                           0.03      0.02       0.35 f
+  output_clock_en_w (net)                                                                      1                   0.00       0.35 f
+  u_output_buffer/clock_en_i (output_buffer_ROWS32_NORM_LANES8_HEAD_DIM128_OUT_W8_GROUP_SIZE32)                    0.00       0.35 f
+  u_output_buffer/clock_en_i (net)                                                                                 0.00       0.35 f
+  u_output_buffer/U3612/ZN (IND3D1BWP12T30P140)                                                          0.04      0.03       0.38 f
+  u_output_buffer/n_0_net_ (net)                                                               1                   0.00       0.38 f
+  u_output_buffer/u_clock_gate_u_icg/E (CKLNQD1BWP12T30P140)                                             0.04      0.00       0.38 f
+  data arrival time                                                                                                           0.38
+
+  clock core_clk (rise edge)                                                                                       1.60       1.60
+  clock network delay (ideal)                                                                                      0.00       1.60
+  clock uncertainty                                                                                               -0.10       1.50
+  u_output_buffer/u_clock_gate_u_icg/CP (CKLNQD1BWP12T30P140)                                                      0.00       1.50 r
+  clock gating setup time                                                                                         -0.02       1.48
+  data required time                                                                                                          1.48
+  -----------------------------------------------------------------------------------------------------------------------------------
+  data required time                                                                                                          1.48
+  data arrival time                                                                                                          -0.38
+  -----------------------------------------------------------------------------------------------------------------------------------
+  slack (MET)                                                                                                                 1.10
+
+
+1
